@@ -10,7 +10,6 @@ import FeatureList from '~app/components/Premium/FeatureList'
 import PriceSection from '~app/components/Premium/PriceSection'
 import { usePremium } from '~app/hooks/use-premium'
 import { useDiscountCode } from '~app/hooks/use-purchase-info'
-import { trackEvent } from '~app/plausible'
 import { premiumRoute } from '~app/router'
 import { activatePremium, deactivatePremium } from '~services/premium'
 
@@ -31,7 +30,6 @@ function PremiumPage() {
     }
     setActivationError('')
     setActivating(true)
-    trackEvent('activate_license')
     try {
       await activatePremium(key)
     } catch (err) {
@@ -48,7 +46,6 @@ function PremiumPage() {
       return
     }
     setDeactivating(true)
-    trackEvent('deactivate_license')
     await deactivatePremium()
     setTimeout(() => location.reload(), 500)
   }, [])
@@ -87,7 +84,6 @@ function PremiumPage() {
               href={`https://chathub.gg/api/premium/redirect?source=${source || ''}&discountCode=${discountCode || ''}`}
               target="_blank"
               rel="noreferrer"
-              onClick={() => trackEvent('click_buy_premium', { source: 'premium_page' })}
             >
               <Button text={t('Buy premium license')} color="primary" className="w-fit !py-2 rounded-lg" />
             </a>

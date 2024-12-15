@@ -7,7 +7,6 @@ import shareIcon from '~/assets/icons/share.svg'
 import { cx } from '~/utils'
 import { CHATBOTS } from '~app/consts'
 import { ConversationContext, ConversationContextValue } from '~app/context'
-import { trackEvent } from '~app/plausible'
 import { ChatMessageModel } from '~types'
 import { BotId, BotInstance } from '../../bots'
 import Button from '../Button'
@@ -60,12 +59,10 @@ const ConversationPanel: FC<Props> = (props) => {
 
   const openHistoryDialog = useCallback(() => {
     setShowHistory(true)
-    trackEvent('open_history_dialog', { botId: props.botId })
   }, [props.botId])
 
   const openShareDialog = useCallback(() => {
     setShowShareDialog(true)
-    trackEvent('open_share_dialog', { botId: props.botId })
   }, [props.botId])
 
   let inputActionButton: ReactNode = null

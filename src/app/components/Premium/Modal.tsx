@@ -3,7 +3,6 @@ import { useAtom } from 'jotai'
 import { FC, useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDiscountCode } from '~app/hooks/use-purchase-info'
-import { trackEvent } from '~app/plausible'
 import { showPremiumModalAtom } from '~app/state'
 import { incrPremiumModalOpenTimes } from '~services/storage/open-times'
 import Button from '../Button'
@@ -24,13 +23,11 @@ const PremiumModal: FC = () => {
   useEffect(() => {
     if (open) {
       incrPremiumModalOpenTimes().then((openTimes) => {
-        trackEvent('show_premium_modal', { source: feature, openTimes })
       })
     }
   }, [feature, open])
 
   const onClickBuy = useCallback(() => {
-    trackEvent('click_buy_premium', { source: 'premium_modal' })
     setOpen(false)
     navigate({ to: '/premium', search: { source: 'after_click_buy_premium' } })
   }, [navigate, setOpen])

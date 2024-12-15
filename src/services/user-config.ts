@@ -1,7 +1,7 @@
 import { defaults } from 'lodash-es'
 import Browser from 'webextension-polyfill'
 import { BotId } from '~app/bots'
-import { ALL_IN_ONE_PAGE_ID, CHATBOTS, CHATGPT_API_MODELS, DEFAULT_CHATGPT_SYSTEM_MESSAGE } from '~app/consts'
+import { ALL_IN_ONE_PAGE_ID, CHATBOTS, CHATGPT_API_MODELS, DEFAULT_CHATGPT_SYSTEM_MESSAGE, DEFAULT_CLAUDE_SYSTEM_MESSAGE } from '~app/consts'
 
 export enum BingConversationStyle {
   Creative = 'creative',
@@ -41,8 +41,14 @@ export enum ClaudeMode {
 }
 
 export enum ClaudeAPIModel {
-  'claude-2' = 'claude-2',
-  'claude-instant-1' = 'claude-instant-v1',
+  'Claude 3.5 Haiku' = 'claude-3-5-haiku-latest',
+  'Claude 3.5 Sonnet' = 'claude-3-5-sonnet-latest',
+}
+
+export enum GeminiAPIModel {
+  'Gemini 1.5 Flash' = 'gemini-1.5-flash',
+  'Gemini 1.5 Pro' = 'gemini-1.5-pro',
+  'Gemini 2.0 Flash Experimental' = 'gemini-2.0-flash-exp',
 }
 
 export enum OpenRouterClaudeModel {
@@ -61,7 +67,7 @@ const userConfigWithDefaultValue = {
   chatgptApiModel: CHATGPT_API_MODELS[0] as (typeof CHATGPT_API_MODELS)[number],
   chatgptApiTemperature: 1,
   chatgptApiSystemMessage: DEFAULT_CHATGPT_SYSTEM_MESSAGE,
-  chatgptMode: ChatGPTMode.Webapp,
+  chatgptMode: ChatGPTMode.API,
   chatgptWebappModelName: ChatGPTWebModel['GPT-3.5'],
   chatgptPoeModelName: PoeGPTModel['GPT-3.5'],
   startupPage: ALL_IN_ONE_PAGE_ID,
@@ -70,10 +76,12 @@ const userConfigWithDefaultValue = {
   azureOpenAIApiKey: '',
   azureOpenAIApiInstanceName: '',
   azureOpenAIApiDeploymentName: '',
-  enabledBots: Object.keys(CHATBOTS).slice(0, 8) as BotId[],
+  enabledBots: Object.keys(CHATBOTS).slice(0, 3) as BotId[],
   claudeApiKey: '',
-  claudeMode: ClaudeMode.Webapp,
-  claudeApiModel: ClaudeAPIModel['claude-2'],
+  claudeMode: ClaudeMode.API,
+  claudeApiModel: ClaudeAPIModel['Claude 3.5 Haiku'],
+  claudeApiSystemMessage: DEFAULT_CLAUDE_SYSTEM_MESSAGE,
+  claudeApiTemperature: 1.0,
   chatgptWebAccess: false,
   claudeWebAccess: false,
   openrouterOpenAIModel: CHATGPT_API_MODELS[0] as (typeof CHATGPT_API_MODELS)[number],
@@ -82,6 +90,9 @@ const userConfigWithDefaultValue = {
   perplexityMode: PerplexityMode.Webapp,
   perplexityApiKey: '',
   geminiApiKey: '',
+  geminiApiModel: GeminiAPIModel['Gemini 2.0 Flash Experimental'],
+  geminiApiSystemMessage: DEFAULT_CHATGPT_SYSTEM_MESSAGE,
+  geminiApiTemperature: 1.0,
 }
 
 export type UserConfig = typeof userConfigWithDefaultValue
@@ -106,11 +117,15 @@ export async function getUserConfig(): Promise<UserConfig> {
     result.chatgptApiModel = 'gpt-4'
   }
   if (
-    result.claudeApiModel !== ClaudeAPIModel['claude-2'] ||
-    result.claudeApiModel !== ClaudeAPIModel['claude-instant-1']
+    result.claudeApiModel !== ClaudeAPIModel['Claude 3.5 Sonnet'] ||
+    result.claudeApiModel !== ClaudeAPIModel['Claude 3.5 Haiku']
   ) {
-    result.claudeApiModel = ClaudeAPIModel['claude-2']
+    result.claudeApiModel = ClaudeAPIModel['Claude 3.5 Haiku']
   }
+  if (!Object.values(GeminiAPIModel).includes(result.geminiApiModel as GeminiAPIModel)) {
+    result.geminiApiModel = GeminiAPIModel['Gemini 2.0 Flash Experimental']
+  }
+  
   return defaults(result, userConfigWithDefaultValue)
 }
 

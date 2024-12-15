@@ -17,6 +17,7 @@ import ClaudeAPISettings from '~app/components/Settings/ClaudeAPISettings'
 import ClaudeOpenRouterSettings from '~app/components/Settings/ClaudeOpenRouterSettings'
 import ClaudePoeSettings from '~app/components/Settings/ClaudePoeSettings'
 import ClaudeWebappSettings from '~app/components/Settings/ClaudeWebappSettings'
+import GeminiAPISettings from '~app/components/Settings/GeminiAPISettings'
 import EnabledBotsSettings from '~app/components/Settings/EnabledBotsSettings'
 import ExportDataPanel from '~app/components/Settings/ExportDataPanel'
 import PerplexityAPISettings from '~app/components/Settings/PerplexityAPISettings'
@@ -147,29 +148,9 @@ function SettingPage() {
               <ClaudePoeSettings userConfig={userConfig} updateConfigValue={updateConfigValue} />
             )}
           </ChatBotSettingPanel>
-          <ChatBotSettingPanel title="Gemini Pro">
-            <div className="flex flex-col gap-1">
-              <p className="font-medium text-sm">
-                API Key (
-                <a
-                  href="https://makersuite.google.com/app/apikey"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline"
-                >
-                  how to create key
-                </a>
-                )
-              </p>
-              <Input
-                className="w-[400px]"
-                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                value={userConfig.geminiApiKey}
-                onChange={(e) => updateConfigValue({ geminiApiKey: e.currentTarget.value })}
-                type="password"
-              />
-              <Blockquote className="mt-1">{t('Your keys are stored locally')}</Blockquote>
-            </div>
+
+          <ChatBotSettingPanel title="Gemini">
+            <GeminiAPISettings userConfig={userConfig} updateConfigValue={updateConfigValue} />
           </ChatBotSettingPanel>
           <ChatBotSettingPanel title="Bing">
             <div className="flex flex-row gap-5 items-center">

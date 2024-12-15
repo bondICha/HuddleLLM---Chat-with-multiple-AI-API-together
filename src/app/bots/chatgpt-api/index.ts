@@ -120,11 +120,25 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
   }
 
   async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal) {
+
+    const model = this.getModelName()
+
+    if (model === 'o1' || model.startsWith('o1-')) {
+      // System PromptはArrayの最初の要素にしか存在しないから、一番目だけチェックする
+      if (messages[0]?.role === 'system') {
+        const systemMessage = messages[0];
+        messages[0] = {
+          role: 'user',
+          content: systemMessage.content,
+        };
+      }
+    }
+
     const { openaiApiKey, openaiApiHost } = this.config
     const hasImageInput = messages.some(
       (message) => isArray(message.content) && message.content.some((part) => part.type === 'image_url'),
     )
-    const model = hasImageInput ? 'gpt-4-vision-preview' : this.getModelName()
+    
     const resp = await fetch(`${openaiApiHost}/v1/chat/completions`, {
       method: 'POST',
       signal,
@@ -135,7 +149,7 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       body: JSON.stringify({
         model,
         messages,
-        max_tokens: hasImageInput ? 500 : undefined,
+        max_tokens: undefined,
         stream: true,
       }),
     })
@@ -150,12 +164,6 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
 
   private getModelName() {
     const { chatgptApiModel } = this.config
-    if (chatgptApiModel === 'gpt-4-turbo') {
-      return 'gpt-4-1106-preview'
-    }
-    if (chatgptApiModel === 'gpt-3.5-turbo') {
-      return 'gpt-3.5-turbo-1106'
-    }
     return chatgptApiModel
   }
 

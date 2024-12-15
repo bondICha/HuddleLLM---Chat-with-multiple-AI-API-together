@@ -10,7 +10,6 @@ import LayoutSwitch from '~app/components/Chat/LayoutSwitch'
 import { CHATBOTS, Layout } from '~app/consts'
 import { useChat } from '~app/hooks/use-chat'
 import { usePremium } from '~app/hooks/use-premium'
-import { trackEvent } from '~app/plausible'
 import { showPremiumModalAtom } from '~app/state'
 import { BotId } from '../bots'
 import ConversationPanel from '../components/Chat/ConversationPanel'
@@ -66,7 +65,6 @@ const GeneralChatPanel: FC<{
         return
       }
       uniqBy(chats, (c) => c.botId).forEach((c) => c.sendMessage(input, image))
-      trackEvent('send_messages', { layout, disabled })
     },
     [chats, disabled, layout, setPremiumModalOpen],
   )
@@ -76,7 +74,6 @@ const GeneralChatPanel: FC<{
       if (!setBots) {
         return
       }
-      trackEvent('switch_bot', { botId, panel: chats.length })
       setBots((bots) => {
         const newBots = [...bots]
         newBots[index] = botId
@@ -88,7 +85,6 @@ const GeneralChatPanel: FC<{
 
   const onLayoutChange = useCallback(
     (v: Layout) => {
-      trackEvent('switch_all_in_one_layout', { layout: v })
       setLayout(v)
     },
     [setLayout],

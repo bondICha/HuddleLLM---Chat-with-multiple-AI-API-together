@@ -17,6 +17,8 @@ export class ClaudeBot extends AsyncAbstractBot {
       return new ClaudeApiBot({
         claudeApiKey: config.claudeApiKey,
         claudeApiModel: config.claudeApiModel,
+        claudeApiSystemMessage: config.claudeApiSystemMessage,
+        claudeApiTemperature: config.claudeApiTemperature,
       })
     }
     if (claudeMode === ClaudeMode.Webapp) {
