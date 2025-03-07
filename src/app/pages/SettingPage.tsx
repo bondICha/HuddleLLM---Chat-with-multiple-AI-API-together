@@ -163,7 +163,7 @@ function SettingPage() {
   return (
     <PagePanel title={`${t('Settings')} (v${getVersion()})`}>
       <div className="flex flex-col gap-5 mt-3 mb-10 px-10">
-        <ExportDataPanel />
+        <ExportDataPanel userConfig={userConfig} updateConfigValue={updateConfigValue} />
         <div>
           <p className="font-bold mb-2 text-lg">{t('Startup page')}</p>
           <div className="w-[200px]">
