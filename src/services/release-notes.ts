@@ -42,7 +42,7 @@ export async function checkReleaseNotes(): Promise<string[]> {
   if (!lastCheckReleaseNotesVersion) {
     return []
   }
-  return RELEASE_NOTES.slice(0, 3)
+  return RELEASE_NOTES
     .filter(({ version: v }) => compareVersions(v, lastCheckReleaseNotesVersion) > 0)
     .map(({ notes }) => notes)
     .flat()
