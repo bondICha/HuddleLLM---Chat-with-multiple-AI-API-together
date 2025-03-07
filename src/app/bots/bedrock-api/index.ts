@@ -4,8 +4,10 @@ import { requestHostPermission } from '~app/utils/permissions';
 import { UserConfig } from '~services/user-config';
 import { ChatError, ErrorCode } from '~utils/errors';
 import { parseSSEResponse } from '~utils/sse';
-import { AbstractBot, SendMessageParams } from '../abstract-bot';
+import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract-bot';
 import { file2base64 } from '../bing/utils';
+import { ChatMessageModel } from '~types';
+import { uuid } from '~utils';
 import {
   BedrockRuntimeClient,
   ConverseCommand,
@@ -40,6 +42,58 @@ interface ConversationContext {
 
 export abstract class AbstractBedrockApiBot extends AbstractBot {
   private conversationContext?: ConversationContext
+
+  // ConversationHistoryインターフェースの実装
+  public setConversationHistory(history: ConversationHistory): void {
+    if (history.messages && Array.isArray(history.messages)) {
+      // ChatMessageModelからChatMessageへの変換
+      const messages: ChatMessage[] = history.messages.map(msg => {
+        if (msg.author === 'user') {
+          return {
+            role: 'user',
+            content: [{ text: msg.text }]
+          };
+        } else {
+          return {
+            role: 'assistant',
+            content: [{ text: msg.text }]
+          };
+        }
+      });
+      
+      this.conversationContext = {
+        messages: messages
+      };
+    }
+  }
+
+  public getConversationHistory(): ConversationHistory | undefined {
+    if (!this.conversationContext) {
+      return undefined;
+    }
+    
+    // ChatMessageからChatMessageModelへの変換
+    const messages = this.conversationContext.messages.map(msg => {
+      const role = msg.role === 'user' ? 'user' : 'assistant';
+      let text = '';
+      
+      if (Array.isArray(msg.content)) {
+        // contentが配列の場合、textプロパティを持つ最初の要素を探す
+        const textContent = msg.content.find(part => 'text' in part && typeof part.text === 'string');
+        if (textContent && 'text' in textContent) {
+          text = textContent.text || '';
+        }
+      }
+      
+      return {
+        id: uuid(),
+        author: role,
+        text: text
+      };
+    });
+    
+    return { messages };
+  }
 
   private buildUserMessage(prompt: string, imageUrl?: string): ChatMessage {
     const content: ContentPart[] = [

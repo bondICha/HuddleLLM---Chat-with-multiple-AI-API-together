@@ -2,9 +2,11 @@ import { GoogleGenerativeAI, ChatSession, GenerativeModel } from '@google/genera
 import { DEFAULT_CHATGPT_SYSTEM_MESSAGE } from '~app/consts'
 import { UserConfig } from '~services/user-config'
 import { ChatError, ErrorCode } from '~utils/errors'
-import { AbstractBot, AsyncAbstractBot, SendMessageParams, MessageParams } from '../abstract-bot'
+import { AbstractBot, AsyncAbstractBot, SendMessageParams, MessageParams, ConversationHistory } from '../abstract-bot'
 import { GeminiAPIModel, getUserConfig } from '~services/user-config'
 import { file2base64 } from '../bing/utils'
+import { ChatMessageModel } from '~types'
+import { uuid } from '~utils'
 
 
 interface ChatMessage {
@@ -32,6 +34,59 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
     this.modelInstance = model
   }
   
+  // ConversationHistoryインターフェースの実装
+  public async setConversationHistory(history: ConversationHistory): Promise<void> {
+    if (history.messages && Array.isArray(history.messages)) {
+      // ChatMessageModelからChatMessageへの変換
+      const messages: ChatMessage[] = history.messages.map(msg => {
+        if (msg.author === 'user') {
+          return {
+            role: 'user',
+            parts: [{ text: msg.text }]
+          };
+        } else {
+          return {
+            role: 'model',
+            parts: [{ text: msg.text }]
+          };
+        }
+      });
+      
+      // チャットセッションを作成
+      const chat = await this.modelInstance.startChat({
+        history: messages,
+      });
+      
+      this.conversationContext = {
+        chat: chat,
+        messages: messages
+      };
+    }
+  }
+
+  public getConversationHistory(): ConversationHistory | undefined {
+    if (!this.conversationContext) {
+      return undefined;
+    }
+    
+    // ChatMessageからChatMessageModelへの変換
+    const messages = this.conversationContext.messages.map(msg => {
+      const role = msg.role === 'user' ? 'user' : 'assistant';
+      let text = '';
+      
+      if (msg.parts && msg.parts.length > 0 && 'text' in msg.parts[0]) {
+        text = msg.parts[0].text || '';
+      }
+      
+      return {
+        id: uuid(),
+        author: role,
+        text: text
+      };
+    });
+    
+    return { messages };
+  }
 
 
   private buildUserMessage(prompt: string): ChatMessage {

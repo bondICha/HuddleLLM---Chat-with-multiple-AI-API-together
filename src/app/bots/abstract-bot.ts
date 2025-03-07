@@ -31,9 +31,25 @@ export interface SendMessageParams extends MessageParams {
   onEvent: (event: Event) => void
 }
 
+export interface ConversationHistory {
+  messages: any[];  // 各ボットの実装に合わせて型を定義
+}
+
 export abstract class AbstractBot {
+  protected conversationHistory?: ConversationHistory;
+
   public async sendMessage(params: MessageParams) {
     return this.doSendMessageGenerator(params)
+  }
+
+  // 会話履歴を設定するメソッド
+  public setConversationHistory(history: ConversationHistory): void {
+    this.conversationHistory = history;
+  }
+
+  // 会話履歴を取得するメソッド
+  public getConversationHistory(): ConversationHistory | undefined {
+    return this.conversationHistory;
   }
 
   protected async *doSendMessageGenerator(params: MessageParams) {
@@ -134,6 +150,11 @@ export abstract class AsyncAbstractBot extends AbstractBot {
     this.initializeBot()
       .then((bot) => {
         this.#bot = bot
+        // 親クラスの会話履歴があれば、初期化されたボットに設定
+        const history = this.getConversationHistory()
+        if (history) {
+          this.#bot.setConversationHistory(history)
+        }
       })
       .catch((err) => {
         this.#initializeError = err
@@ -150,6 +171,8 @@ export abstract class AsyncAbstractBot extends AbstractBot {
   }
 
   resetConversation() {
+    // 会話履歴もリセット
+    this.conversationHistory = undefined
     return this.#bot.resetConversation()
   }
 
@@ -158,6 +181,24 @@ export abstract class AsyncAbstractBot extends AbstractBot {
       throw this.#initializeError
     }
     return this.#bot.modifyLastMessage(message)
+  }
+
+  // 会話履歴の設定をオーバーライド
+  setConversationHistory(history: ConversationHistory): void {
+    super.setConversationHistory(history)
+    // 内部ボットにも会話履歴を設定
+    if (!(this.#bot instanceof DummyBot)) {
+      this.#bot.setConversationHistory(history)
+    }
+  }
+
+  // 会話履歴の取得をオーバーライド
+  getConversationHistory(): ConversationHistory | undefined {
+    // 内部ボットから会話履歴を取得
+    if (!(this.#bot instanceof DummyBot)) {
+      return this.#bot.getConversationHistory()
+    }
+    return super.getConversationHistory()
   }
 
   get modelName() {

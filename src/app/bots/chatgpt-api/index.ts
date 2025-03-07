@@ -3,9 +3,11 @@ import { DEFAULT_CHATGPT_SYSTEM_MESSAGE } from '~app/consts'
 import { UserConfig, getUserConfig } from '~services/user-config'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { parseSSEResponse } from '~utils/sse'
-import { AsyncAbstractBot, AbstractBot, SendMessageParams, MessageParams } from '../abstract-bot'
+import { AsyncAbstractBot, AbstractBot, SendMessageParams, MessageParams, ConversationHistory } from '../abstract-bot'
 import { file2base64 } from '../bing/utils'
 import { ChatMessage } from './types'
+import { ChatMessageModel } from '~types'
+import { uuid } from '~utils'
 
 interface ConversationContext {
   messages: ChatMessage[]
@@ -15,6 +17,60 @@ const CONTEXT_SIZE = 40
 
 export abstract class AbstractChatGPTApiBot extends AbstractBot {
   private conversationContext?: ConversationContext
+
+  // ConversationHistoryインターフェースの実装
+  public setConversationHistory(history: ConversationHistory): void {
+    if (history.messages && Array.isArray(history.messages)) {
+      // ChatMessageModelからChatMessageへの変換
+      const messages: ChatMessage[] = history.messages.map(msg => {
+        if (msg.author === 'user') {
+          return {
+            role: 'user',
+            content: msg.text
+          };
+        } else {
+          return {
+            role: 'assistant',
+            content: msg.text
+          };
+        }
+      });
+      
+      this.conversationContext = {
+        messages: messages
+      };
+    }
+  }
+
+  public getConversationHistory(): ConversationHistory | undefined {
+    if (!this.conversationContext) {
+      return undefined;
+    }
+    
+    // ChatMessageからChatMessageModelへの変換
+    const messages = this.conversationContext.messages.map(msg => {
+      const role = msg.role === 'user' ? 'user' : 'assistant';
+      let content = '';
+      
+      if (typeof msg.content === 'string') {
+        content = msg.content;
+      } else if (Array.isArray(msg.content)) {
+        // 安全にtextプロパティにアクセス
+        const textPart = msg.content.find(part => part.type === 'text');
+        if (textPart && 'text' in textPart) {
+          content = textPart.text || '';
+        }
+      }
+      
+      return {
+        id: uuid(),
+        author: role,
+        text: content
+      };
+    });
+    
+    return { messages };
+  }
 
   private buildUserMessage(prompt: string, imageUrl?: string): ChatMessage {
     if (!imageUrl) {

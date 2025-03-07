@@ -23,7 +23,6 @@ export class CustomBot extends AsyncAbstractBot {
         if (!config) {
             throw new ChatError(`No configuration found for bot number ${this.customBotNumber}`, ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);
         }
-
         this.config = config
 
         // Decide which bot to instantiate based on the model string in the config

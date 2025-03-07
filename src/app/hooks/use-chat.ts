@@ -8,9 +8,26 @@ import { uuid } from '~utils'
 import { ChatError } from '~utils/errors'
 import { BotId } from '../bots'
 
-export function useChat(botId: BotId) {
+export function useChat(botId: BotId, initialMessages?: ChatMessageModel[]) {
   const chatAtom = useMemo(() => chatFamily({ botId, page: 'singleton' }), [botId])
   const [chatState, setChatState] = useAtom(chatAtom)
+
+  // 初期メッセージがある場合は設定
+  useEffect(() => {
+    if (initialMessages && initialMessages.length > 0) {
+      console.log('Setting initial messages:', initialMessages);
+      
+      // ボットに会話履歴を設定
+      chatState.bot.setConversationHistory({ messages: initialMessages });
+      
+      setChatState((draft) => {
+        // 既存のメッセージがない場合のみ設定
+        if (draft.messages.length === 0) {
+          draft.messages = [...initialMessages]
+        }
+      })
+    }
+  }, [initialMessages, setChatState, chatState.bot])
 
   const updateMessage = useCallback(
     (messageId: string, updater: (message: ChatMessageModel) => void) => {

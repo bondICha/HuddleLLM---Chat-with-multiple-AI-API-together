@@ -1,5 +1,6 @@
+
 import { motion } from 'framer-motion'
-import { FC, ReactNode, useCallback, useMemo, useState, useEffect } from 'react'
+import { FC, ReactNode, useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import clearIcon from '~/assets/icons/clear.svg'
 import historyIcon from '~/assets/icons/history.svg'
@@ -18,6 +19,8 @@ import ChatMessageList from './ChatMessageList'
 import ChatbotName from './ChatbotName'
 import WebAccessCheckbox from './WebAccessCheckbox'
 import { getUserConfig } from '~services/user-config'
+import { inheritHistoryAtom } from '../SwitchBotDropdown'
+import { useAtom } from 'jotai'
 
 interface Props {
   botId: BotId
@@ -28,7 +31,7 @@ interface Props {
   generating: boolean
   stopGenerating: () => void
   mode?: 'full' | 'compact'
-  onSwitchBot?: (botId: BotId) => void
+  onSwitchBot?: (botId: BotId, messages?: ChatMessageModel[]) => void
   onPropaganda?: (text: string) => Promise<void> 
 }
 
@@ -125,7 +128,12 @@ const ConversationPanel: FC<Props> = (props) => {
               name={props.bot.chatBotName ?? botName}
               fullName={props.bot.name}
               model={props.bot.modelName ?? 'Default'}
-              onSwitchBot={mode === 'compact' ? props.onSwitchBot : undefined}
+              onSwitchBot={mode === 'compact' ? (botId, messages) => {
+                console.log('ConversationPanel onSwitchBot called with messages:', props.messages);
+                // messagesが渡されていない場合は、props.messagesを使用
+                return props.onSwitchBot?.(botId, messages || props.messages);
+              } : undefined}
+              messages={props.messages} // messagesプロパティを渡す
             />
           </div>
           <WebAccessCheckbox botId={props.botId} />

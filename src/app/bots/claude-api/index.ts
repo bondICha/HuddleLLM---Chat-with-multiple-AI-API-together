@@ -4,8 +4,10 @@ import { requestHostPermission } from '~app/utils/permissions'
 import { ClaudeAPIModel, UserConfig } from '~services/user-config'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { parseSSEResponse } from '~utils/sse'
-import { AbstractBot, SendMessageParams } from '../abstract-bot'
+import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract-bot'
 import { file2base64 } from '../bing/utils'
+import { ChatMessageModel } from '~types'
+import { uuid } from '~utils'
 
 interface ChatMessage {
   role: string
@@ -20,6 +22,60 @@ const CONTEXT_SIZE = 40
 
 export abstract class AbstractClaudeApiBot extends AbstractBot {
   private conversationContext?: ConversationContext
+
+  // ConversationHistoryインターフェースの実装
+  public setConversationHistory(history: ConversationHistory): void {
+    if (history.messages && Array.isArray(history.messages)) {
+      // ChatMessageModelからChatMessageへの変換
+      const messages: ChatMessage[] = history.messages.map(msg => {
+        if (msg.author === 'user') {
+          return {
+            role: 'user',
+            content: msg.text
+          };
+        } else {
+          return {
+            role: 'assistant',
+            content: msg.text
+          };
+        }
+      });
+      
+      this.conversationContext = {
+        messages: messages
+      };
+    }
+  }
+
+  public getConversationHistory(): ConversationHistory | undefined {
+    if (!this.conversationContext) {
+      return undefined;
+    }
+    
+    // ChatMessageからChatMessageModelへの変換
+    const messages = this.conversationContext.messages.map(msg => {
+      const role = msg.role === 'user' ? 'user' : 'assistant';
+      let content = '';
+      
+      if (typeof msg.content === 'string') {
+        content = msg.content;
+      } else if (Array.isArray(msg.content)) {
+        // contentが配列の場合、typeがtextの要素からテキストを抽出
+        const textContent = msg.content.find(part => part.type === 'text');
+        if (textContent && 'text' in textContent) {
+          content = textContent.text || '';
+        }
+      }
+      
+      return {
+        id: uuid(),
+        author: role,
+        text: content
+      };
+    });
+    
+    return { messages };
+  }
 
   private buildUserMessage(prompt: string, imageUrl?: string): ChatMessage {
 
