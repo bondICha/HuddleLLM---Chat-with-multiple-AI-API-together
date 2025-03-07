@@ -319,6 +319,8 @@ export async function getUserConfig(): Promise<UserConfig> {
     delete result.rakutenApiKey
   }
   
+  // idプロパティに基づいて設定をソート
+  configs.sort((a, b) => (a.id || 0) - (b.id || 0));
   result.customApiConfigs = configs
   delete result.customApiConfigCount 
   if (!result.chatgptMode && result.openaiApiKey) {
@@ -372,13 +374,18 @@ export async function updateUserConfig(updates: Partial<UserConfig>) {
     delete updates.customApiConfigs // 元の配列は削除
 
     if (configs) {
+      // idプロパティに基づいて設定をソート
+      const sortedConfigs = [...configs].sort((a, b) => (a.id || 0) - (b.id || 0));
+      
       // 各設定を個別のキーとして保存
-      for (let i = 0; i < configs.length; i++) {
-        await Browser.storage.sync.set({ [`customApiConfig_${i}`]: configs[i] })
+      for (let i = 0; i < sortedConfigs.length; i++) {
+        // インデックスに基づいてidプロパティを更新
+        sortedConfigs[i].id = i + 1;
+        await Browser.storage.sync.set({ [`customApiConfig_${i}`]: sortedConfigs[i] })
       }
       // 設定の数を保存
-      await Browser.storage.sync.set({ customApiConfigCount: configs.length })
-      updateLocalCustomChatbotsVariable(configs)
+      await Browser.storage.sync.set({ customApiConfigCount: sortedConfigs.length })
+      updateLocalCustomChatbotsVariable(sortedConfigs)
     }
   }
 

@@ -1,4 +1,4 @@
-import { FC } from 'react'
+import { FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CustomAPIModel, UserConfig } from '~services/user-config'
 import { Input, Textarea } from '../Input'
@@ -66,7 +66,63 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 <div className="flex flex-wrap gap-2">
                     {userConfig.customApiConfigs.map((config, index) => (
                         <div key={index} className="min-w-[600px] flex-1 max-w-[800px] p-3 border border-gray-600 rounded-lg hover:shadow-lg transition-shadow space-y-4">
-                            <p className="font-semibold text-base mb-4">{t(`Custom Chatbot No. ${index + 1}`)}</p>
+                            <div className="flex justify-between items-center mb-4">
+                                <p className="font-semibold text-base">{t(`Custom Chatbot No. ${index + 1}`)}</p>
+                                <div className="flex gap-2">
+                                    <button 
+                                        className={`p-1 rounded ${index === 0 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-700'}`}
+                                        onClick={() => {
+                                            if (index > 0) {
+                                                const updatedConfigs = [...userConfig.customApiConfigs];
+                                                // 設定を入れ替え
+                                                [updatedConfigs[index - 1], updatedConfigs[index]] = [updatedConfigs[index], updatedConfigs[index - 1]];
+                                                // idプロパティも更新
+                                                if (updatedConfigs[index - 1].id !== undefined && updatedConfigs[index].id !== undefined) {
+                                                    [updatedConfigs[index - 1].id, updatedConfigs[index].id] = [updatedConfigs[index].id, updatedConfigs[index - 1].id];
+                                                } else {
+                                                    // idがない場合は新しく割り当て
+                                                    updatedConfigs.forEach((config, i) => {
+                                                        config.id = i + 1;
+                                                    });
+                                                }
+                                                updateConfigValue({ customApiConfigs: updatedConfigs });
+                                            }
+                                        }}
+                                        disabled={index === 0}
+                                        title={t('Move up')}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                            <path fillRule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z"/>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        className={`p-1 rounded ${index === userConfig.customApiConfigs.length - 1 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-700'}`}
+                                        onClick={() => {
+                                            if (index < userConfig.customApiConfigs.length - 1) {
+                                                const updatedConfigs = [...userConfig.customApiConfigs];
+                                                // 設定を入れ替え
+                                                [updatedConfigs[index], updatedConfigs[index + 1]] = [updatedConfigs[index + 1], updatedConfigs[index]];
+                                                // idプロパティも更新
+                                                if (updatedConfigs[index].id !== undefined && updatedConfigs[index + 1].id !== undefined) {
+                                                    [updatedConfigs[index].id, updatedConfigs[index + 1].id] = [updatedConfigs[index + 1].id, updatedConfigs[index].id];
+                                                } else {
+                                                    // idがない場合は新しく割り当て
+                                                    updatedConfigs.forEach((config, i) => {
+                                                        config.id = i + 1;
+                                                    });
+                                                }
+                                                updateConfigValue({ customApiConfigs: updatedConfigs });
+                                            }
+                                        }}
+                                        disabled={index === userConfig.customApiConfigs.length - 1}
+                                        title={t('Move down')}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                            <path fillRule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
 
                             <div className="space-y-4">
 
