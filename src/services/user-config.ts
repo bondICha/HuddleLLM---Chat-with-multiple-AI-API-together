@@ -1,7 +1,6 @@
 import { defaults } from 'lodash-es'
 import Browser from 'webextension-polyfill'
 import { BotId } from '~app/bots'
-import { ModelUpdateNote } from '~app/state'
 import { ALL_IN_ONE_PAGE_ID, CHATBOTS, CHATGPT_API_MODELS, DEFAULT_CHATGPT_SYSTEM_MESSAGE, DEFAULT_CLAUDE_SYSTEM_MESSAGE } from '~app/consts'
 import { CHATBOTS_UPDATED_EVENT } from '~app/consts'
 import defaultLogo from '~/assets/logos/CCLLM.png'
@@ -233,7 +232,6 @@ const defaultCustomApiConfigs: customApiConfig[] = [
 ]
 
 
-
 const userConfigWithDefaultValue = {
   openaiApiKey: '',
   openaiApiHost: 'https://api.openai.com',
@@ -364,110 +362,6 @@ export async function getUserConfig(): Promise<UserConfig> {
   return defaults(result, userConfigWithDefaultValue)
 }
 
-export const MODEL_UPDATE_MAPPINGS: Record<string, string[]> = {
-  'gpt-4o': ['OpenAI GPT o3-mini'],
-  'gpt-4o-mini': ['OpenAI GPT o3-mini'],
-  'gemini-1-5': [
-    'Gemini 2.0 Flash Thinking Mode Experimental',
-    'Gemini 2.0 Flash',
-    'Gemini 2.0 Pro',
-    'Gemini 2.0 Flash Experimental',
-    'Gemini 2.0 Pro Experimental',
-  ],
-  'claude-3-5': ['Claude 3.7 Sonnet'],
-  'RakutenAI-7B': ['RakutenAI-2.0-MoE']
-}
-
-export async function checkForModelUpdates(config: UserConfig): Promise<ModelUpdateNote[]> {
-  const updates: ModelUpdateNote[] = []
-  
-  // ストレージから直接ignoredModelsを取得
-  let ignoredModels: string[] = []
-  try {
-    // まずlocalStorageを確認（主要な保存場所）
-    const localResult = await Browser.storage.local.get('ignoredModels')
-    if (localResult.ignoredModels) {
-      if (typeof localResult.ignoredModels === 'string') {
-        try {
-          ignoredModels = JSON.parse(localResult.ignoredModels)
-        } catch (e) {
-          console.error('Failed to parse ignoredModels from local storage:', e)
-        }
-      } else if (Array.isArray(localResult.ignoredModels)) {
-        ignoredModels = localResult.ignoredModels
-        console.log('Loaded ignoredModels array from local storage:', ignoredModels)
-      }
-    }
-    
-    // localStorageになければsyncストレージを確認
-    if (ignoredModels.length === 0) {
-      const syncResult = await Browser.storage.sync.get('ignoredModels')
-      if (syncResult.ignoredModels) {
-        if (typeof syncResult.ignoredModels === 'string') {
-          try {
-            ignoredModels = JSON.parse(syncResult.ignoredModels)
-          } catch (e) {
-            console.error('Failed to parse ignoredModels from sync storage:', e)
-          }
-        } else if (Array.isArray(syncResult.ignoredModels)) {
-          ignoredModels = syncResult.ignoredModels
-        }
-      }
-    }
-  } catch (e) {
-    console.error('Failed to get ignoredModels from storage:', e)
-  }
-  
-
-  config.customApiConfigs.forEach((config) => {
-    // 現在のモデル名が無視リストに含まれているかチェック
-    const modelLower = config.model.toLowerCase()
-    
-    // 完全一致チェック
-    if (ignoredModels.some(ignored => {
-      const ignoredLower = typeof ignored === 'string' ? ignored.toLowerCase() : '';
-      return modelLower === ignoredLower;
-    })) {
-      console.log(`Skipping model ${config.model} - exact match in ignored list`)
-      return // このモデルをスキップ
-    }
-    
-    // MODEL_UPDATE_MAPPINGSのパターンに基づくチェック
-    for (const [oldPattern, newModels] of Object.entries(MODEL_UPDATE_MAPPINGS)) {
-      const patternLower = oldPattern.toLowerCase()
-      
-      // 部分一致でモデルを検出
-      if (modelLower.includes(patternLower)) {
-        // このパターンに一致するモデルが無視リストに含まれているかチェック
-        const isIgnored = ignoredModels.some(ignored => {
-          if (typeof ignored !== 'string') return false;
-          const ignoredLower = ignored.toLowerCase();
-          return (
-            ignoredLower.includes(patternLower) || 
-            patternLower.includes(ignoredLower) ||
-            modelLower === ignoredLower
-          );
-        });
-        
-        if (isIgnored) {
-          console.log(`Skipping model ${config.model} due to pattern match with ignored model`)
-          return // このモデルをスキップ
-        }
-        
-        updates.push({
-          oldModel: config.model,
-          newModels: newModels,
-          configId: config.id
-        })
-        console.log(`Found update for model: ${config.model} -> ${newModels[0]}`)
-        break // 一つのモデルに対して複数の更新を防ぐ
-      }
-    }
-  })
-  
-  console.log('Model updates found:', updates) // デバッグ用ログ
-  return updates
-}
 
 export async function updateUserConfig(updates: Partial<UserConfig>) {
   console.debug('update configs', updates)
