@@ -7,6 +7,7 @@ import { BotId } from '~app/bots';
 import { useEnabledBots } from '~app/hooks/use-enabled-bots';
 import { getUserConfig } from '~services/user-config';
 import { ChatMessageModel } from '~types';
+import Tooltip from '../components/Tooltip';
 
 // 履歴を引き継ぐかどうかの設定を保存するatom
 export const inheritHistoryAtom = atomWithStorage<boolean>('inheritHistory', true, undefined, { getOnInit: true });
@@ -85,7 +86,9 @@ const SwitchBotDropdown: FC<Props> = (props) => {
                 id="inheritHistory" 
                 className="mr-2"
               />
-              <label htmlFor="inheritHistory" className="text-xs text-primary-text">{t('履歴を引き継ぐ')}</label>
+              <Tooltip content={t('会話履歴に画像が含まれている場合、うまくいかないことがあります')}>
+                <label htmlFor="inheritHistory" className="text-xs text-primary-text cursor-help">{t('履歴を引き継ぐ')}</label>
+              </Tooltip>
             </div>
           </div>
           {enabledBots.map(({ botId, bot }) => {

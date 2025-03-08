@@ -152,4 +152,4 @@ export const DEFAULT_CHATGPT_SYSTEM_MESSAGE =
 export const DEFAULT_CLAUDE_SYSTEM_MESSAGE =
   'You are ChatGPT, a large language model trained by Anthropic. Current date: {current_date}' + DEFAULT_SYSTEM_MESSAGE
 
-export type Layout = 2 | 3 | 4 | 'imageInput' | 'twoVertical' | 'twoHorizon' | 'sixGrid' // twoVertical is deprecated
+export type Layout = 'single' | 2 | 3 | 4 | 'imageInput' | 'twoVertical' | 'twoHorizon' | 'sixGrid' // twoVertical is deprecated

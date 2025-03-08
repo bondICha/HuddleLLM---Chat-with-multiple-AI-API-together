@@ -124,7 +124,9 @@ const GeneralChatPanel: FC<{
           ? 'flex flex-col'
           : 'grid auto-rows-fr',
           'overflow-hidden grow',
-          chats.length % 3 === 0 ? 'grid-cols-3' : 'grid-cols-2',
+          chats.length === 1 
+            ? 'grid-cols-1' // 1つのモデルだけを表示する場合
+            : chats.length % 3 === 0 ? 'grid-cols-3' : 'grid-cols-2',
           // chats.length > 3 ? 'gap-1 mb-1' : 'gap-2 mb-2',
           'gap-1 mb-1',
         )}
@@ -291,6 +293,36 @@ const ImageInputPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessages
   />
 }
 
+// 1つのモデルだけを表示するパネル
+const singlePanelBotAtom = atomWithStorage<BotId>('singlePanelBot', DEFAULT_BOTS[0])
+
+const SingleBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessages }) => {
+  const [botId, setBotId] = useAtom(singlePanelBotAtom)
+  const [inheritHistory] = useAtom(inheritHistoryAtom)
+  
+  console.log('SingleBotChatPanel - botId:', botId);
+  console.log('SingleBotChatPanel - inheritHistory:', inheritHistory);
+  console.log('SingleBotChatPanel - previousMessages:', previousMessages);
+  
+  const chat = useChat(botId, inheritHistory ? previousMessages["0"] : undefined)
+  
+  const chats = useMemo(() => [chat], [chat])
+  
+  const setBots = useCallback((newBots: BotId[]) => {
+    if (newBots.length > 0) {
+      setBotId(newBots[0]);
+    }
+  }, [setBotId]);
+  
+  return <GeneralChatPanel 
+    chats={chats} 
+    setBots={setBots as any}
+    supportImageInput={true}
+    previousMessages={previousMessages}
+    setPreviousMessages={setPreviousMessages}
+  />
+}
+
 const MultiBotChatPanel: FC = () => {
   const layout = useAtomValue(layoutAtom)
   const [previousMessages, setPreviousMessages] = useAtom(previousMessagesAtom)
@@ -309,6 +341,9 @@ const MultiBotChatPanel: FC = () => {
   }
   if (layout === 'twoHorizon') {
     return <TwoHorizonBotChatPanel previousMessages={previousMessages} setPreviousMessages={setPreviousMessages} />
+  }
+  if (layout === 'single') {
+    return <SingleBotChatPanel previousMessages={previousMessages} setPreviousMessages={setPreviousMessages} />
   }
   return <TwoBotChatPanel previousMessages={previousMessages} setPreviousMessages={setPreviousMessages} />
 }
