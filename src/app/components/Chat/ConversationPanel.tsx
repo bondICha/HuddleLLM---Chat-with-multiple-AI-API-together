@@ -11,6 +11,7 @@ import { ConversationContext, ConversationContextValue } from '~app/context'
 import { ChatMessageModel } from '~types'
 import { BotId, BotInstance } from '../../bots'
 import Button from '../Button'
+import BotIcon from '../BotIcon'
 import HistoryDialog from '../History/Dialog'
 import ShareDialog from '../Share/Dialog'
 import Tooltip from '../Tooltip'
@@ -118,11 +119,16 @@ const ConversationPanel: FC<Props> = (props) => {
           )}
         >
           <div className="flex flex-row items-center">
-            <motion.img
-              src={botAvatar}
-              className="w-[18px] h-[18px] object-contain rounded-sm mr-2"
-              whileHover={{ rotate: 180 }}
+          <motion.div
+            className="mr-2"
+            whileHover={{ rotate: 180 }}
+          >
+            <BotIcon
+              iconName={botAvatar}
+              size={18}
+              className="object-contain rounded-sm"
             />
+          </motion.div>
             <ChatbotName
               botId={props.botId}
               name={props.bot.chatBotName ?? botName}

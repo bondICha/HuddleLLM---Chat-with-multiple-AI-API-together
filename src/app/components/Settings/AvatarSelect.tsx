@@ -1,178 +1,139 @@
-import { Menu, Transition } from '@headlessui/react'
-import { FC, Fragment, useState, useEffect } from 'react'
-import { ChevronUpDownIcon } from '@heroicons/react/20/solid'
-import Select from '../Select'
+import { FC, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import IconSelect from './IconSelect';
+import BotIcon from '../BotIcon';
+import { 
+  Claude, 
+  OpenAI, 
+  Gemini, 
+  Anthropic, 
+  Bing, 
+  Perplexity,
+  Mistral,
+  Ollama,
+  Grok
+} from '@lobehub/icons';
 
+// 従来のアイコンから@lobehub/iconsへのマッピング
+const iconMigrationMap = {
+  // 従来のアイコンパス → @lobehub/iconsの参照
+  'anthropic': 'Anthropic.Color',
+  'bard': 'Gemini.Color',
+  'bing': 'Bing.Color',
+  'chatgpt': 'OpenAI.Color',
+  'gemini': 'Gemini.Color',
+  'grok': 'Grok.Color',
+  'llama': 'Ollama.Color',
+  'mistral': 'Mistral.Color',
+  'perplexity': 'Perplexity.Color',
+  'claude': 'Claude.Color',
+};
 
-import ccllmLogo from '~/assets/logos/CCLLM.png'
-import alpacaLogo from '~/assets/logos/alpaca.png'
-import anthropicLogo from '~/assets/logos/anthropic.png'
-import baichuanLogo from '~/assets/logos/baichuan.png'
-import bardLogo from '~/assets/logos/bard.svg'
-import bingLogo from '~/assets/logos/bing.svg'
-import chatglmLogo from '~/assets/logos/chatglm.svg'
-import chatgptLogo from '~/assets/logos/chatgpt.svg'
-import chathubLogo from '~/assets/logos/chathub.svg'
-import dollyLogo from '~/assets/logos/dolly.png'
-import falconLogo from '~/assets/logos/falcon.jpeg'
-import geminiLogo from '~/assets/logos/gemini.svg'
-import grokLogo from '~/assets/logos/grok.png'
-import guanacoLogo from '~/assets/logos/guanaco.png'
-import koalaLogo from '~/assets/logos/koala.jpg'
-import llamaLogo from '~/assets/logos/llama.png'
-import mistralLogo from '~/assets/logos/mistral.png'
-import oasstLogo from '~/assets/logos/oasst.svg'
-import piLogo from '~/assets/logos/pi.png'
-import pplxLogo from '~/assets/logos/pplx.jpg'
-import qianwenLogo from '~/assets/logos/qianwen.png'
-import customLogo from '~/assets/logos/rakuten.svg'
-import rwkvLogo from '~/assets/logos/rwkv.png'
-import stablelmLogo from '~/assets/logos/stablelm.png'
-import vicunaLogo from '~/assets/logos/vicuna.jpg'
-import wizardlmLogo from '~/assets/logos/wizardlm.png'
-import xunfeiLogo from '~/assets/logos/xunfei.png'
-import yiLogo from '~/assets/logos/yi.svg'
-import hyperbolicLogo from '~/assets/logos/hyperbolic.svg'
-import deepseekLogo from '~/assets/logos/deepseek.svg'
-import sambaNovaLogo from '~/assets/logos/SambaNova.svg'
-
-
-
-// アバターの定義
-export const avatarMap = {
-  'HuddleLLM': ccllmLogo,
-  'alpaca': alpacaLogo,
-  'anthropic': anthropicLogo,
-  'baichuan': baichuanLogo,
-  'bard': bardLogo,
-  'bing': bingLogo,
-  'chatglm': chatglmLogo,
-  'chatgpt': chatgptLogo,
-  'chathub': chathubLogo,
-  'deepseek': deepseekLogo,
-  'dolly': dollyLogo,
-  'falcon': falconLogo,
-  'gemini': geminiLogo,
-  'grok': grokLogo,
-  'guanaco': guanacoLogo,
-  'hyperbolic': hyperbolicLogo,
-  'koala': koalaLogo,
-  'llama': llamaLogo,
-  'mistral': mistralLogo,
-  'oasst': oasstLogo,
-  'pi': piLogo,
-  'perplexity': pplxLogo,
-  'qianwen': qianwenLogo,
-  'custom': customLogo,
-  'rwkv': rwkvLogo,
-  'SambaNova': sambaNovaLogo,
-  'stablelm': stablelmLogo,
-  'vicuna': vicunaLogo,
-  'wizardlm': wizardlmLogo,
-  'xunfei': xunfeiLogo,
-  'yi': yiLogo,
-} as const
-
-// avatarMapのキーの型を定義
-export type AvatarKey = keyof typeof avatarMap;
-
-// オプションの生成
-const avatarOptions = Object.entries(avatarMap).map(([key, logo]) => ({
-  name: key,
-  icon: logo,
-}))
-
+// デフォルトアイコン
+const defaultIcon = 'OpenAI.Color';
 
 interface AvatarSelectProps {
-  value: string
-  onChange: (value: string) => void
+  value: string;
+  onChange: (value: string) => void;
 }
 
 const AvatarSelect: FC<AvatarSelectProps> = ({ value, onChange }) => {
-  const options = Object.entries(avatarMap).map(([key, icon]) => ({
-    value: icon,
-    name: key,
-    icon: icon,
-  }))
-
-  return (
-    <Select
-      options={options}
-      value={value}
-      onChange={onChange}
-      showIcon
-    />
-  )
-}
-
-export default AvatarSelect
-
-
-/*
-const AvatarSelect: FC<AvatarSelectProps> = ({ value, onChange }) => {
-  // デフォルト値の設定
-  const defaultAvatar = avatarMap['chathub']
-  const [currentValue, setCurrentValue] = useState(value || defaultAvatar)
-
-  useEffect(() => {
-    if (value && value !== currentValue) {
-      setCurrentValue(value)
+  const { t } = useTranslation();
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [currentIconValue, setCurrentIconValue] = useState(defaultIcon);
+  
+  // 従来のアイコンパスを@lobehub/iconsの参照に変換
+  const migrateIconValue = (oldValue: string) => {
+    // すでに@lobehub/iconsの形式（例: "Claude.Avatar"）の場合はそのまま返す
+    if (oldValue && oldValue.includes('.')) {
+      return oldValue;
     }
-  }, [value])
-
-  // 現在選択されているアイコンを取得
-  const currentLogo = currentValue || chathubLogo
-  const currentName = avatarOptions.find(option => option.icon   === currentValue)?.name || 'Chathub'
-
+    
+    // 従来のアイコンパスの場合、マッピングを使用して変換
+    for (const [oldKey, newValue] of Object.entries(iconMigrationMap)) {
+      if (oldValue && oldValue.includes(oldKey)) {
+        return newValue;
+      }
+    }
+    
+    // マッピングが見つからない場合はデフォルトを返す
+    return defaultIcon;
+  };
+  
+  // コンポーネントがマウントされた時に初期値を設定
+  useEffect(() => {
+    setCurrentIconValue(migrateIconValue(value));
+  }, [value]);
+  
+  // アイコン名を取得（表示用）
+  const getIconDisplayName = (iconValue: string) => {
+    if (!iconValue) return 'Default';
+    
+    const parts = iconValue.split('.');
+    const provider = parts[0];
+    const variant = parts[1] || 'Default';
+    
+    // OpenAI.Avatar:gpt4,square のような形式の場合、追加情報を取得
+    let additionalInfo = '';
+    if (iconValue.includes(':')) {
+      const options = iconValue.split(':')[1].split(',');
+      if (options.length > 0) {
+        additionalInfo = ` (${options.join(', ')})`;
+      }
+    }
+    
+    return variant === 'Default' ? provider : `${provider} ${variant}${additionalInfo}`;
+  };
+  
+  // アイコン変更時の処理
+  const handleIconChange = (newValue: string) => {
+    onChange(newValue);
+    setCurrentIconValue(newValue);
+    setIsSelectOpen(false);
+  };
+  
   return (
-    <Menu as="div" className="relative inline-block text-left w-full">
-      <div>
-        <Menu.Button className="relative w-full cursor-default rounded-md bg-white pl-3 pr-10 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:outline-none text-sm py-1.5">
-    <div className="flex items-center gap-2">
-            <img src={currentLogo} alt="" className="w-5 h-5" />
-            <span className="block truncate">{currentName}</span>
-          </div>
-          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-            <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-          </span>
-        </Menu.Button>
-      </div>
-
-      <Transition
-        as={Fragment}
-        enter="transition ease-out duration-100"
-        enterFrom="transform opacity-0 scale-95"
-        enterTo="transform opacity-100 scale-100"
-        leave="transition ease-in duration-75"
-        leaveFrom="transform opacity-100 scale-100"
-        leaveTo="transform opacity-0 scale-95"
+    <div className="flex flex-col gap-2">
+      {/* アイコン表示部分 */}
+      <div 
+        className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 relative group"
+        onClick={() => setIsSelectOpen(!isSelectOpen)}
       >
-        <Menu.Items className="absolute z-10 mt-1 max-h-120 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-          {avatarOptions.map((option) => (
-            <Menu.Item key={option.icon}>
-              {({ active }) => (
-                <div
-                  className={`${
-                    active ? 'bg-primary-blue text-white' : 'text-[#303030]'
-                  } cursor-pointer select-none relative py-2 pl-3 pr-9 flex items-center gap-2`}
-                  onClick={() => {
-                    setCurrentValue(option.icon)
-                    onChange(option.icon)
-                  }}
-                >
-                  <img src={option.icon} alt="" className="w-5 h-5" />
-                  <span className={`block truncate ${currentValue === option.icon ? 'font-semibold' : 'font-normal'}`}>
-                    {option.name}
-                  </span>
+        <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
+          <BotIcon iconName={currentIconValue} size={36} />
+        </div>
+        <div className="flex flex-col flex-1 min-w-0">
+          <span className="font-medium truncate">{getIconDisplayName(currentIconValue)}</span>
+          <span className="text-sm text-gray-500">{t('Current icon')}</span>
+        </div>
+        
+        {/* マウスオーバー時に表示されるヒント */}
+        <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+          <span className="text-white font-medium">{t('Click to select model')}</span>
+        </div>
+      </div>
+      
+      {/* アイコン選択パネル */}
+      {isSelectOpen && (
+        <div className="border rounded-lg p-4 bg-white dark:bg-gray-800 shadow-lg max-w-full overflow-x-auto">
+          <IconSelect
+            value={currentIconValue}
+            onChange={handleIconChange}
+          />
+          
+          <div className="flex justify-end mt-4">
+            <button 
+              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
+              onClick={() => setIsSelectOpen(false)}
+              type="button"
+            >
+              {t('Cancel')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
-              )}
-            </Menu.Item>
-          ))}
-        </Menu.Items>
-      </Transition>
-    </Menu>
-  )
-}
+  );
+};
 
-export default AvatarSelect
-*/
+export default AvatarSelect;

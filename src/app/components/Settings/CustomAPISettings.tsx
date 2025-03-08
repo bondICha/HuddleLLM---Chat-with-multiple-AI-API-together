@@ -8,7 +8,7 @@ import Blockquote from './Blockquote'
 import Range from '../Range'
 import Switch from '~app/components/Switch'
 import AvatarSelect from './AvatarSelect'
-import { avatarMap, type AvatarKey } from './AvatarSelect'
+import BotIcon from '../BotIcon'
 
 
 interface Props {
@@ -18,11 +18,20 @@ interface Props {
 
 const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     const { t } = useTranslation()
+    const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
 
     const formRowClass = "grid grid-cols-[1fr_3fr] items-center gap-4"
     // const formRowClass = "grid grid-cols-[200px_1fr] items-center gap-4"
     const labelClass = "font-medium text-sm text-right"
     const inputContainerClass = "flex-1"
+
+    // セクションの展開/折りたたみを切り替える関数
+    const toggleSection = (index: number) => {
+        setExpandedSections(prev => ({
+            ...prev,
+            [index]: !prev[index]
+        }));
+    };
 
     return (
         <div className="flex flex-col gap-4">
@@ -125,198 +134,221 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
 
                             <div className="space-y-4">
-
-
-
-                                {/* Name Row */}
-                                <div className={formRowClass}>
-                                    <p className={labelClass}>{t('Custom Chatbot Name')}</p>
-                                    <div className="flex gap-1">
-                                        <Input
-                                            className="flex-1"
-                                            value={config.name}
-                                            onChange={(e) => {
-                                                const updatedConfigs = [...userConfig.customApiConfigs]
-                                                updatedConfigs[index].name = e.currentTarget.value
-                                                updateConfigValue({ customApiConfigs: updatedConfigs })
-                                            }}
-                                        />
-                                        <div className="w-[80px]">
+                                {/* 基本設定セクション（常に表示） */}
+                                <div className="space-y-4">
+                                    {/* Name Row */}
+                                    <div className={formRowClass}>
+                                        <p className={labelClass}>{t('Custom Chatbot Name')}</p>
+                                        <div className="flex gap-1">
                                             <Input
-                                                className='w-full'
-                                                value={config.shortName}
-                                                placeholder="5char"
-                                                maxLength={5}
+                                                className="flex-1"
+                                                value={config.name}
                                                 onChange={(e) => {
                                                     const updatedConfigs = [...userConfig.customApiConfigs]
-                                                    updatedConfigs[index].shortName = e.currentTarget.value
+                                                    updatedConfigs[index].name = e.currentTarget.value
+                                                    updateConfigValue({ customApiConfigs: updatedConfigs })
+                                                }}
+                                            />
+                                            <div className="w-[80px]">
+                                                <Input
+                                                    className='w-full'
+                                                    value={config.shortName}
+                                                    placeholder="5char"
+                                                    maxLength={5}
+                                                    onChange={(e) => {
+                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                        updatedConfigs[index].shortName = e.currentTarget.value
+                                                        updateConfigValue({ customApiConfigs: updatedConfigs })
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Avatar */}
+                                    <div className={formRowClass}>
+                                        <p className={labelClass}>{t('Avatar')}</p>
+                                        <div className="flex flex-col gap-2">
+                                            <AvatarSelect
+                                                value={config.avatar}
+                                                onChange={(value) => {
+                                                    const updatedConfigs = [...userConfig.customApiConfigs]
+                                                    updatedConfigs[index].avatar = value
                                                     updateConfigValue({ customApiConfigs: updatedConfigs })
                                                 }}
                                             />
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Avatar */}
-                                <div className={formRowClass}>
-                                    <p className={labelClass}>{t('Avatar')}</p>
-                                    <AvatarSelect
-                                        value={config.avatar}
-                                        onChange={(value) => {
-                                            const updatedConfigs = [...userConfig.customApiConfigs]
-                                            updatedConfigs[index].avatar = value
-                                            updateConfigValue({ customApiConfigs: updatedConfigs })
-                                        }}
-                                    />
-                                </div>
-
-                                {/* Model Selection */}
-                                <div className={formRowClass}>
-                                    <p className={labelClass}>{t('AI Model')}</p>
-                                    <div className="grid grid-cols-2 gap-4"> {/* formRowClassを削除し、2列グリッドに変更 */}
-                                        <div>
-                                            <p className="text-sm text-gray-300 mb-1">{t('Choose a model')}</p>
-                                            <Select
-                                            options={Object.entries(CustomAPIModel).map(([k, v]) => ({ name: k, value: v }))}
-                                            value={Object.values(CustomAPIModel).includes(config.model as CustomAPIModel) ? config.model : 'custom'}
-                                            onChange={(v) => {
-                                                const updatedConfigs = [...userConfig.customApiConfigs]
-                                                updatedConfigs[index].model = v
-                                                updateConfigValue({ customApiConfigs: updatedConfigs })
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-300 mb-1">{t('Or enter model name manually')}</p>
-                                            <Input
-                                                className='w-full'
-                                                placeholder="Custom model name (optional)"
-                                                value={config.model}
-                                                onChange={(e) => {
+                                    {/* Model Selection */}
+                                    <div className={formRowClass}>
+                                        <p className={labelClass}>{t('AI Model')}</p>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-sm text-gray-300 mb-1">{t('Choose a model')}</p>
+                                                <Select
+                                                options={Object.entries(CustomAPIModel).map(([k, v]) => ({ name: k, value: v }))}
+                                                value={Object.values(CustomAPIModel).includes(config.model as CustomAPIModel) ? config.model : 'custom'}
+                                                onChange={(v) => {
                                                     const updatedConfigs = [...userConfig.customApiConfigs]
-                                                    updatedConfigs[index].model = e.currentTarget.value
+                                                    updatedConfigs[index].model = v
                                                     updateConfigValue({ customApiConfigs: updatedConfigs })
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* API Host */}
-                                <div className={formRowClass}>
-                                    <p className={labelClass}>API Host</p>
-                                    <div className={inputContainerClass}>
-                                        <Input
-                                            className='w-full'
-                                            placeholder="Leave blank to use API Host (Common)"
-                                            value={config.host}
-                                            onChange={(e) => {
-                                                const updatedConfigs = [...userConfig.customApiConfigs]
-                                                updatedConfigs[index].host = e.currentTarget.value
-                                                updateConfigValue({ customApiConfigs: updatedConfigs })
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-
-
-                                {/* API Key */}
-                                <div className={formRowClass}>
-                                    <p className={labelClass}>API Key</p>
-                                    <div className={inputContainerClass}>
-                                        <Input
-                                            className='w-full'
-                                            placeholder="Leave blank to use common API Key"
-                                            value={config.apiKey}
-                                            onChange={(e) => {
-                                                const updatedConfigs = [...userConfig.customApiConfigs]
-                                                updatedConfigs[index].apiKey = e.currentTarget.value
-                                                updateConfigValue({ customApiConfigs: updatedConfigs })
-                                            }}
-                                            type="password"
-                                        />
-                                    </div>
-                                </div>
-
-
-
-                                {/* Thinking Mode Toggle */}
-                                <div className={formRowClass}>
-                                    <p className={labelClass}>{t('Thinking Mode')}</p>
-                                    <div className="flex items-center gap-3">
-                                        <Switch
-                                            checked={config.thinkingMode ?? false}
-                                            onChange={(enabled) => {
-                                                const updatedConfigs = [...userConfig.customApiConfigs]
-                                                updatedConfigs[index].thinkingMode = enabled
-                                                updateConfigValue({ customApiConfigs: updatedConfigs })
-                                            }}
-                                        />
-                                        <span className="text-sm font-medium">
-                                            {config.thinkingMode ? t('Enabled') : t('Disabled')}
-                                        </span>
-                                        <div className="relative group">
-                                            <span className="cursor-help text-gray-400">ⓘ</span>
-                                            <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
-                                                {t('Currently only supported by Claude(Bedrock)')}
+                                                    }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-300 mb-1">{t('Or enter model name manually')}</p>
+                                                <Input
+                                                    className='w-full'
+                                                    placeholder="Custom model name (optional)"
+                                                    value={config.model}
+                                                    onChange={(e) => {
+                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                        updatedConfigs[index].model = e.currentTarget.value
+                                                        updateConfigValue({ customApiConfigs: updatedConfigs })
+                                                    }}
+                                                />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Conditional rendering based on Thinking Mode */}
-                                {config.thinkingMode ? (
-                                    <div className={formRowClass}>
-                                        <p className={labelClass}>{t('Thinking Budget')}</p>
-                                        <div className={inputContainerClass}>
-                                            <Range
-                                                value={config.thinkingBudget ?? 2000}
-                                                onChange={(value) => {
-                                                    const updatedConfigs = [...userConfig.customApiConfigs]
-                                                    updatedConfigs[index].thinkingBudget = value
-                                                    updateConfigValue({ customApiConfigs: updatedConfigs })
-                                                }}
-                                                min={2000}
-                                                max={32000}
-                                                step={1000}
-                                            />
-                                            <div className="text-sm text-right mt-1">{config.thinkingBudget} tokens</div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className={formRowClass}>
-                                        <p className={labelClass}>{t('Temperature')}</p>
-                                        <div className={inputContainerClass}>
-                                            <Range
-                                                value={config.temperature}
-                                                onChange={(value) => {
-                                                    const updatedConfigs = [...userConfig.customApiConfigs]
-                                                    updatedConfigs[index].temperature = value
-                                                    updateConfigValue({ customApiConfigs: updatedConfigs })
-                                                }}
-                                                min={0}
-                                                max={2}
-                                                step={0.1}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
+                                {/* 詳細設定セクション（展開可能） */}
+                                <div className="border-t pt-3">
+                                    <button
+                                        className="flex items-center gap-2 w-full text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+                                        onClick={() => toggleSection(index)}
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="16"
+                                            height="16"
+                                            fill="currentColor"
+                                            viewBox="0 0 16 16"
+                                            className={`transition-transform ${expandedSections[index] ? 'rotate-90' : ''}`}
+                                        >
+                                            <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" />
+                                        </svg>
+                                        {t('Advanced Settings')}
+                                    </button>
 
-                                {/* System Message */}
-                                <div className={formRowClass}>
-                                    <p className={labelClass}>{t('System Message')}</p>
-                                    <div className={inputContainerClass}>
-                                        <Textarea
-                                            className='w-full'
-                                            maxRows={5}
-                                            value={config.systemMessage || DEFAULT_CHATGPT_SYSTEM_MESSAGE}
-                                            onChange={(e) => {
-                                                const updatedConfigs = [...userConfig.customApiConfigs]
-                                                updatedConfigs[index].systemMessage = e.currentTarget.value
-                                                updateConfigValue({ customApiConfigs: updatedConfigs })
-                                            }}
-                                        />
-                                    </div>
+                                    {expandedSections[index] && (
+                                        <div className="mt-3 space-y-4">
+                                            {/* API Host */}
+                                            <div className={formRowClass}>
+                                                <p className={labelClass}>API Host</p>
+                                                <div className={inputContainerClass}>
+                                                    <Input
+                                                        className='w-full'
+                                                        placeholder="Leave blank to use API Host (Common)"
+                                                        value={config.host}
+                                                        onChange={(e) => {
+                                                            const updatedConfigs = [...userConfig.customApiConfigs]
+                                                            updatedConfigs[index].host = e.currentTarget.value
+                                                            updateConfigValue({ customApiConfigs: updatedConfigs })
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* API Key */}
+                                            <div className={formRowClass}>
+                                                <p className={labelClass}>API Key</p>
+                                                <div className={inputContainerClass}>
+                                                    <Input
+                                                        className='w-full'
+                                                        placeholder="Leave blank to use common API Key"
+                                                        value={config.apiKey}
+                                                        onChange={(e) => {
+                                                            const updatedConfigs = [...userConfig.customApiConfigs]
+                                                            updatedConfigs[index].apiKey = e.currentTarget.value
+                                                            updateConfigValue({ customApiConfigs: updatedConfigs })
+                                                        }}
+                                                        type="password"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Thinking Mode Toggle */}
+                                            <div className={formRowClass}>
+                                                <p className={labelClass}>{t('Thinking Mode')}</p>
+                                                <div className="flex items-center gap-3">
+                                                    <Switch
+                                                        checked={config.thinkingMode ?? false}
+                                                        onChange={(enabled) => {
+                                                            const updatedConfigs = [...userConfig.customApiConfigs]
+                                                            updatedConfigs[index].thinkingMode = enabled
+                                                            updateConfigValue({ customApiConfigs: updatedConfigs })
+                                                        }}
+                                                    />
+                                                    <span className="text-sm font-medium">
+                                                        {config.thinkingMode ? t('Enabled') : t('Disabled')}
+                                                    </span>
+                                                    <div className="relative group">
+                                                        <span className="cursor-help text-gray-400">ⓘ</span>
+                                                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
+                                                            {t('Currently only supported by Claude(Bedrock)')}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Conditional rendering based on Thinking Mode */}
+                                            {config.thinkingMode ? (
+                                                <div className={formRowClass}>
+                                                    <p className={labelClass}>{t('Thinking Budget')}</p>
+                                                    <div className={inputContainerClass}>
+                                                        <Range
+                                                            value={config.thinkingBudget ?? 2000}
+                                                            onChange={(value) => {
+                                                                const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                updatedConfigs[index].thinkingBudget = value
+                                                                updateConfigValue({ customApiConfigs: updatedConfigs })
+                                                            }}
+                                                            min={2000}
+                                                            max={32000}
+                                                            step={1000}
+                                                        />
+                                                        <div className="text-sm text-right mt-1">{config.thinkingBudget} tokens</div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className={formRowClass}>
+                                                    <p className={labelClass}>{t('Temperature')}</p>
+                                                    <div className={inputContainerClass}>
+                                                        <Range
+                                                            value={config.temperature}
+                                                            onChange={(value) => {
+                                                                const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                updatedConfigs[index].temperature = value
+                                                                updateConfigValue({ customApiConfigs: updatedConfigs })
+                                                            }}
+                                                            min={0}
+                                                            max={2}
+                                                            step={0.1}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* System Message */}
+                                            <div className={formRowClass}>
+                                                <p className={labelClass}>{t('System Message')}</p>
+                                                <div className={inputContainerClass}>
+                                                    <Textarea
+                                                        className='w-full'
+                                                        maxRows={5}
+                                                        value={config.systemMessage || DEFAULT_CHATGPT_SYSTEM_MESSAGE}
+                                                        onChange={(e) => {
+                                                            const updatedConfigs = [...userConfig.customApiConfigs]
+                                                            updatedConfigs[index].systemMessage = e.currentTarget.value
+                                                            updateConfigValue({ customApiConfigs: updatedConfigs })
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

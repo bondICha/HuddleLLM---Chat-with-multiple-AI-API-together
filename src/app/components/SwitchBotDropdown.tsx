@@ -7,6 +7,7 @@ import { BotId } from '~app/bots';
 import { useEnabledBots } from '~app/hooks/use-enabled-bots';
 import { getUserConfig } from '~services/user-config';
 import { ChatMessageModel } from '~types';
+import BotIcon from './BotIcon';
 import Tooltip from '../components/Tooltip';
 
 // 履歴を引き継ぐかどうかの設定を保存するatom
@@ -109,7 +110,7 @@ const SwitchBotDropdown: FC<Props> = (props) => {
                   }}
                 >
                   <div className="w-4 h-4">
-                    <img src={botInfo?.avatar ?? bot.avatar} className="w-4 h-4" />
+                    <BotIcon iconName={botInfo?.avatar ?? bot.avatar} size={16} />
                   </div>
                   <p className="text-sm whitespace-nowrap">{botInfo?.name ?? bot.name}</p>
                 </div>

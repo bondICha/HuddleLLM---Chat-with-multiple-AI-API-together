@@ -5,7 +5,6 @@ import { ClaudeApiBot } from './claude-api';
 import { getUserConfig, customApiConfig } from '~/services/user-config';
 import { ChatError, ErrorCode } from '~utils/errors';
 import { BedrockApiBot } from './bedrock-api';
-import { config } from 'process';
 
 export class CustomBot extends AsyncAbstractBot {
     private customBotNumber: number;
@@ -52,6 +51,10 @@ export class CustomBot extends AsyncAbstractBot {
 
     get chatBotName() {
         return this.config?.name
+    }
+
+    get avatar() {
+        return this.config?.avatar
     }
 
     async sendMessage(params: MessageParams) {

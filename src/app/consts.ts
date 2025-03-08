@@ -24,115 +24,115 @@ import { getUserConfig } from '~services/user-config'
 export let CHATBOTS: Record<BotId, { name: string; avatar: string }> = {
   chatgpt: {
     name: 'ChatGPT',
-    avatar: chatgptLogo,
+    avatar: 'OpenAI.Color',
   },
   claude: {
     name: 'Claude',
-    avatar: claudeLogo,
+    avatar: 'Claude.Color',
   },
   gemini: {
     name: 'Gemini Advanced',
-    avatar: geminiLogo,
+    avatar: 'Gemini.Color',
   },
   bard: {
     name: 'Bard',
-    avatar: bardLogo,
+    avatar: 'Gemini.Color',
   },
   bing: {
     name: 'Bing',
-    avatar: bingLogo,
+    avatar: 'Bing.Color',
   },
   perplexity: {
     name: 'Perplexity',
-    avatar: pplxLogo,
+    avatar: 'Perplexity.Color',
   },
   llama: {
     name: 'Llama 2',
-    avatar: llamaLogo,
+    avatar: 'Ollama.Color',
   },
   mistral: {
     name: 'Mixtral',
-    avatar: mistralLogo,
+    avatar: 'Mistral.Color',
   },
   vicuna: {
     name: 'Vicuna',
-    avatar: vicunaLogo,
+    avatar: 'Ollama.Color',
   },
   falcon: {
     name: 'Falcon',
-    avatar: falconLogo,
+    avatar: 'Ollama.Color',
   },
   grok: {
     name: 'Grok',
-    avatar: grokLogo,
+    avatar: 'Grok.Color',
   },
   pi: {
     name: 'Pi',
-    avatar: piLogo,
+    avatar: 'Anthropic.Color',
   },
   wizardlm: {
     name: 'WizardLM',
-    avatar: wizardlmLogo,
+    avatar: 'Ollama.Color',
   },
   chatglm: {
     name: 'ChatGLM2',
-    avatar: chatglmLogo,
+    avatar: 'Ollama.Color',
   },
   xunfei: {
     name: 'iFlytek Spark',
-    avatar: xunfeiLogo,
+    avatar: 'Anthropic.Color',
   },
   qianwen: {
     name: 'Qianwen',
-    avatar: qianwenLogo,
+    avatar: 'Anthropic.Color',
   },
   baichuan: {
     name: 'Baichuan',
-    avatar: baichuanLogo,
+    avatar: 'Anthropic.Color',
   },
   yi: {
     name: 'Yi-Chat',
-    avatar: yiLogo,
+    avatar: 'Anthropic.Color',
   },
   'customchat1': {
     name: 'customchat1',
-    avatar: chathubLogo,
+    avatar: 'OpenAI.Color',
   },
   'customchat2': {
     name: 'customchat2',
-    avatar: chathubLogo,
+    avatar: 'OpenAI.Color',
   },
   'customchat3': {
     name: 'customchat3',
-    avatar: chathubLogo,
+    avatar: 'OpenAI.Color',
   },
   'customchat4': {
     name: 'customchat4',
-    avatar: chathubLogo,
+    avatar: 'OpenAI.Color',
   },
   'customchat5': {
     name: 'customchat5',
-    avatar: chathubLogo,
+    avatar: 'OpenAI.Color',
   },
   'customchat6': {
     name: 'customchat6',
-    avatar: chathubLogo,
+    avatar: 'OpenAI.Color',
   },
   'customchat7': {
     name: 'customchat7',
-    avatar: chathubLogo,
+    avatar: 'OpenAI.Color',
   },
   'customchat8': {
     name: 'customchat8',
-    avatar: chathubLogo,
+    avatar: 'OpenAI.Color',
   },
   'customchat9': {
     name: 'customchat9',
-    avatar: chathubLogo,
+    avatar: 'OpenAI.Color',
   },
   'customchat10': {
-    name: 'customchat9',
-    avatar: chathubLogo,
+    name: 'customchat10',
+    avatar: 'OpenAI.Color',
   },
 }
 
