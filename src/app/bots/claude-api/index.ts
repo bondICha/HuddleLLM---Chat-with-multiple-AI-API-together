@@ -247,7 +247,7 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
   }
 
   get name() {
-    return `Claude (API/${this.config.claudeApiModel})`
+    return `Claude (API)`
   }
 
   get supportsImageInput() {

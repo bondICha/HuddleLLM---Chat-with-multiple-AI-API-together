@@ -240,7 +240,7 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
   }
 
   get name() {
-    return `Gemini (${this.config.geminiApiModel})`
+    return `Gemini (API)`
   }
 }
 
