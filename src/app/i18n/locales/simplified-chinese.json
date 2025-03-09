@@ -138,7 +138,7 @@
   "to": "更改为",
   "Recommended Models": "推荐模型",
   "Ignore This Time": "本次忽略",
-  "Never Show Again": "不再显示",
+  "ReleaseNote-HideUntilNextVersion": "在下一个版本前不再显示",
   "MODEL_UPDATE_WARNING": "检测到过时的模型。你可以更新模型。\n请注意，模型更新可能需要更改端点。\n如果您使用的是公司提供的API，请参阅公司文档。",
   "Featured icons": "推荐图标",
   "Claude Icons": "Claude图标",
@@ -151,5 +151,7 @@
   "Built-in Icons": "内置图标",
   "Enter image URL (jpg, png, svg, gif)": "输入图片URL (jpg, png, svg, gif格式)",
   "Apply": "确认",
-  "Preview": "预览"
+  "Preview": "预览",
+  "ReleaseNote-Close": "关闭",
+  "ReleaseNote-ShowAgain": "下次启动时再次显示"
 }

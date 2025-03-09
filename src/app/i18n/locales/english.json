@@ -19,7 +19,6 @@
     "to": "to",
     "Recommended Models": "Recommended Models",
     "Ignore This Time": "Ignore This Time",
-    "Never Show Again": "Never Show Again",
     "MODEL_UPDATE_WARNING": "Outdated models detected. We recommend updating your models.\nPlease note that model updates may require endpoint changes.\nIf you're using company-provided APIs, please refer to your company's documentation.",
     "Featured icons": "Featured icons",
     "Claude Icons": "Claude Icons",
@@ -32,5 +31,8 @@
     "Built-in Icons": "Built-in Icons",
     "Enter image URL (jpg, png, svg, gif)": "Enter image URL (jpg, png, svg, gif)",
     "Apply": "Apply",
-    "Preview": "Preview"
+    "Preview": "Preview",
+    "ReleaseNote-Close": "Close",
+    "ReleaseNote-ShowAgain": "Show again next time",
+    "ReleaseNote-HideUntilNextVersion": "Don't Show Until Next Version"
 }

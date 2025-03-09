@@ -45,10 +45,16 @@ const RELEASE_NOTES = [
   },
 ]
 
+// バージョンを現在のバージョンとして記録する関数
+export async function markCurrentVersionAsRead(): Promise<void> {
+  const version = getVersion()
+  await Browser.storage.sync.set({ lastCheckReleaseNotesVersion: version })
+}
+
 export async function checkReleaseNotes(): Promise<string[]> {
   const version = getVersion()
   const { lastCheckReleaseNotesVersion } = await Browser.storage.sync.get('lastCheckReleaseNotesVersion')
-  Browser.storage.sync.set({ lastCheckReleaseNotesVersion: version })
+  // バージョン記録の更新は行わない（markCurrentVersionAsRead関数に移動）
   if (!lastCheckReleaseNotesVersion) {
     return []
   }
