@@ -1,5 +1,4 @@
 import React, { memo } from 'react';
-import chathubLogo from '~/assets/logo.png';
 import OpenAILogo from './logos/OpenAILogos';
 import ClaudeLogo from './logos/ClaudeLogos';
 
@@ -23,6 +22,29 @@ import vicunaLogo from '~/assets/logos/vicuna.jpg';
 import wizardlmLogo from '~/assets/logos/wizardlm.png';
 import xunfeiLogo from '~/assets/logos/xunfei.png';
 import yiLogo from '~/assets/logos/yi.svg';
+import chathubLogo from '~/assets/logos/chathub.svg';
+import alpacaLogo from '~/assets/logos/alpaca.png';
+import deepseekLogo from '~/assets/logos/deepseek.svg';
+import dollyLogo from '~/assets/logos/dolly.png';
+import guanacoLogo from '~/assets/logos/guanaco.png';
+import hyperbolicLogo from '~/assets/logos/hyperbolic.svg';
+import koalaLogo from '~/assets/logos/koala.jpg';
+import oasstLogo from '~/assets/logos/oasst.svg';
+import rwkvLogo from '~/assets/logos/rwkv.png';
+import stablelmLogo from '~/assets/logos/stablelm.png';
+import sambaNovaLogo from '~/assets/logos/SambaNova.svg';
+import huddleLLMLogo from '~/assets/logos/HuddleLLM.png';
+
+// 特殊フォーマットのアイコンID用マッピング
+const specialFormatMap: Record<string, string> = {
+  'Anthropic.Color': claudeLogo,
+  'Gemini.Color': geminiLogo,
+  'Llama.Color': llamaLogo,
+  'Mistral.Color': mistralLogo,
+  'Perplexity.Color': pplxLogo,
+  'Bing.Color': bingLogo,
+  'Bard.Color': bardLogo
+};
 
 // アイコン名からイメージへのマッピング
 const iconMap: Record<string, string> = {
@@ -33,9 +55,12 @@ const iconMap: Record<string, string> = {
   'bing': bingLogo,
   'chatglm': chatglmLogo,
   'chatgpt': chatgptLogo,
+  'chathub': chathubLogo,
+  'deepseek': deepseekLogo,
   'openai': chatgptLogo,
   'falcon': falconLogo,
   'gemini': geminiLogo,
+  'gemini-png': geminiLogo,
   'grok': grokLogo,
   'llama': llamaLogo,
   'ollama': llamaLogo,
@@ -48,6 +73,16 @@ const iconMap: Record<string, string> = {
   'wizardlm': wizardlmLogo,
   'xunfei': xunfeiLogo,
   'yi': yiLogo,
+  'alpaca': alpacaLogo,
+  'dolly': dollyLogo,
+  'guanaco': guanacoLogo,
+  'hyperbolic': hyperbolicLogo,
+  'koala': koalaLogo,
+  'oasst': oasstLogo,
+  'rwkv': rwkvLogo,
+  'stablelm': stablelmLogo,
+  'sambanova': sambaNovaLogo,
+  'huddlellm': huddleLLMLogo,
 };
 
 // 安全なアイコン表示のための検証関数
@@ -122,13 +157,17 @@ const BotIcon: React.FC<BotIconProps> = ({ iconName, size = 24, className = '' }
       const style = iconName.split('.')[1]?.toLowerCase();
       
       // スタイル名をOpenAIStylesの形式に変換
-      let openAIStyle = 'black'; // デフォルト
-      
-      if (style === 'black') openAIStyle = 'black';
-      else if (style === 'green') openAIStyle = 'green';
-      else if (style === 'purple') openAIStyle = 'purple';
-      else if (style === 'yellow') openAIStyle = 'yellow';
-      else if (style === 'blacksquare' || style === 'square') openAIStyle = 'black-square';
+     let openAIStyle = 'black'; // デフォルト
+     
+     if (style === 'black') openAIStyle = 'black';
+     else if (style === 'green') openAIStyle = 'green';
+     else if (style === 'purple') openAIStyle = 'purple';
+     else if (style === 'yellow') openAIStyle = 'yellow';
+     else if (style === 'blacksquare' || style === 'square') openAIStyle = 'black-square';
+     else if (style === 'simpleblack') openAIStyle = 'simple-black';
+     else if (style === 'simplegreen') openAIStyle = 'simple-green';
+     else if (style === 'simplepurple') openAIStyle = 'simple-purple';
+     else if (style === 'simpleyellow') openAIStyle = 'simple-yellow';
       
       // サーバーサイドレンダリングの場合など、OpenAILogoが使えない環境ではfallback
       if (typeof window === 'undefined' || !OpenAILogo) {
@@ -170,6 +209,19 @@ const BotIcon: React.FC<BotIconProps> = ({ iconName, size = 24, className = '' }
       }
       
       return <ClaudeLogo size={size} style={claudeStyle} className={className} />;
+    }
+
+    // 特殊フォーマット ID を直接チェック（例：'Anthropic.Color'）
+    if (specialFormatMap[iconName]) {
+      return (
+        <img
+          src={specialFormatMap[iconName]}
+          alt={iconName}
+          style={{ width: size, height: size, objectFit: 'contain' }}
+          className={className}
+          title={iconName}
+        />
+      );
     }
 
     // 'provider.variant'形式を処理（例：'Claude.Color'）

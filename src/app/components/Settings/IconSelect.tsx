@@ -45,12 +45,11 @@ interface IconOption {
 
 import OpenAILogo from '../logos/OpenAILogos';
 import ClaudeLogo from '../logos/ClaudeLogos';
-import AnthropicLogo from '../logos/AnthropicLogos';
 
 // 主要アイコン（先頭に表示）
 const featuredIcons: IconOption[] = [
   { id: 'Anthropic.Color', name: 'Anthropic', src: claudeLogo },
-  { id: 'chatgptLogo', name: 'ChatGPT', src: chatgptLogo,},
+  { id: 'chatgpt', name: 'ChatGPT', src: chatgptLogo },
   { id: 'deepseek', name: 'DeepSeek', src: deepseekLogo },
   { id: 'Gemini.Color', name: 'Gemini', src: geminiLogo },
   { id: 'Llama.Color', name: 'Llama', src: llamaLogo },
@@ -58,7 +57,7 @@ const featuredIcons: IconOption[] = [
   { id: 'Perplexity.Color', name: 'Perplexity', src: pplxLogo },
   { id: 'Bing.Color', name: 'Bing', src: bingLogo },
   { id: 'Rakuten', name: 'Rakuten', src: rakutenLogo },
-  
+  { id: 'Bard.Color', name: 'Bard', src: bardLogo }
 ];
 
 // OpenAIアイコンのバリエーション - 全バリエーションをまとめて表示
@@ -92,7 +91,7 @@ const otherIcons: IconOption[] = [
   { id: 'dolly', name: 'Dolly', src: dollyLogo },
   { id: 'falcon', name: 'Falcon', src: falconLogo },
   { id: 'gemini-png', name: 'Gemini (PNG)', src: geminiPngLogo },
-  { id: 'Grok.Color', name: 'Grok', src: grokLogo },
+  { id: 'grok', name: 'Grok', src: grokLogo },
   { id: 'guanaco', name: 'Guanaco', src: guanacoLogo },
   { id: 'huddlellm', name: 'HuddleLLM', src: huddleLLMLogo },
   { id: 'hyperbolic', name: 'Hyperbolic', src: hyperbolicLogo },
@@ -185,13 +184,13 @@ const IconSelect: FC<IconSelectProps> = ({ value, onChange }) => {
   
   return (
     <div className="flex flex-col gap-4">
-      {/* OpenAIアイコン */}
+      {/* 主要アイコン */}
       <section className="mb-6">
-        <h3 className="font-medium mb-2 text-sm text-gray-700 dark:text-gray-300">{t('OpenAI Icons')}</h3>
+        <h3 className="font-medium mb-2 text-sm text-gray-700 dark:text-gray-300">{t('Featured icons')}</h3>
         
-        {/* OpenAIアイコングリッド（すべてのバリエーション） */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          {openaiIcons.map(icon => renderOpenAIItem(icon, 40))}
+        {/* 主要アイコングリッド */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {featuredIcons.map(icon => renderIconItem(icon))}
         </div>
       </section>
 
@@ -205,15 +204,17 @@ const IconSelect: FC<IconSelectProps> = ({ value, onChange }) => {
         </div>
       </section>
 
-      {/* 主要アイコン */}
+      {/* OpenAIアイコン */}
       <section className="mb-6">
-        <h3 className="font-medium mb-2 text-sm text-gray-700 dark:text-gray-300">{t('Featured icons')}</h3>
+        <h3 className="font-medium mb-2 text-sm text-gray-700 dark:text-gray-300">{t('OpenAI Icons')}</h3>
         
-        {/* 主要アイコングリッド */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
-          {featuredIcons.map(icon => renderIconItem(icon))}
+        {/* OpenAIアイコングリッド（すべてのバリエーション） */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          {openaiIcons.map(icon => renderOpenAIItem(icon, 40))}
         </div>
       </section>
+
+
 
       {/* その他のアイコン */}
       <section>
