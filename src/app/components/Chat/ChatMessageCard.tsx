@@ -68,7 +68,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
   const [messageHeight, setMessageHeight] = useState(0)
   const [confirmationStage, setConfirmationStage] = useState<ConfirmationStage>('none')
   const messageRef = useRef<HTMLDivElement>(null)
-  const timerRef = useRef<number | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { t } = useTranslation()
 
 
