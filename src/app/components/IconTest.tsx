@@ -1,157 +1,160 @@
-import { FC, useEffect, useState } from 'react';
-import * as AllIcons from '@lobehub/icons';
+import React, { useState } from 'react';
+import BotIcon from './BotIcon';
+import IconSelect from './Settings/IconSelect';
+import { Input } from './Input';
+import OpenAILogo from './logos/OpenAILogos';
+import ClaudeLogo from './logos/ClaudeLogos';
+import AnthropicLogo from './logos/AnthropicLogos';
 
-// 型アサーションを使用してインデックスアクセスを可能にする
-const IconLibrary = AllIcons as Record<string, any>;
-
-// 問題のあるアイコンのリスト（IまたはMから始まるモデルを含む）
-const problematicIcons: string[] = [];
-
-
-const IconTest: FC = () => {
-  const [iconNames, setIconNames] = useState<string[]>([]);
-  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
-  const [variants, setVariants] = useState<string[]>([]);
-  const [errorLog, setErrorLog] = useState<string[]>([]);
-
-  useEffect(() => {
-    // @lobehub/iconsから利用可能なアイコン名を取得
-    const names = Object.keys(IconLibrary).filter(key => 
-      typeof IconLibrary[key] === 'function' || 
-      typeof IconLibrary[key] === 'object'
-    );
-    setIconNames(names);
-  }, []);
-
-  useEffect(() => {
-    if (selectedIcon && IconLibrary[selectedIcon]) {
-      const icon = IconLibrary[selectedIcon];
-      const variantNames = Object.keys(icon).filter(key => 
-        typeof icon[key] === 'function' || 
-        typeof icon[key] === 'object'
-      );
-      setVariants(['Default', ...variantNames]);
-    } else {
-      setVariants([]);
-    }
-  }, [selectedIcon]);
-
-  // 安全にアイコンをレンダリングする関数
-  const renderIconSafely = (iconName: string, variant: string) => {
-    try {
-      const IconComponent = variant === 'Default' 
-        ? IconLibrary[iconName] 
-        : IconLibrary[iconName][variant];
-      
-      if (!IconComponent) {
-        throw new Error(`Component not found: ${iconName}.${variant}`);
-      }
-      
-      return (
-        <div className="flex flex-col items-center">
-          <div style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <IconComponent size={32} style={{ maxWidth: '100%', maxHeight: '100%' }} />
-          </div>
-          <span className="mt-1">{variant}</span>
-        </div>
-      );
-    } catch (error) {
-      console.error(`Error rendering ${iconName}.${variant}:`, error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      setErrorLog(prev => [...prev, `Error: ${iconName}.${variant} - ${errorMessage}`]);
-      return (
-        <div className="flex flex-col items-center">
-          <div style={{ width: 32, height: 32, backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: '10px', color: 'red' }}>Error</span>
-          </div>
-          <span className="mt-1">{variant}</span>
-        </div>
-      );
+const IconTest: React.FC = () => {
+  const [selectedIcon, setSelectedIcon] = useState('OpenAI.Black');
+  const [customIconUrl, setCustomIconUrl] = useState('');
+  
+  const handleCustomIconApply = () => {
+    if (customIconUrl) {
+      setSelectedIcon(customIconUrl);
     }
   };
 
-  // 問題のあるアイコンをフィルタリングする
-  const filterIcons = (filter: string) => {
-    if (filter === 'all') {
-      return iconNames;
-    } else if (filter === 'problematic') {
-      return iconNames.filter(name => problematicIcons.includes(name));
-    } else if (filter === 'i-m') {
-      return iconNames.filter(name => name.startsWith('I') || name.startsWith('M'));
-    }
-    return iconNames;
-  };
-
-  const [filter, setFilter] = useState<'all' | 'problematic' | 'i-m'>('all');
-  const filteredIcons = filterIcons(filter);
-
+  // OpenAIのアイコンバリエーション
+  const openAIVariants = [
+    { name: 'Black', value: 'OpenAI.Black' },
+    { name: 'Green', value: 'OpenAI.Green' },
+    { name: 'Purple', value: 'OpenAI.Purple' },
+    { name: 'Yellow', value: 'OpenAI.Yellow' },
+    { name: 'Square', value: 'OpenAI.BlackSquare' },
+  ];
+  
+  // Claudeのアイコンバリエーション
+  const claudeVariants = [
+    { name: 'Orange', value: 'Claude.Orange' },
+    { name: 'Orange Square', value: 'Claude.OrangeSquare' },
+    { name: 'Purple', value: 'Claude.Purple' },
+    { name: 'Purple Square', value: 'Claude.PurpleSquare' },
+    { name: 'Black', value: 'Claude.Black' },
+  ];
+  
+  // Anthropicのアイコンバリエーション
+  const anthropicVariants = [
+    { name: 'Purple', value: 'Anthropic.Purple' },
+    { name: 'Black', value: 'Anthropic.Black' },
+    { name: 'Blue', value: 'Anthropic.Blue' },
+    { name: 'Purple Square', value: 'Anthropic.PurpleSquare' },
+    { name: 'Black Square', value: 'Anthropic.BlackSquare' },
+    { name: 'Blue Square', value: 'Anthropic.BlueSquare' },
+  ];
+  
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <h2 className="text-xl font-bold">Icon Test</h2>
+    <div className="flex flex-col gap-4 p-4 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold">アイコンテスト</h1>
       
-      <div className="flex gap-2">
-        <button
-          className={`px-2 py-1 border rounded ${filter === 'all' ? 'bg-blue-500 text-white' : ''}`}
-          onClick={() => setFilter('all')}
-        >
-          All Icons
-        </button>
-        <button
-          className={`px-2 py-1 border rounded ${filter === 'problematic' ? 'bg-blue-500 text-white' : ''}`}
-          onClick={() => setFilter('problematic')}
-        >
-          Problematic Icons
-        </button>
-        <button
-          className={`px-2 py-1 border rounded ${filter === 'i-m' ? 'bg-blue-500 text-white' : ''}`}
-          onClick={() => setFilter('i-m')}
-        >
-          I/M Icons
-        </button>
+      <div className="flex flex-col gap-2">
+        <h2 className="text-xl">現在選択中のアイコン:</h2>
+        <div className="flex items-center gap-4 p-4 border rounded">
+          <BotIcon iconName={selectedIcon} size={64} />
+          <div>
+            <div className="font-medium">アイコン名: {selectedIcon}</div>
+            <div className="text-gray-500 text-sm">
+              大きさのバリエーション:
+              <div className="flex gap-2 mt-2">
+                <BotIcon iconName={selectedIcon} size={16} />
+                <BotIcon iconName={selectedIcon} size={24} />
+                <BotIcon iconName={selectedIcon} size={32} />
+                <BotIcon iconName={selectedIcon} size={48} />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Available Icons ({filteredIcons.length})</h3>
-        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-          {filteredIcons.map(name => (
-            <button
-              key={name}
-              className={`px-2 py-1 border rounded ${selectedIcon === name ? 'bg-blue-500 text-white' : ''} ${
-                problematicIcons.includes(name) ? 'border-red-500' : ''
+      {/* OpenAIアイコンのバリエーション */}
+      <div className="mt-4 p-4 border rounded">
+        <h2 className="text-xl mb-2">OpenAI アイコンバリエーション</h2>
+        <div className="grid grid-cols-5 gap-4">
+          {openAIVariants.map(variant => (
+            <div
+              key={variant.value}
+              className={`flex flex-col items-center gap-2 p-3 border rounded cursor-pointer ${
+                selectedIcon === variant.value ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'
               }`}
-              onClick={() => setSelectedIcon(name)}
+              onClick={() => setSelectedIcon(variant.value)}
             >
-              {name}
-            </button>
+              <BotIcon iconName={variant.value} size={48} />
+              <span className="text-sm">{variant.name}</span>
+            </div>
           ))}
         </div>
       </div>
-
-      {selectedIcon && (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Variants for {selectedIcon}</h3>
-          <div className="flex flex-wrap gap-4">
-            {variants.map(variant => renderIconSafely(selectedIcon, variant))}
-          </div>
-        </div>
-      )}
       
-      {errorLog.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Error Log</h3>
-          <div className="bg-red-50 p-2 rounded border border-red-200 max-h-40 overflow-y-auto">
-            {errorLog.map((error, index) => (
-              <div key={index} className="text-red-600 text-sm">{error}</div>
-            ))}
-          </div>
+      {/* Claudeアイコンのバリエーション */}
+      <div className="mt-4 p-4 border rounded">
+        <h2 className="text-xl mb-2">Claude アイコンバリエーション</h2>
+        <div className="grid grid-cols-5 gap-4">
+          {claudeVariants.map(variant => (
+            <div
+              key={variant.value}
+              className={`flex flex-col items-center gap-2 p-3 border rounded cursor-pointer ${
+                selectedIcon === variant.value ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+              }`}
+              onClick={() => setSelectedIcon(variant.value)}
+            >
+              <BotIcon iconName={variant.value} size={48} />
+              <span className="text-sm">{variant.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* Anthropicアイコンのバリエーション */}
+      <div className="mt-4 p-4 border rounded">
+        <h2 className="text-xl mb-2">Anthropic アイコンバリエーション</h2>
+        <div className="grid grid-cols-6 gap-4">
+          {anthropicVariants.map(variant => (
+            <div
+              key={variant.value}
+              className={`flex flex-col items-center gap-2 p-3 border rounded cursor-pointer ${
+                selectedIcon === variant.value ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+              }`}
+              onClick={() => setSelectedIcon(variant.value)}
+            >
+              <BotIcon iconName={variant.value} size={48} />
+              <span className="text-sm">{variant.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* カスタムアイコンURL入力 */}
+      <div className="mt-4 p-4 border rounded">
+        <h2 className="text-xl mb-2">カスタム画像URL:</h2>
+        <div className="flex gap-2 items-center">
+          <Input 
+            className="flex-1"
+            placeholder="https://example.com/icon.png"
+            value={customIconUrl}
+            onChange={(e) => setCustomIconUrl(e.currentTarget.value)}
+          />
           <button
-            className="mt-2 px-2 py-1 border rounded bg-red-100 hover:bg-red-200"
-            onClick={() => setErrorLog([])}
+            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            onClick={handleCustomIconApply}
+            disabled={!customIconUrl}
           >
-            Clear Errors
+            適用
           </button>
         </div>
-      )}
+        {customIconUrl && (
+          <div className="mt-2 p-2 border rounded flex justify-center">
+            <BotIcon iconName={customIconUrl} size={48} />
+          </div>
+        )}
+      </div>
+      
+      <div className="mt-4">
+        <h2 className="text-xl mb-2">アイコン選択:</h2>
+        <div className="border rounded p-4">
+          <IconSelect value={selectedIcon} onChange={setSelectedIcon} />
+        </div>
+      </div>
     </div>
   );
 };

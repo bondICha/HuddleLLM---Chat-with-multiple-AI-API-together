@@ -1,60 +1,113 @@
-import { FC, useState, useEffect, useRef } from 'react';
+import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
-import Fuse from 'fuse.js';
-import * as AllIcons from '@lobehub/icons';
-import RakutenSVG from '~/assets/logos/rakuten.svg';
+import BotIcon from '../BotIcon';
 
-// 型アサーションを使用してインデックスアクセスを可能にする
-const IconLibrary = AllIcons as Record<string, any>;
+// アイコンのインポート
+import claudeLogo from '~/assets/logos/anthropic.png';
+import baichuanLogo from '~/assets/logos/baichuan.png';
+import bardLogo from '~/assets/logos/bard.svg';
+import bingLogo from '~/assets/logos/bing.svg';
+import chatglmLogo from '~/assets/logos/chatglm.svg';
+import chatgptLogo from '~/assets/logos/chatgpt.svg';
+import falconLogo from '~/assets/logos/falcon.jpeg';
+import geminiLogo from '~/assets/logos/gemini.svg';
+import geminiPngLogo from '~/assets/logos/gemini.png';
+import grokLogo from '~/assets/logos/grok.png';
+import llamaLogo from '~/assets/logos/llama.png';
+import mistralLogo from '~/assets/logos/mistral.png';
+import piLogo from '~/assets/logos/pi.png';
+import pplxLogo from '~/assets/logos/pplx.jpg';
+import qianwenLogo from '~/assets/logos/qianwen.png';
+import rakutenLogo from '~/assets/logos/rakuten.svg';
+import vicunaLogo from '~/assets/logos/vicuna.jpg';
+import wizardlmLogo from '~/assets/logos/wizardlm.png';
+import xunfeiLogo from '~/assets/logos/xunfei.png';
+import yiLogo from '~/assets/logos/yi.svg';
+import chathubLogo from '~/assets/logos/chathub.svg';
+import alpacaLogo from '~/assets/logos/alpaca.png';
+import deepseekLogo from '~/assets/logos/deepseek.svg';
+import dollyLogo from '~/assets/logos/dolly.png';
+import guanacoLogo from '~/assets/logos/guanaco.png';
+import hyperbolicLogo from '~/assets/logos/hyperbolic.svg';
+import koalaLogo from '~/assets/logos/koala.jpg';
+import oasstLogo from '~/assets/logos/oasst.svg';
+import rwkvLogo from '~/assets/logos/rwkv.png';
+import stablelmLogo from '~/assets/logos/stablelm.png';
+import sambaNovaLogo from '~/assets/logos/SambaNova.svg';
+import huddleLLMLogo from '~/assets/logos/HuddleLLM.png';
 
-// 明示的にアイコンをマッピング（デフォルト表示用）
-const featuredProviders = [
-  'Claude',
-  'Anthropic',
-  'OpenAI',
-  'Gemini',
-  'Perplexity',
-  'Mistral',
-  'Rakuten', // カスタムアイコン
-  'DeepSeek'
+// アイコンオプションの定義
+interface IconOption {
+  id: string;
+  name: string;
+  src: string;
+}
+
+import OpenAILogo from '../logos/OpenAILogos';
+import ClaudeLogo from '../logos/ClaudeLogos';
+import AnthropicLogo from '../logos/AnthropicLogos';
+
+// 主要アイコン（先頭に表示）
+const featuredIcons: IconOption[] = [
+  { id: 'Anthropic.Color', name: 'Anthropic', src: claudeLogo },
+  { id: 'chatgptLogo', name: 'ChatGPT', src: chatgptLogo,},
+  { id: 'deepseek', name: 'DeepSeek', src: deepseekLogo },
+  { id: 'Gemini.Color', name: 'Gemini', src: geminiLogo },
+  { id: 'Llama.Color', name: 'Llama', src: llamaLogo },
+  { id: 'Mistral.Color', name: 'Mistral', src: mistralLogo },
+  { id: 'Perplexity.Color', name: 'Perplexity', src: pplxLogo },
+  { id: 'Bing.Color', name: 'Bing', src: bingLogo },
+  { id: 'Rakuten', name: 'Rakuten', src: rakutenLogo },
+  
 ];
 
-// 問題のあるアイコンのリスト（IまたはMから始まるモデルを含む）
-const problematicIcons = [
-  'Ideogram', 'IFlyTekCloud', 'InternLM'
+// OpenAIアイコンのバリエーション - 全バリエーションをまとめて表示
+const openaiIcons = [
+  { id: 'OpenAI.Black', name: 'OpenAI Black', style: 'black' },
+  { id: 'OpenAI.Green', name: 'OpenAI Green', style: 'green' },
+  { id: 'OpenAI.Purple', name: 'OpenAI Purple', style: 'purple' },
+  { id: 'OpenAI.Yellow', name: 'OpenAI Yellow', style: 'yellow' },
+  { id: 'OpenAI.BlackSquare', name: 'OpenAI Square', style: 'black-square' },
+  { id: 'OpenAI.SimpleBlack', name: 'OpenAI Simple Black', style: 'simple-black' },
+  { id: 'OpenAI.SimpleGreen', name: 'OpenAI Simple Green', style: 'simple-green' },
+  { id: 'OpenAI.SimplePurple', name: 'OpenAI Simple Purple', style: 'simple-purple' },
+  { id: 'OpenAI.SimpleYellow', name: 'OpenAI Simple Yellow', style: 'simple-yellow' },
 ];
 
-// OpenAI.Avatarの追加オプション
-const openAIAvatarTypes = ['gpt3', 'gpt4', 'o1'];
-const openAIAvatarShapes = ['circle', 'square'];
+// Claudeアイコンのバリエーション
+const claudeIcons = [
+  { id: 'Claude.Orange', name: 'Claude Orange', style: 'orange' },
+  { id: 'Claude.OrangeSquare', name: 'Claude Orange Square', style: 'orange-square' },
+  { id: 'Claude.Simple', name: 'Claude Simple (Color)', style: 'simple' },
+  { id: 'Claude.SimpleBlack', name: 'Claude Simple (Black)', style: 'simple-black' },
+];
 
-// 各プロバイダーのバリアント
-const getVariants = (provider: string) => {
-  // Rakutenの場合は特別処理
-  if (provider === 'Rakuten') {
-    return ['Default'];
-  }
-  
-  // プロバイダー名が有効かチェック
-  if (!IconLibrary[provider]) {
-    return ['Default'];
-  }
-  
-  const icon = IconLibrary[provider];
-  
-  const variants = ['Default'];
-  if ('Color' in icon) variants.push('Color');
-  if ('Text' in icon) variants.push('Text');
-  if ('Combine' in icon) variants.push('Combine');
-  if ('Avatar' in icon) variants.push('Avatar');
-  
-  return variants;
-};
-
-// 有効なプロバイダーかどうかをチェック
-const isValidProvider = (provider: string): boolean => {
-  return provider === 'Rakuten' || !!IconLibrary[provider];
-};
+// その他のアイコン
+const otherIcons: IconOption[] = [
+  { id: 'alpaca', name: 'Alpaca', src: alpacaLogo },
+  { id: 'baichuan', name: 'Baichuan', src: baichuanLogo },
+  { id: 'chatglm', name: 'ChatGLM', src: chatglmLogo },
+  { id: 'chathub', name: 'ChatHub', src: chathubLogo },
+  { id: 'deepseek', name: 'DeepSeek', src: deepseekLogo },
+  { id: 'dolly', name: 'Dolly', src: dollyLogo },
+  { id: 'falcon', name: 'Falcon', src: falconLogo },
+  { id: 'gemini-png', name: 'Gemini (PNG)', src: geminiPngLogo },
+  { id: 'Grok.Color', name: 'Grok', src: grokLogo },
+  { id: 'guanaco', name: 'Guanaco', src: guanacoLogo },
+  { id: 'huddlellm', name: 'HuddleLLM', src: huddleLLMLogo },
+  { id: 'hyperbolic', name: 'Hyperbolic', src: hyperbolicLogo },
+  { id: 'koala', name: 'Koala', src: koalaLogo },
+  { id: 'oasst', name: 'OASST', src: oasstLogo },
+  { id: 'pi', name: 'Pi', src: piLogo },
+  { id: 'qianwen', name: 'Qianwen', src: qianwenLogo },
+  { id: 'rwkv', name: 'RWKV', src: rwkvLogo },
+  { id: 'sambanova', name: 'SambaNova', src: sambaNovaLogo },
+  { id: 'stablelm', name: 'StableLM', src: stablelmLogo },
+  { id: 'vicuna', name: 'Vicuna', src: vicunaLogo },
+  { id: 'wizardlm', name: 'WizardLM', src: wizardlmLogo },
+  { id: 'xunfei', name: 'XunFei', src: xunfeiLogo },
+  { id: 'yi', name: 'Yi', src: yiLogo }
+];
 
 interface IconSelectProps {
   value: string;
@@ -63,516 +116,127 @@ interface IconSelectProps {
 
 const IconSelect: FC<IconSelectProps> = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
-  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(0);
-  const initializedRef = useRef(false);
   
-  // OpenAI.Avatar用の追加状態
-  const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [selectedShape, setSelectedShape] = useState<string | null>(null);
-  
-  // 現在の値を解析して初期状態を設定（マウント時のみ実行）
-  useEffect(() => {
-    if (!initializedRef.current && value) {
-      initializedRef.current = true;
-      
-      try {
-        const parts = value.split('.');
-        const provider = parts[0];
-        const variant = parts[1] || 'Default';
-        
-        // プロバイダーが有効かチェック
-        if (provider === 'Rakuten' || Object.keys(IconLibrary).includes(provider)) {
-          // 初期状態を設定（初期状態は選択画面を表示しないようにするためにnull）
-          setSelectedProvider(null);
-          setSelectedVariant(null);
-          
-          // OpenAI.Avatar用の追加パラメータを解析
-          if (provider === 'OpenAI' && variant === 'Avatar') {
-            const params = value.split(':');
-            if (params.length > 1) {
-              const options = params[1].split(',');
-              
-              // type
-              const typeOption = options.find(opt => openAIAvatarTypes.includes(opt));
-              if (typeOption) {
-                setSelectedType(typeOption);
-              }
-              
-              // shape
-              const shapeOption = options.find(opt => openAIAvatarShapes.includes(opt));
-              if (shapeOption) {
-                setSelectedShape(shapeOption);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing icon value:', error);
-      }
-    }
-  }, [value]);
-  
-  // 全アイコンプロバイダーのリスト（問題のあるアイコンを除外）
-  const allProviders = ['Rakuten', ...Object.keys(IconLibrary).filter(key => 
-    !problematicIcons.includes(key) && 
-    // IまたはMから始まるアイコンを除外（特に問題が発生しやすい）
-    !(key.startsWith('I') || key.startsWith('M'))
-  )].sort();
-  
-  // 検索機能
-  const filteredProviders = (() => {
-    let providers = allProviders;
+  // アイコンアイテムのレンダリング
+  const renderIconItem = (icon: IconOption, size = 32) => {
+    // 現在選択されているかどうかを判定
+    const isSelected = value === icon.id;
     
-    if (!searchTerm) {
-      // 検索がない場合は、featuredProvidersを先頭に表示
-      const nonFeatured = providers.filter(p => !featuredProviders.includes(p));
-      providers = [...featuredProviders, ...nonFeatured];
-    } else {
-      const fuse = new Fuse(providers, {
-        threshold: 0.3,
-      });
-      
-      providers = fuse.search(searchTerm).map(result => result.item);
-    }
-    
-    return providers;
-  })();
-  
-  // ページング
-  // 1ページ目はデフォルト表示の8個だけ、それ以降は16個ずつ
-  const getPageProviders = () => {
-    if (currentPage === 0 && !searchTerm) {
-      // 1ページ目で検索がない場合はfeaturedProvidersのみ
-      return filteredProviders.slice(0, featuredProviders.length);
-    } else {
-      // それ以外は12個ずつ（3列×4行）
-      const iconsPerPage = 12;
-      const startIndex = currentPage === 0 && !searchTerm 
-        ? featuredProviders.length 
-        : currentPage * iconsPerPage;
-      
-      // 配列の範囲外アクセスを防止
-      if (startIndex >= filteredProviders.length) {
-        return [];
-      }
-      
-      return filteredProviders.slice(startIndex, startIndex + iconsPerPage);
-    }
-  };
-  
-  const currentProviders = getPageProviders();
-  
-  // 総ページ数の計算
-  const getTotalPages = () => {
-    if (!searchTerm) {
-      // 検索がない場合
-      // 1ページ目はfeaturedProviders、残りは16個ずつ
-      const remainingProviders = filteredProviders.length - featuredProviders.length;
-      return remainingProviders > 0 
-        ? 1 + Math.ceil(remainingProviders / 16) 
-        : 1;
-    } else {
-      // 検索がある場合は16個ずつ
-      return Math.ceil(filteredProviders.length / 16);
-    }
-  };
-  
-  const totalPages = getTotalPages();
-  
-  // 選択されたプロバイダーのバリアントを取得
-  const variants = selectedProvider ? getVariants(selectedProvider) : [];
-  
-  // 現在の値を解析
-  const [currentProvider, currentVariant] = (() => {
-    if (!value) return [null, null];
-    const parts = value.split('.');
-    return [parts[0] || null, parts[1] || 'Default'];
-  })();
-  
-  // アイコンコンポーネントを取得
-  const getIconComponent = (provider: string, variant: string = 'Default', type?: string, shape?: string) => {
-    try {
-      // Rakutenの場合は特別処理
-      if (provider === 'Rakuten') {
-        // 関数コンポーネントを返す
-        return () => <img src={RakutenSVG} alt="Rakuten" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />;
-      }
-      
-      // プロバイダー名が有効かチェック
-      if (!IconLibrary[provider]) {
-        return null;
-      }
-      
-      const icon = IconLibrary[provider];
-      
-      // OpenAI.Avatarの特別処理
-      if (provider === 'OpenAI' && variant === 'Avatar') {
-        const AvatarIcon = icon[variant];
-        return (props: any) => <AvatarIcon {...props} type={type} shape={shape} />;
-      }
-      
-      if (variant === 'Default') {
-        return icon;
-      }
-      
-      // バリアントが存在するかチェック
-      if (variant in icon) {
-        return icon[variant];
-      }
-      
-      return null;
-    } catch (error) {
-      console.error(`Error getting icon component for ${provider}.${variant}:`, error);
-      return null;
-    }
-  };
-  
-  // 安全にアイコンをレンダリングする関数
-  const renderIcon = (provider: string, size: number = 32) => {
-    try {
-      if (!isValidProvider(provider)) {
-        return <div style={{ width: size, height: size, backgroundColor: '#f0f0f0' }} />;
-      }
-      
-      const IconComponent = getIconComponent(provider);
-      if (!IconComponent) {
-        return <div style={{ width: size, height: size, backgroundColor: '#f0f0f0' }} />;
-      }
-      
-      return (
-        <div style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <IconComponent size={size} style={{ maxWidth: '100%', maxHeight: '100%' }} />
+    return (
+      <div
+        key={icon.id}
+        className={`p-2 border rounded-md flex flex-col items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+          isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'
+        }`}
+        onClick={() => onChange(icon.id)}
+        title={icon.name}
+      >
+        <div className="flex items-center justify-center" style={{ width: size, height: size }}>
+          <img src={icon.src} alt={icon.name} style={{ maxWidth: '100%', maxHeight: '100%' }} />
         </div>
-      );
-    } catch (error) {
-      console.error(`Error rendering icon for ${provider}:`, error);
-      return <div style={{ width: size, height: size, backgroundColor: '#f0f0f0' }} />;
-    }
+        <span className="mt-1 text-xs truncate w-full text-center">{icon.name}</span>
+      </div>
+    );
   };
-  
-  // OpenAI.Avatarの追加オプションを選択した後のアイコン値を生成
-  const getOpenAIAvatarValue = () => {
-    let value = 'OpenAI.Avatar';
-    const options = [];
+
+  // OpenAIアイコンアイテムのレンダリング
+  const renderOpenAIItem = (icon: { id: string; name: string; style: string }, size = 32) => {
+    // 現在選択されているかどうかを判定
+    const isSelected = value === icon.id;
     
-    if (selectedType) {
-      options.push(selectedType);
-    }
-    
-    if (selectedShape) {
-      options.push(selectedShape);
-    }
-    
-    if (options.length > 0) {
-      value += ':' + options.join(',');
-    }
-    
-    return value;
+    return (
+      <div
+        key={icon.id}
+        className={`p-2 border rounded-md flex flex-col items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+          isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'
+        }`}
+        onClick={() => onChange(icon.id)}
+        title={icon.name}
+      >
+        <div className="flex items-center justify-center" style={{ width: size, height: size }}>
+          <OpenAILogo size={size} style={icon.style} />
+        </div>
+        <span className="mt-1 text-xs truncate w-full text-center">{icon.name}</span>
+      </div>
+    );
   };
-  
-  // 安全にアイコンをレンダリングするためのラッパー
-  const SafeIconRenderer = ({ provider }: { provider: string }) => {
-    try {
-      return (
-        <div className="p-2 border rounded flex flex-col items-center cursor-pointer hover:bg-gray-100">
-          {renderIcon(provider)}
-          <span className="mt-1 text-sm truncate w-full text-center">{provider}</span>
+
+  // Claudeアイコンアイテムのレンダリング
+  const renderClaudeItem = (icon: { id: string; name: string; style: string }, size = 32) => {
+    // 現在選択されているかどうかを判定
+    const isSelected = value === icon.id;
+    
+    return (
+      <div
+        key={icon.id}
+        className={`p-2 border rounded-md flex flex-col items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+          isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'
+        }`}
+        onClick={() => onChange(icon.id)}
+        title={icon.name}
+      >
+        <div className="flex items-center justify-center" style={{ width: size, height: size }}>
+          <ClaudeLogo size={size} style={icon.style} />
         </div>
-      );
-    } catch (error) {
-      console.error(`Error in SafeIconRenderer for ${provider}:`, error);
-      return (
-        <div className="p-2 border rounded flex flex-col items-center cursor-pointer hover:bg-gray-100">
-          <div style={{ width: 32, height: 32, backgroundColor: '#f0f0f0' }} />
-          <span className="mt-1 text-sm truncate w-full text-center">{provider}</span>
-        </div>
-      );
-    }
+        <span className="mt-1 text-xs truncate w-full text-center">{icon.name}</span>
+      </div>
+    );
   };
   
   return (
     <div className="flex flex-col gap-4">
-      {/* 検索バー */}
-      <div className="relative">
-        <input
-          type="text"
-          className="w-full p-2 border rounded"
-          placeholder={t('Search icons...')}
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(0); // 検索時はページをリセット
-          }}
-        />
+      {/* OpenAIアイコン */}
+      <section className="mb-6">
+        <h3 className="font-medium mb-2 text-sm text-gray-700 dark:text-gray-300">{t('OpenAI Icons')}</h3>
+        
+        {/* OpenAIアイコングリッド（すべてのバリエーション） */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          {openaiIcons.map(icon => renderOpenAIItem(icon, 40))}
+        </div>
+      </section>
+
+      {/* Claudeアイコン */}
+      <section className="mb-6">
+        <h3 className="font-medium mb-2 text-sm text-gray-700 dark:text-gray-300">{t('Claude Icons')}</h3>
+        
+        {/* Claudeアイコングリッド */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {claudeIcons.map(icon => renderClaudeItem(icon, 40))}
+        </div>
+      </section>
+
+      {/* 主要アイコン */}
+      <section className="mb-6">
+        <h3 className="font-medium mb-2 text-sm text-gray-700 dark:text-gray-300">{t('Featured icons')}</h3>
+        
+        {/* 主要アイコングリッド */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {featuredIcons.map(icon => renderIconItem(icon))}
+        </div>
+      </section>
+
+      {/* その他のアイコン */}
+      <section>
+        <h3 className="font-medium mb-2 text-sm text-gray-700 dark:text-gray-300">{t('Other icons')}</h3>
+        
+        {/* スクロール可能なコンテナ */}
+        <div className="max-h-72 overflow-y-auto pr-2 pb-2 custom-scrollbar">
+          <div className="grid grid-cols-4 gap-3">
+            {otherIcons.map(icon => renderIconItem(icon, 32))}
+          </div>
+        </div>
+      </section>
+      
+      {/* 選択したアイコンの表示 */}
+      <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+        <div className="text-sm font-medium mb-2">{t('Selected icon')}:</div>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-700 rounded-md">
+            <BotIcon iconName={value} size={32} />
+          </div>
+          <div className="text-sm truncate">{value || 'ChatGPT'}</div>
+        </div>
       </div>
-      
-      {/* プロバイダー選択（ステップ1） */}
-      {!selectedProvider && (
-        <>
-          <div className="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto">
-            {currentProviders.length > 0 ? (
-              currentProviders.map(provider => (
-                <div
-                  key={provider}
-                  className={`p-2 border rounded flex flex-col items-center cursor-pointer hover:bg-gray-100 ${
-                    provider === currentProvider ? 'border-blue-500 bg-blue-50' : ''
-                  }`}
-                  onClick={() => setSelectedProvider(provider)}
-                >
-                  {renderIcon(provider)}
-                  <span className="mt-1 text-sm truncate w-full text-center">{provider}</span>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-4 p-4 text-center text-gray-500">
-                {t('No icons found')}
-              </div>
-            )}
-          </div>
-          
-          {/* ページネーション */}
-          {totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-2">
-              <button
-                className="px-2 py-1 border rounded disabled:opacity-50"
-                onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-                disabled={currentPage === 0}
-                type="button"
-              >
-                {t('Previous')}
-              </button>
-              <span className="px-2 py-1">
-                {currentPage + 1} / {totalPages}
-              </span>
-              <button
-                className="px-2 py-1 border rounded disabled:opacity-50"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-                disabled={currentPage === totalPages - 1}
-                type="button"
-              >
-                {t('Next')}
-              </button>
-            </div>
-          )}
-        </>
-      )}
-      
-      {/* バリアント選択（ステップ2） */}
-      {selectedProvider && !selectedVariant && (
-        <>
-          <div className="flex justify-between items-center">
-            <h3 className="font-medium">{t('Select variant for')} {selectedProvider}</h3>
-            <button
-              className="text-blue-500"
-              onClick={() => setSelectedProvider(null)}
-              type="button"
-            >
-              {t('Back to providers')}
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4">
-            {variants.map(variant => {
-              try {
-                const IconComponent = getIconComponent(selectedProvider, variant);
-                
-                const handleClick = () => {
-                  if (selectedProvider === 'OpenAI' && variant === 'Avatar') {
-                    // OpenAI.Avatarの場合は追加オプションを選択するためにバリアントを保存
-                    setSelectedVariant(variant);
-                  } else {
-                    // それ以外の場合は直接アイコンを選択
-                    const iconValue = variant === 'Default' 
-                      ? selectedProvider 
-                      : `${selectedProvider}.${variant}`;
-                    onChange(iconValue);
-                  }
-                };
-                
-                const iconValue = variant === 'Default' 
-                  ? selectedProvider 
-                  : `${selectedProvider}.${variant}`;
-                
-                return (
-                  <div
-                    key={variant}
-                    className={`p-3 border rounded flex flex-col items-center cursor-pointer hover:bg-gray-100 ${
-                      iconValue === value ? 'border-blue-500 bg-blue-50' : ''
-                    }`}
-                    onClick={handleClick}
-                  >
-                    {IconComponent ? (
-                      <div style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <IconComponent size={48} style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                      </div>
-                    ) : (
-                      <div style={{ width: 48, height: 48, backgroundColor: '#f0f0f0' }} />
-                    )}
-                    <span className="mt-2">{variant}</span>
-                  </div>
-                );
-              } catch (error) {
-                console.error(`Error rendering variant ${variant} for ${selectedProvider}:`, error);
-                return (
-                  <div
-                    key={variant}
-                    className="p-3 border rounded flex flex-col items-center cursor-pointer hover:bg-gray-100"
-                  >
-                    <div style={{ width: 48, height: 48, backgroundColor: '#f0f0f0' }} />
-                    <span className="mt-2">{variant}</span>
-                  </div>
-                );
-              }
-            })}
-          </div>
-        </>
-      )}
-      
-      {/* OpenAI.Avatar用の追加オプション選択（ステップ3） */}
-      {selectedProvider === 'OpenAI' && selectedVariant === 'Avatar' && (
-        <>
-          <div className="flex justify-between items-center">
-            <h3 className="font-medium">{t('OpenAI Avatar Options')}</h3>
-            <button
-              className="text-blue-500"
-              onClick={() => setSelectedVariant(null)}
-              type="button"
-            >
-              {t('Back to variants')}
-            </button>
-          </div>
-          
-          {/* Type選択 */}
-          <div>
-            <h4 className="font-medium mb-2">{t('Select Type')}</h4>
-            <div className="grid grid-cols-3 gap-4">
-              <div
-                className={`p-3 border rounded flex flex-col items-center cursor-pointer hover:bg-gray-100 ${
-                  selectedType === null ? 'border-blue-500 bg-blue-50' : ''
-                }`}
-                onClick={() => setSelectedType(null)}
-              >
-                {(() => {
-                  try {
-                    return (
-                      <div style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <IconLibrary.OpenAI.Avatar size={48} style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                      </div>
-                    );
-                  } catch (error) {
-                    console.error('Error rendering OpenAI.Avatar:', error);
-                    return <div style={{ width: 48, height: 48, backgroundColor: '#f0f0f0' }} />;
-                  }
-                })()}
-                <span className="mt-2">Default</span>
-              </div>
-              
-              {openAIAvatarTypes.map(type => {
-                try {
-                  const IconComponent = IconLibrary.OpenAI.Avatar;
-                  return (
-                    <div
-                      key={type}
-                      className={`p-3 border rounded flex flex-col items-center cursor-pointer hover:bg-gray-100 ${
-                        selectedType === type ? 'border-blue-500 bg-blue-50' : ''
-                      }`}
-                      onClick={() => setSelectedType(type)}
-                    >
-                      <div style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <IconComponent size={48} type={type} style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                      </div>
-                      <span className="mt-2">{type}</span>
-                    </div>
-                  );
-                } catch (error) {
-                  console.error(`Error rendering OpenAI.Avatar with type ${type}:`, error);
-                  return (
-                    <div
-                      key={type}
-                      className="p-3 border rounded flex flex-col items-center cursor-pointer hover:bg-gray-100"
-                    >
-                      <div style={{ width: 48, height: 48, backgroundColor: '#f0f0f0' }} />
-                      <span className="mt-2">{type}</span>
-                    </div>
-                  );
-                }
-              })}
-            </div>
-          </div>
-          
-          {/* Shape選択 */}
-          <div>
-            <h4 className="font-medium mb-2">{t('Select Shape')}</h4>
-            <div className="grid grid-cols-3 gap-4">
-              <div
-                className={`p-3 border rounded flex flex-col items-center cursor-pointer hover:bg-gray-100 ${
-                  selectedShape === null ? 'border-blue-500 bg-blue-50' : ''
-                }`}
-                onClick={() => setSelectedShape(null)}
-              >
-                {(() => {
-                  try {
-                    return (
-                      <div style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <IconLibrary.OpenAI.Avatar size={48} type={selectedType || undefined} style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                      </div>
-                    );
-                  } catch (error) {
-                    console.error('Error rendering OpenAI.Avatar:', error);
-                    return <div style={{ width: 48, height: 48, backgroundColor: '#f0f0f0' }} />;
-                  }
-                })()}
-                <span className="mt-2">Default (Circle)</span>
-              </div>
-              
-              {openAIAvatarShapes.map(shape => {
-                try {
-                  const IconComponent = IconLibrary.OpenAI.Avatar;
-                  return (
-                    <div
-                      key={shape}
-                      className={`p-3 border rounded flex flex-col items-center cursor-pointer hover:bg-gray-100 ${
-                        selectedShape === shape ? 'border-blue-500 bg-blue-50' : ''
-                      }`}
-                      onClick={() => setSelectedShape(shape)}
-                    >
-                      <div style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <IconComponent size={48} type={selectedType || undefined} shape={shape} style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                      </div>
-                      <span className="mt-2">{shape}</span>
-                    </div>
-                  );
-                } catch (error) {
-                  console.error(`Error rendering OpenAI.Avatar with shape ${shape}:`, error);
-                  return (
-                    <div
-                      key={shape}
-                      className="p-3 border rounded flex flex-col items-center cursor-pointer hover:bg-gray-100"
-                    >
-                      <div style={{ width: 48, height: 48, backgroundColor: '#f0f0f0' }} />
-                      <span className="mt-2">{shape}</span>
-                    </div>
-                  );
-                }
-              })}
-            </div>
-          </div>
-          
-          {/* 確定ボタン */}
-          <div className="flex justify-end mt-4">
-            <button
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              onClick={() => onChange(getOpenAIAvatarValue())}
-              type="button"
-            >
-              {t('Confirm Selection')}
-            </button>
-          </div>
-        </>
-      )}
     </div>
   );
 };

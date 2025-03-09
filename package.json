@@ -51,7 +51,6 @@
     "@google/generative-ai": "^0.21.0",
     "@headlessui/react": "^1.7.17",
     "@heroicons/react": "^2.1.1",
-    "@lobehub/icons": "^1.80.0",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@sentry/integrations": "^7.90.0",
     "@sentry/react": "^7.90.0",

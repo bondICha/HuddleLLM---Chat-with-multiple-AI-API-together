@@ -1,105 +1,224 @@
-import { FC } from 'react';
-// 必要なアイコンをインポート
-import * as AllIcons from '@lobehub/icons';
-import RakutenSVG from '~/assets/logos/rakuten.svg';
+import React, { memo } from 'react';
+import chathubLogo from '~/assets/logo.png';
+import OpenAILogo from './logos/OpenAILogos';
+import ClaudeLogo from './logos/ClaudeLogos';
+
+// アイコンのインポート
+import claudeLogo from '~/assets/logos/anthropic.png';
+import baichuanLogo from '~/assets/logos/baichuan.png';
+import bardLogo from '~/assets/logos/bard.svg';
+import bingLogo from '~/assets/logos/bing.svg';
+import chatglmLogo from '~/assets/logos/chatglm.svg';
+import chatgptLogo from '~/assets/logos/chatgpt.svg';
+import falconLogo from '~/assets/logos/falcon.jpeg';
+import geminiLogo from '~/assets/logos/gemini.svg';
+import grokLogo from '~/assets/logos/grok.png';
+import llamaLogo from '~/assets/logos/llama.png';
+import mistralLogo from '~/assets/logos/mistral.png';
+import piLogo from '~/assets/logos/pi.png';
+import pplxLogo from '~/assets/logos/pplx.jpg';
+import qianwenLogo from '~/assets/logos/qianwen.png';
+import rakutenLogo from '~/assets/logos/rakuten.svg';
+import vicunaLogo from '~/assets/logos/vicuna.jpg';
+import wizardlmLogo from '~/assets/logos/wizardlm.png';
+import xunfeiLogo from '~/assets/logos/xunfei.png';
+import yiLogo from '~/assets/logos/yi.svg';
+
+// アイコン名からイメージへのマッピング
+const iconMap: Record<string, string> = {
+  'anthropic': claudeLogo,
+  'claude': claudeLogo,
+  'baichuan': baichuanLogo,
+  'bard': bardLogo,
+  'bing': bingLogo,
+  'chatglm': chatglmLogo,
+  'chatgpt': chatgptLogo,
+  'openai': chatgptLogo,
+  'falcon': falconLogo,
+  'gemini': geminiLogo,
+  'grok': grokLogo,
+  'llama': llamaLogo,
+  'ollama': llamaLogo,
+  'mistral': mistralLogo,
+  'pi': piLogo,
+  'perplexity': pplxLogo,
+  'qianwen': qianwenLogo,
+  'rakuten': rakutenLogo,
+  'vicuna': vicunaLogo,
+  'wizardlm': wizardlmLogo,
+  'xunfei': xunfeiLogo,
+  'yi': yiLogo,
+};
+
+// 安全なアイコン表示のための検証関数
+const isValidIcon = (icon: string | undefined | null): boolean => {
+  if (!icon) return false;
+  
+  // OpenAIスタイルのアイコン
+  if (icon.startsWith('OpenAI.')) {
+    const style = icon.split('.')[1]?.toLowerCase();
+    return [
+      'black', 'green', 'purple', 'yellow', 'blacksquare', 'square',
+      'simpleblack', 'simplegreen', 'simplepurple', 'simpleyellow'
+    ].includes(style || '');
+  }
+
+  // Claudeスタイルのアイコン
+  if (icon.startsWith('Claude.')) {
+    const style = icon.split('.')[1]?.toLowerCase();
+    return ['orange', 'simple', 'simpleblack', 'square', 'orangesquare'].includes(style || '');
+  }
+  
+  // URLまたはデータURI
+  if (icon.startsWith('http') || icon.startsWith('data:')) return true;
+  
+  // 既知のアイコン
+  return Object.keys(iconMap).some(key => icon.toLowerCase().includes(key));
+};
 
 interface BotIconProps {
   iconName: string;
-  className?: string;
   size?: number;
-  // OpenAI.Avatarの追加プロパティ
-  type?: 'gpt3' | 'gpt4' | 'o1';
-  shape?: 'square' | 'circle';
+  className?: string;
 }
 
-// 型アサーションを使用してインデックスアクセスを可能にする
-const IconLibrary = AllIcons as Record<string, any>;
-
-const BotIcon: FC<BotIconProps> = ({ iconName, className, size = 18, type, shape }) => {
-  // アイコン名が無効な場合はデフォルトのプレースホルダーを表示
-  if (!iconName) {
-    return <div className={className} style={{ width: size, height: size, backgroundColor: '#f0f0f0' }} />;
-  }
-
+/**
+ * BotIconコンポーネント - ボットアイコンを表示
+ *
+ * 以下の形式をサポート：
+ * - URLまたはデータURI（直接画像を表示）
+ * - 'OpenAI.{style}'形式（例：'OpenAI.Black'）- スタイル付きOpenAIアイコン
+ * - 'provider.variant'形式（例：'Claude.Color'）- 従来のアイコンから対応するものを探す
+ * - プロバイダ名のみ（例：'chatgpt'）- 従来のアイコンを表示
+ */
+const BotIcon: React.FC<BotIconProps> = ({ iconName, size = 24, className = '' }) => {
   try {
-    // @lobehub/iconsのアイコン名かどうかをチェック
-    if (iconName.startsWith('http') || iconName.startsWith('data:') || iconName.startsWith('~/')) {
-      // 従来の画像URLの場合
-      return <img src={iconName} className={className} style={{ width: size, height: size, objectFit: 'contain' }} />;
-    }
-    
-    // Rakutenアイコンの特別処理
-    if (iconName === 'Rakuten') {
-      return <img src={RakutenSVG} className={className} style={{ width: size, height: size, objectFit: 'contain' }} />;
-    }
-    
-    // iconNameを解析（例: "Claude.Avatar" → provider: "Claude", variant: "Avatar"）
-    const parts = iconName.split('.');
-    const provider = parts[0];
-    const variant = parts[1];
-``
-    // プロバイダーが存在するか確認
-    if (!IconLibrary[provider]) {
-      console.warn(`Icon provider "${provider}" not found`);
-      return <div className={className} style={{ width: size, height: size, backgroundColor: '#f0f0f0' }} />;
-    }
-    
-    // OpenAI.Avatarの特別処理
-    if (provider === 'OpenAI' && variant === 'Avatar') {
-      try {
-        const AvatarIcon = IconLibrary[provider][variant];
-        if (!AvatarIcon) {
-          throw new Error(`OpenAI.Avatar component not found`);
-        }
-        // typeとshapeプロパティを渡す
-        return (
-          <div style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <AvatarIcon size={size} className={className} type={type} shape={shape} style={{ maxWidth: '100%', maxHeight: '100%' }} />
-          </div>
-        );
-      } catch (error) {
-        console.error(`Error rendering OpenAI.Avatar:`, error);
-        return <div className={className} style={{ width: size, height: size, backgroundColor: '#f0f0f0' }} />;
-      }
-    }
-    
-    // バリアントがある場合
-    if (variant && IconLibrary[provider][variant]) {
-      try {
-        const VariantIcon = IconLibrary[provider][variant];
-        if (!VariantIcon) {
-          throw new Error(`${provider}.${variant} component not found`);
-        }
-        return (
-          <div style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <VariantIcon size={size} className={className} style={{ maxWidth: '100%', maxHeight: '100%' }} />
-          </div>
-        );
-      } catch (error) {
-        console.error(`Error rendering ${provider}.${variant}:`, error);
-        return <div className={className} style={{ width: size, height: size, backgroundColor: '#f0f0f0' }} />;
-      }
-    }
-    
-    // デフォルトアイコン
-    try {
-      const DefaultIcon = IconLibrary[provider];
-      if (!DefaultIcon) {
-        throw new Error(`${provider} component not found`);
-      }
+    // URLまたはデータURIの場合は画像として表示
+    if (iconName && (iconName.startsWith('http') || iconName.startsWith('data:') || iconName.includes('assets'))) {
       return (
-        <div style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <DefaultIcon size={size} className={className} style={{ maxWidth: '100%', maxHeight: '100%' }} />
-        </div>
+        <img
+          src={iconName}
+          alt="Bot Icon"
+          style={{ width: size, height: size, objectFit: 'contain' }}
+          className={className}
+        />
       );
-    } catch (error) {
-      console.error(`Error rendering ${provider}:`, error);
-      return <div className={className} style={{ width: size, height: size, backgroundColor: '#f0f0f0' }} />;
     }
+    
+    // アイコン名が無効な場合はデフォルトのChatHubロゴを使用
+    if (!iconName || typeof iconName !== 'string') {
+      return (
+        <img
+          src={chathubLogo}
+          alt="ChatHub"
+          style={{ width: size, height: size, objectFit: 'contain' }}
+          className={className}
+        />
+      );
+    }
+
+    // OpenAIの特殊スタイルを処理
+    if (iconName.startsWith('OpenAI.')) {
+      const style = iconName.split('.')[1]?.toLowerCase();
+      
+      // スタイル名をOpenAIStylesの形式に変換
+      let openAIStyle = 'black'; // デフォルト
+      
+      if (style === 'black') openAIStyle = 'black';
+      else if (style === 'green') openAIStyle = 'green';
+      else if (style === 'purple') openAIStyle = 'purple';
+      else if (style === 'yellow') openAIStyle = 'yellow';
+      else if (style === 'blacksquare' || style === 'square') openAIStyle = 'black-square';
+      
+      // サーバーサイドレンダリングの場合など、OpenAILogoが使えない環境ではfallback
+      if (typeof window === 'undefined' || !OpenAILogo) {
+        return (
+          <img
+            src={chatgptLogo}
+            alt="OpenAI"
+            style={{ width: size, height: size, objectFit: 'contain' }}
+            className={className}
+          />
+        );
+      }
+      
+      return <OpenAILogo size={size} style={openAIStyle} className={className} />;
+    }
+
+    // Claudeの特殊スタイルを処理
+    if (iconName.startsWith('Claude.')) {
+      const style = iconName.split('.')[1]?.toLowerCase();
+      
+      // スタイル名をClaudeStylesの形式に変換
+      let claudeStyle = 'orange'; // デフォルト
+      
+      if (style === 'orange') claudeStyle = 'orange';
+      else if (style === 'simple') claudeStyle = 'simple';
+      else if (style === 'simpleblack') claudeStyle = 'simple-black';
+      else if (style === 'square' || style === 'orangesquare') claudeStyle = 'orange-square';
+      
+      // サーバーサイドレンダリングの場合など、ClaudeLogoが使えない環境ではfallback
+      if (typeof window === 'undefined' || !ClaudeLogo) {
+        return (
+          <img
+            src={claudeLogo}
+            alt="Claude"
+            style={{ width: size, height: size, objectFit: 'contain' }}
+            className={className}
+          />
+        );
+      }
+      
+      return <ClaudeLogo size={size} style={claudeStyle} className={className} />;
+    }
+
+    // 'provider.variant'形式を処理（例：'Claude.Color'）
+    // variantは無視して、providerだけをキーとして使用
+    let provider = iconName;
+    if (iconName.includes('.')) {
+      provider = iconName.split('.')[0].toLowerCase();
+    }
+    
+    // 対応するアイコンを検索
+    const icon = Object.entries(iconMap).find(
+      ([key]) => provider.toLowerCase().includes(key.toLowerCase())
+    );
+    
+    // アイコンが見つかった場合は表示、見つからなかった場合はデフォルトアイコン
+    if (icon) {
+      return (
+        <img
+          src={icon[1]}
+          alt={provider}
+          style={{ width: size, height: size, objectFit: 'contain' }}
+          className={className}
+          title={iconName}
+        />
+      );
+    }
+
+    // どのアイコンにも一致しない場合はデフォルトアイコンを表示
+    return (
+      <img
+        src={chatgptLogo}
+        alt="Default"
+        style={{ width: size, height: size, objectFit: 'contain' }}
+        className={className}
+        title={iconName}
+      />
+    );
   } catch (error) {
-    console.error(`Error rendering icon ${iconName}:`, error);
-    return <div className={className} style={{ width: size, height: size, backgroundColor: '#f0f0f0' }} />;
+    console.error("Error in BotIcon rendering:", error);
+    // エラー時は常にデフォルトアイコンを表示
+    return (
+      <img
+        src={chathubLogo}
+        alt="Error"
+        style={{ width: size, height: size, objectFit: 'contain' }}
+        className={className}
+      />
+    );
   }
 };
 
-export default BotIcon;
+export default memo(BotIcon);

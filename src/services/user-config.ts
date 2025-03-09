@@ -3,7 +3,7 @@ import Browser from 'webextension-polyfill'
 import { BotId } from '~app/bots'
 import { ALL_IN_ONE_PAGE_ID, CHATBOTS, CHATGPT_API_MODELS, DEFAULT_CHATGPT_SYSTEM_MESSAGE, DEFAULT_CLAUDE_SYSTEM_MESSAGE } from '~app/consts'
 import { CHATBOTS_UPDATED_EVENT } from '~app/consts'
-import defaultLogo from '~/assets/logos/CCLLM.png'
+import defaultLogo from '~/assets/logos/HuddleLLM.png'
 
 export enum BingConversationStyle {
   Creative = 'creative',

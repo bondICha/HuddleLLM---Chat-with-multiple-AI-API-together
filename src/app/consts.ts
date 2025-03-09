@@ -24,7 +24,7 @@ import { getUserConfig } from '~services/user-config'
 export let CHATBOTS: Record<BotId, { name: string; avatar: string }> = {
   chatgpt: {
     name: 'ChatGPT',
-    avatar: 'OpenAI.Color',
+    avatar: 'OpenAI.Black',
   },
   claude: {
     name: 'Claude',
@@ -96,43 +96,43 @@ export let CHATBOTS: Record<BotId, { name: string; avatar: string }> = {
   },
   'customchat1': {
     name: 'customchat1',
-    avatar: 'OpenAI.Color',
+    avatar: 'OpenAI.Black',
   },
   'customchat2': {
     name: 'customchat2',
-    avatar: 'OpenAI.Color',
+    avatar: 'OpenAI.Black',
   },
   'customchat3': {
     name: 'customchat3',
-    avatar: 'OpenAI.Color',
+    avatar: 'OpenAI.Black',
   },
   'customchat4': {
     name: 'customchat4',
-    avatar: 'OpenAI.Color',
+    avatar: 'OpenAI.Black',
   },
   'customchat5': {
     name: 'customchat5',
-    avatar: 'OpenAI.Color',
+    avatar: 'OpenAI.Black',
   },
   'customchat6': {
     name: 'customchat6',
-    avatar: 'OpenAI.Color',
+    avatar: 'OpenAI.Black',
   },
   'customchat7': {
     name: 'customchat7',
-    avatar: 'OpenAI.Color',
+    avatar: 'OpenAI.Black',
   },
   'customchat8': {
     name: 'customchat8',
-    avatar: 'OpenAI.Color',
+    avatar: 'OpenAI.Black',
   },
   'customchat9': {
     name: 'customchat9',
-    avatar: 'OpenAI.Color',
+    avatar: 'OpenAI.Black',
   },
   'customchat10': {
     name: 'customchat10',
-    avatar: 'OpenAI.Color',
+    avatar: 'OpenAI.Black',
   },
 }
 
