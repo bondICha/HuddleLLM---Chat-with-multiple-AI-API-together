@@ -33,6 +33,16 @@ const RELEASE_NOTES = [
       `releasenote-claude-bedrock-thinking`
     ],
   },
+  {
+    version: '2.5.0',
+    notes: [
+      `releasenote-thinking-mode`,
+      `releasenote-conversation-history`,
+      `releasenote-icon-system`,
+      `releasenote-ui-improvements`,
+      `releasenote-api-template`
+    ],
+  },
 ]
 
 export async function checkReleaseNotes(): Promise<string[]> {
