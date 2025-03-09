@@ -50,6 +50,10 @@ export class CustomBot extends AsyncAbstractBot {
     }
 
     get chatBotName() {
+        return this.config?.shortName
+    }
+
+    get fullName() {
         return this.config?.name
     }
 

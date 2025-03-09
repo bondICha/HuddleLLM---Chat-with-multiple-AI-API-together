@@ -161,7 +161,7 @@ export abstract class AbstractBot {
   }
 
   get chatBotName(): string | undefined {
-    return undefined
+    return this.name
   }
 
   get avatar(): string | undefined {
