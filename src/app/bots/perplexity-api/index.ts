@@ -89,7 +89,8 @@ export class PerplexityApiBot extends AbstractBot {
         const message = data.choices[0].message
         if (message.role === 'assistant' && message.content) {
           answer = message.content
-          params.onEvent({ type: 'UPDATE_ANSWER', data: { text: answer } })
+          // 思考タグを処理するために、AbstractBotの共通メソッドを使用
+          this.emitUpdateAnswer(params, { text: answer })
         }
       }
     })

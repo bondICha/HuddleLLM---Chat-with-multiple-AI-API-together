@@ -79,12 +79,54 @@ export abstract class AbstractBot {
   // 前回のストリーミングチャンクで送信した思考内容を保持
   private previousThinking: string = '';
 
-  protected async *doSendMessageGenerator(params: MessageParams) {
-    // パーサーをリセット（会話の開始時に状態をクリア）
-    this.thinkingParser.reset();
-    // 前回の思考内容をリセット
-    this.previousThinking = '';
+  /**
+   * 各ボットの実装から使用するためのイベント発行ヘルパーメソッド
+   * テキストから思考タグを抽出し、差分のみを送信する
+   * @param params SendMessageParamsオブジェクト
+   * @param data イベントデータ (テキストのみ、またはテキストと思考内容)
+   */
+  protected emitUpdateAnswer(params: SendMessageParams, data: AnwserPayload | string): void {
+    // 文字列が渡された場合、AnwserPayloadに変換
+    const payload: AnwserPayload = typeof data === 'string' ? { text: data } : data;
     
+    // テキスト処理と思考抽出
+    const processedData = this._processThinkingContent(payload);
+    
+    // 思考内容の差分処理
+    if (processedData.thinking) {
+      // 現在の思考内容と前回の思考内容の差分を計算
+      const currentThinking = processedData.thinking;
+      let thinkingDiff = '';
+      
+      if (this.previousThinking && currentThinking.startsWith(this.previousThinking)) {
+        // 前回の内容から新しく追加された部分のみを取得
+        thinkingDiff = currentThinking.substring(this.previousThinking.length);
+      } else {
+        // 前回の思考内容がないか、内容が変わった場合は全体を使用
+        thinkingDiff = currentThinking;
+      }
+      
+      // 前回の思考内容を更新
+      this.previousThinking = currentThinking;
+      
+      // 差分のみを送信
+      params.onEvent({
+        type: 'UPDATE_ANSWER',
+        data: {
+          text: processedData.text,
+          thinking: thinkingDiff
+        }
+      });
+    } else {
+      // 思考内容がない場合はそのまま送信
+      params.onEvent({
+        type: 'UPDATE_ANSWER',
+        data: processedData
+      });
+    }
+  }
+
+  protected async *doSendMessageGenerator(params: MessageParams) {
     const wrapError = (err: unknown) => {
       Sentry.captureException(err)
       if (err instanceof ChatError) {
@@ -102,42 +144,11 @@ export abstract class AbstractBot {
           rawUserInput: params.rawUserInput,
           image: params.image,
           signal: params.signal,
-          onEvent: (event) => {
+          onEvent(event) {
             if (event.type === 'UPDATE_ANSWER') {
-              // テキスト処理と思考抽出
-              const processedData = this._processThinkingContent(event.data);
-              
-              // 思考内容の差分処理
-              if (processedData.thinking) {
-                // 現在の思考内容と前回の思考内容の差分を計算
-                const currentThinking = processedData.thinking;
-                let thinkingDiff = '';
-                
-                if (this.previousThinking && currentThinking.startsWith(this.previousThinking)) {
-                  // 前回の内容から新しく追加された部分のみを取得
-                  thinkingDiff = currentThinking.substring(this.previousThinking.length);
-                } else {
-                  // 前回の思考内容がないか、内容が変わった場合は全体を使用
-                  thinkingDiff = currentThinking;
-                }
-                
-                // 前回の思考内容を更新
-                this.previousThinking = currentThinking;
-                
-                // 差分のみを送信
-                controller.enqueue({
-                  text: processedData.text,
-                  thinking: thinkingDiff
-                });
-              } else {
-                // 思考内容がない場合はそのまま送信
-                controller.enqueue(processedData);
-              }
+              controller.enqueue(event.data)
             } else if (event.type === 'DONE') {
-              // 会話終了時にリセット
-              this.thinkingParser.reset();
-              this.previousThinking = '';
-              controller.close();
+              controller.close()
             } else if (event.type === 'ERROR') {
               const error = wrapError(event.error)
               if (error) {

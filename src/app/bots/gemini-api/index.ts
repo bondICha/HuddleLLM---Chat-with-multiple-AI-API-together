@@ -139,18 +139,7 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
         const chunkText = chunk.text()
         console.debug('gemini stream', chunkText)
         text += chunkText
-        if (this.modelName?.includes('thinking')){
-          const parts = text.split('START_MODEL_ANSER: ');
-          if (parts.length > 1) {
-            params.onEvent({ type: 'UPDATE_ANSWER', data: { text: parts[1] } });
-          } else {
-            // 分割しても要素が1つしかない場合は元のテキストをそのまま出力
-            params.onEvent({ type: 'UPDATE_ANSWER', data: { text } });
-          }
-        }
-        else {
-          params.onEvent({ type: 'UPDATE_ANSWER', data: { text } })
-        }
+        params.onEvent({ type: 'UPDATE_ANSWER', data: { text } })
       }
 
       if (!text) {
@@ -211,7 +200,7 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
     const currentDate = new Date().toISOString().split('T')[0]
     let systemMessage = config.geminiApiSystemMessage.replace('{current_date}', currentDate)
     if (config.geminiApiModel.includes('thinking')){
-      systemMessage = 'You must always put "START_MODEL_ANSER: " in the head of your answer.' + systemMessage
+      systemMessage = systemMessage
     }
     const genAI = new GoogleGenerativeAI(config.geminiApiKey);
     const model = genAI.getGenerativeModel({

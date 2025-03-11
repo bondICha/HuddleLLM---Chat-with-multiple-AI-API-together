@@ -100,7 +100,10 @@ export function createBotInstance(botId: BotId) {
       return new CustomBot({ customBotNumber: 9 })
     case 'customchat10':
       return new CustomBot({ customBotNumber: 10 })
-
+    
+    default:
+      console.warn(`Unknown botId: ${botId}, falling back to chatgpt`);
+      return new ChatGPTBot({ chatGptNumber: 0 })
   }
 }
 

@@ -161,10 +161,8 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
         const delta = data.choices[0].delta
         if (delta?.content) {
           result.content += delta.content
-          params.onEvent({
-            type: 'UPDATE_ANSWER',
-            data: { text: result.content },
-          })
+          // 思考タグを処理するために共通メソッドを使用
+          this.emitUpdateAnswer(params, { text: result.content })
         }
       }
     })
