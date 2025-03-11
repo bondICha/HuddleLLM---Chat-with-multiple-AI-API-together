@@ -6,7 +6,7 @@ import Browser from 'webextension-polyfill'
 import Button from '../Button'
 import Dialog from '../Dialog'
 import Select from '../Select'
-import { UserConfig, customApiConfig } from '~services/user-config'
+import { UserConfig, customApiConfig, updateUserConfig } from '~services/user-config'
 import toast from 'react-hot-toast'
 
 interface Props {
@@ -89,10 +89,15 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
         }
       })
 
-      // 設定を更新
-      await updateConfigValue({ customApiConfigs: newConfigs })
+      // Reactの状態を更新
+      updateConfigValue({ customApiConfigs: newConfigs })
       
+      // 設定をブラウザストレージに保存（ユーティリティ関数を使用）
+      await updateUserConfig({ customApiConfigs: newConfigs })
+      
+      // 成功メッセージ
       toast.success(t('Custom API settings imported successfully'))
+      
       setIsOpen(false)
     } catch (error) {
       console.error('Error applying import:', error)
