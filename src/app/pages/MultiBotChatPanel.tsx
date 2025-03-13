@@ -11,12 +11,8 @@ import { CHATBOTS, Layout } from '~app/consts'
 import { useChat } from '~app/hooks/use-chat'
 import { BotId } from '../bots'
 import ConversationPanel from '../components/Chat/ConversationPanel'
-import { ChatMessageModel } from '~types'
-import { inheritHistoryAtom } from '../components/SwitchBotDropdown'
 
 const DEFAULT_BOTS: BotId[] = Object.keys(CHATBOTS).slice(0, 6) as BotId[]
-
-
 
 const layoutAtom = atomWithStorage<Layout>('multiPanelLayout', 2, undefined, { getOnInit: true })
 
@@ -26,9 +22,6 @@ const threePanelBotsAtom = atomWithStorage<BotId[]>('multiPanelBots:3', DEFAULT_
 const fourPanelBotsAtom = atomWithStorage<BotId[]>('multiPanelBots:4', DEFAULT_BOTS.slice(0, 4))
 const sixPanelBotsAtom = atomWithStorage<BotId[]>('multiPanelBots:6', DEFAULT_BOTS.slice(0, 6))
 
-// 共有のpreviousMessagesステートをatomで管理
-const previousMessagesAtom = atomWithStorage<Record<string, ChatMessageModel[]>>('previousMessages', {}, undefined, { getOnInit: true })
-
 function replaceDeprecatedBots(bots: BotId[]): BotId[] {
   return bots.map((bot) => (CHATBOTS[bot] ? bot : sample(DEFAULT_BOTS)!))
 }
@@ -37,13 +30,10 @@ const GeneralChatPanel: FC<{
   chats: ReturnType<typeof useChat>[]
   setBots?: ReturnType<typeof useSetAtom<typeof twoPanelBotsAtom>>
   supportImageInput?: boolean
-  previousMessages: Record<string, ChatMessageModel[]>
-  setPreviousMessages: (value: Record<string, ChatMessageModel[]>) => void
-}> = ({ chats, setBots, supportImageInput, previousMessages, setPreviousMessages }) => {
+}> = ({ chats, setBots, supportImageInput }) => {
   const { t } = useTranslation()
   const generating = useMemo(() => chats.some((c) => c.generating), [chats])
   const [layout, setLayout] = useAtom(layoutAtom)
-  const [inheritHistory] = useAtom(inheritHistoryAtom)
   const [refresh, setRefresh] = useState(0) // 更新用の state を追加
 
   useEffect(() => {
@@ -69,36 +59,17 @@ const GeneralChatPanel: FC<{
   }
 
   const onSwitchBot = useCallback(
-    (botId: BotId, index: number, messages?: ChatMessageModel[]) => {
+    (botId: BotId, index: number) => {
       if (!setBots) {
         return
       }
       
-      console.log('onSwitchBot called:', { botId, index, messages });
-      
       // 現在のチャットを取得
       const currentChat = chats[index]
-      const currentMessages = messages || []
       
       // 前のモデルの会話状態をリセット
       if (currentChat) {
         currentChat.resetConversation()
-      }
-      
-      // 履歴を引き継ぐ場合は、現在のメッセージを保存
-      if (inheritHistory && currentMessages.length > 0) {
-        console.log('Saving messages for index', index, currentMessages);
-        
-        // コンテキスト長の制限を考慮（必要に応じて調整）
-        const maxMessagesToKeep = 20
-        const messagesToKeep = currentMessages.length > maxMessagesToKeep 
-          ? currentMessages.slice(-maxMessagesToKeep) 
-          : currentMessages
-          
-        setPreviousMessages({
-          ...previousMessages,
-          [`${index}`]: messagesToKeep
-        })
       }
       
       setBots((bots) => {
@@ -110,7 +81,7 @@ const GeneralChatPanel: FC<{
       // refreshを更新して再レンダリングを促す
       setRefresh(prev => prev + 1)
     },
-    [chats, setBots, inheritHistory, setRefresh, previousMessages, setPreviousMessages],
+    [chats, setBots, setRefresh],
   )
 
   const onLayoutChange = useCallback(
@@ -146,10 +117,7 @@ const GeneralChatPanel: FC<{
             stopGenerating={chat.stopGenerating}
             mode="compact"
             resetConversation={chat.resetConversation}
-            onSwitchBot={setBots ? (botId, messages) => {
-              console.log('MultiBotChatPanel onSwitchBot wrapper called with:', { botId, index, messages });
-              return onSwitchBot(botId, index, messages);
-            } : undefined}
+            onSwitchBot={setBots ? (botId) => onSwitchBot(botId, index) : undefined}
             onPropaganda={modifyAllLastMessage}
           />
         ))}
@@ -170,17 +138,11 @@ const GeneralChatPanel: FC<{
   )
 }
 
-interface PanelProps {
-  previousMessages: Record<string, ChatMessageModel[]>;
-  setPreviousMessages: (value: Record<string, ChatMessageModel[]>) => void;
-}
-
-const SingleBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessages }) => {
+const SingleBotChatPanel: FC = () => {
   const [bots, setBots] = useAtom(singlePanelBotAtom)
-  const [inheritHistory] = useAtom(inheritHistoryAtom)
   const multiPanelBotIds = useMemo(() => replaceDeprecatedBots(bots), [bots])
 
-  const chat = useChat(multiPanelBotIds[0], inheritHistory ? previousMessages["0"] : undefined)
+  const chat = useChat(multiPanelBotIds[0])
   
   const chats = useMemo(() => [chat], [chat])
   
@@ -188,19 +150,15 @@ const SingleBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessa
     chats={chats} 
     setBots={setBots}
     supportImageInput={true}
-    previousMessages={previousMessages}
-    setPreviousMessages={setPreviousMessages}
   />
 }
 
-const TwoBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessages }) => {
+const TwoBotChatPanel: FC = () => {
   const [bots, setBots] = useAtom(twoPanelBotsAtom)
-  const [inheritHistory] = useAtom(inheritHistoryAtom)
   const multiPanelBotIds = useMemo(() => replaceDeprecatedBots(bots), [bots])
   
-  
-  const chat1 = useChat(multiPanelBotIds[0], inheritHistory ? previousMessages["0"] : undefined)
-  const chat2 = useChat(multiPanelBotIds[1], inheritHistory ? previousMessages["1"] : undefined)
+  const chat1 = useChat(multiPanelBotIds[0])
+  const chat2 = useChat(multiPanelBotIds[1])
   
   const chats = useMemo(() => [chat1, chat2], [chat1, chat2])
   
@@ -208,19 +166,15 @@ const TwoBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessages
     chats={chats} 
     setBots={setBots} 
     supportImageInput={true}
-    previousMessages={previousMessages}
-    setPreviousMessages={setPreviousMessages}
   />
 }
 
-
-const TwoHorizonBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessages }) => {
+const TwoHorizonBotChatPanel: FC = () => {
   const [bots, setBots] = useAtom(twoPanelBotsAtom)
-  const [inheritHistory] = useAtom(inheritHistoryAtom)
   const multiPanelBotIds = useMemo(() => replaceDeprecatedBots(bots), [bots])
   
-  const chat1 = useChat(multiPanelBotIds[0], inheritHistory ? previousMessages["0"] : undefined)
-  const chat2 = useChat(multiPanelBotIds[1], inheritHistory ? previousMessages["1"] : undefined)
+  const chat1 = useChat(multiPanelBotIds[0])
+  const chat2 = useChat(multiPanelBotIds[1])
   
   const chats = useMemo(() => [chat1, chat2], [chat1, chat2])
   
@@ -228,19 +182,16 @@ const TwoHorizonBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousM
     chats={chats} 
     setBots={setBots} 
     supportImageInput={true}
-    previousMessages={previousMessages}
-    setPreviousMessages={setPreviousMessages}
   />
 }
 
-const ThreeBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessages }) => {
+const ThreeBotChatPanel: FC = () => {
   const [bots, setBots] = useAtom(threePanelBotsAtom)
-  const [inheritHistory] = useAtom(inheritHistoryAtom)
   const multiPanelBotIds = useMemo(() => replaceDeprecatedBots(bots), [bots])
   
-  const chat1 = useChat(multiPanelBotIds[0], inheritHistory ? previousMessages["0"] : undefined)
-  const chat2 = useChat(multiPanelBotIds[1], inheritHistory ? previousMessages["1"] : undefined)
-  const chat3 = useChat(multiPanelBotIds[2], inheritHistory ? previousMessages["2"] : undefined)
+  const chat1 = useChat(multiPanelBotIds[0])
+  const chat2 = useChat(multiPanelBotIds[1])
+  const chat3 = useChat(multiPanelBotIds[2])
   
   const chats = useMemo(() => [chat1, chat2, chat3], [chat1, chat2, chat3])
   
@@ -248,20 +199,17 @@ const ThreeBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessag
     chats={chats} 
     setBots={setBots} 
     supportImageInput={true}
-    previousMessages={previousMessages}
-    setPreviousMessages={setPreviousMessages}
   />
 }
 
-const FourBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessages }) => {
+const FourBotChatPanel: FC = () => {
   const [bots, setBots] = useAtom(fourPanelBotsAtom)
-  const [inheritHistory] = useAtom(inheritHistoryAtom)
   const multiPanelBotIds = useMemo(() => replaceDeprecatedBots(bots), [bots])
   
-  const chat1 = useChat(multiPanelBotIds[0], inheritHistory ? previousMessages["0"] : undefined)
-  const chat2 = useChat(multiPanelBotIds[1], inheritHistory ? previousMessages["1"] : undefined)
-  const chat3 = useChat(multiPanelBotIds[2], inheritHistory ? previousMessages["2"] : undefined)
-  const chat4 = useChat(multiPanelBotIds[3], inheritHistory ? previousMessages["3"] : undefined)
+  const chat1 = useChat(multiPanelBotIds[0])
+  const chat2 = useChat(multiPanelBotIds[1])
+  const chat3 = useChat(multiPanelBotIds[2])
+  const chat4 = useChat(multiPanelBotIds[3])
   
   const chats = useMemo(() => [chat1, chat2, chat3, chat4], [chat1, chat2, chat3, chat4])
   
@@ -269,22 +217,19 @@ const FourBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessage
     chats={chats} 
     setBots={setBots} 
     supportImageInput={true}
-    previousMessages={previousMessages}
-    setPreviousMessages={setPreviousMessages}
   />
 }
 
-const SixBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessages }) => {
+const SixBotChatPanel: FC = () => {
   const [bots, setBots] = useAtom(sixPanelBotsAtom)
-  const [inheritHistory] = useAtom(inheritHistoryAtom)
   const multiPanelBotIds = useMemo(() => replaceDeprecatedBots(bots), [bots])
   
-  const chat1 = useChat(multiPanelBotIds[0], inheritHistory ? previousMessages["0"] : undefined)
-  const chat2 = useChat(multiPanelBotIds[1], inheritHistory ? previousMessages["1"] : undefined)
-  const chat3 = useChat(multiPanelBotIds[2], inheritHistory ? previousMessages["2"] : undefined)
-  const chat4 = useChat(multiPanelBotIds[3], inheritHistory ? previousMessages["3"] : undefined)
-  const chat5 = useChat(multiPanelBotIds[4], inheritHistory ? previousMessages["4"] : undefined)
-  const chat6 = useChat(multiPanelBotIds[5], inheritHistory ? previousMessages["5"] : undefined)
+  const chat1 = useChat(multiPanelBotIds[0])
+  const chat2 = useChat(multiPanelBotIds[1])
+  const chat3 = useChat(multiPanelBotIds[2])
+  const chat4 = useChat(multiPanelBotIds[3])
+  const chat5 = useChat(multiPanelBotIds[4])
+  const chat6 = useChat(multiPanelBotIds[5])
   
   const chats = useMemo(() => [chat1, chat2, chat3, chat4, chat5, chat6], [chat1, chat2, chat3, chat4, chat5, chat6])
   
@@ -292,51 +237,44 @@ const SixBotChatPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessages
     chats={chats} 
     setBots={setBots} 
     supportImageInput={true}
-    previousMessages={previousMessages}
-    setPreviousMessages={setPreviousMessages}
   />
 }
 
-const ImageInputPanel: FC<PanelProps> = ({ previousMessages, setPreviousMessages }) => {
-  const [inheritHistory] = useAtom(inheritHistoryAtom)
-  
-  const chat1 = useChat('chatgpt', inheritHistory ? previousMessages["0"] : undefined)
-  const chat2 = useChat('bing', inheritHistory ? previousMessages["1"] : undefined)
-  const chat3 = useChat('bard', inheritHistory ? previousMessages["2"] : undefined)
+const ImageInputPanel: FC = () => {
+  const chat1 = useChat('chatgpt')
+  const chat2 = useChat('bing')
+  const chat3 = useChat('bard')
   
   const chats = useMemo(() => [chat1, chat2, chat3], [chat1, chat2, chat3])
   
   return <GeneralChatPanel 
     chats={chats} 
     supportImageInput={true}
-    previousMessages={previousMessages}
-    setPreviousMessages={setPreviousMessages}
   />
 }
 
 const MultiBotChatPanel: FC = () => {
   const layout = useAtomValue(layoutAtom)
-  const [previousMessages, setPreviousMessages] = useAtom(previousMessagesAtom)
   
   if (layout === 'sixGrid') {
-    return <SixBotChatPanel previousMessages={previousMessages} setPreviousMessages={setPreviousMessages} />
+    return <SixBotChatPanel />
   }
   if (layout === 4) {
-    return <FourBotChatPanel previousMessages={previousMessages} setPreviousMessages={setPreviousMessages} />
+    return <FourBotChatPanel />
   }
   if (layout === 3) {
-    return <ThreeBotChatPanel previousMessages={previousMessages} setPreviousMessages={setPreviousMessages} />
+    return <ThreeBotChatPanel />
   }
   if (layout === 'imageInput') {
-    return <ImageInputPanel previousMessages={previousMessages} setPreviousMessages={setPreviousMessages} />
+    return <ImageInputPanel />
   }
   if (layout === 'twoHorizon') {
-    return <TwoHorizonBotChatPanel previousMessages={previousMessages} setPreviousMessages={setPreviousMessages} />
+    return <TwoHorizonBotChatPanel />
   }
   if (layout === 'single') {
-    return <SingleBotChatPanel previousMessages={previousMessages} setPreviousMessages={setPreviousMessages} />
+    return <SingleBotChatPanel />
   }
-  return <TwoBotChatPanel previousMessages={previousMessages} setPreviousMessages={setPreviousMessages} />
+  return <TwoBotChatPanel />
 }
 
 const MultiBotChatPanelPage: FC = () => {

@@ -3,15 +3,13 @@ import dropdownIcon from '~/assets/icons/dropdown.svg'
 import { BotId } from '~app/bots'
 import SwitchBotDropdown from '../SwitchBotDropdown'
 import Tooltip from '../Tooltip'
-import { ChatMessageModel } from '~types'
 
 interface Props {
   botId: BotId
-  name: string 
+  name: string
   model: string | undefined
   fullName?: string
-  onSwitchBot?: (botId: BotId, messages?: ChatMessageModel[]) => void
-  messages?: ChatMessageModel[] // 会話履歴を受け取るためのプロパティを追加
+  onSwitchBot?: (botId: BotId) => void
 }
 
 const ChatbotName: FC<Props> = (props) => {
@@ -46,17 +44,10 @@ const ChatbotName: FC<Props> = (props) => {
       <img src={dropdownIcon} className="w-5 h-5" />
     </div>
   )
-  // 親コンポーネントから渡されたmessagesを使用
-  return <SwitchBotDropdown 
-    selectedBotId={props.botId} 
-    onChange={(botId, messages) => {
-      console.log('ChatbotName onChange called with messages:', messages);
-      // 親コンポーネントのonSwitchBotを呼び出す際に、第2引数としてmessagesを渡す
-      return props.onSwitchBot?.(botId, messages);
-    }} 
+  return <SwitchBotDropdown
+    selectedBotId={props.botId}
+    onChange={(botId) => props.onSwitchBot?.(botId)}
     triggerNode={triggerNode}
-    // ConversationPanelから渡されたmessagesを使用
-    messages={props.messages}
   />
 }
 

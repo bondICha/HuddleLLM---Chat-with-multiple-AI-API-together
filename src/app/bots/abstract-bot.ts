@@ -37,7 +37,6 @@ export interface ConversationHistory {
 }
 
 export abstract class AbstractBot {
-  protected conversationHistory?: ConversationHistory;
   // 思考パーサーインスタンス
   private thinkingParser = new ThinkingParser();
 
@@ -45,14 +44,15 @@ export abstract class AbstractBot {
     return this.doSendMessageGenerator(params)
   }
 
-  // 会話履歴を設定するメソッド
-  public setConversationHistory(history: ConversationHistory): void {
-    this.conversationHistory = history;
+  // 会話履歴を設定するメソッド (空の実装 - 各ボット固有の実装に任せる)
+  public setConversationHistory(_history: ConversationHistory): void {
+    // デフォルトでは何もしない - 各ボット実装でオーバーライド
   }
 
-  // 会話履歴を取得するメソッド
+  // 会話履歴を取得するメソッド (空の実装 - 各ボット固有の実装に任せる)
   public getConversationHistory(): ConversationHistory | undefined {
-    return this.conversationHistory;
+    // デフォルトでは何も返さない - 各ボット実装でオーバーライド
+    return undefined;
   }
 
   /**
@@ -226,8 +226,8 @@ export abstract class AsyncAbstractBot extends AbstractBot {
         this.#bot = bot
         // 親クラスの会話履歴があれば、初期化されたボットに設定
         const history = this.getConversationHistory()
-        if (history) {
-          this.#bot.setConversationHistory(history)
+          if (history) {
+            this.#bot.setConversationHistory(history)
         }
       })
       .catch((err) => {
@@ -245,8 +245,6 @@ export abstract class AsyncAbstractBot extends AbstractBot {
   }
 
   resetConversation() {
-    // 会話履歴もリセット
-    this.conversationHistory = undefined
     return this.#bot.resetConversation()
   }
 
