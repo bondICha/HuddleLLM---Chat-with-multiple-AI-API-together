@@ -1,5 +1,8 @@
 {
   "com_ui_thoughts": "思考過程",
+  "releasenote-icon-fix-announcement": "## 圖標系統設置更新\n\n由於之前存在導致圖標無法正確顯示的bug，我們在2.5.0版本中更改了自定義機器人圖標的存儲方式。因此，您需要重新設置現有圖標。對此帶來的不便，我們深表歉意。\n\n您可以在設置 > 聊天機器人部分為每個機器人設置圖標。",
+  "releasenote-thinkmode-fix": "## 思考模式改進\n\n我們對思考模式系統進行了重要改進：\n\n- 修復了思考模式內容的多個顯示問題\n- 增強了對不同AI模型的支持\n- 改進了所有機器人的思考標籤處理性能",
+  "releasenote-remove-conversation-history": "## 暫時移除會話歷史轉移功能\n\n我們暫時移除了在v2.5.0中引入的會話歷史轉移功能。由於技術挑戰，特別是當會話包含圖像時，此功能無法按預期工作。\n\n我們正在開發更加穩健的實現方案，並將在未來的更新中重新引入此功能。",
   "Shortcut to open this app": "打開ChatHub的快捷鍵",
   "Settings": "設置",
   "Startup page": "啟動頁面",

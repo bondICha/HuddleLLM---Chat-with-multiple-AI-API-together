@@ -43,6 +43,14 @@ const RELEASE_NOTES = [
       `releasenote-api-template`
     ],
   },
+  {
+    version: '2.5.1',
+    notes: [
+      `releasenote-icon-fix-announcement`,
+      `releasenote-thinkmode-fix`,
+      `releasenote-remove-conversation-history`
+    ],
+  },
 ]
 
 // バージョンを現在のバージョンとして記録する関数
