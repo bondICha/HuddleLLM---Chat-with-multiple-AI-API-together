@@ -156,5 +156,7 @@
   "Apply": "确认",
   "Preview": "预览",
   "ReleaseNote-Close": "关闭",
-  "ReleaseNote-ShowAgain": "下次启动时再次显示"
+  "ReleaseNote-ShowAgain": "下次启动时再次显示",
+  "releasenote-claude-think": "## Claude API功能增强\n\n为Claude API添加了思维模式（claude-think）\n- 可视化AI思维过程的新功能\n- 添加可配置的思维预算参数（默认2000令牌）\n- 可为有无思维模式分别设置不同的独立模型",
+  "releasenote-perplexity-reasoning": "## Perplexity功能增强\n\n- 为Perplexity API添加了推理模式（perplexity-reasoning）\n- 专注于逐步推理过程的模式\n- 可为标准模式和推理模式分别设置不同模型\n- 更新了Perplexity徽标设计：新增Color、Mono、Sonar、Square四种变体\n- 改进了Claude API的响应处理"
 }

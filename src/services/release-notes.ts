@@ -51,6 +51,13 @@ const RELEASE_NOTES = [
       `releasenote-remove-conversation-history`
     ],
   },
+  {
+    version: '2.5.3',
+    notes: [
+      `releasenote-claude-think`,
+      `releasenote-perplexity-reasoning`
+    ],
+  },
 ]
 
 // バージョンを現在のバージョンとして記録する関数
