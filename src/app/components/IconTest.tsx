@@ -5,6 +5,7 @@ import { Input } from './Input';
 import OpenAILogo from './logos/OpenAILogos';
 import ClaudeLogo from './logos/ClaudeLogos';
 import AnthropicLogo from './logos/AnthropicLogos';
+import PerplexityLogo from './logos/PerplexityLogos';
 
 const IconTest: React.FC = () => {
   const [selectedIcon, setSelectedIcon] = useState('OpenAI.Black');
@@ -42,6 +43,14 @@ const IconTest: React.FC = () => {
     { name: 'Purple Square', value: 'Anthropic.PurpleSquare' },
     { name: 'Black Square', value: 'Anthropic.BlackSquare' },
     { name: 'Blue Square', value: 'Anthropic.BlueSquare' },
+  ];
+
+  // Perplexityのアイコンバリエーション
+  const perplexityVariants = [
+    { name: 'Color', value: 'Perplexity.Color' },
+    { name: 'Square', value: 'Perplexity.Square' },
+    { name: 'Mono', value: 'Perplexity.Mono' },
+    { name: 'Sonar', value: 'Perplexity.Sonar' },
   ];
   
   return (
@@ -149,6 +158,25 @@ const IconTest: React.FC = () => {
         )}
       </div>
       
+      {/* Perplexityアイコンのバリエーション */}
+      <div className="mt-4 p-4 border rounded">
+        <h2 className="text-xl mb-2">Perplexity アイコンバリエーション</h2>
+        <div className="grid grid-cols-4 gap-4">
+          {perplexityVariants.map(variant => (
+            <div
+              key={variant.value}
+              className={`flex flex-col items-center gap-2 p-3 border rounded cursor-pointer ${
+                selectedIcon === variant.value ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+              }`}
+              onClick={() => setSelectedIcon(variant.value)}
+            >
+              <BotIcon iconName={variant.value} size={48} />
+              <span className="text-sm">{variant.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="mt-4">
         <h2 className="text-xl mb-2">アイコン選択:</h2>
         <div className="border rounded p-4">

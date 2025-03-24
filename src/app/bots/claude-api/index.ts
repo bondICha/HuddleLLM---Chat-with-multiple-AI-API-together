@@ -119,6 +119,7 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
 
     let done = false
     const result: ChatMessage = { role: 'assistant', content: '' }
+    let thinkingContent = '';
 
     const finish = () => {
       done = true
@@ -131,7 +132,19 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
       console.debug('claude sse message', message)
       try {
         const data = JSON.parse(message)
-        if (data.type === 'content_block_start' || data.type === 'content_block_delta') {
+        if (data.type === 'content_block_start' && data.content_block?.type === 'thinking') {
+          thinkingContent = ''; // Reset thinking content at the start of a new block
+        } else if (data.type === 'content_block_delta' && data.delta?.type === 'thinking_delta') {
+          // Thinking モードの出力の処理
+          thinkingContent += data.delta.thinking || '';
+          params.onEvent({
+            type: 'UPDATE_ANSWER',
+            data: {
+              text: typeof result.content === 'string' ? result.content : '',
+              thinking: thinkingContent,
+            },
+          });
+        } else if (data.type === 'content_block_start' || data.type === 'content_block_delta') {
           if (data.delta?.text) {
             if (typeof result.content === 'string') {
               result.content += data.delta.text
@@ -140,8 +153,11 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
             }
             params.onEvent({
               type: 'UPDATE_ANSWER',
-              data: { text: typeof result.content === 'string' ? result.content : '' },
-            })
+              data: {
+                text: typeof result.content === 'string' ? result.content : '',
+                thinking: thinkingContent || undefined,
+              },
+            });
           }
         } else if (data.type === 'message_stop') {
           finish()
@@ -190,13 +206,17 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
 }
 
 export class ClaudeApiBot extends AbstractClaudeApiBot {
+  private thinkingMode: boolean;
+
   constructor(
     private config: Pick<
       UserConfig,
-      'claudeApiKey' | 'claudeApiHost' | 'claudeApiModel' | 'claudeApiSystemMessage' | 'claudeApiTemperature'
+      'claudeApiKey' | 'claudeApiHost' | 'claudeApiModel' | 'claudeApiSystemMessage' | 'claudeApiTemperature' | 'claudeThinkingBudget'
     >,
+    thinkingMode: boolean = false
   ) {
     super()
+    this.thinkingMode = thinkingMode;
   }
 
   getSystemMessage() {
@@ -210,6 +230,26 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       (message) => isArray(message.content) && message.content.some((part) => part.type === 'image')
     );
 
+    const body: any = {
+      model: this.getModelName(),
+      messages,
+      max_tokens: hasImageInput ? 4096 : 8192,
+      stream: true,
+      system: this.getSystemMessage(),
+    }
+
+    // Add reasoning configuration or temperature based on thinkingMode flag
+    if (this.thinkingMode) {
+      body.thinking = {
+        type: "enabled",
+        budget_tokens: this.config.claudeThinkingBudget || 2000
+      };
+      // Temperature is not used in Thinking Mode, so set to undefined
+      body.temperature = undefined;
+    } else {
+      body.temperature = this.config.claudeApiTemperature;
+    }
+
     const resp = await fetch(`${this.config.claudeApiHost}/v1/messages`, {
       method: 'POST',
       signal,
@@ -219,14 +259,7 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true',
       },
-      body: JSON.stringify({
-        model: this.getModelName(),
-        messages,
-        max_tokens: hasImageInput ? 4096 : 8192,
-        stream: true,
-        temperature: this.config.claudeApiTemperature,
-        system: this.getSystemMessage(),
-      }),
+      body: JSON.stringify(body),
     })
     if (!resp.ok) {
       const error = await resp.text()
@@ -247,7 +280,7 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
   }
 
   get name() {
-    return `Claude (API)`
+    return this.thinkingMode ? `Claude (Thinking)` : `Claude (API)`
   }
 
   get supportsImageInput() {

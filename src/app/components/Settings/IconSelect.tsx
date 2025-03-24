@@ -16,7 +16,6 @@ import grokLogo from '~/assets/logos/grok.png';
 import llamaLogo from '~/assets/logos/llama.png';
 import mistralLogo from '~/assets/logos/mistral.png';
 import piLogo from '~/assets/logos/pi.png';
-import pplxLogo from '~/assets/logos/pplx.jpg';
 import qianwenLogo from '~/assets/logos/qianwen.png';
 import rakutenLogo from '~/assets/logos/rakuten.svg';
 import vicunaLogo from '~/assets/logos/vicuna.jpg';
@@ -45,6 +44,7 @@ interface IconOption {
 
 import OpenAILogo from '../logos/OpenAILogos';
 import ClaudeLogo from '../logos/ClaudeLogos';
+import PerplexityLogo from '../logos/PerplexityLogos';
 
 // 主要アイコン（先頭に表示）
 const featuredIcons: IconOption[] = [
@@ -54,7 +54,6 @@ const featuredIcons: IconOption[] = [
   { id: 'Gemini.Color', name: 'Gemini', src: geminiLogo },
   { id: 'Llama.Color', name: 'Llama', src: llamaLogo },
   { id: 'Mistral.Color', name: 'Mistral', src: mistralLogo },
-  { id: 'Perplexity.Color', name: 'Perplexity', src: pplxLogo },
   { id: 'Bing.Color', name: 'Bing', src: bingLogo },
   { id: 'Rakuten', name: 'Rakuten', src: rakutenLogo },
   { id: 'Bard.Color', name: 'Bard', src: bardLogo }
@@ -79,6 +78,15 @@ const claudeIcons = [
   { id: 'Claude.OrangeSquare', name: 'Claude Orange Square', style: 'orange-square' },
   { id: 'Claude.Simple', name: 'Claude Simple (Color)', style: 'simple' },
   { id: 'Claude.SimpleBlack', name: 'Claude Simple (Black)', style: 'simple-black' },
+];
+
+// Perplexityアイコンのバリエーション
+const perplexityIcons: Array<{ id: string; name: string; style: 'color' | 'square' | 'mono' | 'sonar' | 'turquoise' }> = [
+  { id: 'Perplexity.Color', name: 'Perplexity Color', style: 'color' },
+  { id: 'Perplexity.Square', name: 'Perplexity Square', style: 'square' },
+  { id: 'Perplexity.Mono', name: 'Perplexity Mono', style: 'mono' },
+  { id: 'Perplexity.Sonar', name: 'Perplexity Sonar', style: 'sonar' },
+  { id: 'Perplexity.Turquoise', name: 'Perplexity Black & Turquoise', style: 'turquoise' },
 ];
 
 // その他のアイコン
@@ -160,6 +168,28 @@ const IconSelect: FC<IconSelectProps> = ({ value, onChange }) => {
     );
   };
 
+  // Perplexityアイコンアイテムのレンダリング
+  const renderPerplexityItem = (icon: { id: string; name: string; style: 'color' | 'square' | 'mono' | 'sonar' | 'turquoise' }, size = 32) => {
+    // 現在選択されているかどうかを判定
+    const isSelected = value === icon.id;
+    
+    return (
+      <div
+        key={icon.id}
+        className={`p-2 border rounded-md flex flex-col items-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+          isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'
+        }`}
+        onClick={() => onChange(icon.id)}
+        title={icon.name}
+      >
+        <div className="flex items-center justify-center" style={{ width: size, height: size }}>
+          <PerplexityLogo size={size} style={icon.style} />
+        </div>
+        <span className="mt-1 text-xs truncate w-full text-center">{icon.name}</span>
+      </div>
+    );
+  };
+
   // Claudeアイコンアイテムのレンダリング
   const renderClaudeItem = (icon: { id: string; name: string; style: string }, size = 32) => {
     // 現在選択されているかどうかを判定
@@ -201,6 +231,16 @@ const IconSelect: FC<IconSelectProps> = ({ value, onChange }) => {
         {/* Claudeアイコングリッド */}
         <div className="grid grid-cols-4 gap-2 mb-4">
           {claudeIcons.map(icon => renderClaudeItem(icon, 40))}
+        </div>
+      </section>
+
+      {/* Perplexityアイコン */}
+      <section className="mb-6">
+        <h3 className="font-medium mb-2 text-sm text-gray-700 dark:text-gray-300">{t('Perplexity Icons')}</h3>
+        
+        {/* Perplexityアイコングリッド */}
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {perplexityIcons.map(icon => renderPerplexityItem(icon, 40))}
         </div>
       </section>
 

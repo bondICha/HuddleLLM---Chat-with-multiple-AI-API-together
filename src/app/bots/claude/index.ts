@@ -8,12 +8,13 @@ import { ChatError, ErrorCode } from '~utils/errors'
 import { OpenRouterBot } from '../openrouter'
 
 export class ClaudeBot extends AsyncAbstractBot {
-  private claudeNumber: number; // ChatGPT Numberを格納するフィールド
+  private thinkingMode: boolean;
+
   constructor(params: {
-    claudeNumber: number; // ChatGPT Numberをオプション引数として追加
+    thinkingMode: boolean; // Thinking Mode を有効にするかどうか
   }) {
-    super(); // 親クラスのコンストラクタを呼び出す
-    this.claudeNumber = params.claudeNumber ?? 0; // 値が未定義の場合は0を使用
+    super();
+    this.thinkingMode = params.thinkingMode ?? false;
   }
 
   async initializeBot() {
@@ -23,23 +24,14 @@ export class ClaudeBot extends AsyncAbstractBot {
         throw new Error('Claude API key missing')
       }
 
-      if (this.claudeNumber > 0) {
-        return new ClaudeApiBot({
-          claudeApiKey: config.customApiKey,
-          claudeApiHost: config.customApiConfigs[this.claudeNumber - 1].host ?? config.customApiHost,
-          claudeApiModel: config.customApiConfigs[this.claudeNumber - 1].model,
-          claudeApiTemperature: config.customApiConfigs[this.claudeNumber - 1].temperature,
-          claudeApiSystemMessage: config.customApiConfigs[this.claudeNumber - 1].systemMessage,
-        })
-      }
-
       return new ClaudeApiBot({
         claudeApiKey: config.claudeApiKey,
         claudeApiHost: config.claudeApiHost,
         claudeApiModel: config.claudeApiModel,
         claudeApiSystemMessage: config.claudeApiSystemMessage,
         claudeApiTemperature: config.claudeApiTemperature,
-      })
+        claudeThinkingBudget: config.claudeThinkingBudget,
+      }, this.thinkingMode);
     }
     if (claudeMode === ClaudeMode.Webapp) {
       return new ClaudeWebBot()

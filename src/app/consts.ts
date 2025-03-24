@@ -1,25 +1,4 @@
-import claudeLogo from '~/assets/logos/anthropic.png'
-import baichuanLogo from '~/assets/logos/baichuan.png'
-import bardLogo from '~/assets/logos/bard.svg'
-import bingLogo from '~/assets/logos/bing.svg'
-import chatglmLogo from '~/assets/logos/chatglm.svg'
-import chatgptLogo from '~/assets/logos/chatgpt.svg'
-import falconLogo from '~/assets/logos/falcon.jpeg'
-import geminiLogo from '~/assets/logos/gemini.svg'
-import grokLogo from '~/assets/logos/grok.png'
-import llamaLogo from '~/assets/logos/llama.png'
-import mistralLogo from '~/assets/logos/mistral.png'
-import piLogo from '~/assets/logos/pi.png'
-import pplxLogo from '~/assets/logos/pplx.jpg'
-import qianwenLogo from '~/assets/logos/qianwen.png'
-import vicunaLogo from '~/assets/logos/vicuna.jpg'
-import wizardlmLogo from '~/assets/logos/wizardlm.png'
-import xunfeiLogo from '~/assets/logos/xunfei.png'
-import yiLogo from '~/assets/logos/yi.svg'
-import rakuten from '~/assets/logos/rakuten.svg'
-import chathubLogo from '~/assets/logos/chathub.svg'
 import { BotId } from './bots'
-import { getUserConfig } from '~services/user-config'
 
 export let CHATBOTS: Record<BotId, { name: string; avatar: string }> = {
   chatgpt: {
@@ -28,7 +7,11 @@ export let CHATBOTS: Record<BotId, { name: string; avatar: string }> = {
   },
   claude: {
     name: 'Claude',
-    avatar: 'Claude.Color',
+    avatar: 'Claude.simple',
+  },
+  'claude-think': {
+    name: 'Claude Think',
+    avatar: 'Claude.orange',
   },
   gemini: {
     name: 'Gemini Advanced',
@@ -44,7 +27,11 @@ export let CHATBOTS: Record<BotId, { name: string; avatar: string }> = {
   },
   perplexity: {
     name: 'Perplexity',
-    avatar: 'Perplexity.Color',
+    avatar: 'Perplexity.Turquoise',
+  },
+  'perplexity-reasoning': {
+    name: 'Perplexity Reasoning',
+    avatar: 'Perplexity.sonar',
   },
   llama: {
     name: 'Llama 2',

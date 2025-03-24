@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import OpenAILogo from './logos/OpenAILogos';
 import ClaudeLogo from './logos/ClaudeLogos';
+import PerplexityLogo from './logos/PerplexityLogos';
 
 // アイコンのインポート
 import claudeLogo from '~/assets/logos/anthropic.png';
@@ -15,7 +16,6 @@ import grokLogo from '~/assets/logos/grok.png';
 import llamaLogo from '~/assets/logos/llama.png';
 import mistralLogo from '~/assets/logos/mistral.png';
 import piLogo from '~/assets/logos/pi.png';
-import pplxLogo from '~/assets/logos/pplx.jpg';
 import qianwenLogo from '~/assets/logos/qianwen.png';
 import rakutenLogo from '~/assets/logos/rakuten.svg';
 import vicunaLogo from '~/assets/logos/vicuna.jpg';
@@ -41,7 +41,6 @@ const specialFormatMap: Record<string, string> = {
   'Gemini.Color': geminiLogo,
   'Llama.Color': llamaLogo,
   'Mistral.Color': mistralLogo,
-  'Perplexity.Color': pplxLogo,
   'Bing.Color': bingLogo,
   'Bard.Color': bardLogo
 };
@@ -66,7 +65,6 @@ const iconMap: Record<string, string> = {
   'ollama': llamaLogo,
   'mistral': mistralLogo,
   'pi': piLogo,
-  'perplexity': pplxLogo,
   'qianwen': qianwenLogo,
   'rakuten': rakutenLogo,
   'vicuna': vicunaLogo,
@@ -102,6 +100,12 @@ const isValidIcon = (icon: string | undefined | null): boolean => {
   if (icon.startsWith('Claude.')) {
     const style = icon.split('.')[1]?.toLowerCase();
     return ['orange', 'simple', 'simpleblack', 'square', 'orangesquare'].includes(style || '');
+  }
+
+  // Perplexityスタイルのアイコン
+  if (icon.startsWith('Perplexity.')) {
+    const style = icon.split('.')[1]?.toLowerCase();
+    return ['color', 'mono', 'sonar', 'square'].includes(style || '');
   }
   
   // URLまたはデータURI
@@ -209,6 +213,30 @@ const BotIcon: React.FC<BotIconProps> = ({ iconName, size = 24, className = '' }
       }
       
       return <ClaudeLogo size={size} style={claudeStyle} className={className} />;
+    }
+
+    // Perplexityの特殊スタイルを処理
+    if (iconName.startsWith('Perplexity.')) {
+      const style = iconName.split('.')[1]?.toLowerCase();
+      
+      if (['sonar', 'color', 'mono', 'square'].includes(style)) {
+        // サーバーサイドレンダリングの場合など、PerplexityLogoが使えない環境ではfallback
+        if (typeof window === 'undefined' || !PerplexityLogo) {
+          return (
+            <img
+              src={chatgptLogo}
+              alt="Perplexity"
+              style={{ width: size, height: size, objectFit: 'contain' }}
+              className={className}
+            />
+          );
+        }
+        
+        return <PerplexityLogo size={size} style={style as 'color' | 'mono' | 'sonar' | 'square'} className={className} />;
+      }
+      
+      // その他の場合はデフォルトのアイコンを使用
+      return <PerplexityLogo size={size} style={'color'} className={className} />;
     }
 
     // 特殊フォーマット ID を直接チェック（例：'Anthropic.Color'）

@@ -17,7 +17,9 @@ export type BotId =
   | 'bing'
   | 'bard'
   | 'claude'
+  | 'claude-think'
   | 'perplexity'
+  | 'perplexity-reasoning'
   | 'xunfei'
   | 'vicuna'
   | 'falcon'
@@ -51,7 +53,9 @@ export function createBotInstance(botId: BotId) {
     case 'bard':
       return new BardBot()
     case 'claude':
-      return new ClaudeBot({ claudeNumber: 0})
+      return new ClaudeBot({ thinkingMode: false })
+    case 'claude-think':
+      return new ClaudeBot({ thinkingMode: true })
     case 'xunfei':
       return new XunfeiBot()
     case 'vicuna':
@@ -75,7 +79,9 @@ export function createBotInstance(botId: BotId) {
     case 'baichuan':
       return new BaichuanWebBot()
     case 'perplexity':
-      return new PerplexityBot()
+      return new PerplexityBot({ isReasoning: false })
+    case 'perplexity-reasoning':
+      return new PerplexityBot({ isReasoning: true })
     case 'grok':
       return new GrokWebBot()
     case 'gemini':

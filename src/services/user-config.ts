@@ -204,7 +204,7 @@ const defaultCustomApiConfigs: customApiConfig[] = [
     thinkingBudget: 2000
   },
   {
-    id: 8,
+    id: 9,
     name: 'Custom Ai9',
     shortName: 'Cus9', 
     model: 'deepseek-chat',
@@ -217,7 +217,7 @@ const defaultCustomApiConfigs: customApiConfig[] = [
     thinkingBudget: 2000
   },
   {
-    id: 8,
+    id: 10,
     name: 'Custom Ai10',
     shortName: 'Cus10', 
     model: 'deepseek-reasoner',
@@ -235,6 +235,8 @@ const defaultCustomApiConfigs: customApiConfig[] = [
 const userConfigWithDefaultValue = {
   openaiApiKey: '',
   openaiApiHost: 'https://api.openai.com',
+  claudeApiTemperature: 1.0, // Default temperature for non-thinking Claude
+  claudeThinkingBudget: 2000, // Default budget for thinking Claude
   chatgptApiModel: CHATGPT_API_MODELS[0] as string,
   chatgptApiTemperature: 1,
   chatgptApiSystemMessage: DEFAULT_CHATGPT_SYSTEM_MESSAGE,
@@ -253,7 +255,6 @@ const userConfigWithDefaultValue = {
   claudeMode: ClaudeMode.API,
   claudeApiModel: ClaudeAPIModel['Claude 3.7 Sonnet'] as string,
   claudeApiSystemMessage: DEFAULT_CLAUDE_SYSTEM_MESSAGE,
-  claudeApiTemperature: 1.0,
   chatgptWebAccess: false,
   claudeWebAccess: false,
   openrouterOpenAIModel: CHATGPT_API_MODELS[0] as string,
@@ -261,7 +262,8 @@ const userConfigWithDefaultValue = {
   openrouterApiKey: '',
   perplexityMode: PerplexityMode.Webapp,
   perplexityApiKey: '',
-  perplexityModel: 'sonar-pro' as string,
+  perplexityModel: 'sonar-pro' as string, // Default model for normal Perplexity
+  perplexityReasoningModel: 'sonar-reasoning-pro' as string, // Default model for reasoning Perplexity
   geminiApiKey: '',
   geminiApiModel: GeminiAPIModel['Gemini 2.0 Flash Experimental'] as string,
   geminiApiSystemMessage: DEFAULT_CHATGPT_SYSTEM_MESSAGE,
