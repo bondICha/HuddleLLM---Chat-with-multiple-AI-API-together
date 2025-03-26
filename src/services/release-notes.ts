@@ -58,6 +58,12 @@ const RELEASE_NOTES = [
       `releasenote-perplexity-reasoning`
     ],
   },
+  {
+    version: '2.5.4',
+    notes: [
+      `releasenote-gemini-2.5-update`
+    ],
+  },
 ]
 
 // バージョンを現在のバージョンとして記録する関数

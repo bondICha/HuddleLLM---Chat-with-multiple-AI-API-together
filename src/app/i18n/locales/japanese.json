@@ -163,5 +163,6 @@
   "ReleaseNote-ShowAgain": "次回起動時にも表示",
   "ReleaseNote-HideUntilNextVersion": "次のバージョン更新まで表示しない",
   "releasenote-claude-think": "## Claude APIの機能拡張\n\nClaude APIにThinkingモードを追加しました（claude-think）\n- AIの思考プロセスを可視化できる新機能\n- 設定可能なthinking budgetパラメータを追加（デフォルト2000トークン）\n- Thinkありなしで別々の異なる単独モデルを設定可能",
-  "releasenote-perplexity-reasoning": "## Perplexityの機能拡張\n\n- Perplexity APIにReasoningモードを追加（perplexity-reasoning）\n- ステップバイステップの推論プロセスに特化したモード\n- 標準モードとReasoningモードで別々のモデルを設定可能\n- Perplexityのロゴデザインを更新：Color、Mono、Sonar、Squareの4つのバリエーションを追加\n- Claude APIのレスポンス処理を改善"
+  "releasenote-perplexity-reasoning": "## Perplexityの機能拡張\n\n- Perplexity APIにReasoningモードを追加（perplexity-reasoning）\n- ステップバイステップの推論プロセスに特化したモード\n- 標準モードとReasoningモードで別々のモデルを設定可能\n- Perplexityのロゴデザインを更新：Color、Mono、Sonar、Squareの4つのバリエーションを追加\n- Claude APIのレスポンス処理を改善",
+  "releasenote-gemini-2.5-update": "## Geminiの更新\n\n- Gemini 2.5 Pro Experimentalモデルのサポートを追加\n- カスタムモデル名が正しく保存されない問題を修正（自由入力したモデル名が設定画面を再度開くと元に戻る問題を解決）\n- 新モデルは推論能力の向上とパフォーマンスの強化を実現"
 }

@@ -49,10 +49,7 @@ export enum ClaudeAPIModel {
 }
 
 export enum GeminiAPIModel {
-  'Gemini 1.5 Flash' = 'gemini-1.5-flash',
-  'Gemini 1.5 Pro' = 'gemini-1.5-pro',
-  'Gemini 2.0 Flash Experimental' = 'gemini-2.0-flash-exp',
-  'Gemini 2.0 Pro Experimental' = 'gemini-2.0-pro-exp-02-05',
+  'Gemini 2.5 Pro Experimental' = 'gemini-2.5-pro-exp-03-25',
   'Gemini 2.0 Flash' = 'gemini-2.0-flash',
   'Gemini 2.0 Flash Thinking Mode Experimental' = 'gemini-2.0-flash-thinking-exp'
 }
@@ -265,7 +262,7 @@ const userConfigWithDefaultValue = {
   perplexityModel: 'sonar-pro' as string, // Default model for normal Perplexity
   perplexityReasoningModel: 'sonar-reasoning-pro' as string, // Default model for reasoning Perplexity
   geminiApiKey: '',
-  geminiApiModel: GeminiAPIModel['Gemini 2.0 Flash Experimental'] as string,
+  geminiApiModel: GeminiAPIModel['Gemini 2.5 Pro Experimental'] as string,
   geminiApiSystemMessage: DEFAULT_CHATGPT_SYSTEM_MESSAGE,
   geminiApiTemperature: 1.0,
   customApiConfigs: defaultCustomApiConfigs,
@@ -345,8 +342,8 @@ export async function getUserConfig(): Promise<UserConfig> {
   if (result.claudeApiHost === '') {
     result.claudeApiHost = 'https://api.anthropic.com/'
   }
-  if (!Object.values(GeminiAPIModel).includes(result.geminiApiModel as GeminiAPIModel)) {
-    result.geminiApiModel = GeminiAPIModel['Gemini 2.0 Flash Experimental']
+  if (!result.geminiApiModel) {
+    result.geminiApiModel = GeminiAPIModel['Gemini 2.5 Pro Experimental']
   }
 
   // customApiConfigsの不足をデフォルト値で補う
