@@ -61,7 +61,7 @@ const RELEASE_NOTES = [
   {
     version: '2.5.4',
     notes: [
-      `releasenote-gemini-2.5-update`
+      `releasenote-gemini-2.5-pro`
     ],
   },
 ]

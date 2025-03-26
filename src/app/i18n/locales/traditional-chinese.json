@@ -160,5 +160,5 @@
   "ReleaseNote-ShowAgain": "下次啟動時再次顯示",
   "releasenote-claude-think": "## Claude API功能增強\n\n為Claude API添加了思維模式（claude-think）\n- 可視化AI思維過程的新功能\n- 添加可配置的思維預算參數（預設2000令牌）\n- 可為有無思維模式分別設置不同的獨立模型",
   "releasenote-perplexity-reasoning": "## Perplexity功能增強\n\n- 為Perplexity API添加了推理模式（perplexity-reasoning）\n- 專注於逐步推理過程的模式\n- 可為標準模式和推理模式分別設置不同模型\n- 更新了Perplexity標誌設計：新增Color、Mono、Sonar、Square四種變體\n- 改進了Claude API的回應處理",
-  "releasenote-gemini-2.5-update": "## Gemini更新\n\n- 新增支援 Gemini 2.5 Pro Experimental model\n- 修復了自定義model名稱無法正確保存的問題（解決自由輸入的model名稱在再次打開設定畫面時恢復為預設的問題）\n- 新model提供了更強的推理能力和性能提升"
+  "releasenote-gemini-2.5-pro": "## Gemini 2.5 Pro Experimental 支援\n\n此版本增加了對Google新的Gemini 2.5 Pro Experimental模型的支援，提供了更大的上下文視窗和增強的推理能力。我們還修復了Gemini API自定義模型名稱無法正確保存的錯誤。\n\n*(有趣的是：此發行說明是在Gemini 2.5 Pro的幫助下根據代碼差異編寫的！)*"
 }
