@@ -8,6 +8,7 @@ import { BsClipboard } from 'react-icons/bs'
 import ReactMarkdown from 'react-markdown'
 import reactNodeToString from 'react-node-to-string'
 import rehypeHighlight from 'rehype-highlight'
+import rehypeRaw from 'rehype-raw'
 import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -117,7 +118,7 @@ const Markdown: FC<{ children: string }> = ({ children }) => {
         
         remarkPlugins
       }
-      rehypePlugins={[[rehypeHighlight, { detect: true, ignoreMissing: true }]]}
+      rehypePlugins={[rehypeRaw, [rehypeHighlight, { detect: true, ignoreMissing: true }]]}
       className={`markdown-body markdown-custom-styles !text-base font-normal`}
       // linkTarget="_blank" // Deprecated at markdown 9.0.0
       components={{
