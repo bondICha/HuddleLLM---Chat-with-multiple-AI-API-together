@@ -81,6 +81,12 @@ export enum PerplexityMode {
 }
 
 
+export enum CustomApiProvider {
+  OpenAI = 'openai',
+  Anthropic = 'anthropic',
+  Bedrock = 'bedrock',
+}
+
 export interface customApiConfig {
   id: number
   name: string,
@@ -92,14 +98,15 @@ export interface customApiConfig {
   avatar: string,
   apiKey: string,
   thinkingMode: boolean,
-  thinkingBudget: number
+  thinkingBudget: number,
+  provider: CustomApiProvider
 }
 
 const defaultCustomApiConfigs: customApiConfig[] = [
   {
     id: 1,
     name: 'Custom Ai1',
-    shortName: 'o3-mi', 
+    shortName: 'o3-mi',
     model: 'o3-mini',
     host: '',
     temperature: 0.7,
@@ -107,12 +114,13 @@ const defaultCustomApiConfigs: customApiConfig[] = [
     avatar: defaultLogo,
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.OpenAI
   },
   {
     id: 2,
     name: 'Custom Ai2',
-    shortName: 'o1', 
+    shortName: 'o1',
     model: 'o1',
     host: '',
     temperature: 1.0,
@@ -120,12 +128,13 @@ const defaultCustomApiConfigs: customApiConfig[] = [
     avatar: defaultLogo,
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.OpenAI
   },
   {
     id: 3,
     name: 'Custom Ai3',
-    shortName: 'LessT', 
+    shortName: 'LessT',
     model: 'o3-mini',
     host: '',
     temperature: 0.2,
@@ -133,12 +142,13 @@ const defaultCustomApiConfigs: customApiConfig[] = [
     avatar: defaultLogo,
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.OpenAI
   },
   {
     id: 4,
     name: 'Custom Ai4',
-    shortName: 'rand', 
+    shortName: 'rand',
     model: 'o3-mini',
     host: '',
     temperature: 2.0,
@@ -146,12 +156,13 @@ const defaultCustomApiConfigs: customApiConfig[] = [
     avatar: defaultLogo,
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.OpenAI
   },
   {
     id: 5,
     name: 'Custom Ai5',
-    shortName: 'Claud', 
+    shortName: 'Claud',
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
     host: 'https://XXXXXXXXXXXX.azure-api.net/aws-bedrock/',
     temperature: 0.7,
@@ -159,12 +170,13 @@ const defaultCustomApiConfigs: customApiConfig[] = [
     avatar: defaultLogo,
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.Bedrock
   },
   {
     id: 6,
     name: 'Custom Ai6',
-    shortName: 'ClHa', 
+    shortName: 'ClHa',
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
     host: 'https://XXXXXXXXX.azure-api.net/aws-bedrock/',
     temperature: 1.0,
@@ -172,12 +184,13 @@ const defaultCustomApiConfigs: customApiConfig[] = [
     avatar: defaultLogo,
     apiKey: '',
     thinkingMode: true,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.Bedrock
   },
   {
     id: 7,
     name: 'Custom Ai7',
-    shortName: 'ClH', 
+    shortName: 'ClH',
     model: 'anthropic.claude-3-5-haiku-20241022-v1:0',
     host: 'https://XXXXXXXXXX.azure-api.net/aws-bedrock/',
     temperature: 0.9,
@@ -185,12 +198,13 @@ const defaultCustomApiConfigs: customApiConfig[] = [
     avatar: defaultLogo,
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.Bedrock
   },
   {
     id: 8,
     name: 'Custom Ai8',
-    shortName: 'Cus8', 
+    shortName: 'Cus8',
     model: 'anthropic.claude-3-5-haiku-20241022-v1:0',
     host: 'https://XXXXXXXXXXX.azure-api.net/aws-bedrock/',
     temperature: 0.9,
@@ -198,12 +212,13 @@ const defaultCustomApiConfigs: customApiConfig[] = [
     avatar: defaultLogo,
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.Bedrock
   },
   {
     id: 9,
     name: 'Custom Ai9',
-    shortName: 'Cus9', 
+    shortName: 'Cus9',
     model: 'deepseek-chat',
     host: 'https://XXXXXXXXXXX.azure-api.net/aws-bedrock/',
     temperature: 0.9,
@@ -211,12 +226,13 @@ const defaultCustomApiConfigs: customApiConfig[] = [
     avatar: defaultLogo,
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.Bedrock
   },
   {
     id: 10,
     name: 'Custom Ai10',
-    shortName: 'Cus10', 
+    shortName: 'Cus10',
     model: 'deepseek-reasoner',
     host: 'https://XXXXXXXXXXX.azure-api.net/aws-bedrock/',
     temperature: 0.9,
@@ -224,7 +240,8 @@ const defaultCustomApiConfigs: customApiConfig[] = [
     avatar: defaultLogo,
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.Bedrock
   }
 ]
 
@@ -350,6 +367,20 @@ export async function getUserConfig(): Promise<UserConfig> {
   if (result.customApiConfigs) {
     const defaultCount = defaultCustomApiConfigs.length;
     const currentCount = result.customApiConfigs.length;
+
+    // 既存の設定にproviderフィールドがない場合は追加
+    result.customApiConfigs.forEach((config: customApiConfig) => {
+      if (config.provider === undefined) {
+        // モデル名に基づいてプロバイダーを推測
+        if (config.model.includes('anthropic.claude') || config.model.includes('us.anthropic.claude')) {
+          config.provider = CustomApiProvider.Bedrock;
+        } else if (config.model.includes('claude-')) {
+          config.provider = CustomApiProvider.Anthropic;
+        } else {
+          config.provider = CustomApiProvider.OpenAI;
+        }
+      }
+    });
 
     if (currentCount < defaultCount) {
       const configsToAdd = defaultCustomApiConfigs.slice(currentCount, defaultCount);

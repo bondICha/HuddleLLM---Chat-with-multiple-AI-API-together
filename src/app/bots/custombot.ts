@@ -2,7 +2,7 @@
 import { AsyncAbstractBot, MessageParams } from './abstract-bot';
 import { ChatGPTApiBot } from './chatgpt-api';
 import { ClaudeApiBot } from './claude-api';
-import { getUserConfig, customApiConfig } from '~/services/user-config';
+import { getUserConfig, customApiConfig, CustomApiProvider } from '~/services/user-config';
 import { ChatError, ErrorCode } from '~utils/errors';
 import { BedrockApiBot } from './bedrock-api';
 
@@ -24,29 +24,44 @@ export class CustomBot extends AsyncAbstractBot {
         }
         this.config = config
 
-        // Decide which bot to instantiate based on the model string in the config
-        if (config.model.includes('anthropic.claude')) {
-            return new BedrockApiBot({
-                claudeApiKey: config.apiKey || customApiKey,
-                claudeApiHost: config.host || customApiHost,
-                claudeApiModel: config.model,
-                claudeApiTemperature: config.temperature,
-                claudeApiSystemMessage: config.systemMessage,
-                // Pass the thinkingMode and thinkingBudget values
-                thinkingMode: config.thinkingMode,
-                thinkingBudget: config.thinkingBudget,
-            });
-        } else {
-            return new ChatGPTApiBot({
-                openaiApiKey: config.apiKey ||customApiKey,
-                openaiApiHost: config.host || customApiHost,
-                chatgptApiModel: config.model,
-                chatgptApiTemperature: config.temperature,
-                chatgptApiSystemMessage: config.systemMessage,
-            })
-        } 
-        // Add more conditions if needed for different models/bot types
-        throw new ChatError('Unsupported model type for CustomBot', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);
+        // プロバイダーが設定されていない場合は、モデル名に基づいて推測する（後方互換性のため）
+        const provider = config.provider || (
+            config.model.includes('anthropic.claude') ? CustomApiProvider.Bedrock : CustomApiProvider.OpenAI
+        );
+
+        // Decide which bot to instantiate based on the provider field
+        switch (provider) {
+            case CustomApiProvider.Bedrock:
+                return new BedrockApiBot({
+                    claudeApiKey: config.apiKey || customApiKey,
+                    claudeApiHost: config.host || customApiHost,
+                    claudeApiModel: config.model,
+                    claudeApiTemperature: config.temperature,
+                    claudeApiSystemMessage: config.systemMessage,
+                    // Pass the thinkingMode and thinkingBudget values
+                    thinkingMode: config.thinkingMode,
+                    thinkingBudget: config.thinkingBudget,
+                });
+            case CustomApiProvider.Anthropic:
+                return new ClaudeApiBot({
+                    claudeApiKey: config.apiKey || customApiKey,
+                    claudeApiHost: config.host || customApiHost,
+                    claudeApiModel: config.model,
+                    claudeApiTemperature: config.temperature,
+                    claudeApiSystemMessage: config.systemMessage,
+                    claudeThinkingBudget: config.thinkingBudget,
+                }, config.thinkingMode, true); // useCustomAuthorizationHeader = true
+            case CustomApiProvider.OpenAI:
+                return new ChatGPTApiBot({
+                    openaiApiKey: config.apiKey || customApiKey,
+                    openaiApiHost: config.host || customApiHost,
+                    chatgptApiModel: config.model,
+                    chatgptApiTemperature: config.temperature,
+                    chatgptApiSystemMessage: config.systemMessage,
+                });
+            default:
+                throw new ChatError(`Unsupported provider: ${provider}`, ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);
+        }
     }
 
     get chatBotName() {

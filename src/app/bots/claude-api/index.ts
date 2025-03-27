@@ -213,7 +213,8 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       UserConfig,
       'claudeApiKey' | 'claudeApiHost' | 'claudeApiModel' | 'claudeApiSystemMessage' | 'claudeApiTemperature' | 'claudeThinkingBudget'
     >,
-    thinkingMode: boolean = false
+    thinkingMode: boolean = false,
+    private useCustomAuthorizationHeader: boolean = false
   ) {
     super()
     this.thinkingMode = thinkingMode;
@@ -250,15 +251,27 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       body.temperature = this.config.claudeApiTemperature;
     }
 
-    const resp = await fetch(`${this.config.claudeApiHost}/v1/messages`, {
+    const headers: Record<string, string> = {
+      'content-type': 'application/json',
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    };
+
+    if (this.useCustomAuthorizationHeader) {
+      headers['Authorization'] = this.config.claudeApiKey;
+    } else {
+      headers['x-api-key'] = this.config.claudeApiKey;
+    }
+
+    const api_path = 'v1/messages';
+    // API Hostの最後のslashを削除
+    const baseUrl = this.config.claudeApiHost.endsWith('/') ? this.config.claudeApiHost.slice(0, -1) : this.config.claudeApiHost;
+    const fullUrlStr = `${baseUrl}/${api_path}`.replace('v1/v1/', 'v1/')
+    
+    const resp = await fetch(fullUrlStr, {
       method: 'POST',
       signal,
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': this.config.claudeApiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers,
       body: JSON.stringify(body),
     })
     if (!resp.ok) {

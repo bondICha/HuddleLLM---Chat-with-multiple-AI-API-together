@@ -1,6 +1,6 @@
 import { FC, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CustomAPIModel, UserConfig } from '~services/user-config'
+import { CustomAPIModel, UserConfig, CustomApiProvider } from '~services/user-config'
 import { Input, Textarea } from '../Input'
 import { DEFAULT_CHATGPT_SYSTEM_MESSAGE } from '~app/consts';
 import Select from '../Select'
@@ -192,6 +192,14 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                 onChange={(v) => {
                                                     const updatedConfigs = [...userConfig.customApiConfigs]
                                                     updatedConfigs[index].model = v
+                                                    // モデル名に基づいてプロバイダーを自動設定
+                                                    if (v.includes('anthropic.claude') || v.includes('us.anthropic.claude')) {
+                                                        updatedConfigs[index].provider = CustomApiProvider.Bedrock
+                                                    } else if (v.includes('claude-')) {
+                                                        updatedConfigs[index].provider = CustomApiProvider.Anthropic
+                                                    } else {
+                                                        updatedConfigs[index].provider = CustomApiProvider.OpenAI
+                                                    }
                                                     updateConfigValue({ customApiConfigs: updatedConfigs })
                                                     }}
                                                 />
@@ -234,6 +242,26 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
                                     {expandedSections[index] && (
                                         <div className="mt-3 space-y-4">
+                                            {/* Provider Selection */}
+                                            <div className={formRowClass}>
+                                                <p className={labelClass}>{t('API Provider')}</p>
+                                                <div className="flex-1">
+                                                    <Select
+                                                        options={[
+                                                            { name: 'OpenAI Compatible', value: CustomApiProvider.OpenAI },
+                                                            { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
+                                                            { name: 'AWS Bedrock', value: CustomApiProvider.Bedrock }
+                                                        ]}
+                                                        value={config.provider || CustomApiProvider.OpenAI}
+                                                        onChange={(v) => {
+                                                            const updatedConfigs = [...userConfig.customApiConfigs]
+                                                            updatedConfigs[index].provider = v as CustomApiProvider
+                                                            updateConfigValue({ customApiConfigs: updatedConfigs })
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+
                                             {/* API Host */}
                                             <div className={formRowClass}>
                                                 <p className={labelClass}>API Host</p>

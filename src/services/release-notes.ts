@@ -64,6 +64,12 @@ const RELEASE_NOTES = [
       `releasenote-gemini-2.5-pro`
     ],
   },
+  {
+    version: '2.5.5',
+    notes: [
+      `releasenote-custom-claude-api`
+    ],
+  },
 ]
 
 // バージョンを現在のバージョンとして記録する関数
