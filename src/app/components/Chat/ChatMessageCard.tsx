@@ -1,13 +1,12 @@
 import { cx } from '~/utils'
 import { FC, memo, useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { CopyToClipboard } from 'react-copy-to-clipboard'
+import { CopyToClipboard } from 'react-copy-to-clipboard-ts'
 import { IoCheckmarkSharp, IoCopyOutline, IoMegaphoneOutline as IoPropaganda } from 'react-icons/io5'
 import { BsCheckAll } from "react-icons/bs";
 import { LuCircleCheckBig } from "react-icons/lu";
 import { BeatLoader } from 'react-spinners'
 import { ChatMessageModel } from '~/types'
 import Markdown from '../Markdown'
-import ErrorAction from './ErrorAction'
 import MessageBubble from './MessageBubble'
 import { useTranslation } from 'react-i18next'
 
@@ -68,13 +67,13 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
   const [messageHeight, setMessageHeight] = useState(0)
   const [confirmationStage, setConfirmationStage] = useState<ConfirmationStage>('none')
   const messageRef = useRef<HTMLDivElement>(null)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { t } = useTranslation()
 
 
-  const imageUrl = useMemo(() => {
-    return message.image ? URL.createObjectURL(message.image) : ''
-  }, [message.image])
+  const imageUrls = useMemo(() => {
+    return message.images ? message.images.map(img => URL.createObjectURL(img)) : []
+  }, [message.images])
 
   const copyText = useMemo(() => {
     if (message.text) {
@@ -146,8 +145,8 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
     <div className="flex flex-col">
       <CopyToClipboard text={copyText!} onCopy={() => setCopied(true)}>
         <button aria-label={copied ? "Copied" : "Copy"} className={COPY_ICON_CLASS}>
-          {copied ? <IoCheckmarkSharp /> : <IoCopyOutline />}
-        </button>
+        {copied ? <IoCheckmarkSharp /> : <IoCopyOutline />}
+      </button>
       </CopyToClipboard>
       {message.author !== 'user' && onPropaganda && (
         <SimpleTooltip align="right" content={getTooltipContent()}>
@@ -182,7 +181,13 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
           color={message.author === 'user' ? 'primary' : 'flat'}
           thinking={message.thinking}
         >
-          {!!imageUrl && <img src={imageUrl} alt="Uploaded content" className="max-w-xs my-2" />}
+          {imageUrls.length > 0 && (
+            <div className="flex flex-wrap gap-2 my-2">
+              {imageUrls.map((url, index) => (
+                <img key={index} src={url} alt={`Uploaded content ${index + 1}`} className="max-w-xs" />
+              ))}
+            </div>
+          )}
           {message.text ? (
             <Markdown>{message.text}</Markdown>
           ) : (
@@ -194,10 +199,9 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
             <p className="text-[#cc0000] dark:text-[#ff0033]">{message.error.message}</p>
           )}
         </MessageBubble>
-        {!!message.error && <ErrorAction error={message.error} />}
       </div>
       {!!copyText && (
-        <div className="flex flex-col justify-between h-full py-1">
+        <div className="flex flex-col justify-between py-1" style={{ height: messageHeight }}>
           <ActionButton />
           {messageHeight > MESSAGE_HEIGHT_THRESHOLD && <ActionButton />}
         </div>

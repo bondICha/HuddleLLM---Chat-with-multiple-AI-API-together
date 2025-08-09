@@ -1,13 +1,15 @@
 /* eslint-disable react/prop-types */
 
 import { cx } from '~/utils'
-import 'github-markdown-css'
 import { FC, ReactNode, useEffect, memo, useMemo, useRef, useState } from 'react'
-import { CopyToClipboard } from 'react-copy-to-clipboard'
+import { getUserThemeMode, ThemeMode } from '~services/theme'
+import { isSystemDarkMode } from '~app/utils/color-scheme'
+import { CopyToClipboard } from 'react-copy-to-clipboard-ts'
 import { BsClipboard } from 'react-icons/bs'
 import ReactMarkdown from 'react-markdown'
 import reactNodeToString from 'react-node-to-string'
 import rehypeHighlight from 'rehype-highlight'
+import rehypeRaw from 'rehype-raw'
 import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -96,9 +98,69 @@ export const code: React.ElementType = memo(({ className, children }: TCodeProps
   }
 });
 
+// GitHub Markdown CSSの動的インポート管理
+const importThemeCSS = async (themeMode: ThemeMode) => {
+  // テーマに応じてダークモードかどうか判定
+  let shouldUseDark = false;
+  
+  if (themeMode === ThemeMode.Dark) {
+    shouldUseDark = true;
+  } else if (themeMode === ThemeMode.Auto) {
+    // Autoの場合は実際のシステムテーマまたは現在適用されているテーマを確認
+    shouldUseDark = document.documentElement.classList.contains('dark') || isSystemDarkMode();
+  }
+  // Light の場合は shouldUseDark = false のまま
+  
+  // 既存のGitHub Markdown CSSを削除
+  const existingStyles = document.querySelectorAll('link[data-github-markdown]');
+  existingStyles.forEach(style => style.remove());
+  
+  // 新しいCSSを動的インポート
+  try {
+    if (shouldUseDark) {
+      await import('github-markdown-css/github-markdown-dark.css');
+    } else {
+      await import('github-markdown-css/github-markdown-light.css');
+    }
+  } catch (error) {
+    console.warn('Failed to load GitHub Markdown CSS:', error);
+  }
+};
 
+const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, allowHtml = false }) => {
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode | null>(null);
 
-const Markdown: FC<{ children: string }> = ({ children }) => {
+  // 初期CSS読み込みとテーマ変更監視
+  useEffect(() => {
+    // 初期読み込み
+    const initialTheme = getUserThemeMode();
+    importThemeCSS(initialTheme);
+    setCurrentTheme(initialTheme);
+
+    // テーマ変更監視用のMutationObserver
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          const newTheme = getUserThemeMode();
+          if (newTheme !== currentTheme) {
+            importThemeCSS(newTheme);
+            setCurrentTheme(newTheme);
+          }
+        }
+      });
+    });
+
+    // documentElementのclass属性変更を監視
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [currentTheme]);
+
   const remarkPlugins: Pluggable[] = useMemo(
     () => [
       supersub,
@@ -117,7 +179,10 @@ const Markdown: FC<{ children: string }> = ({ children }) => {
         
         remarkPlugins
       }
-      rehypePlugins={[[rehypeHighlight, { detect: true, ignoreMissing: true }]]}
+      rehypePlugins={allowHtml
+        ? [rehypeRaw, [rehypeHighlight, { detect: true, ignoreMissing: true }]]
+        : [[rehypeHighlight, { detect: true, ignoreMissing: true }]]
+      }
       className={`markdown-body markdown-custom-styles !text-base font-normal`}
       // linkTarget="_blank" // Deprecated at markdown 9.0.0
       components={{

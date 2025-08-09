@@ -2,9 +2,6 @@ import { Outlet } from '@tanstack/react-router'
 import { useAtomValue } from 'jotai'
 import { followArcThemeAtom, themeColorAtom } from '~app/state'
 import ReleaseNotesModal from './Modals/ReleaseNotesModal'
-import ModelUpdateModal from './Modals/ModelUpdateModal'
-import DiscountModal from './Premium/DiscountModal'
-import PremiumModal from './Premium/Modal'
 import Sidebar from './Sidebar'
 
 function Layout() {
@@ -19,10 +16,7 @@ function Layout() {
       <div className="px-[5px] py-1 h-full overflow-hidden">
         <Outlet />
       </div>
-      <DiscountModal />
-      <PremiumModal />
       <ReleaseNotesModal />
-      <ModelUpdateModal />
     </main>
   )
 }

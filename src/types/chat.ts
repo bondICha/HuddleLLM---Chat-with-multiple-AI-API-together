@@ -1,11 +1,10 @@
-import { BotId } from '~app/bots'
 import { ChatError } from '~utils/errors'
 
 export interface ChatMessageModel {
   id: string
-  author: BotId | 'user'
+  author: number | 'user'
   text: string
-  image?: Blob
+  images?: File[]
   error?: ChatError
   thinking?: string
 }

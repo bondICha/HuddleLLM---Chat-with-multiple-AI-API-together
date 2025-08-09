@@ -1,12 +1,10 @@
 import { cx } from '~/utils'
-import { FC, useCallback, useMemo, useState } from 'react'
+import { FC, useCallback, useMemo, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FiSearch } from 'react-icons/fi'
 import { VscClearAll } from 'react-icons/vsc'
-import { BotId } from '~app/bots'
-import { CHATBOTS } from '~app/consts'
-import { usePremium } from '~app/hooks/use-premium'
 import { clearHistoryMessages } from '~services/chat-history'
+import { getUserConfig } from '~services/user-config'
 import Dialog from '../Dialog'
 import Tooltip from '../Tooltip'
 import HistoryContent from './Content'
@@ -28,22 +26,34 @@ const SearchInput: FC<{ disabled: boolean; value: string; onChange: (v: string) 
 }
 
 interface Props {
-  botId: BotId
+  index: number
   open: boolean
   onClose: () => void
 }
 
 const HistoryDialog: FC<Props> = (props) => {
-  const botName = useMemo(() => CHATBOTS[props.botId].name, [props.botId])
+  const [botName, setBotName] = useState('Custom Bot');
   const { t } = useTranslation()
-  const premiumState = usePremium()
   const [keyword, setKeyword] = useState('')
+
+  useEffect(() => {
+    const fetchBotName = async () => {
+      const config = await getUserConfig();
+      const customConfig = config.customApiConfigs?.[props.index];
+      if (customConfig) {
+        setBotName(customConfig.name);
+      }
+    };
+    if (props.open) {
+      fetchBotName();
+    }
+  }, [props.index, props.open]);
 
   const clearAll = useCallback(async () => {
     if (confirm(t('Are you sure you want to clear history messages?')!)) {
-      await clearHistoryMessages(props.botId)
+      await clearHistoryMessages(props.index)
     }
-  }, [props.botId, t])
+  }, [props.index, t])
 
   return (
     <Dialog
@@ -59,9 +69,9 @@ const HistoryDialog: FC<Props> = (props) => {
             <VscClearAll size={18} className="opacity-80" />
           </div>
         </Tooltip>
-        <SearchInput disabled={!premiumState.activated} value={keyword} onChange={setKeyword} />
+        <SearchInput disabled={false} value={keyword} onChange={setKeyword} />
       </div>
-      <HistoryContent botId={props.botId} keyword={keyword} />
+      <HistoryContent index={props.index} keyword={keyword} />
     </Dialog>
   )
 }

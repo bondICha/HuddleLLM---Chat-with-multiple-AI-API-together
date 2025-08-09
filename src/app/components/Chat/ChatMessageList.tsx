@@ -1,12 +1,11 @@
 import { FC } from 'react'
 import { cx } from '~/utils'
 import ScrollToBottom from 'react-scroll-to-bottom'
-import { BotId } from '~app/bots'
 import { ChatMessageModel } from '~types'
 import ChatMessageCard from './ChatMessageCard'
 
 interface Props {
-  botId: BotId
+  index: number
   messages: ChatMessageModel[]
   className?: string
   onPropaganda?: (text: string) => void
@@ -14,8 +13,8 @@ interface Props {
 
 const ChatMessageList: FC<Props> = (props) => {
   return (
-    <ScrollToBottom className="overflow-auto h-full">
-      <div className={cx('flex flex-col gap-3 h-full', props.className)}>
+    <ScrollToBottom className="h-full overflow-hidden">
+      <div className={cx('flex flex-col gap-3', props.className)}>
         {props.messages.map((message, index) => {
           return (
             <ChatMessageCard

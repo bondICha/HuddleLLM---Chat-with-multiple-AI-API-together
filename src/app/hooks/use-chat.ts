@@ -1,15 +1,14 @@
 import { useAtom } from 'jotai'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { chatFamily } from '~app/state'
 import { compressImageFile } from '~app/utils/image-compression'
 import { setConversationMessages } from '~services/chat-history'
 import { ChatMessageModel } from '~types'
 import { uuid } from '~utils'
 import { ChatError } from '~utils/errors'
-import { BotId } from '../bots'
 
-export function useChat(botId: BotId) {
-  const chatAtom = useMemo(() => chatFamily({ botId, page: 'singleton' }), [botId])
+export function useChat(index: number) {
+  const chatAtom = useMemo(() => chatFamily({ index, page: 'singleton' }), [index])
   const [chatState, setChatState] = useAtom(chatAtom)
 
   const updateMessage = useCallback(
@@ -25,13 +24,13 @@ export function useChat(botId: BotId) {
   )
 
   const sendMessage = useCallback(
-    async (input: string, image?: File) => {
+    async (input: string, images?: File[]) => {
 
       const botMessageId = uuid()
       setChatState((draft) => {
         draft.messages.push(
-          { id: uuid(), text: input, image, author: 'user' },
-          { id: botMessageId, text: '', author: botId },
+          { id: uuid(), text: input, images, author: 'user' },
+          { id: botMessageId, text: '', author: index }, // Use index as author
         )
       })
 
@@ -41,14 +40,14 @@ export function useChat(botId: BotId) {
         draft.abortController = abortController
       })
 
-      let compressedImage: File | undefined = undefined
-      if (image) {
-        compressedImage = await compressImageFile(image)
+      let compressedImages: File[] | undefined = undefined
+      if (images && images.length > 0) {
+        compressedImages = await Promise.all(images.map(compressImageFile))
       }
-
+      
       const resp = await chatState.bot.sendMessage({
         prompt: input,
-        image: compressedImage,
+        images: compressedImages,
         signal: abortController.signal,
       })
 
@@ -81,7 +80,7 @@ export function useChat(botId: BotId) {
         draft.generatingMessageId = ''
       })
     },
-    [botId, chatState.bot, setChatState, updateMessage],
+    [index, chatState.bot, setChatState, updateMessage],
   )
 
   const modifyLastMessage = useCallback(
@@ -90,7 +89,7 @@ export function useChat(botId: BotId) {
 
     // 最後のボットメッセージを見つけて更新
     setChatState((draft) => {
-      const lastBotMessage = [...draft.messages].reverse().find(m => m.author === botId)
+      const lastBotMessage = [...draft.messages].reverse().find(m => m.author === index) // Use index to find bot message
       if (lastBotMessage) {
         lastBotMessage.text = text
       }
@@ -124,30 +123,62 @@ export function useChat(botId: BotId) {
 
   useEffect(() => {
     if (chatState.messages.length) {
-      setConversationMessages(botId, chatState.conversationId, chatState.messages)
+      setConversationMessages(index, chatState.conversationId, chatState.messages)
     }
-  }, [botId, chatState.conversationId, chatState.messages])
+  }, [index, chatState.conversationId, chatState.messages])
+
+  // AsyncAbstractBotの初期化状態を監視するためのstate
+  const [botInitialized, setBotInitialized] = useState(false)
+
+  // ボットの初期化状態を定期的にチェック
+  useEffect(() => {
+    if ('isInitialized' in chatState.bot) {
+      const checkInitialization = () => {
+        const initialized = chatState.bot.isInitialized
+        if (initialized !== botInitialized) {
+          setBotInitialized(initialized)
+        }
+      }
+      
+      // 初期チェック
+      checkInitialization()
+      
+      // 定期的にチェック（初期化完了まで）
+      const interval = setInterval(() => {
+        checkInitialization()
+        if (chatState.bot.isInitialized) {
+          clearInterval(interval)
+        }
+      }, 100)
+      
+      return () => clearInterval(interval)
+    } else {
+      setBotInitialized(true) // 通常のAbstractBotの場合は常に初期化済み
+    }
+  }, [chatState.bot, botInitialized])
 
   const chat = useMemo(
     () => ({
-      botId,
+      index,
       bot: chatState.bot,
       messages: chatState.messages,
       sendMessage,
       resetConversation,
       generating: !!chatState.generatingMessageId,
       stopGenerating,
-      modifyLastMessage
+      modifyLastMessage,
+      isInitialized: botInitialized
     }),
     [
-      botId,
+      index,
       chatState.bot,
       chatState.generatingMessageId,
       chatState.messages,
       resetConversation,
       sendMessage,
       stopGenerating,
-      modifyLastMessage
+      modifyLastMessage,
+      botInitialized
     ],
   )
 

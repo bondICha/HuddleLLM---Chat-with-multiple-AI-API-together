@@ -1,92 +1,103 @@
 import { defaults } from 'lodash-es'
+import toast from 'react-hot-toast';
 import Browser from 'webextension-polyfill'
-import { BotId } from '~app/bots'
-import { ModelUpdateNote } from '~app/state'
-import { ALL_IN_ONE_PAGE_ID, CHATBOTS, CHATGPT_API_MODELS, DEFAULT_CHATGPT_SYSTEM_MESSAGE, DEFAULT_CLAUDE_SYSTEM_MESSAGE } from '~app/consts'
-import { CHATBOTS_UPDATED_EVENT } from '~app/consts'
-import defaultLogo from '~/assets/logos/CCLLM.png'
+import {
+  ALL_IN_ONE_PAGE_ID, CHATGPT_API_MODELS, DEFAULT_CHATGPT_SYSTEM_MESSAGE, DEFAULT_CLAUDE_SYSTEM_MESSAGE,
+  CHATBOTS_UPDATED_EVENT
+} from '~app/consts'
 
-export enum BingConversationStyle {
-  Creative = 'creative',
-  Balanced = 'balanced',
-  Precise = 'precise',
+// カスタムモデルの最大数
+const MAX_CUSTOM_MODELS = 50;
+
+// カスタムAPIの設定キーのプレフィックス
+const CUSTOM_API_CONFIG_PREFIX = 'customApiConfig_';
+
+
+// モデルリストをプロバイダーごとに階層化
+// Explicitly type MODEL_LIST to ensure values are strings
+export const MODEL_LIST: Record<string, Record<string, string>> = {
+    "OpenAI": {
+        "GPT-4.1": "gpt-4.1", // Default to current best
+        "GPT-4.1 mini": "gpt-4.1-mini",
+        "o4-mini": "o4-mini",
+        "o3": "o3",
+    },
+    "Anthropic": {
+        "Claude Sonnet 4": "claude-sonnet-4-0",
+        "Claude Opus 4": "claude-opus-4-0",
+        "Claude Sonnet 3.7": "claude-3-7-sonnet-latest",
+        "Claude Haiku 3.5": "claude-3-5-haiku-latest",
+    },
+    "Google": {
+        "Gemini 2.5 Pro": "gemini-2.5-pro-preview-05-06",
+        "Gemini 2.5 Flash": "gemini-2.5-flash-preview-04-17",
+    },
+    "Grok": {
+        "Grok 3": "grok-3",
+        "Grok 3 Fast": "grok-3-fast",
+        "Grok 3 Mini": "grok-3-mini",
+        "Grok 3 Mini Fast": "grok-3-mini-fast",
+    },
+    "Deepseek": {
+        "Deepseek Chat": "deepseek-chat",
+        "Deepseek Reasoner": "deepseek-reasoner",
+    },
+    "Perplexity": {
+        "Sonar Pro": "sonar-pro",
+        "Sonar": "sonar",
+        "Sonar Deep Research": "sonar-deep-research",
+        "Sonar Reasoning Pro": "sonar-reasoning-pro",
+        "Sonar Reasoning": "sonar-reasoning",
+        "R1-1776 (Offline)": "r1-1776",
+    },
+    "Rakuten": {
+        "DeepSeek-R1": "DeepSeek-R1",
+        "RakutenAI-2.0-MoE": "RakutenAI-2.0-MoE",
+        "Rakuten-AI-3.0-Alpha": "Rakuten-AI-3.0-Alpha",
+        "RakutenAI-7B-instruct": "RakutenAI-7B-instruct",
+        "DeepSeek-V3": "DeepSeek-V3",
+        "RakutenAI-2.0-Mini-1.5B": "RakutenAI-2.0-Mini-1.5B",
+    },
+    // ベンダー特有のモデルIDを「Custom」カテゴリとして追加
+    "Custom": {
+        // Bedrock用のGeminiモデル
+        "Google Gemini 2.5 Flash": "google/gemini-2.5-flash-preview-04-17",
+        "Google Gemini 2.5 Pro": "google/gemini-2.5-pro-preview-05-06",
+        // Bedrock用のClaudeモデル
+        "Claude Sonnet 4 (Bedrock)": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "Claude 3.5 Haiku (Bedrock)": "anthropic.claude-3-5-haiku-20241022-v1:0",
+    },
+};
+// Note: Removed individual model enums (ClaudeAPIModel, GeminiAPIModel, etc.) and CustomAPIModel enum
+
+
+
+// テンプレートの種類を定義
+export enum TemplateType {
+  None = 'none',
+  OpenAI = 'openai',
+  Claude = 'claude',
+  Gemini = 'gemini',
+  Perplexity = 'perplexity',
+  Grok = 'grok'
 }
 
-export enum ChatGPTMode {
-  Webapp = 'webapp',
-  API = 'api',
-  Azure = 'azure',
-  Poe = 'poe',
-  OpenRouter = 'openrouter',
+export enum CustomApiProvider {
+  OpenAI = 'openai',
+  Anthropic = 'anthropic', // Default, uses x-api-key
+  Bedrock = 'bedrock',
+  Anthropic_CustomAuth = 'anthropic-customauth', // Uses Authorization header
+  Google = 'google', // For Gemini API
+  Perplexity = 'perplexity', // For Perplexity API
+  VertexAI_Claude = 'vertexai-claude' // For Google VertexAI Claude API
 }
 
-export enum ChatGPTWebModel {
-  'GPT-3.5' = 'gpt-3.5',
-  'GPT-4' = 'gpt-4',
-}
-
-export enum PoeGPTModel {
-  'GPT-3.5' = 'chinchilla',
-  'GPT-4' = 'beaver',
-}
-
-export enum PoeClaudeModel {
-  'claude-instant' = 'a2',
-  'claude-instant-100k' = 'a2_100k',
-  'claude-2-100k' = 'a2_2',
-}
-
-export enum ClaudeMode {
-  Webapp = 'webapp',
-  API = 'api',
-  Poe = 'poe',
-  OpenRouter = 'openrouter',
-}
-
-export enum ClaudeAPIModel {
-  'Claude 3.7 Sonnet' = 'claude-3-7-sonnet-latest',
-  'Claude 3.5 Haiku' = 'claude-3-5-haiku-latest',
-  'Claude 3.5 Sonnet' = 'claude-3-5-sonnet-latest',
-}
-
-export enum GeminiAPIModel {
-  'Gemini 1.5 Flash' = 'gemini-1.5-flash',
-  'Gemini 1.5 Pro' = 'gemini-1.5-pro',
-  'Gemini 2.0 Flash Experimental' = 'gemini-2.0-flash-exp',
-  'Gemini 2.0 Pro Experimental' = 'gemini-2.0-pro-exp-02-05',
-  'Gemini 2.0 Flash' = 'gemini-2.0-flash',
-  'Gemini 2.0 Flash Thinking Mode Experimental' = 'gemini-2.0-flash-thinking-exp'
-}
-
-export enum CustomAPIModel {
-  'OpenAI GPT 4o' = 'gpt-4o',
-  'OpenAI GPT 4o mini' = 'gpt-4o-mini',
-  'OpenAI GPT o3-mini' = 'o3-mini',
-  'Gemini 2.0 Flash' = 'google/gemini-2.0-flash-001',
-  'Gemini 2.0 Pro' = 'google/gemini-2.0-pro-exp-02-05',
-  'Gemini 2.0 Flash Thinking' = 'google/gemini-2.0-flash-thinking-exp-01-21',
-  'Gemini 1.0 Pro Vision' = 'google/gemini-1.0-pro-vision',
-  'RakutenAI-7B' = 'RakutenAI-7B-chat-v1',
-  'RakutenAI-2.0-MoE' = 'RakutenAI-2.0-MoE',
-  'Claude 3.7 Sonnet' = 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-  'Claude 3.5 Sonnet v2' = 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-  'Claude 3.5 Haiku' = 'anthropic.claude-3-5-haiku-20241022-v1:0',
-  'Rakuten AI 7B Translate' = 'rakuten-ai-7b-translate-2410',
-}
-
-export enum OpenRouterClaudeModel {
-  'claude-2' = 'claude-2',
-  'claude-instant-v1' = 'claude-instant-v1',
-}
-
-export enum PerplexityMode {
-  Webapp = 'webapp',
-  API = 'api',
-}
-
-
-export interface customApiConfig {
-  id: number
+/**
+ * カスタムAPIの設定インターフェース
+ * カスタムAPIの設定情報を保持する型定義
+ */
+export interface CustomApiConfig {
+  id?: number // 未使用、後方互換性のため維持。
   name: string,
   shortName: string,
   host: string,
@@ -96,459 +107,321 @@ export interface customApiConfig {
   avatar: string,
   apiKey: string,
   thinkingMode: boolean,
-  thinkingBudget: number
+  thinkingBudget: number,
+  provider: CustomApiProvider,
+  webAccess?: boolean,
+  isAnthropicUsingAuthorizationHeader?: boolean, // Anthropicの認証ヘッダータイプを指定するフラグ
+  enabled?: boolean, // 各チャットボットの有効/無効状態
+  isHostFullPath?: boolean; // hostが完全なパスかどうかを示すフラグ (デフォルト: false)
 }
 
-const defaultCustomApiConfigs: customApiConfig[] = [
+/**
+ * デフォルトのカスタムAPI設定
+ */
+const defaultCustomApiConfigs: CustomApiConfig[] = [
   {
     id: 1,
     name: 'Custom Ai1',
-    shortName: 'o3-mi', 
-    model: 'o3-mini',
+    shortName: 'o4-mi',
+    model: 'o4-mini',
     host: '',
     temperature: 0.7,
     systemMessage: '',
-    avatar: defaultLogo,
+    avatar: 'OpenAI.SimpleBlack',
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.OpenAI,
+    webAccess: false, // デフォルトは無効
+    enabled: true // 
   },
   {
     id: 2,
     name: 'Custom Ai2',
-    shortName: 'o1', 
+    shortName: 'o1',
     model: 'o1',
     host: '',
     temperature: 1.0,
     systemMessage: '',
-    avatar: defaultLogo,
+    avatar: 'OpenAI.SimpleGreen',
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.OpenAI,
+    webAccess: false, // デフォルトは無効
+    enabled: true // 
   },
   {
     id: 3,
     name: 'Custom Ai3',
-    shortName: 'LessT', 
+    shortName: 'LessT',
     model: 'o3-mini',
     host: '',
     temperature: 0.2,
     systemMessage: '',
-    avatar: defaultLogo,
+    avatar: 'OpenAI.SimpleYellow',
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.OpenAI,
+    webAccess: false, // デフォルトは無効
+    enabled: true // 
   },
   {
     id: 4,
     name: 'Custom Ai4',
-    shortName: 'rand', 
+    shortName: 'rand',
     model: 'o3-mini',
     host: '',
     temperature: 2.0,
     systemMessage: '',
-    avatar: defaultLogo,
+    avatar: 'OpenAI.SimplePurple',
     apiKey: '',
     thinkingMode: false,
-    thinkingBudget: 2000
-  },
-  {
-    id: 5,
-    name: 'Custom Ai5',
-    shortName: 'Claud', 
-    model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    host: 'https://XXXXXXXXXXXX.azure-api.net/aws-bedrock/',
-    temperature: 0.7,
-    systemMessage: '',
-    avatar: defaultLogo,
-    apiKey: '',
-    thinkingMode: false,
-    thinkingBudget: 2000
-  },
-  {
-    id: 6,
-    name: 'Custom Ai6',
-    shortName: 'ClHa', 
-    model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    host: 'https://XXXXXXXXX.azure-api.net/aws-bedrock/',
-    temperature: 1.0,
-    systemMessage: '',
-    avatar: defaultLogo,
-    apiKey: '',
-    thinkingMode: true,
-    thinkingBudget: 2000
-  },
-  {
-    id: 7,
-    name: 'Custom Ai7',
-    shortName: 'ClH', 
-    model: 'anthropic.claude-3-5-haiku-20241022-v1:0',
-    host: 'https://XXXXXXXXXX.azure-api.net/aws-bedrock/',
-    temperature: 0.9,
-    systemMessage: '',
-    avatar: defaultLogo,
-    apiKey: '',
-    thinkingMode: false,
-    thinkingBudget: 2000
-  },
-  {
-    id: 8,
-    name: 'Custom Ai8',
-    shortName: 'Cus8', 
-    model: 'anthropic.claude-3-5-haiku-20241022-v1:0',
-    host: 'https://XXXXXXXXXXX.azure-api.net/aws-bedrock/',
-    temperature: 0.9,
-    systemMessage: '',
-    avatar: defaultLogo,
-    apiKey: '',
-    thinkingMode: false,
-    thinkingBudget: 2000
-  },
-  {
-    id: 8,
-    name: 'Custom Ai9',
-    shortName: 'Cus9', 
-    model: 'deepseek-chat',
-    host: 'https://XXXXXXXXXXX.azure-api.net/aws-bedrock/',
-    temperature: 0.9,
-    systemMessage: '',
-    avatar: defaultLogo,
-    apiKey: '',
-    thinkingMode: false,
-    thinkingBudget: 2000
-  },
-  {
-    id: 8,
-    name: 'Custom Ai10',
-    shortName: 'Cus10', 
-    model: 'deepseek-reasoner',
-    host: 'https://XXXXXXXXXXX.azure-api.net/aws-bedrock/',
-    temperature: 0.9,
-    systemMessage: '',
-    avatar: defaultLogo,
-    apiKey: '',
-    thinkingMode: false,
-    thinkingBudget: 2000
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.OpenAI,
+    webAccess: false, // デフォルトは無効
+    enabled: true
   }
 ]
 
 
+// Define presets for API models only | Template
+/**
+ * APIモデルのプリセット設定
+ */
+export const presetApiConfigs: Record<string, Omit<CustomApiConfig, 'id' | 'apiKey'>> = {
+  "OpenAI": {
+    name: 'OpenAI',
+    shortName: "GPT",
+    model: MODEL_LIST.OpenAI["GPT-4.1"],
+    host: 'https://api.openai.com',
+    temperature: 1,
+    systemMessage: DEFAULT_CHATGPT_SYSTEM_MESSAGE,
+    avatar: 'OpenAI.Green',
+    thinkingMode: false,
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.OpenAI
+  },
+  "Anthropic": {
+    name: 'Anthropic',
+    shortName: "Claud",
+    model: MODEL_LIST.Anthropic["Claude Sonnet 4"],
+    host: 'https://api.anthropic.com/',
+    temperature: 1.0,
+    systemMessage: DEFAULT_CLAUDE_SYSTEM_MESSAGE,
+    avatar: 'Claude.Orange',
+    thinkingMode: false,
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.Anthropic
+  },
+  "Gemini": {
+    name: 'Google Gemini',
+    shortName: "GGem",
+    model: MODEL_LIST.Google["Gemini 2.5 Pro"],
+    host: '',
+    temperature: 1.0,
+    systemMessage: DEFAULT_CHATGPT_SYSTEM_MESSAGE,
+    avatar: 'Gemini.Color',
+    thinkingMode: false,
+    thinkingBudget: 2000,
+    provider: CustomApiProvider.Google
+  },
+   "Perplexity": {
+     name: 'Perplexity',
+     shortName: "pplx",
+     model: MODEL_LIST.Perplexity["Sonar Pro"], // Set default Perplexity model from MODEL_LIST
+     host: 'https://api.perplexity.ai',
+     temperature: 1.0,
+     systemMessage: '', // Keep system message empty or set a default if needed
+     avatar: 'Perplexity.Sonar',
+     thinkingMode: false,
+     thinkingBudget: 2000,
+     provider: CustomApiProvider.Perplexity // Ensure Perplexity provider exists and is correct
+  },
+  "Grok": {
+     name: 'Grok',
+     shortName: 'Grok',
+     model: MODEL_LIST.Grok["Grok 3"], // Ensure this is the intended default
+     host: 'https://api.x.ai/v1', // Verify Grok API host
+     temperature: 1.0,
+     systemMessage: '', // Keep system message empty or set a default if needed
+     avatar: 'grok', // Ensure 'grok' avatar exists
+     thinkingMode: false,
+     thinkingBudget: 2000,
+     provider: CustomApiProvider.OpenAI // Grok uses OpenAI compatible API, keep this provider
+  },
 
+};
+// Note: 'id', 'shortName', 'apiKey', and potentially 'host' for Bedrock/Gemini need user input or further setup.
+
+
+
+
+/**
+ * デフォルトのユーザー設定
+ */
 const userConfigWithDefaultValue = {
-  openaiApiKey: '',
-  openaiApiHost: 'https://api.openai.com',
-  chatgptApiModel: CHATGPT_API_MODELS[0] as string,
-  chatgptApiTemperature: 1,
-  chatgptApiSystemMessage: DEFAULT_CHATGPT_SYSTEM_MESSAGE,
-  chatgptMode: ChatGPTMode.API,
-  chatgptWebappModelName: ChatGPTWebModel['GPT-3.5'],
-  chatgptPoeModelName: PoeGPTModel['GPT-3.5'],
   startupPage: ALL_IN_ONE_PAGE_ID,
-  bingConversationStyle: BingConversationStyle.Balanced,
-  poeModel: PoeClaudeModel['claude-instant'],
-  azureOpenAIApiKey: '',
-  azureOpenAIApiInstanceName: '',
-  azureOpenAIApiDeploymentName: '',
-  enabledBots: Object.keys(CHATBOTS).slice(0, 3) as BotId[],
-  claudeApiKey: '',
-  claudeApiHost: 'https://api.anthropic.com/',
-  claudeMode: ClaudeMode.API,
-  claudeApiModel: ClaudeAPIModel['Claude 3.7 Sonnet'] as string,
-  claudeApiSystemMessage: DEFAULT_CLAUDE_SYSTEM_MESSAGE,
-  claudeApiTemperature: 1.0,
   chatgptWebAccess: false,
   claudeWebAccess: false,
-  openrouterOpenAIModel: CHATGPT_API_MODELS[0] as string,
-  openrouterClaudeModel: OpenRouterClaudeModel['claude-2'] as string,
-  openrouterApiKey: '',
-  perplexityMode: PerplexityMode.Webapp,
-  perplexityApiKey: '',
-  perplexityModel: 'sonar-pro' as string,
-  geminiApiKey: '',
-  geminiApiModel: GeminiAPIModel['Gemini 2.0 Flash Experimental'] as string,
-  geminiApiSystemMessage: DEFAULT_CHATGPT_SYSTEM_MESSAGE,
-  geminiApiTemperature: 1.0,
   customApiConfigs: defaultCustomApiConfigs,
   customApiKey: '',
   customApiHost: '',
-  useCustomChatbotOnly: null as null | boolean,
+  isCustomApiHostFullPath: false, // デフォルト値を設定
 }
 
 export type UserConfig = typeof userConfigWithDefaultValue
 
-export async function getUserConfig(): Promise<UserConfig> {
-  const result = await Browser.storage.sync.get(null) // 全ての設定を取得
-  
-  // 設定の復元（古いrakutenApiConfigと新しいcustomApiConfigの両方に対応）
-  const configCount = result.customApiConfigCount || result.rakutenApiConfigCount || defaultCustomApiConfigs.length
-  const configs: customApiConfig[] = []
-  
-  for (let i = 0; i < configCount; i++) {
-    // 新しい形式を優先して確認
-    const newConfig = result[`customApiConfig_${i}`]
-    const oldConfig = result[`rakutenApiConfig_${i}`]
-    
-    if (newConfig) {
-      configs.push(newConfig)
-    } else if (oldConfig) {
-      // 古い形式から新しい形式に変換
-      configs.push({
-        ...oldConfig,
-        id: i + 1,
-        apiKey: oldConfig.apiKey || ''
-      })
-      // 古い形式の設定を削除
-      delete result[`rakutenApiConfig_${i}`]
-    } else {
-      // 設定が見つからない場合はデフォルト値を使用
-      configs.push(defaultCustomApiConfigs[i])
-    }
-  }
-  
-  // 古い設定のクリーンアップと変換
-  if (result.rakutenApiConfigCount) {
-    // 古い設定を新しい設定に変換
-    if (result.rakutenApiHost) {
-      result.customApiHost = result.rakutenApiHost
-    }
-    if (result.rakutenApiKey) {
-      result.customApiKey = result.rakutenApiKey
-    }
-    
-    // 古い設定を削除
-    delete result.rakutenApiConfigCount
-    delete result.rakutenApiHost
-    delete result.rakutenApiKey
-  }
-  
-  result.customApiConfigs = configs
-  delete result.customApiConfigCount 
-  if (!result.chatgptMode && result.openaiApiKey) {
-    result.chatgptMode = ChatGPTMode.API
-  }
-  if (result.chatgptWebappModelName === 'default') {
-    result.chatgptWebappModelName = ChatGPTWebModel['GPT-3.5']
-  } else if (result.chatgptWebappModelName === 'gpt-4-browsing') {
-    result.chatgptWebappModelName = ChatGPTWebModel['GPT-4']
-  } else if (result.chatgptWebappModelName === 'gpt-3.5-mobile') {
-    result.chatgptWebappModelName = ChatGPTWebModel['GPT-3.5']
-  } else if (result.chatgptWebappModelName === 'gpt-4-mobile') {
-    result.chatgptWebappModelName = ChatGPTWebModel['GPT-4']
-  }
-  if (result.chatgptApiModel === 'gpt-3.5-turbo-16k') {
-    result.chatgptApiModel = 'gpt-3.5-turbo'
-  } else if (result.chatgptApiModel === 'gpt-4-32k') {
-    result.chatgptApiModel = 'gpt-4'
-  }
-  if (result.claudeApiHost === '') {
-    result.claudeApiHost = 'https://api.anthropic.com/'
-  }
-  if (!Object.values(GeminiAPIModel).includes(result.geminiApiModel as GeminiAPIModel)) {
-    result.geminiApiModel = GeminiAPIModel['Gemini 2.0 Flash Experimental']
-  }
 
-  // customApiConfigsの不足をデフォルト値で補う
-  if (result.customApiConfigs) {
-    const defaultCount = defaultCustomApiConfigs.length;
-    const currentCount = result.customApiConfigs.length;
 
-    if (currentCount < defaultCount) {
-      const configsToAdd = defaultCustomApiConfigs.slice(currentCount, defaultCount);
-      result.customApiConfigs.push(...configsToAdd);
-    }
-  } else {
-    result.customApiConfigs = [...defaultCustomApiConfigs]; // 初めて設定されている場合
-  }
+/**
+ * ユーザー設定を取得する
+ * @returns ユーザー設定
+ */
+// Helper function to migrate customApiConfigs from sync to local
+async function _migrateCustomApiConfigsFromSyncToLocal(): Promise<CustomApiConfig[] | undefined> {
+  const allSyncDataForMigration = await Browser.storage.sync.get(null);
+  const oldIndividualConfigKeys = Object.keys(allSyncDataForMigration)
+    .filter(key => key.startsWith(CUSTOM_API_CONFIG_PREFIX));
 
-  
-  return defaults(result, userConfigWithDefaultValue)
-}
-
-export const MODEL_UPDATE_MAPPINGS: Record<string, string[]> = {
-  'gpt-4o': ['OpenAI GPT o3-mini'],
-  'gpt-4o-mini': ['OpenAI GPT o3-mini'],
-  'gemini-1-5': [
-    'Gemini 2.0 Flash Thinking Mode Experimental',
-    'Gemini 2.0 Flash',
-    'Gemini 2.0 Pro',
-    'Gemini 2.0 Flash Experimental',
-    'Gemini 2.0 Pro Experimental',
-  ],
-  'claude-3-5': ['Claude 3.7 Sonnet'],
-  'RakutenAI-7B': ['RakutenAI-2.0-MoE']
-}
-
-export async function checkForModelUpdates(config: UserConfig): Promise<ModelUpdateNote[]> {
-  const updates: ModelUpdateNote[] = []
-  
-  // ストレージから直接ignoredModelsを取得
-  let ignoredModels: string[] = []
-  try {
-    // まずlocalStorageを確認（主要な保存場所）
-    const localResult = await Browser.storage.local.get('ignoredModels')
-    if (localResult.ignoredModels) {
-      if (typeof localResult.ignoredModels === 'string') {
-        try {
-          ignoredModels = JSON.parse(localResult.ignoredModels)
-        } catch (e) {
-          console.error('Failed to parse ignoredModels from local storage:', e)
-        }
-      } else if (Array.isArray(localResult.ignoredModels)) {
-        ignoredModels = localResult.ignoredModels
-        console.log('Loaded ignoredModels array from local storage:', ignoredModels)
+  if (oldIndividualConfigKeys.length > 0) {
+    console.log('Migrating customApiConfigs from sync (individual keys) to local (single key)...');
+    let migratedConfigs: CustomApiConfig[] = [];
+    for (const key of oldIndividualConfigKeys) {
+      if (allSyncDataForMigration[key] && typeof allSyncDataForMigration[key] === 'object') {
+        migratedConfigs.push(allSyncDataForMigration[key] as CustomApiConfig);
       }
     }
-    
-    // localStorageになければsyncストレージを確認
-    if (ignoredModels.length === 0) {
-      const syncResult = await Browser.storage.sync.get('ignoredModels')
-      if (syncResult.ignoredModels) {
-        if (typeof syncResult.ignoredModels === 'string') {
-          try {
-            ignoredModels = JSON.parse(syncResult.ignoredModels)
-          } catch (e) {
-            console.error('Failed to parse ignoredModels from sync storage:', e)
+    // Sort by index extracted from the key
+    migratedConfigs.sort((a, b) => {
+      const getIndexFromKey = (config: CustomApiConfig, keyPrefix: string, allData: Record<string, any>): number => {
+        for (const k in allData) {
+          if (allData[k] === config && k.startsWith(keyPrefix)) {
+            const indexStr = k.substring(keyPrefix.length);
+            const index = parseInt(indexStr, 10);
+            if (!isNaN(index)) return index;
           }
-        } else if (Array.isArray(syncResult.ignoredModels)) {
-          ignoredModels = syncResult.ignoredModels
         }
-      }
-    }
-  } catch (e) {
-    console.error('Failed to get ignoredModels from storage:', e)
-  }
-  
+        return Infinity;
+      };
+      const indexA = getIndexFromKey(a, CUSTOM_API_CONFIG_PREFIX, allSyncDataForMigration);
+      const indexB = getIndexFromKey(b, CUSTOM_API_CONFIG_PREFIX, allSyncDataForMigration);
+      return indexA - indexB;
+    });
 
-  config.customApiConfigs.forEach((config) => {
-    // 現在のモデル名が無視リストに含まれているかチェック
-    const modelLower = config.model.toLowerCase()
-    
-    // 完全一致チェック
-    if (ignoredModels.some(ignored => {
-      const ignoredLower = typeof ignored === 'string' ? ignored.toLowerCase() : '';
-      return modelLower === ignoredLower;
-    })) {
-      console.log(`Skipping model ${config.model} - exact match in ignored list`)
-      return // このモデルをスキップ
-    }
-    
-    // MODEL_UPDATE_MAPPINGSのパターンに基づくチェック
-    for (const [oldPattern, newModels] of Object.entries(MODEL_UPDATE_MAPPINGS)) {
-      const patternLower = oldPattern.toLowerCase()
-      
-      // 部分一致でモデルを検出
-      if (modelLower.includes(patternLower)) {
-        // このパターンに一致するモデルが無視リストに含まれているかチェック
-        const isIgnored = ignoredModels.some(ignored => {
-          if (typeof ignored !== 'string') return false;
-          const ignoredLower = ignored.toLowerCase();
-          return (
-            ignoredLower.includes(patternLower) || 
-            patternLower.includes(ignoredLower) ||
-            modelLower === ignoredLower
-          );
-        });
-        
-        if (isIgnored) {
-          console.log(`Skipping model ${config.model} due to pattern match with ignored model`)
-          return // このモデルをスキップ
-        }
-        
-        updates.push({
-          oldModel: config.model,
-          newModels: newModels,
-          configId: config.id
-        })
-        console.log(`Found update for model: ${config.model} -> ${newModels[0]}`)
-        break // 一つのモデルに対して複数の更新を防ぐ
-      }
-    }
-  })
-  
-  console.log('Model updates found:', updates) // デバッグ用ログ
-  return updates
+    await Browser.storage.local.set({ customApiConfigs: migratedConfigs });
+    await Browser.storage.sync.remove(oldIndividualConfigKeys);
+    console.log('Migration complete.');
+    return migratedConfigs;
+  }
+  return undefined;
 }
 
+export async function getUserConfig(): Promise<UserConfig> {
+  try {
+    // 1. customApiConfigs を local から取得
+    const localData = await Browser.storage.local.get('customApiConfigs');
+    let customConfigsInLocal: CustomApiConfig[] | undefined = localData.customApiConfigs;
+
+    // 2. その他の設定を sync から取得 (customApiConfigs を除く)
+    const syncKeysToGet = Object.keys(userConfigWithDefaultValue).filter(k => k !== 'customApiConfigs');
+    const syncData = await Browser.storage.sync.get(syncKeysToGet);
+
+    let finalConfig = defaults({}, syncData, userConfigWithDefaultValue);
+
+    // 3. マイグレーション処理 (必要な場合)
+    if (customConfigsInLocal === undefined || (Array.isArray(customConfigsInLocal) && customConfigsInLocal.length === 0)) {
+      const migrated = await _migrateCustomApiConfigsFromSyncToLocal();
+      if (migrated) {
+        customConfigsInLocal = migrated;
+      }
+    }
+
+    finalConfig.customApiConfigs = customConfigsInLocal || [...defaultCustomApiConfigs];
+    
+    if (finalConfig.customApiConfigs) {
+      finalConfig.customApiConfigs.forEach((config: CustomApiConfig) => {
+        if (config.provider === undefined) {
+          config.provider = CustomApiProvider.OpenAI;
+        }
+        if (config.isHostFullPath === undefined) {
+          config.isHostFullPath = false; // マイグレーション: 既存設定にデフォルト値を設定
+        }
+      });
+    }
+    
+    if (syncData.enabledBots && Array.isArray(syncData.enabledBots) && finalConfig.customApiConfigs) {
+        finalConfig.customApiConfigs.forEach((config: CustomApiConfig, index: number) => {
+        if (config.enabled === undefined) {
+          config.enabled = syncData.enabledBots.includes(index);
+        }
+      });
+      await Browser.storage.sync.remove('enabledBots');
+    }
+    
+    if (finalConfig.hasOwnProperty('useCustomChatbotOnly')) {
+        delete (finalConfig as any).useCustomChatbotOnly;
+        await Browser.storage.sync.remove('useCustomChatbotOnly');
+    }
+
+    return finalConfig;
+  } catch (error) {
+    console.error('Failed to get user config:', error);
+    toast.error('設定の読み込みに失敗しました。デフォルト設定を使用します。');
+    return { ...userConfigWithDefaultValue };
+  }
+}
+
+/**
+ * ユーザー設定を更新する
+ * @param updates 更新する設定
+ */
 export async function updateUserConfig(updates: Partial<UserConfig>) {
-  console.debug('update configs', updates)
-  
-  // customApiConfigsが含まれている場合は、別々のキーとして保存
-  if ('customApiConfigs' in updates) {
-    const configs = updates.customApiConfigs
-    delete updates.customApiConfigs // 元の配列は削除
+  try {
+    const { customApiConfigs, ...otherUpdates } = updates;
 
-    if (configs) {
-      // 各設定を個別のキーとして保存
-      for (let i = 0; i < configs.length; i++) {
-        await Browser.storage.sync.set({ [`customApiConfig_${i}`]: configs[i] })
+    // 1. customApiConfigs を local に保存 (存在する場合)
+    if (customApiConfigs !== undefined) { // null や空配列も保存対象とするため、undefined のみチェック
+      if (Array.isArray(customApiConfigs)) {
+        const limitedConfigs = customApiConfigs.slice(0, MAX_CUSTOM_MODELS);
+        await Browser.storage.local.set({ customApiConfigs: limitedConfigs });
+      } else {
+        // customApiConfigs が配列でない不正なケース (例: null)
+        await Browser.storage.local.set({ customApiConfigs: [] }); // 空配列として保存
       }
-      // 設定の数を保存
-      await Browser.storage.sync.set({ customApiConfigCount: configs.length })
-      updateLocalCustomChatbotsVariable(configs)
     }
-  }
 
-  // その他の更新
-  await Browser.storage.sync.set(updates)
-  for (const [key, value] of Object.entries(updates)) {
-    if (value === undefined) {
-      await Browser.storage.sync.remove(key)
-    }
-  }
- 
-  // もしキーにcustomApiConfigsが含まれていたら
-  if ('customApiConfigs' in updates) {
-    updateLocalCustomChatbotsVariable(updates.customApiConfigs ?? [])
-  }
-}
+    // 2. その他の設定を sync に保存 (存在する場合)
+    if (Object.keys(otherUpdates).length > 0) {
+      const updatesForSync: Record<string, any> = {};
+      const keysToRemoveFromSync: string[] = [];
 
-// どうやったら動的に更新できるか分からないから取りあえずべた書き。
-export let localChatBotsInfo: Partial<Record<BotId, { name: string }>> = {
-  'customchat1': {
-    name: 'GPT-4o',
-  },
-  'customchat2': {
-    name: 'GPT-4o mini',
-  },
-  'customchat3': {
-    name: 'Gemini 1.5 Pro',
-  },
-  'customchat4': {
-    name: 'Rakuten AI 7B',
-  },
-  'customchat5': {
-    name: 'Claude 3.5 Sonnet v2',
-  },
-  'customchat6': {
-    name: 'Claude 3.5 Sonnet',
-  },
-  'customchat7': {
-    name: 'Claude 3.5 Haiku',
-  },
-  'customchat8': {
-    name: '自定义',
-  },
-}
-
-export async function updateLocalCustomChatbotsVariable(customApiConfigs: customApiConfig[]) {
-  for (let i = 0; i < customApiConfigs.length; i++) {
-    const config = customApiConfigs[i]
-    const botId = `customchat${i + 1}` as BotId
-    if (localChatBotsInfo[botId]) {
-      localChatBotsInfo[botId] = {
-        ...localChatBotsInfo[botId],
-        name: config.name
+      for (const [key, value] of Object.entries(otherUpdates)) {
+        if (value === undefined) {
+          keysToRemoveFromSync.push(key);
+        } else {
+          updatesForSync[key] = value;
+        }
       }
-    } else {
-      localChatBotsInfo[botId] = { name: config.name }
+      if (Object.keys(updatesForSync).length > 0) {
+        await Browser.storage.sync.set(updatesForSync);
+      }
+      if (keysToRemoveFromSync.length > 0) {
+        await Browser.storage.sync.remove(keysToRemoveFromSync);
+      }
     }
+    
+
+    const event = new CustomEvent(CHATBOTS_UPDATED_EVENT);
+    window.dispatchEvent(event);
+  } catch (error) {
+    console.error('Failed to update user config:', error);
+    let errorMessage = '設定の保存に失敗しました';
+    if (error instanceof Error) {
+      errorMessage += `: ${error.message}`;
+    }
+    toast.error(errorMessage);
   }
 }
 
-// Custom ChatGPT の設定を更新する関数
-export function getChatbotName(botId: BotId) {
-  const chatbotName = localChatBotsInfo[botId]?.name ?? CHATBOTS[botId].name
-  console.log('Return following chatname: ' + chatbotName)
-  return chatbotName
-  
-}

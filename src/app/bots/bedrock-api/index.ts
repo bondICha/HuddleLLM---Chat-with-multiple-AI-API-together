@@ -4,8 +4,10 @@ import { requestHostPermission } from '~app/utils/permissions';
 import { UserConfig } from '~services/user-config';
 import { ChatError, ErrorCode } from '~utils/errors';
 import { parseSSEResponse } from '~utils/sse';
-import { AbstractBot, SendMessageParams } from '../abstract-bot';
-import { file2base64 } from '../bing/utils';
+import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract-bot';
+import { file2base64 } from '~app/utils/file-utils';
+import { ChatMessageModel } from '~types';
+import { uuid } from '~utils';
 import {
   BedrockRuntimeClient,
   ConverseCommand,
@@ -41,24 +43,92 @@ interface ConversationContext {
 export abstract class AbstractBedrockApiBot extends AbstractBot {
   private conversationContext?: ConversationContext
 
-  private buildUserMessage(prompt: string, imageUrl?: string): ChatMessage {
-    const content: ContentPart[] = [
-      { text: prompt }
-    ];
-
-    if (imageUrl) {
-      content.push({
-        image: {
-          format: 'jpeg',  // assuming format as jpeg
-          source: { bytes: this.base64ToUint8Array(imageUrl) }
+  // ConversationHistoryインターフェースの実装
+  public setConversationHistory(history: ConversationHistory): void {
+    if (history.messages && Array.isArray(history.messages)) {
+      // ChatMessageModelからChatMessageへの変換
+      const messages: ChatMessage[] = history.messages.map(msg => {
+        if (msg.author === 'user') {
+          return {
+            role: 'user',
+            content: [{ text: msg.text }]
+          };
+        } else {
+          return {
+            role: 'assistant',
+            content: [{ text: msg.text }]
+          };
         }
       });
+      
+      this.conversationContext = {
+        messages: messages
+      };
+    }
+  }
+
+  public getConversationHistory(): ConversationHistory | undefined {
+    if (!this.conversationContext) {
+      return undefined;
+    }
+    
+    // ChatMessageからChatMessageModelへの変換
+    const messages = this.conversationContext.messages.map(msg => {
+      const role = msg.role === 'user' ? 'user' : 'assistant';
+      let text = '';
+      
+      if (Array.isArray(msg.content)) {
+        // contentが配列の場合、textプロパティを持つ最初の要素を探す
+        const textContent = msg.content.find(part => 'text' in part && typeof part.text === 'string');
+        if (textContent && 'text' in textContent) {
+          text = textContent.text || '';
+        }
+      }
+      
+      return {
+        id: uuid(),
+        author: role,
+        text: text
+      };
+    });
+    
+    return { messages };
+  }
+
+  private buildUserMessage(prompt: string, images?: { data: string, format: 'jpeg' | 'png' | 'gif' | 'webp' }[]): ChatMessage {
+    const content: ContentPart[] = [];
+
+    // Add text content first
+    content.push({ text: prompt });
+
+    // Then add images if any
+    if (images && images.length > 0) {
+      for (const image of images) {
+        try {
+          const bytes = this.base64ToUint8Array(image.data);
+          console.log(`Adding image: format=${image.format}, bytes length=${bytes.length}`);
+          
+          content.push({
+            image: {
+              format: image.format,
+              source: {
+                bytes: bytes
+              }
+            }
+          });
+        } catch (imageError) {
+          console.error('Error processing image:', imageError);
+          console.error('Image format:', image.format);
+          console.error('Image data length:', image.data?.length || 0);
+          throw new Error(`Failed to process image: ${imageError instanceof Error ? imageError.message : 'Unknown error'}`);
+        }
+      }
     }
 
     return { role: 'user', content };
   }
 
-  private buildMessages(prompt: string, imageUrl?: string): ChatMessage[] {
+  private buildMessages(prompt: string, images?: { data: string, format: 'jpeg' | 'png' | 'gif' | 'webp' }[]): ChatMessage[] {
     // 会話コンテキストからメッセージを取得
     const contextMessages = this.conversationContext!.messages.slice(-(CONTEXT_SIZE + 1));
 
@@ -104,7 +174,7 @@ export abstract class AbstractBedrockApiBot extends AbstractBot {
 
     return [
       ...result.slice(-(CONTEXT_SIZE - 1)),
-      this.buildUserMessage(prompt, imageUrl),
+      this.buildUserMessage(prompt, images),
     ]
   }
 
@@ -116,15 +186,74 @@ export abstract class AbstractBedrockApiBot extends AbstractBot {
     if (!this.conversationContext) {
       this.conversationContext = { messages: [] }
     }
-  
-    let imageUrl: string | undefined
-    if (params.image) {
-      imageUrl = await file2base64(params.image)
-    }
-  
-    try {
-      const resp = await this.fetchCompletionApi(this.buildMessages(params.prompt, imageUrl), params.signal)
+
+    const images_for_api: { data: string, format: 'jpeg' | 'png' | 'gif' | 'webp' }[] = [];
+    if (params.images && params.images.length > 0) {
+      console.log(`Processing ${params.images.length} images for Bedrock API`);
       
+      for (const image of params.images) {
+        try {
+          const base64Data = await file2base64(image);
+          
+          // base64データが空でないことを確認
+          if (!base64Data || base64Data.trim().length === 0) {
+            throw new Error(`Empty base64 data returned for image: ${image.name || 'unknown'}`);
+          }
+          
+          const mimeType = image.type.split('/')[1]?.toLowerCase();
+          let format: 'jpeg' | 'png' | 'gif' | 'webp' = 'jpeg';
+          
+          console.log(`Image MIME type: ${image.type}, extracted format: ${mimeType}`);
+          
+          if (mimeType === 'png' || mimeType === 'gif' || mimeType === 'webp') {
+            format = mimeType;
+          } else if (mimeType === 'jpg') {
+            format = 'jpeg';
+          }
+          
+          // base64データの処理を改善
+          let base64Content: string;
+          
+          if (base64Data.includes(',')) {
+            // data:image/jpeg;base64,xxxxx 形式の場合
+            const parts = base64Data.split(',');
+            if (parts.length !== 2 || !parts[1] || parts[1].trim().length === 0) {
+              throw new Error(`Invalid base64 data: no content after comma. Got: "${base64Data.substring(0, 100)}..."`);
+            }
+            base64Content = parts[1].trim();
+          } else {
+            // 既にbase64データのみの場合
+            base64Content = base64Data.trim();
+          }
+          
+          // base64データの妥当性をチェック
+          if (!base64Content || base64Content.trim().length === 0) {
+            throw new Error('Empty base64 content');
+          }
+          
+          // base64形式の妥当性をチェック（簡易チェック）
+          if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64Content)) {
+            throw new Error('Invalid base64 characters');
+          }
+          
+          console.log(`Image processed: format=${format}, base64 length=${base64Content.length}`);
+          
+          images_for_api.push({
+            data: base64Content,
+            format: format,
+          });
+        } catch (imageProcessingError) {
+          console.error('Error processing individual image:', imageProcessingError);
+          console.error('Image type:', image.type);
+          console.error('Image size:', image.size);
+          throw imageProcessingError;
+        }
+      }
+    }
+
+    try {
+      const resp = await this.fetchCompletionApi(this.buildMessages(params.prompt, images_for_api), params.signal)
+
       if (!resp.ok) {
         params.onEvent({
           type: 'ERROR',
@@ -133,8 +262,8 @@ export abstract class AbstractBedrockApiBot extends AbstractBot {
         console.error('Failed to fetch API:', await resp.text());
         return;
       }
-  
-      this.conversationContext.messages.push(this.buildUserMessage(params.rawUserInput || params.prompt, imageUrl))
+
+      this.conversationContext.messages.push(this.buildUserMessage(params.rawUserInput || params.prompt, images_for_api))
   
       let done = false
       const result: ChatMessage = { 
@@ -208,9 +337,18 @@ export abstract class AbstractBedrockApiBot extends AbstractBot {
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      // より詳細なエラー情報をログに出力
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      // AWS SDK固有のエラー情報も出力
+      if (error && typeof error === 'object') {
+        console.error('Error details:', JSON.stringify(error, null, 2));
+      }
       params.onEvent({
         type: 'ERROR',
-        error: new ChatError('Error sending message', ErrorCode.UNKOWN_ERROR)
+        error: new ChatError(`Error sending message: ${error instanceof Error ? error.message : 'Unknown error'}`, ErrorCode.UNKOWN_ERROR)
       });
     }
   }
@@ -264,10 +402,19 @@ class CustomFetchHttpHandler extends FetchHttpHandler {
   }
 
   async handle(request: HttpRequest): Promise<any> {
-    request.headers = {
-      ...request.headers,
-      'authorization': this.apiKey, 
+    // For Bedrock API, we need to set proper headers
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/x-amz-json-1.0',
+      'Authorization': `Bearer ${this.apiKey}`,
+      'X-Amzn-Bedrock-Accept': '*/*',
     };
+    
+    // Preserve existing content-type if it's different
+    if (request.headers['Content-Type']) {
+      headers['Content-Type'] = request.headers['Content-Type'];
+    }
+    
+    request.headers = headers;
     
     return super.handle(request);
   }
@@ -277,29 +424,53 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
   private client: BedrockRuntimeClient;
   private userConfig?: UserConfig;
 
+  // Define a specific type for the config needed by BedrockApiBot
   constructor(
-    private config: Pick<
-      UserConfig,
-      'claudeApiKey' | 'claudeApiHost' | 'claudeApiModel' | 'claudeApiSystemMessage' | 'claudeApiTemperature'
-    > & {
+    private config: {
+      apiKey: string;
+      host: string;
+      model: string;
+      systemMessage: string;
+      temperature: number;
       thinkingMode?: boolean;
       thinkingBudget?: number;
+      isHostFullPath?: boolean; // isHostFullPath を型定義に追加
     },
   ) {
     super()
-    const api_path = 'v1/';
-    // API Hostの最後のslashを削除
-    const baseUrl = this.config.claudeApiHost.endsWith('/') ? this.config.claudeApiHost.slice(0, -1) : this.config.claudeApiHost;
-    const fullUrlStr = `${baseUrl}/${api_path}`.replace('v1/v1/', 'v1/')
-    this.client = new BedrockRuntimeClient({ 
-      region: 'us-east-1', // 適切なリージョンを指定
-      endpoint: fullUrlStr,
+    
+    let endpointUrl: string;
+    const hostValue = this.config.host; // Common host is not accessible here without async
+    const isFullPath = this.config.isHostFullPath ?? false; // Default to false if undefined
+
+    if (isFullPath) {
+      endpointUrl = hostValue;
+    } else {
+      // If not full path, Bedrock typically uses the host as the direct endpoint.
+      // The previous '/v1/' logic might not be standard for Bedrock.
+      // For now, if not full path, we use the host directly.
+      // If a path needs to be appended, user should use Full Path.
+      endpointUrl = hostValue.endsWith('/') ? hostValue.slice(0, -1) : hostValue;
+      // Example: if host is "bedrock-runtime.us-east-1.amazonaws.com" and not full path,
+      // it's used as is. If user needs "host/some/path", they should use Full Path.
+    }
+    // Clean up potential double slashes if any part of logic reintroduces them
+    endpointUrl = endpointUrl.replace(/([^:]\/)\/+/g, "$1");
+
+    this.client = new BedrockRuntimeClient({
+      region: 'us-east-1',
+      endpoint: endpointUrl,
       credentials: {
         accessKeyId: 'AWS',
         secretAccessKey: 'AWS',
       },
-      requestHandler: new CustomFetchHttpHandler(this.config.claudeApiKey, {
+      requestHandler: new CustomFetchHttpHandler(this.config.apiKey, {
+        requestTimeout: 120000,
       }),
+      // Disable AWS signature to use custom authorization
+      signer: {
+        sign: async (request: any) => request, // No-op signer that doesn't modify the request
+      },
     });
   }
 
@@ -327,7 +498,7 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
       } else {
         converceCommandObject.inferenceConfig = {
           maxTokens: 8192,
-          temperature: this.config.claudeApiTemperature
+          temperature: this.config.temperature // Use config.temperature
         };
       }
 
@@ -389,9 +560,24 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
     } catch (error: unknown) {
       console.error('Bedrock API error:', error);
       
+      // より詳細なエラー情報をログに出力
+      if (error instanceof Error) {
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      
+      // AWS SDK固有のエラー情報
+      if (error && typeof error === 'object') {
+        const errorObj = error as any;
+        console.error('Error code:', errorObj.$metadata?.httpStatusCode || errorObj.statusCode);
+        console.error('Error response:', errorObj.$response);
+        console.error('Full error object:', JSON.stringify(error, null, 2));
+      }
+      
       // エラーオブジェクトの型を判定
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      const errorMessage = error instanceof Error
+        ? error.message
         : 'Unknown error occurred';
     
       // statusCodeの取得
@@ -404,20 +590,20 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
         }
       });
     }
-    
-  }
+    // Ensure the try...catch block is properly closed before the method ends.
+  } // This closes the fetchCompletionApi method
 
   public getModelName() {
-    const { claudeApiModel } = this.config
+    const { model: claudeApiModel } = this.config // Use config.model
     return claudeApiModel
   }
 
-  get modelName() {
-    return this.config.claudeApiModel
+  get modelName(): string { // Add explicit return type annotation
+    return this.config.model // Use config.model
   }
 
   get name() {
-    return `Claude (API/${this.config.claudeApiModel})`
+    return `Bedrock (${this.config.model})` // Update name logic
   }
 
   get supportsImageInput() {
