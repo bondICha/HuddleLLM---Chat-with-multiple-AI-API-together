@@ -64,6 +64,12 @@
   - Custom API template import functionality
   - Conversation history transfer feature (temporarily removed)
 
+### Version 2.8.0
+- **Vertex AI Claude Support**: Claude models are now available on specific Vertex AI APIs (general Vertex AI not yet supported)
+- **Multiple Image Upload**: You can now attach multiple images to chat messages
+- **Gemini API Update**: Updated Google Gemini API version for improved response speed and stability
+- **Markdown Rendering Improvements**: Enhanced table and code block display with better theme adaptation
+
 ## 简体中文
 
 ### UI/UX改进
@@ -96,6 +102,12 @@
   - 自定义API模板导入功能
   - 对话历史转移功能（暂时移除）
 
+### Version 2.8.0
+- **Vertex AI Claude支持**: 特定规格的Vertex AI API中，Claude模型现在可以使用了（一般的Vertex AI尚未支持）
+- **多重图片上传**: 现在可以在聊天消息中附加多张图片
+- **Gemini API更新**: 更新Google Gemini API版本，提升响应速度和稳定性
+- **Markdown显示优化**: 适配主题变化，优化表格和代码块的显示
+
 ## 繁體中文
 
 ### UI/UX改進
@@ -127,3 +139,9 @@
   - 改進模型更新通知系統
   - 自定義API模板導入功能
   - 對話歷史轉移功能（暫時移除）
+
+### Version 2.8.0
+- **Vertex AI Claude支援**: 特定規格的Vertex AI API中，Claude模型現在可以使用了（一般的Vertex AI尚未支援）
+- **多重圖片上傳**: 現在可以在聊天訊息中附加多張圖片
+- **Gemini API更新**: 更新Google Gemini API版本，提升回應速度和穩定性
+- **Markdown顯示優化**: 適配主題變化，優化表格和程式碼區塊的顯示

@@ -211,7 +211,7 @@ const ChatMessageInput: FC<Props> = (props) => {
           )}
         </>
       )}
-      <div className={cx("w-full flex flex-col justify-center", fullHeight && "h-full")} ref={refs.setReference} {...getReferenceProps()}>
+      <div className={cx("w-full flex flex-col", fullHeight && "h-full")} ref={refs.setReference} {...getReferenceProps()}>
         {images.length > 0 && (
           <div className="flex flex-row items-center flex-wrap w-full mb-1 gap-2">
             {images.map((img, index) => (

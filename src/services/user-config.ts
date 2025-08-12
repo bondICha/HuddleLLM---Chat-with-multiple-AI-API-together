@@ -17,6 +17,7 @@ const CUSTOM_API_CONFIG_PREFIX = 'customApiConfig_';
 // Explicitly type MODEL_LIST to ensure values are strings
 export const MODEL_LIST: Record<string, Record<string, string>> = {
     "OpenAI": {
+        "GPT-5": "gpt-5",
         "GPT-4.1": "gpt-4.1", // Default to current best
         "GPT-4.1 mini": "gpt-4.1-mini",
         "o4-mini": "o4-mini",
@@ -24,15 +25,15 @@ export const MODEL_LIST: Record<string, Record<string, string>> = {
     },
     "Anthropic": {
         "Claude Sonnet 4": "claude-sonnet-4-0",
-        "Claude Opus 4": "claude-opus-4-0",
-        "Claude Sonnet 3.7": "claude-3-7-sonnet-latest",
+        "Claude Opus 4.1": "claude-opus-4-1",
         "Claude Haiku 3.5": "claude-3-5-haiku-latest",
     },
     "Google": {
-        "Gemini 2.5 Pro": "gemini-2.5-pro-preview-05-06",
-        "Gemini 2.5 Flash": "gemini-2.5-flash-preview-04-17",
+        "Gemini 2.5 Pro": "gemini-2.5-pro",
+        "Gemini 2.5 Flash": "gemini-2.5-flash",
     },
     "Grok": {
+        "Grok 4": "grok-4",
         "Grok 3": "grok-3",
         "Grok 3 Fast": "grok-3-fast",
         "Grok 3 Mini": "grok-3-mini",
@@ -48,7 +49,6 @@ export const MODEL_LIST: Record<string, Record<string, string>> = {
         "Sonar Deep Research": "sonar-deep-research",
         "Sonar Reasoning Pro": "sonar-reasoning-pro",
         "Sonar Reasoning": "sonar-reasoning",
-        "R1-1776 (Offline)": "r1-1776",
     },
     "Rakuten": {
         "DeepSeek-R1": "DeepSeek-R1",
@@ -61,11 +61,20 @@ export const MODEL_LIST: Record<string, Record<string, string>> = {
     // ベンダー特有のモデルIDを「Custom」カテゴリとして追加
     "Custom": {
         // Bedrock用のGeminiモデル
-        "Google Gemini 2.5 Flash": "google/gemini-2.5-flash-preview-04-17",
-        "Google Gemini 2.5 Pro": "google/gemini-2.5-pro-preview-05-06",
+        "Google Gemini 2.5 Flash": "google/gemini-2.5-flash",
+        "Google Gemini 2.5 Pro": "google/gemini-2.5-pro",
         // Bedrock用のClaudeモデル
-        "Claude Sonnet 4 (Bedrock)": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "Claude Sonnet 4 (Bedrock, US)": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+        "Claude Sonnet 4 (Bedrock)": "anthropic.claude-sonnet-4-20250514-v1:0",
         "Claude 3.5 Haiku (Bedrock)": "anthropic.claude-3-5-haiku-20241022-v1:0",
+        "OpenAI/GPT-OSS-120b": "openai/gpt-oss-120b",
+        "OpenAI/GPT-OSS-20b": "openai/gpt-oss-20b",
+        "通义千问/Qwen3-Coder-480B-A35B-Instruct": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+        "通义千问/Qwen3-235B-A22B-Thinking-2507": "Qwen/Qwen3-235B-A22B-Thinking-2507",
+        "通义千问/Qwen3-235B-A22B-Instruct-2507": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+        "DeepSeek/DeepSeek-V3": "deepseek-ai/DeepSeek-V3",
+        "DeepSeek/DeepSeek-R1": "deepseek-ai/DeepSeek-R1",
+        "moonshotai/Kimi-K2-Instruct": "moonshotai/Kimi-K2-Instruct",
     },
 };
 // Note: Removed individual model enums (ClaudeAPIModel, GeminiAPIModel, etc.) and CustomAPIModel enum
