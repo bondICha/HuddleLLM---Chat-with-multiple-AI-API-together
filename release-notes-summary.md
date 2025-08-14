@@ -32,6 +32,10 @@
   - カスタムAPIテンプレートのインポート機能
   - 会話履歴の引き継ぎ機能（一時的に削除）
 
+### 新機能
+- **URLフェッチ機能**: メッセージに@URLを含めると、その内容をAIが自動的に取得して回答に利用できるようになりました。
+![URL Fetch](/URL%20Fetch.png)
+
 ## English
 
 ### UI/UX Improvements
@@ -69,6 +73,10 @@
 - **Multiple Image Upload**: You can now attach multiple images to chat messages
 - **Gemini API Update**: Updated Google Gemini API version for improved response speed and stability
 - **Markdown Rendering Improvements**: Enhanced table and code block display with better theme adaptation
+
+### Version 2.8.1
+- **URL Fetch Feature**: When you include @URL in your message, the AI can now automatically fetch its content to use in the response.
+![URL Fetch](/URL%20Fetch.png)
 
 ## 简体中文
 
@@ -108,6 +116,10 @@
 - **Gemini API更新**: 更新Google Gemini API版本，提升响应速度和稳定性
 - **Markdown显示优化**: 适配主题变化，优化表格和代码块的显示
 
+### Version 2.8.1
+- **URL获取功能**: 当您在消息中包含@URL时，AI现在可以自动获取其内容以用于回复。
+![URL Fetch](/URL%20Fetch.png)
+
 ## 繁體中文
 
 ### UI/UX改進
@@ -145,3 +157,7 @@
 - **多重圖片上傳**: 現在可以在聊天訊息中附加多張圖片
 - **Gemini API更新**: 更新Google Gemini API版本，提升回應速度和穩定性
 - **Markdown顯示優化**: 適配主題變化，優化表格和程式碼區塊的顯示
+
+### Version 2.8.1
+- **URL擷取功能**: 當您在訊息中包含@URL時，AI現在可以自動擷取其內容以用於回覆。
+![URL Fetch](/URL%20Fetch.png)

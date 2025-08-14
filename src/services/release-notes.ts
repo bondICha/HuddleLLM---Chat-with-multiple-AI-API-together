@@ -6,9 +6,9 @@ import { getVersion } from '~utils'
 
 const RELEASE_NOTES = [
   {
-    version: '2.8.2',
+    version: '2.8.1',
     notes: [
-      'releasenote_v282_url_fetch',
+      'releasenote_v281_url_fetch',
     ],
   },
   {
