@@ -20,7 +20,7 @@ export default defineManifest(async () => {
     action: {},
     host_permissions: [
     ],
-    optional_host_permissions: ['https://*/*', 'wss://*/*'],
+    optional_host_permissions: ['https://*/*', 'http://*/*', 'wss://*/*'],
     permissions: ['storage', 'unlimitedStorage', 'sidePanel', 'declarativeNetRequestWithHostAccess', 'scripting'],
     // content_scripts: [
     // ],

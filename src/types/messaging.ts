@@ -24,3 +24,15 @@ export interface ProxyFetchResponseMetadataMessage {
 export type ProxyFetchResponseBodyChunkMessage = {
   type: 'PROXY_RESPONSE_BODY_CHUNK'
 } & ({ done: true } | { done: false; value: string })
+
+export interface FetchUrlMessage {
+  type: 'FETCH_URL'
+  target: 'background'
+  url: string
+}
+
+export interface FetchUrlResponse {
+  success: boolean
+  content?: string
+  error?: string
+}

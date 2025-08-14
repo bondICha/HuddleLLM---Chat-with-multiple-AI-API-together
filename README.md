@@ -2,13 +2,19 @@
     <img src="./src/assets/icon.png" width="150">
 </p>
 
-<h1 align="center">ChatHub OSS</h1>
+<h1 align="center">HuddleLLM</h1>
 
-
+### HuddleLLM is an All-in-One Chatbot Client
 
 ## Install
 
-To be updated (You can build by youself for now)
+#### From Store
+
+<a href="https://chromewebstore.google.com/detail/huddlellm-oss-all-in-one/edjbcjkcabpmpcpnpfjfcehegjkacgod"><img src="https://user-images.githubusercontent.com/64502893/231991498-8df6dd63-727c-41d0-916f-c90c15127de3.png" width="200" alt="Get HuddleLLM for Chromium"></a> <a href="https://microsoftedge.microsoft.com/addons/detail/huddlellm-oss-%E3%82%AA%E3%83%BC%E3%83%AB%E3%82%A4%E3%83%B3%E3%83%AF%E3%83%B3%E3%83%81%E3%83%A3/kmphcofekafjmnpjegchboapjpgjhgch"><img src="https://user-images.githubusercontent.com/64502893/231991158-1b54f831-2fdc-43b6-bf9a-f894000e5aa8.png" width="160" alt="Get HuddleLLM for Microsoft Edge"></a>
+
+> [!NOTE]  
+> Due to the lengthy review process by Microsoft, updates for the Microsoft Edge Extension may be delayed by over a week. We recommend installing from the Chrome Web Store.
+
 
 ## 📷 Screenshot
 
@@ -19,15 +25,13 @@ To be updated (You can build by youself for now)
 <div style="background-color:#e8f5e9; padding:10px; border-left:5px solid #4caf50; border-radius:5px;"> <!-- 緑とアイコンで強調 -->
 <h2><b>Important Remarks</b> <span style="color:#4caf50;">&#9888;</span></h2>
 
-<p>この拡張機能は、現在はAPIのみをサポートします。<br>
-Webapp機能のサポートはロードマップに存在ありません。</p>
+
 </div>
 
 ## ✨ Features
 
-- 🤖 Use different chatbots in one app, currently supporting ChatGPT, new Bing Chat, Google Bard, Claude, and open-source models including LLama2, Vicuna, ChatGLM etc
-- 💬 Chat with multiple chatbots at the same time, making it easy to compare their answers
-- 🚀 Support ChatGPT API and GPT-4 Browsing
+- 🤖 Use different chatbots in one app
+- 🖼️ Support for multiple image uploads
 - 🔍 Shortcut to quickly activate the app anywhere in the browser
 - 🎨 Markdown and code highlight support
 - 📚 Prompt Library for custom prompts and community prompts
@@ -39,9 +43,13 @@ Webapp機能のサポートはロードマップに存在ありません。</p>
 
 ## 🤖 Supported Bots
 
-- ChatGPT
-- Google Bard
-- Claude 3.5
+- OpenAI
+- Google Gemini
+- Anthropic
+- Perplexity
+- OpenAI Compatible models such as DeepSeek, Qwen
+- OpenAI compatible LLM Platform such as Together AI, Fireworks AI, Hyperbolic, DeepInfra、Nebius
+- Vertex AI and Bedrock (Limited Support For now)
 
 
 

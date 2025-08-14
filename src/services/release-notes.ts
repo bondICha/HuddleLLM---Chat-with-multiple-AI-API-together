@@ -6,6 +6,12 @@ import { getVersion } from '~utils'
 
 const RELEASE_NOTES = [
   {
+    version: '2.8.2',
+    notes: [
+      'releasenote_v282_url_fetch',
+    ],
+  },
+  {
     version: '2.8.0',
     notes: [
       'releasenote_v280_vertex_claude',

@@ -40,7 +40,7 @@ interface Props {
 const ChatMessageInput: FC<Props> = (props) => {
   const { t } = useTranslation()
   const {
-    placeholder = t('Use / to select prompts, Shift+Enter to add new line'),
+    placeholder = t('Use / to select prompts, @URL to fetch content, Shift+Enter to add new line'),
     fullHeight = false,
     onHeightChange,
     ...restProps
@@ -112,9 +112,9 @@ const ChatMessageInput: FC<Props> = (props) => {
       e.preventDefault()
       if (value.trim() || images.length > 0) {
         props.onSubmit(value, images)
+        setValue('')
+        setImages([])
       }
-      setValue('')
-      setImages([])
     },
     [images, props, value],
   )
@@ -211,7 +211,7 @@ const ChatMessageInput: FC<Props> = (props) => {
           )}
         </>
       )}
-      <div className={cx("w-full flex flex-col", fullHeight && "h-full")} ref={refs.setReference} {...getReferenceProps()}>
+      <div className={cx("w-full flex flex-col justify-start", fullHeight && "h-full")} ref={refs.setReference} {...getReferenceProps()}>
         {images.length > 0 && (
           <div className="flex flex-row items-center flex-wrap w-full mb-1 gap-2">
             {images.map((img, index) => (

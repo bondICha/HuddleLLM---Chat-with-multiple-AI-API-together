@@ -2,38 +2,34 @@
     <img src="./src/assets/icon.png" width="150">
 </p>
 
-<h1 align="center">ChatHub</h1>
+<h1 align="center">HuddleLLM</h1>
 
 <div align="center">
 
-### ChatHub はオールインワンのチャットボットクライアントです
-
-[![author][author-image]][author-url]
-[![license][license-image]][license-url]
-[![release][release-image]][release-url]
-[![last commit][last-commit-image]][last-commit-url]    
+### HuddleLLM はオールインワンのチャットボットクライアントです
+ 
     
 [English](README.md) &nbsp;&nbsp;|&nbsp;&nbsp; [Indonesia](README_IN.md) &nbsp;&nbsp;|&nbsp;&nbsp; [简体中文](README_ZH-CN.md) &nbsp;&nbsp;|&nbsp;&nbsp; [繁體中文](README_ZH-TW.md) &nbsp;&nbsp;|&nbsp;&nbsp; 日本語
 
 ##    
     
 ### インストール
-    
-<a href="https://chrome.google.com/webstore/detail/chathub-all-in-one-chatbo/iaakpnchhognanibcahlpcplchdfmgma?utm_source=github"><img src="https://user-images.githubusercontent.com/64502893/231991498-8df6dd63-727c-41d0-916f-c90c15127de3.png" width="200" alt="Chromium 用の ChatHub を入手してください"></a>
-<a href="https://microsoftedge.microsoft.com/addons/detail/chathub-allinone-chat/kdlmggoacmfoombiokflpeompajfljga?utm_source=github"><img src="https://user-images.githubusercontent.com/64502893/231991158-1b54f831-2fdc-43b6-bf9a-f894000e5aa8.png" width="160" alt="Microsoft Edge 用の ChatHub を入手してください"></a>
-    
-##
+
+#### ストアから
+
+<a href="https://chromewebstore.google.com/detail/huddlellm-oss-all-in-one/edjbcjkcabpmpcpnpfjfcehegjkacgod"><img src="https://user-images.githubusercontent.com/64502893/231991498-8df6dd63-727c-41d0-916f-c90c15127de3.png" width="200" alt="Chromium 用の HuddleLLM を入手してください"></a> <a href="https://microsoftedge.microsoft.com/addons/detail/huddlellm-oss-%E3%82%AA%E3%83%BC%E3%83%AB%E3%82%A4%E3%83%B3%E3%83%AF%E3%83%B3%E3%83%81%E3%83%A3/kmphcofekafjmnpjegchboapjpgjhgch"><img src="https://user-images.githubusercontent.com/64502893/231991158-1b54f831-2fdc-43b6-bf9a-f894000e5aa8.png" width="160" alt="Microsoft Edge 用の HuddleLLM を入手してください"></a>
+
+> [!NOTE]  
+> Microsoftの審査が時間がかかるため、Microsoft Edge Extensionは更新が一週間以上遅れます。Chrome Extension Storeからインストールすることをおすすめします
+
+
+#### Sourceから
+Refer [🔨 ソースからビルドする](#-ソースからビルドする) this section
+
+---
 
 [スクリーンショット](#-スクリーンショット) &nbsp;&nbsp;|&nbsp;&nbsp; [特徴](#-特徴) &nbsp;&nbsp;|&nbsp;&nbsp; [サポートされているボット](#-サポートされているボット) &nbsp;&nbsp;|&nbsp;&nbsp; [手動インストール](#-手動インストール) &nbsp;&nbsp;|&nbsp;&nbsp; [ソースからビルドする](#-ソースからビルドする) &nbsp;&nbsp;|&nbsp;&nbsp; [変更ログ](#-変更ログ)
 
-[author-image]: https://img.shields.io/badge/author-wong2-blue.svg
-[author-url]: https://github.com/wong2    
-[license-image]: https://img.shields.io/github/license/chathub-dev/chathub?color=blue
-[license-url]: https://github.com/chathub-dev/chathub/blob/main/LICENSE
-[release-image]: https://img.shields.io/github/v/release/chathub-dev/chathub?color=blue
-[release-url]: https://github.com/chathub-dev/chathub/releases/latest   
-[last-commit-image]: https://img.shields.io/github/last-commit/chathub-dev/chathub?label=last%20commit
-[last-commit-url]: https://github.com/chathub-dev/chathub/commits
 
 </div>
 
@@ -43,54 +39,44 @@
 
 ![Screenshot](screenshots/extension.png?raw=true)
 
-![Screenshot (Dark Mode)](screenshots/dark.png?raw=true)
+## ✨ Features
 
-
-## ✨ 特徴
-
-- 🤖 アプリ内で異なるチャットボットを使用できます。現在は ChatGPT、新しい Bing Chat、Google Bard、Claude、および Alpaca、Vicuna、ChatGLM などを含む10以上のオープンソースモデルをサポートしています
-- 💬 複数のチャットボットと同時にチャットすることで、回答を比較しやすくします
-- 🚀 ChatGPT API および GPT-4 Browsing をサポートします
-- 🔍 ブラウザのどこからでもアプリを素早くアクティブにするためのショートカット
-- 🎨 Markdown とコードのハイライトのサポート
-- 📚 カスタムプロンプトとコミュニティプロンプトのためのプロンプトライブラリ
-- 💾 ローカルに保存された会話履歴
-- 📥 データのエクスポートとインポート
-- 🔗 マークダウン形式で会話を共有
+- 🤖 1つのアプリで様々なチャットボットを利用可能
+- 🖼️ 複数画像のアップロードに対応
+- 🔍 ショートカットでブラウザのどこからでも素早くアプリを起動
+- 🎨 マークダウンとコードハイライトに対応
+- 📚 カスタムプロンプトとコミュニティプロンプトのライブラリ
+- 💾 会話履歴をローカルに保存
+- 📥 全データのインポート＆エクスポート
+- 🔗 会話をマークダウンで共有
 - 🌙 ダークモード
+- 🌐 Webアクセス
 
-## 🤖 サポートされているボット
+## 🤖 Supported Bots
 
-* ChatGPT（Web アプリ/API/Azure/Poe経由）
-* Bing Chat
-* Google Bard
-* Claude（Poe 経由）
-* iFlytek Spark
-* ChatGLM
-* Alpaca
-* Vicuna
-* Koala
-* Dolly
-* LLaMA
-* StableLM
-* OpenAssistant
-* ChatRWKV
-* ...
+- OpenAI
+- Google Gemini
+- Anthropic
+- Perplexity
+- DeepSeek, QwenなどのOpenAI互換モデル
+- Together AI, Fireworks AI, Hyperbolic, DeepInfra, NebiusなどのOpenAI互換LLMプラットフォーム
+- Vertex AI and Bedrock (現在、限定的にサポート)
 
-## 🔧 手動インストール
 
-- [リリース](https://github.com/chathub-dev/chathub/releases)から chathub.zip をダウンロード
-- ファイルを解凍
-- Chrome/Edge で拡張機能ページに移動します (chrome://extensions または edge://extensions)
-- 開発者モードを有効にする
-- 解凍したフォルダーをページ上の任意の場所にドラッグしてインポートします (後でフォルダーを削除しないでください)
 
-## 🔨 ソースからビルドする
+## 🔨 Build from Source
 
-- ソースコードをクローン
+- Clone the source code
+- `corepack enable`
 - `yarn install`
 - `yarn build`
-- _マニュアルインストール_ の手順に従って、`dist` _フォルダをブラウザに読み込みます_
+- In Chrome/Edge go to the Extensions page (chrome://extensions or edge://extensions)
+- Enable Developer Mode
+- Drag the `dist` folder anywhere on the page to import it (do not delete the folder afterward)
+
+## 📜 プライバシーポリシー
+◯ 本アプリケーションはユーザーの個人データを一切収集しません
+◯ ユーザーが設定画面で明示的に有効化したAIサービス、またはユーザー自身が設定したAPI経由で利用するサービスにおけるデータ取り扱いについては、当開発者は一切の関知をしません。これら外部サービスの利用はユーザー自身の責任において行ってください
 
 ## 📜 変更ログ
 

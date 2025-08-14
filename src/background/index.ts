@@ -2,10 +2,14 @@ import Browser from 'webextension-polyfill'
 import { ALL_IN_ONE_PAGE_ID } from '~app/consts'
 import { getUserConfig } from '~services/user-config'
 import { readTwitterCsrfToken } from './twitter-cookie'
+import { setupProxyExecutor } from '~services/proxy-fetch'
 
 // expose storage.session to content scripts
 // using `chrome.*` API because `setAccessLevel` is not supported by `Browser.*` API
 chrome.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' })
+
+// Setup proxy fetch executor for URL fetching
+setupProxyExecutor()
 
 async function openAppPage() {
   const tabs = await Browser.tabs.query({})
@@ -39,13 +43,40 @@ Browser.commands.onCommand.addListener(async (command) => {
 
 Browser.runtime.onMessage.addListener(async (message, sender) => {
   console.debug('onMessage', message, sender)
-  if (message.target !== 'background') {
+  if (message.target && message.target !== 'background') {
     return
   }
   if (message.type === 'read-twitter-csrf-token') {
     return readTwitterCsrfToken(message.data)
   }
-})
+  if (message.type === 'FETCH_URL') {
+    console.log('🚀 Background: Fetching URL:', message.url)
+    
+    try {
+      const response = await fetch(message.url)
+      console.log('📡 Background: Fetch response status:', response.status)
+      if (!response.ok) {
+        console.log('❌ Background: Fetch failed:', response.status, response.statusText)
+        return {
+          success: false,
+          error: `HTTP ${response.status}: ${response.statusText}`,
+        }
+      }
+      const content = await response.text()
+      console.log('✅ Background: Fetch success, content length:', content.length)
+      return {
+        success: true,
+        content: content,
+      }
+    } catch (error) {
+      console.log('💥 Background: Fetch error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
+  }
+});
 
 // Omnibox APIのイベントリスナー
 chrome.omnibox.onInputEntered.addListener(async (text, disposition) => {

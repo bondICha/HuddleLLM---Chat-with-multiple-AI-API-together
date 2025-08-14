@@ -180,6 +180,8 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
         <MessageBubble 
           color={message.author === 'user' ? 'primary' : 'flat'}
           thinking={message.thinking}
+          isUserMessage={message.author === 'user'}
+          fetchedUrls={message.fetchedUrls}
         >
           {imageUrls.length > 0 && (
             <div className="flex flex-wrap gap-2 my-2">

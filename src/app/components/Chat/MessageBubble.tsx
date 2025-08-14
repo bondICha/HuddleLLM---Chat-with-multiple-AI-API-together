@@ -1,11 +1,15 @@
 import { cx } from '~/utils'
 import { FC, PropsWithChildren } from 'react'
 import Thinking from './Thinking'
+import FetchedContentThinking from './FetchedContentThinking'
+import type { FetchedUrlContent } from '~types/chat'
 
 interface Props {
   color: 'primary' | 'flat'
   className?: string
   thinking?: string
+  isUserMessage?: boolean
+  fetchedUrls?: FetchedUrlContent[]
 }
 
 const MessageBubble: FC<PropsWithChildren<Props>> = (props) => {
@@ -17,7 +21,16 @@ const MessageBubble: FC<PropsWithChildren<Props>> = (props) => {
         props.className,
       )}
     >
-      {props.thinking && <Thinking>{props.thinking}</Thinking>}
+      {props.thinking && !props.fetchedUrls && (
+        props.isUserMessage ? 
+          <FetchedContentThinking>{props.thinking}</FetchedContentThinking> : 
+          <Thinking>{props.thinking}</Thinking>
+      )}
+      {props.fetchedUrls && props.fetchedUrls.map((fetchedUrl, index) => (
+        <FetchedContentThinking key={`${fetchedUrl.url}-${index}`} url={fetchedUrl.url}>
+          {fetchedUrl.content}
+        </FetchedContentThinking>
+      ))}
       {props.children}
     </div>
   )

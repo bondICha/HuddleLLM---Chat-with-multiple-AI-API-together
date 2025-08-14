@@ -1,5 +1,10 @@
 import { ChatError } from '~utils/errors'
 
+export interface FetchedUrlContent {
+  url: string
+  content: string
+}
+
 export interface ChatMessageModel {
   id: string
   author: number | 'user'
@@ -7,6 +12,7 @@ export interface ChatMessageModel {
   images?: File[]
   error?: ChatError
   thinking?: string
+  fetchedUrls?: FetchedUrlContent[]
 }
 
 export interface ConversationModel {

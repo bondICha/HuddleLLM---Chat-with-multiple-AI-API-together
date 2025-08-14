@@ -70,7 +70,7 @@ const ConversationPanel: FC<Props> = (props) => {
 
   const onSubmit = useCallback(
     async (input: string, images?: File[]) => {
-      props.onUserSendMessage(input as string, images)
+      props.onUserSendMessage(input, images)
     },
     [props],
   )

@@ -41,7 +41,7 @@ const GeneralChatPanel: FC<{
   const [pendingSearchQuery, setPendingSearchQuery] = useAtom(pendingSearchQueryAtom)
 
   // リサイズ機能のstate
-  const [gridAreaHeight, setGridAreaHeight] = useState('85%') // 初期状態では入力エリアを小さく
+  const [gridAreaHeight, setGridAreaHeight] = useState('99%') // 初期状態では入力エリアを小さく
   const [isResizing, setIsResizing] = useState(false)
   const [hasUserResized, setHasUserResized] = useState(false) // ユーザーがリサイズしたかどうか
   

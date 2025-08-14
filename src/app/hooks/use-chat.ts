@@ -1,9 +1,10 @@
 import { useAtom } from 'jotai'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Browser from 'webextension-polyfill'
 import { chatFamily } from '~app/state'
 import { compressImageFile } from '~app/utils/image-compression'
 import { setConversationMessages } from '~services/chat-history'
-import { ChatMessageModel } from '~types'
+import { ChatMessageModel, FetchedUrlContent } from '~types'
 import { uuid } from '~utils'
 import { ChatError } from '~utils/errors'
 
@@ -25,11 +26,156 @@ export function useChat(index: number) {
 
   const sendMessage = useCallback(
     async (input: string, images?: File[]) => {
+      // URL処理
+      const urlPattern = /@(https?:\/\/[^\s]+)/g
+      const matches = [...input.matchAll(urlPattern)]
+      
+      let cleanInput = input
+      let fetchedContent = ''
+      
+      let fetchedUrls: FetchedUrlContent[] = []
+      
+      // URLがある場合は取得処理
+      if (matches.length > 0) {
+        for (const match of matches) {
+          const fullMatch = match[0]
+          const url = match[1]
+          
+          try {
+            console.log('🌐 Fetching URL:', url)
+            
+            // URLのホストを抽出して権限チェック
+            const urlObj = new URL(url)
+            const hostPattern = `${urlObj.protocol}//${urlObj.hostname}/*`
+            
+            // 権限チェック
+            const hasPermission = await Browser.permissions.contains({
+              origins: [hostPattern]
+            })
+            
+            if (!hasPermission) {
+              console.log('🔐 Requesting permission for:', hostPattern)
+              // ユーザージェスチャー内で権限リクエスト
+              const granted = await Browser.permissions.request({
+                origins: [hostPattern]
+              })
+              
+              if (!granted) {
+                throw new Error(`Permission denied for ${urlObj.hostname}`)
+              }
+            }
+            
+            // Background scriptにフェッチ依頼を送信
+            const response = await Browser.runtime.sendMessage({
+              type: 'FETCH_URL',
+              url: url
+            }) as {success: boolean, content?: string, error?: string, status?: number, statusText?: string}
+            
+            if (!response.success) {
+              throw new Error(response.error || 'Fetch failed')
+            }
+            
+            // Response objectを模擬
+            const mockResponse = {
+              ok: true,
+              status: response.status || 200,
+              statusText: response.statusText || 'OK',
+              text: async () => response.content || '',
+              headers: new Map()
+            }
+            console.log('📡 Response status:', mockResponse.status, mockResponse.statusText)
+            console.log('📡 Response headers:', Object.fromEntries(mockResponse.headers.entries()))
+            if (mockResponse.ok) {
+              const content = await mockResponse.text()
+              console.log('🔍 Raw content length:', content.length)
+              console.log('🔍 Content preview:', content.substring(0, 500))
+              
+              // HTMLタグを削除してテキストのみ抽出
+              let textContent = content
+                .replace(/<script[\s\S]*?<\/script>/gi, '')     // スクリプト削除
+                .replace(/<style[\s\S]*?<\/style>/gi, '')       // スタイル削除
+                .replace(/<br\s*\/?>/gi, '\n')                  // <br>を改行に
+                .replace(/<p\s*[^>]*>/gi, '\n')                 // <p>を改行に
+                .replace(/<\/p>/gi, '\n')                       // </p>を改行に
+                .replace(/<div\s*[^>]*>/gi, '\n')               // <div>を改行に
+                .replace(/<\/div>/gi, '\n')                     // </div>を改行に
+                .replace(/<h1\s*[^>]*>/gi, '\n# ')              // h1を#に
+                .replace(/<h2\s*[^>]*>/gi, '\n## ')             // h2を##に
+                .replace(/<h3\s*[^>]*>/gi, '\n### ')            // h3を###に
+                .replace(/<h4\s*[^>]*>/gi, '\n#### ')           // h4を####に
+                .replace(/<h5\s*[^>]*>/gi, '\n##### ')          // h5を#####に
+                .replace(/<h6\s*[^>]*>/gi, '\n###### ')         // h6を######に
+                .replace(/<\/h[1-6]>/gi, '\n')                  // ヘッダー終了
+                .replace(/<ul\s*[^>]*>([\s\S]*?)<\/ul>/gi, (_, content: string) => {
+                  // ul内のliだけを処理
+                  return content.replace(/<li\s*[^>]*>([\s\S]*?)<\/li>/gi, (_, liContent: string) => {
+                    return '\n• ' + liContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+                  })
+                })
+                .replace(/<ol\s*[^>]*>([\s\S]*?)<\/ol>/gi, (_, content: string) => {
+                  // ol内のliを番号付きで処理
+                  let counter = 1
+                  return content.replace(/<li\s*[^>]*>([\s\S]*?)<\/li>/gi, (_, liContent: string) => {
+                    return '\n' + (counter++) + '. ' + liContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+                  })
+                })
+                .replace(/<li\s*[^>]*>/gi, '')                  // 残りの単体liタグを削除
+                .replace(/<\/li>/gi, '')                        // 残りの単体li終了タグを削除
+                .replace(/<[^>]*>/g, ' ')                       // 残りのHTMLタグ削除
+                .replace(/\n\s*\n\s*\n/g, '\n\n')               // 3つ以上の改行を2つに
+                .replace(/[ \t]+/g, ' ')                        // 連続する空白・タブを1つに
+                .trim()
+              
+              console.log('📝 Processed content length:', textContent.length)
+              
+              // UIには制限付きで表示
+              const maxDisplayLength = 12000
+              const displayContent = textContent.length > maxDisplayLength 
+                ? textContent.substring(0, maxDisplayLength) + '\n\n[Content truncated - showing first ' + maxDisplayLength + ' of ' + textContent.length + ' characters]'
+                : textContent
+              
+              // UIには短縮版、AIには全文
+              fetchedUrls.push({ url, content: displayContent })
+              fetchedContent += `Content from ${url}:\n\n${textContent}\n\n`  // AIには全文
+            } else {
+              const errorContent = `Error fetching ${url}: ${response.status} ${response.statusText}`
+              fetchedUrls.push({ url, content: errorContent })
+              fetchedContent += errorContent + '\n\n'
+            }
+          } catch (error) {
+            console.error('💥 Fetch error details:', {
+              url: url,
+              error: error,
+              errorType: error?.constructor?.name,
+              errorMessage: error instanceof Error ? error.message : 'Unknown error',
+              errorStack: error instanceof Error ? error.stack : undefined,
+              timestamp: new Date().toISOString()
+            })
+            
+            let errorContent = `Error fetching ${url}:\n`
+            errorContent += `• Error Type: ${error?.constructor?.name || 'Unknown'}\n`
+            errorContent += `• Message: ${error instanceof Error ? error.message : 'Unknown error'}\n`
+            errorContent += `• Timestamp: ${new Date().toISOString()}\n`
+            
+            fetchedUrls.push({ url, content: errorContent })
+            fetchedContent += errorContent + '\n\n'
+          }
+        }
+      }
+
+      const finalMessage = cleanInput.trim() + (fetchedContent ? '\n\n' + fetchedContent : '')
 
       const botMessageId = uuid()
       setChatState((draft) => {
         draft.messages.push(
-          { id: uuid(), text: input, images, author: 'user' },
+          { 
+            id: uuid(), 
+            text: input, // 元のメッセージを保持（@URL含む）
+            images, 
+            author: 'user',
+            thinking: fetchedContent || undefined,
+            fetchedUrls: fetchedUrls.length > 0 ? fetchedUrls : undefined
+          },
           { id: botMessageId, text: '', author: index }, // Use index as author
         )
       })
@@ -46,7 +192,7 @@ export function useChat(index: number) {
       }
       
       const resp = await chatState.bot.sendMessage({
-        prompt: input,
+        prompt: finalMessage,
         images: compressedImages,
         signal: abortController.signal,
       })
