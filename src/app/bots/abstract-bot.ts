@@ -2,6 +2,7 @@ import { Sentry } from '~services/sentry'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { streamAsyncIterable } from '~utils/stream-async-iterable'
 import { ThinkingParser } from '~utils/thinking-parser'
+import { replaceSystemPromptVariables, getCurrentDateTime, getUserLocaleInfo } from '~utils/system-prompt-variables'
 
 export type AnwserPayload = {
   text: string
@@ -194,6 +195,25 @@ export abstract class AbstractBot {
   async modifyLastMessage(_message: string): Promise<void> {
     // デフォルトでは何もしない
     return
+  }
+
+  /**
+   * Process system message by replacing template variables
+   * @param systemMessage - Raw system message with template variables
+   * @returns System message with variables replaced
+   */
+  protected processSystemMessage(systemMessage: string): string {
+    const { current_date, current_time } = getCurrentDateTime()
+    const { language, timezone } = getUserLocaleInfo()
+    
+    return replaceSystemPromptVariables(systemMessage, {
+      current_date,
+      current_time,
+      modelname: this.modelName || 'Unknown',
+      chatbotname: this.chatBotName || 'Assistant', 
+      language,
+      timezone,
+    })
   }
 
 }

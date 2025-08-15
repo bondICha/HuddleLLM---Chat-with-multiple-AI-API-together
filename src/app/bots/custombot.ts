@@ -2,7 +2,7 @@
 import { AsyncAbstractBot, MessageParams } from './abstract-bot';
 import { ChatGPTApiBot } from './chatgpt-api';
 import { ClaudeApiBot } from './claude-api';
-import { getUserConfig, CustomApiConfig, CustomApiProvider } from '~/services/user-config';
+import { getUserConfig, CustomApiConfig, CustomApiProvider, SystemPromptMode } from '~/services/user-config';
 import { ChatError, ErrorCode } from '~utils/errors';
 import { BedrockApiBot } from './bedrock-api';
 import { GeminiApiBot } from './gemini-api'; // Import GeminiApiBot
@@ -19,7 +19,7 @@ export class CustomBot extends AsyncAbstractBot {
     }
 
     async initializeBot() {
-        const { customApiKey, customApiHost, customApiConfigs } = await getUserConfig();
+        const { customApiKey, customApiHost, customApiConfigs, commonSystemMessage } = await getUserConfig();
         const config = customApiConfigs[this.customBotNumber - 1];
 
         if (!config) {
@@ -27,7 +27,25 @@ export class CustomBot extends AsyncAbstractBot {
         }
         this.config = config
 
-        // プロバイダーが設定されていない場合は、モデル名に基づいて推測する（後方互換性のため）
+        let combinedSystemMessage = '';
+        switch (config.systemPromptMode) {
+            case SystemPromptMode.APPEND:
+                combinedSystemMessage = `${commonSystemMessage}\n${config.systemMessage}`;
+                break;
+            case SystemPromptMode.OVERRIDE:
+                combinedSystemMessage = config.systemMessage;
+                break;
+            case SystemPromptMode.COMMON:
+                combinedSystemMessage = commonSystemMessage;
+                break;
+            default:
+                combinedSystemMessage = config.systemMessage || commonSystemMessage;
+                break;
+        }
+
+        // Template variables replacement
+        const processedSystemMessage = this.processSystemMessage(combinedSystemMessage);
+
         const provider = config.provider || (
             config.model.includes('anthropic.claude') ? CustomApiProvider.Bedrock : CustomApiProvider.OpenAI
         );
@@ -40,7 +58,7 @@ export class CustomBot extends AsyncAbstractBot {
                     host: config.host || customApiHost,
                     model: config.model,
                     temperature: config.temperature,
-                    systemMessage: config.systemMessage,
+                    systemMessage: processedSystemMessage,
                     thinkingMode: config.thinkingMode,
                     thinkingBudget: config.thinkingBudget,
                 });
@@ -50,7 +68,7 @@ export class CustomBot extends AsyncAbstractBot {
                     host: config.host || customApiHost,
                     model: config.model,
                     temperature: config.temperature,
-                    systemMessage: config.systemMessage,
+                    systemMessage: processedSystemMessage,
                     thinkingBudget: config.thinkingBudget,
                     isHostFullPath: config.isHostFullPath,
                 }, config.thinkingMode, config.isAnthropicUsingAuthorizationHeader || false);
@@ -60,14 +78,14 @@ export class CustomBot extends AsyncAbstractBot {
                     host: config.host || customApiHost,
                     model: config.model,
                     temperature: config.temperature,
-                    systemMessage: config.systemMessage,
+                    systemMessage: processedSystemMessage,
                     isHostFullPath: config.isHostFullPath,
                 });
             case CustomApiProvider.Google:
                 return new GeminiApiBot({
                     geminiApiKey: config.apiKey || customApiKey,
                     geminiApiModel: config.model,
-                    geminiApiSystemMessage: config.systemMessage,
+                    geminiApiSystemMessage: processedSystemMessage,
                     geminiApiTemperature: config.temperature,
                 });
             case CustomApiProvider.Perplexity:
@@ -83,7 +101,7 @@ export class CustomBot extends AsyncAbstractBot {
                     host: config.host || customApiHost,
                     model: config.model,
                     temperature: config.temperature,
-                    systemMessage: config.systemMessage,
+                    systemMessage: processedSystemMessage,
                     isHostFullPath: config.isHostFullPath,
                 });
             default:

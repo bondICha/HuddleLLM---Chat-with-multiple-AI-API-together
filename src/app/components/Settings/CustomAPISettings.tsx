@@ -10,7 +10,10 @@ import {
     MODEL_LIST, // 新しいモデルリストをインポート
 } from '~services/user-config'
 import { Input, Textarea } from '../Input'
-import { CHATGPT_API_MODELS, DEFAULT_CHATGPT_SYSTEM_MESSAGE, DEFAULT_CLAUDE_SYSTEM_MESSAGE } from '~app/consts';
+import Dialog from '../Dialog'
+import { SystemPromptMode } from '~services/user-config'
+import { CHATGPT_API_MODELS, DEFAULT_SYSTEM_MESSAGE } from '~app/consts'
+import TripleStateToggle from '../TripleStateToggle';
 import Select from '../Select' 
 import NestedDropdown, { NestedDropdownOption } from '../NestedDropdown'; 
 import Blockquote from './Blockquote'
@@ -18,7 +21,7 @@ import Range from '../Range'
 import Switch from '~app/components/Switch'
 import AvatarSelect from './AvatarSelect'
 import BotIcon from '../BotIcon'
-import { BiPlus, BiTrash, BiHide, BiShow } from 'react-icons/bi'
+import { BiPlus, BiTrash, BiHide, BiShow, BiInfoCircle } from 'react-icons/bi'
 import Button from '../Button'
 import { revalidateEnabledBots } from '~app/hooks/use-enabled-bots'
 // テンプレート選択オプション
@@ -45,6 +48,8 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
     // 選択されたモデルのプロバイダーを保持するステートを追加
     const [selectedProviderForModel, setSelectedProviderForModel] = useState<Record<number, string | null>>({});
+    // デフォルトに戻す確認ダイアログのstate
+    const [showResetDialog, setShowResetDialog] = useState(false);
 
     // 防御的チェック: customApiConfigsが未定義の場合は空配列として扱う
     const customApiConfigs = userConfig.customApiConfigs || [];
@@ -53,9 +58,16 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         updateConfigValue({ customApiConfigs: newConfigs });
     }
 
+    // Common System Messageをデフォルトに戻す関数
+    const resetToDefaultSystemMessage = () => {
+        updateConfigValue({ commonSystemMessage: DEFAULT_SYSTEM_MESSAGE });
+        setShowResetDialog(false);
+        toast.success(t('Common System Message has been reset to default'));
+    }
+
     const formRowClass = "grid grid-cols-[1fr_3fr] items-center gap-4"
     // const formRowClass = "grid grid-cols-[200px_1fr] items-center gap-4"
-    const labelClass = "font-medium text-sm text-right"
+    const labelClass = "font-medium text-sm text-right self-start pt-2"
     const inputContainerClass = "flex-1"
 
     // モデル選択用のオプションを作成する関数（NestedDropdown用）
@@ -123,6 +135,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             updatedConfigs[index].host = preset.host;
             updatedConfigs[index].temperature = preset.temperature;
             updatedConfigs[index].systemMessage = preset.systemMessage;
+            updatedConfigs[index].systemPromptMode = preset.systemPromptMode;
             updatedConfigs[index].avatar = preset.avatar;
             updatedConfigs[index].thinkingMode = preset.thinkingMode;
             updatedConfigs[index].thinkingBudget = preset.thinkingBudget;
@@ -150,6 +163,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             host: '',
             temperature: 0.7,
             systemMessage: '',
+            systemPromptMode: SystemPromptMode.COMMON,
             avatar: '',
             apiKey: '',
             thinkingMode: false,
@@ -220,6 +234,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     // Removed duplicate useEffect hook
 
     return (
+        <>
         <div className="flex flex-col gap-4">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-bold">{t('Custom API Models')}</h2>
@@ -248,6 +263,44 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
                     </div>
                     <Blockquote className="mt-1 ml-[25%]">{t('Your keys are stored locally')}</Blockquote>
+
+                    <div className={formRowClass}>
+                        <div className="flex items-center gap-2 justify-end">
+                            <p className={labelClass}>{t('Common System Message')}</p>
+                            <div className="relative group">
+                                <BiInfoCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
+                                <div className="absolute bottom-6 right-0 mb-2 w-80 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                                    <p className="font-medium mb-2 text-white">{t('Available template variables:')}</p>
+                                    <div className="grid grid-cols-1 gap-1 font-mono text-xs">
+                                        <span><code className="text-green-300">{'{current_date}'}</code> - Current date (YYYY-MM-DD)</span>
+                                        <span><code className="text-green-300">{'{current_time}'}</code> - Current time (HH:MM:SS)</span>
+                                        <span><code className="text-green-300">{'{modelname}'}</code> - AI model name</span>
+                                        <span><code className="text-green-300">{'{chatbotname}'}</code> - Chatbot display name</span>
+                                        <span><code className="text-green-300">{'{language}'}</code> - User language setting</span>
+                                        <span><code className="text-green-300">{'{timezone}'}</code> - User timezone</span>
+                                    </div>
+                                    <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="w-full">
+                            <div className="flex flex-col gap-2 w-full">
+                                <Textarea
+                                    className='w-full'
+                                    maxRows={5}
+                                    value={userConfig.commonSystemMessage}
+                                    onChange={(e) => updateConfigValue({ commonSystemMessage: e.currentTarget.value })}
+                                />
+                                <Button
+                                    text={t('Reset Common system prompt to default')}
+                                    color="flat"
+                                    size="small"
+                                    onClick={() => setShowResetDialog(true)}
+                                    className="self-start"
+                                />
+                            </div>
+                        </div>
+                    </div>
 
                     <div className={formRowClass}>
                         <p className={labelClass}>{t(userConfig.isCustomApiHostFullPath ? 'API Endpoint (Full Path)' : 'Common API Host')}</p>
@@ -665,16 +718,26 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                     <div className={formRowClass}>
                                                         <p className={labelClass}>{t('System Message')}</p>
                                                         <div className={inputContainerClass}>
-                                                            <Textarea
-                                                                className='w-full'
-                                                                maxRows={5}
-                                                                value={config.systemMessage || DEFAULT_CHATGPT_SYSTEM_MESSAGE}
-                                                                onChange={(e) => {
-                                                                    const updatedConfigs = [...userConfig.customApiConfigs]
-                                                                    updatedConfigs[index].systemMessage = e.currentTarget.value;
-                                                                    updateCustomApiConfigs(updatedConfigs); // ヘルパー関数を使用
+                                                            <TripleStateToggle
+                                                                value={config.systemPromptMode || SystemPromptMode.COMMON}
+                                                                onChange={(v: SystemPromptMode) => {
+                                                                    const updatedConfigs = [...userConfig.customApiConfigs];
+                                                                    updatedConfigs[index].systemPromptMode = v;
+                                                                    updateCustomApiConfigs(updatedConfigs);
                                                                 }}
                                                             />
+                                                            {(config.systemPromptMode === SystemPromptMode.APPEND || config.systemPromptMode === SystemPromptMode.OVERRIDE) && (
+                                                                <Textarea
+                                                                    className='w-full mt-2'
+                                                                    maxRows={5}
+                                                                    value={config.systemMessage}
+                                                                    onChange={(e) => {
+                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                        updatedConfigs[index].systemMessage = e.currentTarget.value;
+                                                                        updateCustomApiConfigs(updatedConfigs);
+                                                                    }}
+                                                                />
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -697,6 +760,30 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 </div>
             </div>
         </div>
+
+        {/* Reset to Default Confirmation Dialog */}
+        <Dialog
+            title={t('Confirm Reset')}
+            open={showResetDialog}
+            onClose={() => setShowResetDialog(false)}
+        >
+            <div className="space-y-4">
+                <p>{t('Are you sure you want to reset the Common System Message to the default value? This action cannot be undone.')}</p>
+                <div className="flex justify-end gap-2">
+                    <Button
+                        text={t('Cancel')}
+                        color="flat"
+                        onClick={() => setShowResetDialog(false)}
+                    />
+                    <Button
+                        text={t('Reset to Default')}
+                        color="primary"
+                        onClick={resetToDefaultSystemMessage}
+                    />
+                </div>
+            </div>
+        </Dialog>
+        </>
     );
 };
 

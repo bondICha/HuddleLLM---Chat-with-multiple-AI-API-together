@@ -2,8 +2,8 @@ import { defaults } from 'lodash-es'
 import toast from 'react-hot-toast';
 import Browser from 'webextension-polyfill'
 import {
-  ALL_IN_ONE_PAGE_ID, CHATGPT_API_MODELS, DEFAULT_CHATGPT_SYSTEM_MESSAGE, DEFAULT_CLAUDE_SYSTEM_MESSAGE,
-  CHATBOTS_UPDATED_EVENT
+  ALL_IN_ONE_PAGE_ID, CHATGPT_API_MODELS,
+  CHATBOTS_UPDATED_EVENT, DEFAULT_SYSTEM_MESSAGE
 } from '~app/consts'
 
 // カスタムモデルの最大数
@@ -11,6 +11,14 @@ const MAX_CUSTOM_MODELS = 50;
 
 // カスタムAPIの設定キーのプレフィックス
 const CUSTOM_API_CONFIG_PREFIX = 'customApiConfig_';
+
+
+// System prompt mode enum
+export enum SystemPromptMode {
+  COMMON = 'common',     // Common promptをそのまま使う
+  APPEND = 'append',     // Common prompt + 個別prompt
+  OVERRIDE = 'override'  // 個別promptで上書き
+}
 
 
 // モデルリストをプロバイダーごとに階層化
@@ -113,6 +121,7 @@ export interface CustomApiConfig {
   model: string,
   temperature: number,
   systemMessage: string,
+  systemPromptMode: SystemPromptMode, // System promptの使用方法
   avatar: string,
   apiKey: string,
   thinkingMode: boolean,
@@ -136,6 +145,7 @@ const defaultCustomApiConfigs: CustomApiConfig[] = [
     host: '',
     temperature: 0.7,
     systemMessage: '',
+    systemPromptMode: SystemPromptMode.COMMON,
     avatar: 'OpenAI.SimpleBlack',
     apiKey: '',
     thinkingMode: false,
@@ -152,6 +162,7 @@ const defaultCustomApiConfigs: CustomApiConfig[] = [
     host: '',
     temperature: 1.0,
     systemMessage: '',
+    systemPromptMode: SystemPromptMode.COMMON,
     avatar: 'OpenAI.SimpleGreen',
     apiKey: '',
     thinkingMode: false,
@@ -168,6 +179,7 @@ const defaultCustomApiConfigs: CustomApiConfig[] = [
     host: '',
     temperature: 0.2,
     systemMessage: '',
+    systemPromptMode: SystemPromptMode.COMMON,
     avatar: 'OpenAI.SimpleYellow',
     apiKey: '',
     thinkingMode: false,
@@ -184,6 +196,7 @@ const defaultCustomApiConfigs: CustomApiConfig[] = [
     host: '',
     temperature: 2.0,
     systemMessage: '',
+    systemPromptMode: SystemPromptMode.COMMON,
     avatar: 'OpenAI.SimplePurple',
     apiKey: '',
     thinkingMode: false,
@@ -203,10 +216,11 @@ export const presetApiConfigs: Record<string, Omit<CustomApiConfig, 'id' | 'apiK
   "OpenAI": {
     name: 'OpenAI',
     shortName: "GPT",
-    model: MODEL_LIST.OpenAI["GPT-4.1"],
+    model: MODEL_LIST.OpenAI["GPT-5"],
     host: 'https://api.openai.com',
     temperature: 1,
-    systemMessage: DEFAULT_CHATGPT_SYSTEM_MESSAGE,
+    systemMessage: '',
+    systemPromptMode: SystemPromptMode.COMMON,
     avatar: 'OpenAI.Green',
     thinkingMode: false,
     thinkingBudget: 2000,
@@ -218,7 +232,8 @@ export const presetApiConfigs: Record<string, Omit<CustomApiConfig, 'id' | 'apiK
     model: MODEL_LIST.Anthropic["Claude Sonnet 4"],
     host: 'https://api.anthropic.com/',
     temperature: 1.0,
-    systemMessage: DEFAULT_CLAUDE_SYSTEM_MESSAGE,
+    systemMessage: '',
+    systemPromptMode: SystemPromptMode.COMMON,
     avatar: 'Claude.Orange',
     thinkingMode: false,
     thinkingBudget: 2000,
@@ -230,7 +245,8 @@ export const presetApiConfigs: Record<string, Omit<CustomApiConfig, 'id' | 'apiK
     model: MODEL_LIST.Google["Gemini 2.5 Pro"],
     host: '',
     temperature: 1.0,
-    systemMessage: DEFAULT_CHATGPT_SYSTEM_MESSAGE,
+    systemMessage: '',
+    systemPromptMode: SystemPromptMode.COMMON,
     avatar: 'Gemini.Color',
     thinkingMode: false,
     thinkingBudget: 2000,
@@ -243,6 +259,7 @@ export const presetApiConfigs: Record<string, Omit<CustomApiConfig, 'id' | 'apiK
      host: 'https://api.perplexity.ai',
      temperature: 1.0,
      systemMessage: '', // Keep system message empty or set a default if needed
+     systemPromptMode: SystemPromptMode.OVERRIDE,
      avatar: 'Perplexity.Sonar',
      thinkingMode: false,
      thinkingBudget: 2000,
@@ -255,6 +272,7 @@ export const presetApiConfigs: Record<string, Omit<CustomApiConfig, 'id' | 'apiK
      host: 'https://api.x.ai/v1', // Verify Grok API host
      temperature: 1.0,
      systemMessage: '', // Keep system message empty or set a default if needed
+     systemPromptMode: SystemPromptMode.OVERRIDE,
      avatar: 'grok', // Ensure 'grok' avatar exists
      thinkingMode: false,
      thinkingBudget: 2000,
@@ -277,6 +295,7 @@ const userConfigWithDefaultValue = {
   customApiConfigs: defaultCustomApiConfigs,
   customApiKey: '',
   customApiHost: '',
+  commonSystemMessage: DEFAULT_SYSTEM_MESSAGE,
   isCustomApiHostFullPath: false, // デフォルト値を設定
 }
 
@@ -356,6 +375,9 @@ export async function getUserConfig(): Promise<UserConfig> {
         }
         if (config.isHostFullPath === undefined) {
           config.isHostFullPath = false; // マイグレーション: 既存設定にデフォルト値を設定
+        }
+        if (config.systemPromptMode === undefined) {
+          config.systemPromptMode = SystemPromptMode.OVERRIDE; // マイグレーション: 既存設定にデフォルト値を設定
         }
       });
     }

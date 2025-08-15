@@ -1,5 +1,4 @@
 import { isArray } from 'lodash-es'
-import { DEFAULT_CHATGPT_SYSTEM_MESSAGE } from '~app/consts'
 import { UserConfig, getUserConfig } from '~services/user-config'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { parseSSEResponse } from '~utils/sse'
@@ -89,10 +88,8 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
   }
 
   private buildMessages(prompt: string, imageUrls?: string[]): ChatMessage[] {
-    const currentDate = new Date().toISOString().split('T')[0]
-    const systemMessage = this.getSystemMessage().replace('{current_date}', currentDate)
     return [
-      { role: 'system', content: systemMessage },
+      { role: 'system', content: this.getSystemMessage() },
       ...this.conversationContext!.messages.slice(-(CONTEXT_SIZE + 1)),
       this.buildUserMessage(prompt, imageUrls),
     ]
@@ -118,9 +115,7 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
     }
   }
 
-  getSystemMessage() {
-    return DEFAULT_CHATGPT_SYSTEM_MESSAGE
-  }
+  abstract getSystemMessage(): string
 
   async doSendMessage(params: SendMessageParams) {
     if (!this.conversationContext) {
@@ -204,7 +199,7 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
   }
 
   getSystemMessage() {
-    return this.config.systemMessage || DEFAULT_CHATGPT_SYSTEM_MESSAGE // Use config.systemMessage
+    return this.config.systemMessage
   }
 
   

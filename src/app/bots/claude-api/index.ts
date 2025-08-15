@@ -1,5 +1,4 @@
 import { isArray } from 'lodash-es'
-import { DEFAULT_CLAUDE_SYSTEM_MESSAGE } from '~app/consts'
 import { requestHostPermission } from '~app/utils/permissions'
 import { UserConfig, getUserConfig } from '~services/user-config' // Import getUserConfig
 import { ChatError, ErrorCode } from '~utils/errors'
@@ -118,9 +117,7 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
     ]
   }
 
-  getSystemMessage() {
-    return DEFAULT_CLAUDE_SYSTEM_MESSAGE
-  }
+  abstract getSystemMessage(): string
 
   async doSendMessage(params: SendMessageParams) {
     if (!this.conversationContext) {
@@ -244,9 +241,7 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
   }
 
   getSystemMessage() {
-    const currentDate = new Date().toISOString().split('T')[0]
-    const systemMessage = this.config.systemMessage.replace('{current_date}', currentDate)  || DEFAULT_CLAUDE_SYSTEM_MESSAGE // Use config.systemMessage
-    return systemMessage
+    return this.config.systemMessage
   }
 
   async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal) {

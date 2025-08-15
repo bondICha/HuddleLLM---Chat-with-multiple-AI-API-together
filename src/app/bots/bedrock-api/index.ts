@@ -1,5 +1,4 @@
 import { isArray } from 'lodash-es';
-import { DEFAULT_CLAUDE_SYSTEM_MESSAGE } from '~app/consts';
 import { requestHostPermission } from '~app/utils/permissions';
 import { UserConfig } from '~services/user-config';
 import { ChatError, ErrorCode } from '~utils/errors';
@@ -178,9 +177,7 @@ export abstract class AbstractBedrockApiBot extends AbstractBot {
     ]
   }
 
-  getSystemMessage() {
-    return DEFAULT_CLAUDE_SYSTEM_MESSAGE
-  }
+  abstract getSystemMessage(): string
 
   async doSendMessage(params: SendMessageParams) {
     if (!this.conversationContext) {
@@ -608,5 +605,9 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
 
   get supportsImageInput() {
     return true
+  }
+
+  getSystemMessage() {
+    return this.config.systemMessage
   }
 }

@@ -1,5 +1,4 @@
 import { GoogleGenAI, Content, Part, GenerationConfig } from '@google/genai'
-import { DEFAULT_CHATGPT_SYSTEM_MESSAGE } from '~app/consts'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract-bot'
 import { file2base64 } from '~app/utils/file-utils'
@@ -176,13 +175,11 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
   }
 
   getSystemInstruction(): Content | undefined {
-    const currentDate = new Date().toISOString().split('T')[0];
-    const systemMessage = this.config.geminiApiSystemMessage?.replace('{current_date}', currentDate);
-    if (!systemMessage) {
+    if (!this.config.geminiApiSystemMessage) {
       return undefined;
     }
     // The new SDK expects system instruction as a top-level parameter, not in contents
-    return { role: 'system', parts: [{ text: systemMessage }] };
+    return { role: 'system', parts: [{ text: this.config.geminiApiSystemMessage }] };
   }
 
   getGenerationConfig(): GenerationConfig {
