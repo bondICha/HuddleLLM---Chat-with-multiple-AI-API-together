@@ -92,10 +92,10 @@ export async function exportCustomAPITemplate() {
   const localData = await Browser.storage.local.get('customApiConfigs');
   const customApiConfigsArray = localData.customApiConfigs as CustomApiConfig[] | undefined;
 
-  // syncストレージからcustomApiHostを取得
-  const syncData = await Browser.storage.sync.get('customApiHost');
+  // syncストレージからcustomApiHost と commonSystemMessage を取得
+  const syncData = await Browser.storage.sync.get(['customApiHost', 'commonSystemMessage']);
   
-  const templateExportData: { customApiConfigs?: Partial<CustomApiConfig>[], customApiHost?: string } = {};
+  const templateExportData: { customApiConfigs?: Partial<CustomApiConfig>[], customApiHost?: string, commonSystemMessage?: string } = {};
 
   if (customApiConfigsArray && Array.isArray(customApiConfigsArray)) {
     templateExportData.customApiConfigs = customApiConfigsArray.map(config => {
@@ -108,6 +108,11 @@ export async function exportCustomAPITemplate() {
   // 共通のAPIホストを含める
   if (syncData.customApiHost) {
     templateExportData.customApiHost = syncData.customApiHost;
+  }
+  
+  // Common System Message を含める
+  if (syncData.commonSystemMessage) {
+    templateExportData.commonSystemMessage = syncData.commonSystemMessage;
   }
   
   // JSONとして保存

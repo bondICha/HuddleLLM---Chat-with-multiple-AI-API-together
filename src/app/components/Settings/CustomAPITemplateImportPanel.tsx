@@ -6,6 +6,7 @@ import Browser from 'webextension-polyfill'
 import Button from '../Button'
 import Dialog from '../Dialog'
 import Select from '../Select'
+import Checkbox from '../Checkbox'
 import { UserConfig, CustomApiConfig, updateUserConfig } from '~services/user-config'
 import toast from 'react-hot-toast'
 
@@ -16,9 +17,10 @@ interface Props {
 
 
 // Helper function to parse imported template data from various formats
-const _parseImportedTemplateData = (jsonData: any): { configs: CustomApiConfig[], host?: string } => {
+const _parseImportedTemplateData = (jsonData: any): { configs: CustomApiConfig[], host?: string, commonSystemMessage?: string } => {
   let parsedConfigs: CustomApiConfig[] = [];
   let parsedHost: string | undefined = undefined;
+  let parsedCommonSystemMessage: string | undefined = undefined;
 
   // New export format (top-level customApiConfigs array)
   if (Array.isArray(jsonData.customApiConfigs)) {
@@ -27,6 +29,9 @@ const _parseImportedTemplateData = (jsonData: any): { configs: CustomApiConfig[]
     if (typeof jsonData.customApiHost === 'string') {
       parsedHost = jsonData.customApiHost;
     }
+    if (typeof jsonData.commonSystemMessage === 'string') {
+      parsedCommonSystemMessage = jsonData.commonSystemMessage;
+    }
   }
   // Old export format (json.sync.customApiConfigs array)
   else if (jsonData.sync && Array.isArray(jsonData.sync.customApiConfigs)) {
@@ -34,6 +39,9 @@ const _parseImportedTemplateData = (jsonData: any): { configs: CustomApiConfig[]
     parsedConfigs = [...jsonData.sync.customApiConfigs];
     if (typeof jsonData.sync.customApiHost === 'string') {
       parsedHost = jsonData.sync.customApiHost;
+    }
+    if (typeof jsonData.sync.commonSystemMessage === 'string') {
+      parsedCommonSystemMessage = jsonData.sync.commonSystemMessage;
     }
   }
   // Even older export format (json.sync individual keys)
@@ -56,17 +64,23 @@ const _parseImportedTemplateData = (jsonData: any): { configs: CustomApiConfig[]
     if (typeof jsonData.sync.customApiHost === 'string') {
       parsedHost = jsonData.sync.customApiHost;
     }
+    if (typeof jsonData.sync.commonSystemMessage === 'string') {
+      parsedCommonSystemMessage = jsonData.sync.commonSystemMessage;
+    }
   }
-  return { configs: parsedConfigs, host: parsedHost };
+  return { configs: parsedConfigs, host: parsedHost, commonSystemMessage: parsedCommonSystemMessage };
 };
 
 
 const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue }) => {
   const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
-  const [importedData, setImportedData] = useState<{ configs: CustomApiConfig[], host?: string }>({ configs: [] });
+  const [importedData, setImportedData] = useState<{ configs: CustomApiConfig[], host?: string, commonSystemMessage?: string }>({ configs: [] });
   const [mappings, setMappings] = useState<number[]>([])
   const [lastOpenedFile, setLastOpenedFile] = useState<Blob | null>(null);
+  // Common要素のインポート選択状態（デフォルトはON）
+  const [importCommonHost, setImportCommonHost] = useState(true);
+  const [importCommonSystemMessage, setImportCommonSystemMessage] = useState(true);
 
 
   // ファイル選択処理
@@ -77,19 +91,22 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
       const text = await blob.text()
       const json = JSON.parse(text);
       
-      const { configs: parsedConfigs, host: parsedHost } = _parseImportedTemplateData(json);
+      const { configs: parsedConfigs, host: parsedHost, commonSystemMessage: parsedCommonSystemMessage } = _parseImportedTemplateData(json);
 
       if (parsedConfigs.length === 0) {
         toast.error(t('No Custom API settings found in the file. Please check the file format.'));
         return;
       }
 
+      // チェックボックスの状態をリセット（デフォルトはON）
+      setImportCommonHost(true);
+      setImportCommonSystemMessage(true);
 
       const defaultMappings = parsedConfigs.map((_, index) =>
         index < userConfig.customApiConfigs.length ? index : -1
       );
       
-      setImportedData({ configs: parsedConfigs, host: parsedHost });
+      setImportedData({ configs: parsedConfigs, host: parsedHost, commonSystemMessage: parsedCommonSystemMessage });
       setMappings(defaultMappings);
       setIsOpen(true);
 
@@ -134,8 +151,12 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
       const updatedConfigs = [...newConfigs, ...configsToAdd];
       const updatePayload: Partial<UserConfig> = { customApiConfigs: updatedConfigs };
 
-      if (importedData.host !== undefined) {
+      if (importedData.host !== undefined && importCommonHost) {
         updatePayload.customApiHost = importedData.host;
+      }
+
+      if (importedData.commonSystemMessage !== undefined && importCommonSystemMessage) {
+        updatePayload.commonSystemMessage = importedData.commonSystemMessage;
       }
 
       await updateUserConfig(updatePayload);
@@ -151,7 +172,8 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
       // エラー時、元の設定に戻す処理は updateConfigValue を使って行う
       updateConfigValue({
          customApiConfigs: userConfig.customApiConfigs || [],
-         customApiHost: userConfig.customApiHost
+         customApiHost: userConfig.customApiHost,
+         commonSystemMessage: userConfig.commonSystemMessage
       });
     }
   };
@@ -177,6 +199,29 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
             {t('Select which models to import and where to place them. Individual API keys will be overwritten, but common API key will be preserved.')}
           </p>
         </div>
+
+        {/* Common要素のインポート選択 */}
+        {(importedData.host !== undefined || importedData.commonSystemMessage !== undefined) && (
+          <div className="mb-6 px-2 border-t pt-4">
+            <h4 className="text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">{t('Common Settings')}</h4>
+            <div className="space-y-2">
+              {importedData.host !== undefined && (
+                <Checkbox
+                  label={t('Import Common API Host') + `: ${importedData.host}`}
+                  checked={importCommonHost}
+                  onChange={setImportCommonHost}
+                />
+              )}
+              {importedData.commonSystemMessage !== undefined && (
+                <Checkbox
+                  label={t('Import Common System Message')}
+                  checked={importCommonSystemMessage}
+                  onChange={setImportCommonSystemMessage}
+                />
+              )}
+            </div>
+          </div>
+        )}
         
         <div className="max-h-[60vh] overflow-y-auto px-5">
           {importedData.configs.map((importConfig, index) => (
