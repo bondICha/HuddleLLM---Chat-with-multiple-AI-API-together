@@ -2,7 +2,6 @@ import { cx } from '~/utils'
 import { FC, useState } from 'react'
 import { Layout } from '~app/consts'
 import layoutFourIcon from '~assets/icons/layout-four.svg'
-import layoutImageIcon from '~assets/icons/layout-image-input.svg'
 import layoutThreeIcon from '~assets/icons/layout-three.svg'
 import layoutTwoIcon from '~assets/icons/layout-two.svg'
 import layoutOneIcon from '~assets/icons/layout-one.svg'
@@ -84,11 +83,6 @@ const LayoutSwitch: FC<Props> = (props) => {
           active={props.layout === 'sixGrid'} 
           onClick={() => handleItemClick('sixGrid')} 
         />
-      <Item
-        icon={layoutImageIcon}
-        active={props.layout === 'imageInput'}
-          onClick={() => handleItemClick('imageInput')}
-      />
       </div>
 
       {/* オーバーレイ - モバイルでパネルが開いている時のみ表示 */}

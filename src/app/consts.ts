@@ -11,4 +11,4 @@ export const DEFAULT_SYSTEM_MESSAGE = "Current date: {current_date}, current tim
 
 
 
-export type Layout = 'single' | 2 | 3 | 4 | 'imageInput' | 'twoVertical' | 'twoHorizon' | 'sixGrid' // twoVertical is deprecated
+export type Layout = 'single' | 2 | 3 | 4 | 'twoVertical' | 'twoHorizon' | 'sixGrid' // twoVertical is deprecated

@@ -15,6 +15,10 @@
   - ボット設定の改善（折りたたみ可能なパネル）
   - カスタムボットの順序変更機能
 
+- **All-in-oneチャットペアの保存**: All-in-oneモードでお気に入りのボットの組み合わせを保存できるようになりました。保存したペアはサイドバーから素早くアクセスでき、異なるチャット設定を瞬時に切り替えることができます。ペアの名前変更、更新、削除も可能です。
+![Save all-in-one pair](/Save%20all-in-one%20pair.png)
+- **画像入力レイアウトの削除**: All-in-oneモードから画像入力レイアウトを削除しました。
+
 ### AI機能強化
 - **Claude関連の改善** (v2.3.6-2.5.3)
   - Claude 3.7 Sonnetモデルのサポート
@@ -50,6 +54,10 @@
   - Single model view addition
   - Improved bot settings with collapsible panels
   - Custom bot reordering capability
+
+- **Save All-in-one chat pairs**: You can now save your favorite bot combinations in All-in-one mode. These saved pairs can be quickly accessed from the sidebar, allowing you to switch between different chat setups instantly. You can also rename, update, and delete your saved pairs.
+![Save all-in-one pair](/Save%20all-in-one%20pair.png)
+- **Removed Image Input Layout**: The image input layout has been removed from the All-in-one mode.
 
 ### AI Capability Enhancements
 - **Claude Improvements** (v2.3.6-2.5.3)
@@ -93,6 +101,10 @@
   - 改进机器人设置，支持折叠面板
   - 自定义机器人重新排序功能
 
+- **保存All-in-one聊天配对**: 您现在可以在All-in-one模式下保存您喜欢的机器人组合。可以从侧边栏快速访问这些已保存的配对，让您即时切换不同的聊天设置。您还可以重命名、更新和删除已保存的配对。
+![Save all-in-one pair](/Save%20all-in-one%20pair.png)
+- **移除图像输入布局**: 已从All-in-one模式中移除图像输入布局。
+
 ### AI能力增强
 - **Claude相关改进** (v2.3.6-2.5.3)
   - 支持Claude 3.7 Sonnet模型
@@ -134,6 +146,10 @@
   - 新增單一模型視圖
   - 改進機器人設定，支援折疊面板
   - 自定義機器人重新排序功能
+
+- **儲存All-in-one聊天配對**: 您現在可以在All-in-one模式下儲存您喜歡的機器人組合。可以從側邊欄快速存取這些已儲存的配對，讓您即時切換不同的聊天設定。您還可以重新命名、更新和刪除已儲存的配對。
+![Save all-in-one pair](/Save%20all-in-one%20pair.png)
+- **移除圖像輸入佈局**: 已從All-in-one模式中移除圖像輸入佈局。
 
 ### AI能力增強
 - **Claude相關改進** (v2.3.6-2.5.3)

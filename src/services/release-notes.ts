@@ -6,6 +6,12 @@ import { getVersion } from '~utils'
 
 const RELEASE_NOTES = [
   {
+    version: '2.8.2',
+    notes: [
+      'releasenote_v282_chat_pair_feature',
+    ],
+  },
+  {
     version: '2.8.1',
     notes: [
       'releasenote_v281_url_fetch',

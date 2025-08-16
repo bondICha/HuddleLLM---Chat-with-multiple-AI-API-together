@@ -1,4 +1,4 @@
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { useAtom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
 import { sample, uniqBy } from 'lodash-es'
 import { FC, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -11,18 +11,14 @@ import LayoutSwitch from '~app/components/Chat/LayoutSwitch'
 import { Layout } from '~app/consts'
 import { useChat } from '~app/hooks/use-chat'
 import ConversationPanel from '../components/Chat/ConversationPanel'
+import { 
+  allInOnePairsAtom, 
+  activeAllInOneAtom, 
+  DEFAULT_BOTS, 
+  DEFAULT_PAIR_CONFIG,
+  AllInOnePairConfig 
+} from '~app/atoms/all-in-one'
 
-// デフォルトのボットインデックス（0から5まで）
-const DEFAULT_BOTS: number[] = [0, 1, 2, 3, 4, 5]
-
-const layoutAtom = atomWithStorage<Layout>('multiPanelLayout', 2, undefined, { getOnInit: true })
-
-const imageInputPanelAtom = atomWithStorage<number[]>('imageInputPanelBots', DEFAULT_BOTS.slice(0, 3))
-const singlePanelBotAtom = atomWithStorage<number[]>('singlePanelBot', DEFAULT_BOTS.slice(0, 1))
-const twoPanelBotsAtom = atomWithStorage<number[]>('multiPanelBots:2', DEFAULT_BOTS.slice(0, 2))
-const threePanelBotsAtom = atomWithStorage<number[]>('multiPanelBots:3', DEFAULT_BOTS.slice(0, 3))
-const fourPanelBotsAtom = atomWithStorage<number[]>('multiPanelBots:4', DEFAULT_BOTS.slice(0, 4))
-const sixPanelBotsAtom = atomWithStorage<number[]>('multiPanelBots:6', DEFAULT_BOTS.slice(0, 6))
 
 function replaceDeprecatedBots(bots: number[]): number[] {
   // インデックスが有効かどうかを確認（0以上の整数であること）
@@ -31,14 +27,56 @@ function replaceDeprecatedBots(bots: number[]): number[] {
 
 const GeneralChatPanel: FC<{
   chats: ReturnType<typeof useChat>[]
-  setBots?: ReturnType<typeof useSetAtom<typeof twoPanelBotsAtom>>
+  setBots?: (bots: number[]) => void
   supportImageInput?: boolean
 }> = ({ chats, setBots, supportImageInput }) => {
   const { t } = useTranslation()
   const generating = useMemo(() => chats.some((c) => c.generating), [chats])
-  const [layout, setLayout] = useAtom(layoutAtom)
+  
+  // 新しい二次元atom構造を使用
+  const [activeAllInOne] = useAtom(activeAllInOneAtom)
+  const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
+  
+  // 現在のペア設定を取得
+  const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
+  const layout = currentPairConfig.layout
+  
+  // 設定更新関数
+  const updateCurrentPairConfig = (updates: Partial<AllInOnePairConfig>) => {
+    setAllInOnePairs(prev => ({
+      ...prev,
+      [activeAllInOne]: {
+        ...currentPairConfig,
+        ...updates
+      }
+    }))
+  }
+  
+  const setLayout = (newLayout: Layout) => {
+    updateCurrentPairConfig({ layout: newLayout })
+  }
+  
   const [refresh, setRefresh] = useState(0) // 更新用の state を追加
   const [pendingSearchQuery, setPendingSearchQuery] = useAtom(pendingSearchQueryAtom)
+  
+  // 現在のボット選択を取得
+  const getCurrentBotIndices = (): number[] => {
+    switch (layout) {
+      case 'single':
+        return currentPairConfig.singlePanelBots
+      case 2:
+      case 'twoHorizon':
+        return currentPairConfig.twoPanelBots
+      case 3:
+        return currentPairConfig.threePanelBots
+      case 4:
+        return currentPairConfig.fourPanelBots
+      case 'sixGrid':
+        return currentPairConfig.sixPanelBots
+      default:
+        return currentPairConfig.twoPanelBots
+    }
+  }
 
   // リサイズ機能のstate
   const [gridAreaHeight, setGridAreaHeight] = useState('99%') // 初期状態では入力エリアを小さく
@@ -160,11 +198,29 @@ const GeneralChatPanel: FC<{
         currentChat.resetConversation()
       }
       
-      setBots((bots) => {
-        const newBots = [...bots]
-        newBots[arrayIndex] = newIndex
-        return newBots
-      })
+      const currentBots = getCurrentBotIndices()
+      const newBots = [...currentBots]
+      newBots[arrayIndex] = newIndex
+      
+      // レイアウトに応じて適切なボット配列を更新
+      switch (layout) {
+        case 'single':
+          updateCurrentPairConfig({ singlePanelBots: newBots })
+          break
+        case 2:
+        case 'twoHorizon':
+          updateCurrentPairConfig({ twoPanelBots: newBots })
+          break
+        case 3:
+          updateCurrentPairConfig({ threePanelBots: newBots })
+          break
+        case 4:
+          updateCurrentPairConfig({ fourPanelBots: newBots })
+          break
+        case 'sixGrid':
+          updateCurrentPairConfig({ sixPanelBots: newBots })
+          break
+      }
       
       // refreshを更新して再レンダリングを促す
       setRefresh(prev => prev + 1)
@@ -246,7 +302,21 @@ const GeneralChatPanel: FC<{
 }
 
 const SingleBotChatPanel: FC = () => {
-  const [bots, setBots] = useAtom(singlePanelBotAtom)
+  const [activeAllInOne] = useAtom(activeAllInOneAtom)
+  const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
+  const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
+  const bots = currentPairConfig.singlePanelBots
+  
+  const setBots = (newBots: number[]) => {
+    setAllInOnePairs(prev => ({
+      ...prev,
+      [activeAllInOne]: {
+        ...currentPairConfig,
+        singlePanelBots: newBots
+      }
+    }))
+  }
+  
   const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
   
   const chat = useChat(multiPanelBotIndices[0])
@@ -261,7 +331,21 @@ const SingleBotChatPanel: FC = () => {
 }
 
 const TwoBotChatPanel: FC = () => {
-  const [bots, setBots] = useAtom(twoPanelBotsAtom)
+  const [activeAllInOne] = useAtom(activeAllInOneAtom)
+  const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
+  const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
+  const bots = currentPairConfig.twoPanelBots
+  
+  const setBots = (newBots: number[]) => {
+    setAllInOnePairs(prev => ({
+      ...prev,
+      [activeAllInOne]: {
+        ...currentPairConfig,
+        twoPanelBots: newBots
+      }
+    }))
+  }
+  
   const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
   
   const chat1 = useChat(multiPanelBotIndices[0])
@@ -277,7 +361,21 @@ const TwoBotChatPanel: FC = () => {
 }
 
 const TwoHorizonBotChatPanel: FC = () => {
-  const [bots, setBots] = useAtom(twoPanelBotsAtom)
+  const [activeAllInOne] = useAtom(activeAllInOneAtom)
+  const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
+  const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
+  const bots = currentPairConfig.twoPanelBots
+  
+  const setBots = (newBots: number[]) => {
+    setAllInOnePairs(prev => ({
+      ...prev,
+      [activeAllInOne]: {
+        ...currentPairConfig,
+        twoPanelBots: newBots
+      }
+    }))
+  }
+  
   const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
   
   const chat1 = useChat(multiPanelBotIndices[0])
@@ -293,7 +391,21 @@ const TwoHorizonBotChatPanel: FC = () => {
 }
 
 const ThreeBotChatPanel: FC = () => {
-  const [bots, setBots] = useAtom(threePanelBotsAtom)
+  const [activeAllInOne] = useAtom(activeAllInOneAtom)
+  const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
+  const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
+  const bots = currentPairConfig.threePanelBots
+  
+  const setBots = (newBots: number[]) => {
+    setAllInOnePairs(prev => ({
+      ...prev,
+      [activeAllInOne]: {
+        ...currentPairConfig,
+        threePanelBots: newBots
+      }
+    }))
+  }
+  
   const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
   
   const chat1 = useChat(multiPanelBotIndices[0])
@@ -310,7 +422,21 @@ const ThreeBotChatPanel: FC = () => {
 }
 
 const FourBotChatPanel: FC = () => {
-  const [bots, setBots] = useAtom(fourPanelBotsAtom)
+  const [activeAllInOne] = useAtom(activeAllInOneAtom)
+  const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
+  const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
+  const bots = currentPairConfig.fourPanelBots
+  
+  const setBots = (newBots: number[]) => {
+    setAllInOnePairs(prev => ({
+      ...prev,
+      [activeAllInOne]: {
+        ...currentPairConfig,
+        fourPanelBots: newBots
+      }
+    }))
+  }
+  
   const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
   
   const chat1 = useChat(multiPanelBotIndices[0])
@@ -328,7 +454,21 @@ const FourBotChatPanel: FC = () => {
 }
 
 const SixBotChatPanel: FC = () => {
-  const [bots, setBots] = useAtom(sixPanelBotsAtom)
+  const [activeAllInOne] = useAtom(activeAllInOneAtom)
+  const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
+  const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
+  const bots = currentPairConfig.sixPanelBots
+  
+  const setBots = (newBots: number[]) => {
+    setAllInOnePairs(prev => ({
+      ...prev,
+      [activeAllInOne]: {
+        ...currentPairConfig,
+        sixPanelBots: newBots
+      }
+    }))
+  }
+  
   const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
   
   const chat1 = useChat(multiPanelBotIndices[0])
@@ -347,24 +487,12 @@ const SixBotChatPanel: FC = () => {
   />
 }
 
-const ImageInputPanel: FC = () => {
-  const [bots, setBots] = useAtom(imageInputPanelAtom)
-  const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
-  
-  const chat1 = useChat(multiPanelBotIndices[0])
-  const chat2 = useChat(multiPanelBotIndices[1])
-  const chat3 = useChat(multiPanelBotIndices[2])
-  
-  const chats = useMemo(() => [chat1, chat2, chat3], [chat1, chat2, chat3])
-  
-  return <GeneralChatPanel
-    chats={chats}
-    supportImageInput={true}
-  />
-}
 
 const MultiBotChatPanel: FC = () => {
-  const layout = useAtomValue(layoutAtom)
+  const [activeAllInOne] = useAtom(activeAllInOneAtom)
+  const [allInOnePairs] = useAtom(allInOnePairsAtom)
+  const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
+  const layout = currentPairConfig.layout
   
   if (layout === 'sixGrid') {
     return <SixBotChatPanel />
@@ -374,9 +502,6 @@ const MultiBotChatPanel: FC = () => {
   }
   if (layout === 3) {
     return <ThreeBotChatPanel />
-  }
-  if (layout === 'imageInput') {
-    return <ImageInputPanel />
   }
   if (layout === 'twoHorizon') {
     return <TwoHorizonBotChatPanel />

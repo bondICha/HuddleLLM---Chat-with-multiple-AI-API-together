@@ -134,6 +134,18 @@ export interface CustomApiConfig {
 }
 
 /**
+ * チャットペアの設定インターフェース
+ * 保存されたチャットペアの情報を保持する型定義
+ */
+export interface ChatPair {
+  id: string, // ユニークID
+  name: string, // ペア名（デフォルトは各チャット名を|で区切ったもの）
+  botIndices: number[], // 選択されたボットのインデックス配列
+  createdAt: number, // 作成日時のタイムスタンプ
+  updatedAt: number, // 更新日時のタイムスタンプ
+}
+
+/**
  * デフォルトのカスタムAPI設定
  */
 const defaultCustomApiConfigs: CustomApiConfig[] = [
@@ -297,6 +309,7 @@ const userConfigWithDefaultValue = {
   customApiHost: '',
   commonSystemMessage: DEFAULT_SYSTEM_MESSAGE,
   isCustomApiHostFullPath: false, // デフォルト値を設定
+  savedChatPairs: [] as ChatPair[], // 保存されたチャットペア
 }
 
 export type UserConfig = typeof userConfigWithDefaultValue
@@ -454,5 +467,76 @@ export async function updateUserConfig(updates: Partial<UserConfig>) {
     }
     toast.error(errorMessage);
   }
+}
+
+/**
+ * チャットペアを保存する
+ * @param botIndices 保存するボットのインデックス配列
+ * @param customName カスタム名（省略時は自動生成）
+ * @returns 保存されたチャットペア
+ */
+export async function saveChatPair(botIndices: number[], customName?: string): Promise<ChatPair> {
+  const config = await getUserConfig();
+  const allBots = config.customApiConfigs || [];
+
+  // デフォルト名を生成（各ショートネームを|で区切る）
+  const defaultName = botIndices
+    .map(index => {
+      const bot = allBots[index];
+      return bot?.shortName || bot?.name || `Bot ${index + 1}`;
+    })
+    .join(' | ');
+
+  const newPair: ChatPair = {
+    id: `pair_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    name: customName || defaultName,
+    botIndices: [...botIndices],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+
+  const updatedPairs = [...(config.savedChatPairs || []), newPair];
+  await updateUserConfig({ savedChatPairs: updatedPairs });
+
+  return newPair;
+}
+
+/**
+ * チャットペアを更新する
+ * @param pairId 更新するペアのID
+ * @param updates 更新内容
+ */
+export async function updateChatPair(pairId: string, updates: Partial<Omit<ChatPair, 'id' | 'createdAt'>>) {
+  const config = await getUserConfig();
+  const pairs = config.savedChatPairs || [];
+  
+  const updatedPairs = pairs.map(pair => 
+    pair.id === pairId 
+      ? { ...pair, ...updates, updatedAt: Date.now() }
+      : pair
+  );
+
+  await updateUserConfig({ savedChatPairs: updatedPairs });
+}
+
+/**
+ * チャットペアを削除する
+ * @param pairId 削除するペアのID
+ */
+export async function deleteChatPair(pairId: string) {
+  const config = await getUserConfig();
+  const pairs = config.savedChatPairs || [];
+  
+  const updatedPairs = pairs.filter(pair => pair.id !== pairId);
+  await updateUserConfig({ savedChatPairs: updatedPairs });
+}
+
+/**
+ * 保存されたチャットペアを取得する
+ * @returns 保存されたチャットペアの配列
+ */
+export async function getSavedChatPairs(): Promise<ChatPair[]> {
+  const config = await getUserConfig();
+  return config.savedChatPairs || [];
 }
 
