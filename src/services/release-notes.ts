@@ -9,6 +9,7 @@ const RELEASE_NOTES = [
     version: '2.8.2',
     notes: [
       'releasenote_v282_chat_pair_feature',
+      'releasenote_v282_common_system_prompt',
     ],
   },
   {

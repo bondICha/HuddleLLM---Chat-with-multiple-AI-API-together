@@ -8,6 +8,7 @@ import './base.scss'
 import './i18n'
 import { router } from './router'
 import { pendingSearchQueryAtom } from './state'
+import { markOmniboxSearchAsUsed } from '../services/storage/open-times'
 
 function App() {
   const setPendingSearchQuery = useSetAtom(pendingSearchQueryAtom)
@@ -20,6 +21,8 @@ function App() {
         if (typeof query === 'string' && query.trim() !== '') {
           console.log('[main.tsx] Found pending omnibox search:', query)
           setPendingSearchQuery(query)
+          // Omnibox検索が使用されたことをマーク
+          await markOmniboxSearchAsUsed()
           // 読み込んだらストレージから削除
           await Browser.storage.local.remove('pendingOmniboxSearch')
         }

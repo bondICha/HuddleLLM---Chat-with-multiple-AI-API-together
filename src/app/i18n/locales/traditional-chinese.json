@@ -38,6 +38,11 @@
   "update_icon": "更新圖示",
   "delete": "刪除",
   "create_new_all_in_one": "創建新的All-In-One",
+  "Address Bar Search Feature": "地址列搜尋功能",
+  "addressbar_search_feature_description": "💡 <strong>您知道嗎？</strong> 可以直接從瀏覽器地址列進行搜尋唷！<br><br>在地址列輸入 <code>@hl</code> 加上您的問題，然後按 Enter 鍵。HuddleLLM 會自動啟動並開始對話呢。<br><br><strong>範例：</strong><br><div style='background: #f8f9fa; border: 1px solid #e1e5e9; border-radius: 20px; padding: 8px 16px; margin: 8px 0; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; font-size: 14px; color: #333;'>@hl 同事老是拖延工作 怎麼跟老闆抱怨</div><br><small><em>這個通知會一直顯示，直到您試用地址列搜尋功能喔。</em></small>",
+  "Got it!": "了解啦！",
+  "Don't show again": "不要再顯示",
+  "Your browser does not support the video tag.": "您的瀏覽器不支援影片標籤。",
   "ReleaseNote-HideUntilNextVersion": "在下一個版本前不再顯示",
   "Recent Updates": "最近更新",
   "Settings": "設置",
@@ -177,5 +182,9 @@
   "Host Blockquote Full Path": "輸入的URL將按原樣使用。",
   "Host Blockquote Base Individual": "若主機名為空，則使用通用API主機。否則，若標準路徑（例如 /v1/chat/completions）未包含，則會自動附加。",
   "Not applicable for Google Gemini": "不適用於 Google Gemini",
-  "Settings saved. API changes require reload": "設定已儲存。API參數變更將在重新載入擴充功能後完全生效。"
+  "Settings saved. API changes require reload": "設定已儲存。API參數變更將在重新載入擴充功能後完全生效。",
+  "Show Variables": "顯示變數列表",
+  "Show available variables": "顯示可用變數",
+  "Hide": "隱藏",
+  "Variables description": "在Common System Message中使用這些變數時，發送到AI API時會被替換為實際值："
 }

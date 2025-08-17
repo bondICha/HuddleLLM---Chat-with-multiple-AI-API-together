@@ -19,9 +19,16 @@ import { useEnabledBots } from '~app/hooks/use-enabled-bots'
 import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom } from '~app/state'
 import { checkReleaseNotes } from '~services/release-notes'
 import * as api from '~services/server-api'
-import { getAppOpenTimes, getPremiumModalOpenTimes } from '~services/storage/open-times'
+import { 
+  getAppOpenTimes, 
+  getPremiumModalOpenTimes, 
+  shouldShowAddressBarModal, 
+  markAddressBarModalAsShown,
+  markAddressBarModalAsDisabled 
+} from '~services/storage/open-times'
 import GuideModal from '../GuideModal'
 import ThemeSettingModal from '../ThemeSettingModal'
+import AddressBarModal from '../Modals/AddressBarModal'
 import Tooltip from '../Tooltip'
 import NavLink from './NavLink'
 import PremiumEntry from './PremiumEntry'
@@ -50,6 +57,7 @@ function Sidebar() {
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useAtom(sidebarCollapsedAtom)
   const [themeSettingModalOpen, setThemeSettingModalOpen] = useState(false)
+  const [addressBarModalOpen, setAddressBarModalOpen] = useState(false)
   const enabledBots = useEnabledBots()
   const setReleaseNotes = useSetAtom(releaseNotesAtom)
   // ボットの情報を保持するための状態（インデックスベース）
@@ -344,9 +352,27 @@ useEffect(() => {
     Promise.all([getAppOpenTimes(), getPremiumModalOpenTimes(), checkReleaseNotes()]).then(
       async ([appOpenTimes, premiumModalOpenTimes, releaseNotes]) => {
         setReleaseNotes(releaseNotes)
+        
+        // Address bar モーダルの表示チェック
+        const shouldShow = await shouldShowAddressBarModal()
+        if (shouldShow) {
+          setAddressBarModalOpen(true)
+        }
       },
     )
   }, [])
+
+  // Address bar モーダルのクローズハンドラー
+  const handleAddressBarModalClose = async () => {
+    setAddressBarModalOpen(false)
+    await markAddressBarModalAsShown()
+  }
+
+  // Address bar モーダルの「もう表示しない」ハンドラー
+  const handleAddressBarModalDontShowAgain = async () => {
+    setAddressBarModalOpen(false)
+    await markAddressBarModalAsDisabled()
+  }
 
   // ボット名を取得する関数（インデックスベース）
   const getBotDisplayName = (index: number) => {
@@ -381,7 +407,7 @@ useEffect(() => {
         />
       </div>
       {/* All-In-One Section */}
-      <div className="mt-10 flex flex-col flex-shrink-0 max-h-[50%]">
+      <div className="mt-10 flex flex-col flex-shrink-0 max-h-[70%]">
         {/* All-in-one pairs container with scrolling */}
         <div className="flex flex-col gap-2 overflow-y-auto scrollbar-none">
         
@@ -595,6 +621,11 @@ useEffect(() => {
       </div>
       <GuideModal />
       <ThemeSettingModal open={themeSettingModalOpen} onClose={() => setThemeSettingModalOpen(false)} />
+      <AddressBarModal 
+        open={addressBarModalOpen} 
+        onClose={handleAddressBarModalClose} 
+        onDontShowAgain={handleAddressBarModalDontShowAgain} 
+      />
     </motion.aside>
   )
 }

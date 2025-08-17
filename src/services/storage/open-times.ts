@@ -21,3 +21,26 @@ export async function incrPremiumModalOpenTimes() {
   Browser.storage.sync.set({ premiumModalOpenTimes: openTimes + 1 })
   return openTimes + 1
 }
+
+export async function hasUsedOmniboxSearch() {
+  const { hasUsedOmniboxSearch = false } = await Browser.storage.sync.get('hasUsedOmniboxSearch')
+  return hasUsedOmniboxSearch
+}
+
+export async function markOmniboxSearchAsUsed() {
+  Browser.storage.sync.set({ hasUsedOmniboxSearch: true })
+}
+
+export async function shouldShowAddressBarModal() {
+  const hasUsed = await hasUsedOmniboxSearch()
+  return !hasUsed // まだ使用していない場合に表示
+}
+
+export async function markAddressBarModalAsShown() {
+  // モーダルを閉じただけでは何もしない（実際に使用するまで表示し続ける）
+}
+
+export async function markAddressBarModalAsDisabled() {
+  // 「もう表示しない」を選択した場合
+  Browser.storage.sync.set({ hasUsedOmniboxSearch: true })
+}

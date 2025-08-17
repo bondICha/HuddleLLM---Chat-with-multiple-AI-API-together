@@ -50,6 +50,8 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     const [selectedProviderForModel, setSelectedProviderForModel] = useState<Record<number, string | null>>({});
     // デフォルトに戻す確認ダイアログのstate
     const [showResetDialog, setShowResetDialog] = useState(false);
+    // 変数一覧の表示状態
+    const [showVariables, setShowVariables] = useState(false);
 
     // 防御的チェック: customApiConfigsが未定義の場合は空配列として扱う
     const customApiConfigs = userConfig.customApiConfigs || [];
@@ -248,7 +250,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             </div>
             <div className="flex flex-col gap-3">
                 {/* Common API Settings */}
-                <div className="space-y-3 max-w-[800px]">
+                <div className="space-y-3">
                     <div className={formRowClass}>
                         <p className={labelClass}>{t("Common API Key")}</p>
                         <div className={inputContainerClass}>
@@ -265,26 +267,48 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     <Blockquote className="mt-1 ml-[25%]">{t('Your keys are stored locally')}</Blockquote>
 
                     <div className={formRowClass}>
-                        <div className="flex items-center gap-2 justify-end">
-                            <p className={labelClass}>{t('Common System Message')}</p>
-                            <div className="relative group">
-                                <BiInfoCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
-                                <div className="absolute bottom-6 right-0 mb-2 w-80 p-3 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
-                                    <p className="font-medium mb-2 text-white">{t('Available template variables:')}</p>
-                                    <div className="grid grid-cols-1 gap-1 font-mono text-xs">
-                                        <span><code className="text-green-300">{'{current_date}'}</code> - Current date (YYYY-MM-DD)</span>
-                                        <span><code className="text-green-300">{'{current_time}'}</code> - Current time (HH:MM:SS)</span>
-                                        <span><code className="text-green-300">{'{modelname}'}</code> - AI model name</span>
-                                        <span><code className="text-green-300">{'{chatbotname}'}</code> - Chatbot display name</span>
-                                        <span><code className="text-green-300">{'{language}'}</code> - User language setting</span>
-                                        <span><code className="text-green-300">{'{timezone}'}</code> - User timezone</span>
-                                    </div>
-                                    <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
-                                </div>
-                            </div>
-                        </div>
+                        <p className={labelClass}>{t('Common System Message')}</p>
                         <div className="w-full">
+                            <button
+                                onClick={() => setShowVariables(!showVariables)}
+                                className="flex items-center gap-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-pointer transition-colors mb-2"
+                            >
+                                <BiInfoCircle className="w-4 h-4" />
+                                <span className="text-xs">{showVariables ? t('Hide') : t('Show available variables')}</span>
+                            </button>
                             <div className="flex flex-col gap-2 w-full">
+                                {/* 変数一覧の展開可能セクション */}
+                                {showVariables && (
+                                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border">
+                                        <p className="font-medium mb-2 text-sm">{t('Variables description')}</p>
+                                        <div className="grid grid-cols-1 gap-1 text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{current_date}'}</code>
+                                                <span className="text-gray-600 dark:text-gray-400">- Current date (YYYY-MM-DD)</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{current_time}'}</code>
+                                                <span className="text-gray-600 dark:text-gray-400">- Current time (HH:MM:SS)</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{modelname}'}</code>
+                                                <span className="text-gray-600 dark:text-gray-400">- AI model name</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{chatbotname}'}</code>
+                                                <span className="text-gray-600 dark:text-gray-400">- Chatbot display name</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{language}'}</code>
+                                                <span className="text-gray-600 dark:text-gray-400">- User language setting</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{timezone}'}</code>
+                                                <span className="text-gray-600 dark:text-gray-400">- User timezone</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 <Textarea
                                     className='w-full'
                                     maxRows={5}
