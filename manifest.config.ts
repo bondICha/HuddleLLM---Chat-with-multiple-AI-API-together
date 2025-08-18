@@ -21,7 +21,7 @@ export default defineManifest(async () => {
     host_permissions: [
     ],
     optional_host_permissions: ['https://*/*', 'http://*/*', 'wss://*/*'],
-    permissions: ['storage', 'unlimitedStorage', 'sidePanel', 'declarativeNetRequestWithHostAccess', 'scripting'],
+    permissions: ['storage', 'unlimitedStorage', 'sidePanel', 'scripting'],
     // content_scripts: [
     // ],
     commands: {
@@ -40,9 +40,6 @@ export default defineManifest(async () => {
     },
     // declarative_net_request rules are no longer needed with custom models
     // as web access is handled differently.
-    declarative_net_request: {
-      rule_resources: []
-    },
     "omnibox": {
       "keyword": "@hl"
     }
