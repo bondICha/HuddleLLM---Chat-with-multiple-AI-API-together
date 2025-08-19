@@ -48,6 +48,13 @@
     "Recent Updates": "Recent Updates",
     "Settings": "Settings",
     "Startup page": "Startup page",
+    "Restore Session": "Restore Session",
+    "Use ↑↓ keys to navigate, Enter to select, Esc to start new session": "Use ↑↓ keys to navigate, Enter to select, Esc to start new session",
+    "Loading sessions...": "Loading sessions...",
+    "Start New Session": "Start New Session",
+    "Begin a fresh conversation": "Begin a fresh conversation",
+    "No previous sessions found": "No previous sessions found",
+    "Click outside or press Esc to start new session": "Click outside or press Esc to start new session",
     "Chatbots configuration": "Chatbots configuration",
     "API Settings": "API Settings",
     "Save changes": "Save changes",
@@ -196,5 +203,8 @@
     "Show Variables": "Show Variables",
     "Show available variables": "Show available variables",
     "Hide": "Hide",
-    "Variables description": "These variables in the Common System Message will be replaced with actual values when sent to the AI API:"
+    "Variables description": "These variables in the Common System Message will be replaced with actual values when sent to the AI API:",
+    "Use ↑↓ keys to navigate, Enter to select, Esc to close": "Use ↑↓ keys to navigate, Enter to select, Esc to close",
+    "Loading sessions...": "Loading sessions...",
+    "Click outside or press Esc to close": "Click outside or press Esc to close"
 }

@@ -186,5 +186,12 @@
   "Show Variables": "顯示變數列表",
   "Show available variables": "顯示可用變數",
   "Hide": "隱藏",
-  "Variables description": "在Common System Message中使用這些變數時，發送到AI API時會被替換為實際值："
+  "Variables description": "在Common System Message中使用這些變數時，發送到AI API時會被替換為實際值：",
+  "Restore Session": "恢復工作階段",
+  "Use ↑↓ keys to navigate, Enter to select, Esc to close": "使用↑↓鍵導覽，Enter選擇，Esc關閉",
+  "Loading sessions...": "正在載入工作階段...",
+  "Start New Session": "開始新工作階段",
+  "Begin a fresh conversation": "開始新的對話",
+  "No previous sessions found": "未找到先前的工作階段",
+  "Click outside or press Esc to close": "點擊外部或按Esc關閉"
 }

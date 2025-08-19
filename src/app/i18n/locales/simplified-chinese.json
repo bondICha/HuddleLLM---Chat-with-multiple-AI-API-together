@@ -187,5 +187,12 @@
   "Show Variables": "显示变量列表",
   "Show available variables": "显示可用变量",
   "Hide": "隐藏",
-  "Variables description": "在Common System Message中使用这些变量时，发送到AI API时会被替换为实际值："
+  "Variables description": "在Common System Message中使用这些变量时，发送到AI API时会被替换为实际值：",
+  "Restore Session": "恢复会话",
+  "Use ↑↓ keys to navigate, Enter to select, Esc to close": "使用↑↓键导航，Enter选择，Esc关闭",
+  "Loading sessions...": "正在加载会话...",
+  "Start New Session": "开始新会话",
+  "Begin a fresh conversation": "开始新的对话",
+  "No previous sessions found": "未找到之前的会话",
+  "Click outside or press Esc to close": "点击外部或按Esc关闭"
 }
