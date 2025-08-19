@@ -2,6 +2,7 @@ export interface SearchResultItem {
   title: string
   abstract: string
   link: string
+  provider?: string
 }
 
 export interface SearchResult {

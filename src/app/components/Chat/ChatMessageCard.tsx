@@ -180,6 +180,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
         <MessageBubble 
           color={message.author === 'user' ? 'primary' : 'flat'}
           thinking={message.thinking}
+          searchResults={message.searchResults}
           isUserMessage={message.author === 'user'}
           fetchedUrls={message.fetchedUrls}
         >

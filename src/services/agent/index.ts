@@ -1,11 +1,13 @@
-import { removeSlashes } from 'slashes'
-import { PROMPT_TEMPLATE } from './prompts'
-import { searchRelatedContext } from './web-search'
-import { AnwserPayload } from '~app/bots/abstract-bot'
+import { removeSlashes } from 'slashes';
+import { PROMPT_TEMPLATE } from './prompts';
+import { searchRelatedContext } from './web-search';
+import { AnwserPayload } from '~app/bots/abstract-bot';
+import Browser from 'webextension-polyfill';
+import { htmlToText } from '~app/utils/html-utils';
 
 const TOOLS = {
   web_search:
-    'a search engine. useful for when you need to answer questions about current events. input should be a search query. prefer English query or decide based on user\'s query. query should be short and concise',
+    'a search engine. useful for when you need to answer questions about current events or recent information. input should be a search query. language should be decided based on user\'s query. query should be short and concise',
 }
 
 function buildToolUsingPrompt(input: string) {
@@ -27,6 +29,20 @@ const FINAL_ANSWER_KEYWORD_REGEX = /"action":\s*"Final Answer"/
 const WEB_SEARCH_KEYWORD_REGEX = /"action":\s*"web_search"/
 const ACTION_INPUT_REGEX = /"action_input":\s*"((?:\\.|[^"])+)(?:"\s*(```)?)?/
 
+function extractJsonPayload(text: string): { action: string; action_input: string } | null {
+  const match = text.match(/```json\s*([\s\S]*?)\s*```/);
+  const jsonString = match ? match[1] : text;
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (parsed.action && parsed.action_input) {
+      return { action: parsed.action, action_input: parsed.action_input };
+    }
+  } catch (e) {
+    // Not a valid JSON, maybe the LLM is still typing.
+  }
+  return null;
+}
+
 async function* execute(
   input: string,
   llm: (prompt: string, rawUserInput: string) => AsyncGenerator<AnwserPayload>,
@@ -34,43 +50,63 @@ async function* execute(
 ): AsyncGenerator<AnwserPayload> {
   let prompt = buildToolUsingPrompt(input)
 
-  let outputType: 'tool' | 'answer' | undefined = undefined
-  let output: AnwserPayload | undefined = undefined
-
+  let llmOutputText = '';
   for await (const payload of llm(prompt, input)) {
-    output = payload
-    console.debug('llm output', output)
-    if (outputType === 'answer' || FINAL_ANSWER_KEYWORD_REGEX.test(payload.text)) {
-      outputType = 'answer'
-      const answer = payload.text.match(ACTION_INPUT_REGEX)?.[1]
-      if (answer) {
-        yield { text: removeSlashes(answer) }
+    llmOutputText = payload.text;
+  }
+
+  const parsedJson = extractJsonPayload(llmOutputText);
+
+  if (!parsedJson) {
+    yield { text: llmOutputText };
+    return;
+  }
+
+  if (parsedJson.action === 'web_search') {
+    const actionInput = parsedJson.action_input;
+        const searchResults = await searchRelatedContext(actionInput, signal);
+    yield { text: '', thinking: `Searching the web for "${actionInput}"`, searchResults };
+
+    // Deduplicate URLs while preserving provider information
+    const uniqueUrls = new Set<string>();
+    const uniqueResults = searchResults.filter(item => {
+      if (uniqueUrls.has(item.link)) {
+        return false;
       }
-    } else if (outputType === 'tool') {
-      continue
-    } else if (WEB_SEARCH_KEYWORD_REGEX.test(payload.text)) {
-      outputType = 'tool'
-    }
+      uniqueUrls.add(item.link);
+      return true;
+    });
+
+    const fullContents = await Promise.all(
+      uniqueResults.map(async (item) => {
+        try {
+          const response = await Browser.runtime.sendMessage({
+            type: 'FETCH_URL',
+            url: item.link,
+          }) as { success: boolean, content?: string };
+          if (response.success && response.content) {
+            return `Content from ${item.link}:\n\n${htmlToText(response.content)}`;
+          }
+          return `Could not fetch content from ${item.link}`;
+        } catch (error) {
+          console.error(`Error fetching content for ${item.link}:`, error);
+          return `Error fetching content from ${item.link}`;
+        }
+      })
+    );
+    const context = `${fullContents.join('\n\n')}`;
+    const promptWithContext = buildPromptWithContext(input, context);
+    prompt = `Now forget about the previous JSON format instructions. Answer the following question based on the provided context in a natural, conversational way. Do NOT use JSON format in your response.\n\n${promptWithContext}`;
+    yield* llm(prompt, input);
+    return;
   }
 
-  if (outputType === 'answer') {
-    return
+  if (parsedJson.action === 'Final Answer') {
+    yield { text: parsedJson.action_input };
+    return;
   }
 
-  if (outputType === 'tool') {
-    const actionInput = removeSlashes(output!.text.match(ACTION_INPUT_REGEX)![1])
-    let context = ''
-    if (actionInput) {
-      yield { text: `Searching the web for _${actionInput}_` }
-      context = await searchRelatedContext(actionInput, signal)
-    }
-    const promptWithContext = buildPromptWithContext(input, context)
-    prompt = `Ignore previous instructions you have been given about RESPONSE FORMAT INSTRUCTIONS and tools, answer the question directly and conversationally to the human. Don't surround your entire reponse as markdown code snippet. \n\n${promptWithContext}`
-    yield* llm(prompt, input)
-    return
-  }
-
-  throw new Error('Unexpected agent error')
+  throw new Error(`Unexpected agent action: ${parsedJson.action}`);
 }
 
 export { execute }

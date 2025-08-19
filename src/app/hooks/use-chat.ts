@@ -1,4 +1,5 @@
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { htmlToText } from '~app/utils/html-utils';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Browser from 'webextension-polyfill'
 import { chatFamily, sessionToRestoreAtom, allInOneRestoreDataAtom } from '~app/state'
@@ -96,41 +97,7 @@ export function useChat(index: number) {
               console.log('🔍 Raw content length:', content.length)
               console.log('🔍 Content preview:', content.substring(0, 500))
 
-              // HTMLタグを削除してテキストのみ抽出
-              let textContent = content
-                .replace(/<script[\s\S]*?<\/script>/gi, '')     // スクリプト削除
-                .replace(/<style[\s\S]*?<\/style>/gi, '')       // スタイル削除
-                .replace(/<br\s*\/?>/gi, '\n')                  // <br>を改行に
-                .replace(/<p\s*[^>]*>/gi, '\n')                 // <p>を改行に
-                .replace(/<\/p>/gi, '\n')                       // </p>を改行に
-                .replace(/<div\s*[^>]*>/gi, '\n')               // <div>を改行に
-                .replace(/<\/div>/gi, '\n')                     // </div>を改行に
-                .replace(/<h1\s*[^>]*>/gi, '\n# ')              // h1を#に
-                .replace(/<h2\s*[^>]*>/gi, '\n## ')             // h2を##に
-                .replace(/<h3\s*[^>]*>/gi, '\n### ')            // h3を###に
-                .replace(/<h4\s*[^>]*>/gi, '\n#### ')           // h4を####に
-                .replace(/<h5\s*[^>]*>/gi, '\n##### ')          // h5を#####に
-                .replace(/<h6\s*[^>]*>/gi, '\n###### ')         // h6を######に
-                .replace(/<\/h[1-6]>/gi, '\n')                  // ヘッダー終了
-                .replace(/<ul\s*[^>]*>([\s\S]*?)<\/ul>/gi, (_, content: string) => {
-                  // ul内のliだけを処理
-                  return content.replace(/<li\s*[^>]*>([\s\S]*?)<\/li>/gi, (_, liContent: string) => {
-                    return '\n• ' + liContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-                  })
-                })
-                .replace(/<ol\s*[^>]*>([\s\S]*?)<\/ol>/gi, (_, content: string) => {
-                  // ol内のliを番号付きで処理
-                  let counter = 1
-                  return content.replace(/<li\s*[^>]*>([\s\S]*?)<\/li>/gi, (_, liContent: string) => {
-                    return '\n' + (counter++) + '. ' + liContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-                  })
-                })
-                .replace(/<li\s*[^>]*>/gi, '')                  // 残りの単体liタグを削除
-                .replace(/<\/li>/gi, '')                        // 残りの単体li終了タグを削除
-                .replace(/<[^>]*>/g, ' ')                       // 残りのHTMLタグ削除
-                .replace(/\n\s*\n\s*\n/g, '\n\n')               // 3つ以上の改行を2つに
-                .replace(/[ \t]+/g, ' ')                        // 連続する空白・タブを1つに
-                .trim()
+              const textContent = htmlToText(content);
 
               console.log('📝 Processed content length:', textContent.length)
 
@@ -197,20 +164,23 @@ export function useChat(index: number) {
         compressedImages = await Promise.all(images.map(compressImageFile))
       }
 
-      const resp = await chatState.bot.sendMessage({
+      const resp = chatState.bot.sendMessage({
         prompt: finalMessage,
         images: compressedImages,
         signal: abortController.signal,
-      })
+      });
 
       try {
         for await (const answer of resp) {
           updateMessage(botMessageId, (message) => {
-            message.text = answer.text
-            if (answer.thinking) {
-              message.thinking = answer.thinking
+            message.text = answer.text;
+                        if (answer.thinking) {
+              message.thinking = answer.thinking;
             }
-          })
+            if (answer.searchResults) {
+              message.searchResults = answer.searchResults;
+            }
+          });
         }
       } catch (err: unknown) {
         if (!abortController.signal.aborted) {

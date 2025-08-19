@@ -28,7 +28,7 @@ export class BingNewsSearch extends WebSearch {
         const title = nodeA.textContent || ''
         const nodeAbstract = node.querySelector('.snippet')
         const abstract = nodeAbstract?.textContent || ''
-        return { title, link, abstract }
+        return { title, link, abstract, provider: 'Bing News' }
       })
   }
 }

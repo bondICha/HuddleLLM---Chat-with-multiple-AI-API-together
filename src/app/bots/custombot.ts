@@ -1,5 +1,6 @@
 // CustomBot.ts file (you should create this file or add to an existing file where suitable)
-import { AsyncAbstractBot, MessageParams } from './abstract-bot';
+import { AsyncAbstractBot, MessageParams, AnwserPayload } from './abstract-bot';
+import * as agent from '~services/agent';
 import { ChatGPTApiBot } from './chatgpt-api';
 import { ClaudeApiBot } from './claude-api';
 import { getUserConfig, CustomApiConfig, CustomApiProvider, SystemPromptMode } from '~/services/user-config';
@@ -119,9 +120,11 @@ export class CustomBot extends AsyncAbstractBot {
         return this.config?.avatar
     }
 
-    async sendMessage(params: MessageParams) {
-        // This should route the message sending to the correct internal bot created in initializeBot
-        return this.doSendMessageGenerator(params)
+    sendMessage(params: MessageParams): AsyncGenerator<AnwserPayload> {
+        if (this.config?.webAccess) {
+            return agent.execute(params.prompt, (prompt) => this.doSendMessageGenerator({ ...params, prompt }), params.signal);
+        }
+        return this.doSendMessageGenerator(params);
     }
 
     

@@ -3,6 +3,7 @@ import { Atom, ChevronDown } from 'lucide-react';
 import type { MouseEvent, FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cx } from '~/utils';
+import type { SearchResultItem } from '~services/agent/web-search/base';
 
 const BUTTON_STYLES = {
   base: 'group flex w-fit items-center justify-center rounded-xl bg-surface-tertiary px-3 py-2 text-xs leading-[18px] animate-thinking-appear',
@@ -45,16 +46,13 @@ export const ThinkingButton = memo(
   ),
 );
 
-const Thinking: React.ElementType = memo(({ children }: { children: React.ReactNode }) => {
-  const { t } = useTranslation();
+const Thinking: React.ElementType = memo(({ children, searchResults }: { children: React.ReactNode, searchResults?: SearchResultItem[] }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   const handleClick = useCallback((e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsExpanded((prev: boolean) => !prev);
   }, []);
-
-  const label = useMemo(() => t('com_ui_thoughts'), [t]);
 
   if (children == null) {
     return null;
@@ -63,7 +61,7 @@ const Thinking: React.ElementType = memo(({ children }: { children: React.ReactN
   return (
     <>
       <div className="mb-3">
-        <ThinkingButton isExpanded={isExpanded} onClick={handleClick} label={label} />
+        <ThinkingButton isExpanded={isExpanded} onClick={handleClick} label={children as string} />
       </div>
       <div
         className={cx('grid transition-all duration-300 ease-out', isExpanded && 'mb-8')}
@@ -77,7 +75,35 @@ const Thinking: React.ElementType = memo(({ children }: { children: React.ReactN
             maxHeight: isExpanded ? '45vh' : 'auto',
           }}
         >
-          <ThinkingContent isPart={true}>{children}</ThinkingContent>
+          {searchResults && (
+            <ThinkingContent isPart={true}>
+              {(() => {
+                // Group results by provider
+                const groupedResults = searchResults.reduce((acc, result) => {
+                  const provider = result.provider || 'Unknown';
+                  if (!acc[provider]) {
+                    acc[provider] = [];
+                  }
+                  acc[provider].push(result);
+                  return acc;
+                }, {} as Record<string, typeof searchResults>);
+
+                return Object.entries(groupedResults).map(([provider, results]) => (
+                  <div key={provider} className="mb-4">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{provider}</h4>
+                    <ul className="space-y-2 pl-4">
+                      {results.map((result, index) => (
+                        <li key={index}>
+                          <a href={result.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{result.title}</a>
+                          {result.abstract && <p className="text-sm text-gray-500">{result.abstract}</p>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ));
+              })()}
+            </ThinkingContent>
+          )}
         </div>
       </div>
     </>

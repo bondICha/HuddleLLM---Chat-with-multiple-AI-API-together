@@ -4,10 +4,13 @@ import { streamAsyncIterable } from '~utils/stream-async-iterable'
 import { ThinkingParser } from '~utils/thinking-parser'
 import { replaceSystemPromptVariables, getCurrentDateTime, getUserLocaleInfo } from '~utils/system-prompt-variables'
 
+import { SearchResultItem } from '~services/agent/web-search/base';
+
 export type AnwserPayload = {
-  text: string
-  thinking?: string
-}
+  text: string;
+  thinking?: string;
+  searchResults?: SearchResultItem[];
+};
 
 export type Event =
   | {
@@ -41,8 +44,8 @@ export abstract class AbstractBot {
   // 思考パーサーインスタンス
   private thinkingParser = new ThinkingParser();
 
-  public async sendMessage(params: MessageParams) {
-    return this.doSendMessageGenerator(params)
+  public sendMessage(params: MessageParams): AsyncGenerator<AnwserPayload> {
+    return this.doSendMessageGenerator(params);
   }
 
   // 会話履歴を設定するメソッド (空の実装 - 各ボット固有の実装に任せる)
@@ -263,11 +266,11 @@ export abstract class AsyncAbstractBot extends AbstractBot {
 
   abstract initializeBot(): Promise<AbstractBot>
 
-  doSendMessage(params: SendMessageParams) {
+  async doSendMessage(params: SendMessageParams): Promise<void> {
     if (this.#bot instanceof DummyBot && this.#initializeError) {
-      throw this.#initializeError
+      throw this.#initializeError;
     }
-    return this.#bot.doSendMessage(params)
+    return this.#bot.doSendMessage(params);
   }
 
   resetConversation() {
