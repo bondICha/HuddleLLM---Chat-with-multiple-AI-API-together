@@ -53,6 +53,20 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
     console.log('🚀 Background: Fetching URL:', message.url)
     
     try {
+      // Check if user has all-hosts permission
+      const allHostsPermissions = { origins: ['https://*/*', 'http://*/*'] }
+      const hasAllHosts = await Browser.permissions.contains(allHostsPermissions)
+      
+      if (!hasAllHosts) {
+        console.log('🔒 Background: All-hosts permission required')
+        return {
+          success: false,
+          error: 'Web access permission required. Please enable "Allow access to all websites" in settings.',
+        }
+      }
+      
+      console.log('✅ Background: All-hosts permission verified')
+      
       const response = await fetch(message.url)
       console.log('📡 Background: Fetch response status:', response.status)
       if (!response.ok) {
@@ -62,11 +76,25 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
           error: `HTTP ${response.status}: ${response.statusText}`,
         }
       }
-      const content = await response.text()
-      console.log('✅ Background: Fetch success, content length:', content.length)
-      return {
-        success: true,
-        content: content,
+      
+      const contentType = response.headers.get('content-type') || ''
+      
+      if (message.responseType === 'arraybuffer') {
+        const buffer = await response.arrayBuffer()
+        console.log('✅ Background: Fetch success (ArrayBuffer), content length:', buffer.byteLength)
+        return {
+          success: true,
+          content: Array.from(new Uint8Array(buffer)),
+          contentType: contentType,
+        }
+      } else {
+        const content = await response.text()
+        console.log('✅ Background: Fetch success (text), content length:', content.length)
+        return {
+          success: true,
+          content: content,
+          contentType: contentType,
+        }
       }
     } catch (error) {
       console.log('💥 Background: Fetch error:', error)

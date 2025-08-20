@@ -38,7 +38,12 @@
 
 ### 新機能
 - **URLフェッチ機能**: メッセージに@URLを含めると、その内容をAIが自動的に取得して回答に利用できるようになりました。
-![URL Fetch](/URL%20Fetch.png)
+ ![URL Fetch](/URL%20Fetch.png)
+
+### Version 2.9.0
+- **セッション復元機能**: HuddleLLMが会話履歴を記憶するようになりました！アプリを再起動すると、以前の会話を復元するかどうかを選択できるモーダルが表示されます。キーボードナビゲーション対応で、大切な会話を二度と失うことはありません。
+- **Web検索でのPDF対応**: Web検索でPDFファイルが見つかった場合、自動的にテキストを読み取って処理できるようになりました。AIがオンラインでPDF文書を発見すると、その内容を抽出・分析できるため、研究や文書分析がより強力になります。
+- **Google検索への切り替え**: Web検索がDuckDuckGoからGoogleに変更され、より包括的で関連性の高い検索結果を提供し、AIの回答品質が向上しました。
 
 ## English
 
@@ -84,7 +89,14 @@
 
 ### Version 2.8.1
 - **URL Fetch Feature**: When you include @URL in your message, the AI can now automatically fetch its content to use in the response.
-![URL Fetch](/URL%20Fetch.png)
+ ![URL Fetch](/URL%20Fetch.png)
+
+### Version 2.9.0
+- **PDF Upload Feature**: You can now upload PDF files and discuss their content with the AI.
+- **Enhanced Web Access**: Web access functionality has been improved for safer content retrieval. You can check and manage permissions from the settings page.
+- **Improved Responsive UI**: The layout selection UI now automatically adjusts to screen width, improving usability on mobile devices.
+- **UI Stability Improvements**: Enhanced message display stability for a smoother chat experience.
+- **Automatic Settings Migration**: Settings from older versions are now automatically migrated to the new format.
 
 ## 简体中文
 
@@ -130,7 +142,14 @@
 
 ### Version 2.8.1
 - **URL获取功能**: 当您在消息中包含@URL时，AI现在可以自动获取其内容以用于回复。
-![URL Fetch](/URL%20Fetch.png)
+ ![URL Fetch](/URL%20Fetch.png)
+
+### Version 2.9.0
+- **PDF上传功能**: 您现在可以上传PDF文件并与AI讨论其内容。
+- **增强的Web访问**: Web访问功能已得到改进，可更安全地检索内容。您可以从设置页面检查和管理权限。
+- **改进的响应式UI**: 布局选择UI现在会根据屏幕宽度自动调整，从而改善了移动设备上的可用性。
+- **UI稳定性改进**: 增强了消息显示的稳定性，带来更流畅的聊天体验。
+- **自动设置迁移**: 旧版本的设置现在会自动迁移到新格式。
 
 ## 繁體中文
 
@@ -176,4 +195,11 @@
 
 ### Version 2.8.1
 - **URL擷取功能**: 當您在訊息中包含@URL時，AI現在可以自動擷取其內容以用於回覆。
-![URL Fetch](/URL%20Fetch.png)
+ ![URL Fetch](/URL%20Fetch.png)
+
+### Version 2.9.0
+- **PDF上傳功能**: 您現在可以上傳PDF檔案並與AI討論其內容。
+- **增強的Web存取**: Web存取功能已得到改進，可更安全地擷取內容。您可以從設定頁面檢查和管理權限。
+- **改進的響應式UI**: 佈局選擇UI現在會根據螢幕寬度自動調整，從而改善了行動裝置上的可用性。
+- **UI穩定性改進**: 增強了訊息顯示的穩定性，帶來更流暢的聊天體驗。
+- **自動設定遷移**: 舊版本的設定現在會自動遷移到新格式。

@@ -4,6 +4,33 @@ import { searchRelatedContext } from './web-search';
 import { AnwserPayload } from '~app/bots/abstract-bot';
 import Browser from 'webextension-polyfill';
 import { htmlToText } from '~app/utils/html-utils';
+import { getLanguage } from '~services/storage/language';
+
+// Import i18n resources for all supported languages
+import enLocale from '~app/i18n/locales/english.json';
+import jaLocale from '~app/i18n/locales/japanese.json';
+import zhCNLocale from '~app/i18n/locales/simplified-chinese.json';
+import zhTWLocale from '~app/i18n/locales/traditional-chinese.json';
+
+const locales = {
+  'en': enLocale,
+  'ja': jaLocale,
+  'zh-CN': zhCNLocale,
+  'zh-TW': zhTWLocale,
+} as const;
+
+function getLocalizedText(key: string, language: string = 'en', replacements?: Record<string, string>): string {
+  const locale = locales[language as keyof typeof locales] || locales['en'];
+  let text = (locale as any)[key] || (enLocale as any)[key] || key;
+  
+  if (replacements) {
+    Object.entries(replacements).forEach(([placeholder, value]) => {
+      text = text.replace(new RegExp(`\\{\\{${placeholder}\\}\\}`, 'g'), value);
+    });
+  }
+  
+  return text;
+}
 
 const TOOLS = {
   web_search:
@@ -17,29 +44,53 @@ function buildToolUsingPrompt(input: string) {
     .replace('{{input}}', input)
 }
 
-function buildPromptWithContext(input: string, context: string) {
-  if (!context) {
-    return `Question: ${input}`
+function buildPromptWithContext(input: string, context: string, language?: string) {
+  if (!language) {
+    language = getLanguage() || 'en';
   }
-  const currentDate = new Date().toISOString().split('T')[0]
-  return `Current date: ${currentDate}. Use the provided context delimited by triple quotes to answer questions. The answer should use the same language as the user question instead of context.\n\nContext: """${context}"""\n\nQuestion: ${input}`
+
+  if (!context) {
+    return `${getLocalizedText('agent_question_label', language)} ${input}`
+  }
+  
+  const contextPrompt = getLocalizedText('agent_context_prompt', language);
+  const questionLabel = getLocalizedText('agent_question_label', language);
+  const contextLabel = getLocalizedText('agent_context_label', language);
+  
+  return `${contextPrompt}\n\n${contextLabel} """${context}"""\n\n${questionLabel} ${input}`
 }
 
-const FINAL_ANSWER_KEYWORD_REGEX = /"action":\s*"Final Answer"/
-const WEB_SEARCH_KEYWORD_REGEX = /"action":\s*"web_search"/
-const ACTION_INPUT_REGEX = /"action_input":\s*"((?:\\.|[^"])+)(?:"\s*(```)?)?/
 
 function extractJsonPayload(text: string): { action: string; action_input: string } | null {
-  const match = text.match(/```json\s*([\s\S]*?)\s*```/);
-  const jsonString = match ? match[1] : text;
+  // First, try to parse the text as JSON directly
   try {
-    const parsed = JSON.parse(jsonString);
+    const parsed = JSON.parse(text);
     if (parsed.action && parsed.action_input) {
       return { action: parsed.action, action_input: parsed.action_input };
     }
   } catch (e) {
-    // Not a valid JSON, maybe the LLM is still typing.
+    // If direct parsing fails, look for JSON in code blocks
   }
+
+  // Look for JSON in code blocks (both ```json``` and ``` patterns)
+  const codeBlockMatches = [
+    text.match(/```json\s*([\s\S]*?)\s*```/),
+    text.match(/```\s*([\s\S]*?)\s*```/)
+  ];
+
+  for (const match of codeBlockMatches) {
+    if (match) {
+      try {
+        const parsed = JSON.parse(match[1]);
+        if (parsed.action && parsed.action_input) {
+          return { action: parsed.action, action_input: parsed.action_input };
+        }
+      } catch (e) {
+        // Continue to next pattern
+      }
+    }
+  }
+
   return null;
 }
 
@@ -48,6 +99,8 @@ async function* execute(
   llm: (prompt: string, rawUserInput: string) => AsyncGenerator<AnwserPayload>,
   signal?: AbortSignal,
 ): AsyncGenerator<AnwserPayload> {
+  // Get user's language preference
+  const language = getLanguage() || 'en';
   let prompt = buildToolUsingPrompt(input)
 
   let llmOutputText = '';
@@ -58,6 +111,7 @@ async function* execute(
   const parsedJson = extractJsonPayload(llmOutputText);
 
   if (!parsedJson) {
+    // No JSON found, treat as final answer
     yield { text: llmOutputText };
     return;
   }
@@ -65,7 +119,8 @@ async function* execute(
   if (parsedJson.action === 'web_search') {
     const actionInput = parsedJson.action_input;
         const searchResults = await searchRelatedContext(actionInput, signal);
-    yield { text: '', thinking: `Searching the web for "${actionInput}"`, searchResults };
+    const thinkingMessage = getLocalizedText('agent_search_thinking', language, { query: actionInput });
+    yield { text: '', thinking: thinkingMessage, searchResults };
 
     // Deduplicate URLs while preserving provider information
     const uniqueUrls = new Set<string>();
@@ -95,17 +150,14 @@ async function* execute(
       })
     );
     const context = `${fullContents.join('\n\n')}`;
-    const promptWithContext = buildPromptWithContext(input, context);
-    prompt = `Now forget about the previous JSON format instructions. Answer the following question based on the provided context in a natural, conversational way. Do NOT use JSON format in your response.\n\n${promptWithContext}`;
+    const promptWithContext = buildPromptWithContext(input, context, language);
+    const finalInstruction = getLocalizedText('agent_final_instruction', language);
+    prompt = `${finalInstruction}\n\n${promptWithContext}`;
     yield* llm(prompt, input);
     return;
   }
 
-  if (parsedJson.action === 'Final Answer') {
-    yield { text: parsedJson.action_input };
-    return;
-  }
-
+  // If we reach here, it's an unknown action
   throw new Error(`Unexpected agent action: ${parsedJson.action}`);
 }
 

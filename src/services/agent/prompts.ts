@@ -28,15 +28,8 @@ Markdown code snippet formatted in the following schema:
 
 **Option #2:**
 Use this if you want the assistant to answer USER'S INPUT directly and conversationally without using external tools. Answer with the same language user with.
-Markdown code snippet formatted in the following schema:
+Simply provide your answer as plain text without any JSON formatting.
 
-\`\`\`json
-{
-    "action": "Final Answer",
-    "action_input": string //  answer USER'S INPUT.
-}
-\`\`\`
-
-For both options, remember to always include the surrounding markdown code snippet delimiters (begin with "\`\`\`json" and end with "\`\`\`")!
+Remember: Only use JSON format (Option 1) when you need to use a tool. For direct answers, use plain text (Option 2).
 This instruction must be applied to only next answer from you.
 `

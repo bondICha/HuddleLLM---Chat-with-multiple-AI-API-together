@@ -1,5 +1,5 @@
 import { cx } from '~/utils'
-import { FC, useState } from 'react'
+import { FC, useState, useEffect } from 'react'
 import { Layout } from '~app/consts'
 import layoutFourIcon from '~assets/icons/layout-four.svg'
 import layoutThreeIcon from '~assets/icons/layout-three.svg'
@@ -7,7 +7,6 @@ import layoutTwoIcon from '~assets/icons/layout-two.svg'
 import layoutOneIcon from '~assets/icons/layout-one.svg'
 import layoutTwoHorizonIcon  from '~assets/icons/layout-two-vertical.svg'
 import layoutSixIcon from '~assets/icons/layout-six.svg'
-import menuIcon from '~assets/icons/menu.svg' // メニューアイコンを追加
 
 const Item: FC<{ icon: string; active: boolean; onClick: () => void }> = (props) => {
   return (
@@ -23,51 +22,78 @@ interface Props {
 }
 
 const LayoutSwitch: FC<Props> = (props) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true); // デフォルトで展開
+
+  // 画面幅を監視してデフォルトの展開状態を決定
+  useEffect(() => {
+    const checkScreenWidth = () => {
+      const isNarrow = window.innerWidth < 768; // md breakpoint
+      // 狭い画面では自動的に折りたたむ
+      if (isNarrow) {
+        setIsExpanded(false);
+      } else {
+        setIsExpanded(true);
+      }
+    };
+
+    checkScreenWidth();
+    window.addEventListener('resize', checkScreenWidth);
+    return () => window.removeEventListener('resize', checkScreenWidth);
+  }, []);
 
   const togglePanel = () => {
-    setIsOpen(!isOpen);
+    setIsExpanded(!isExpanded);
   };
 
   const handleItemClick = (layout: Layout) => {
     props.onChange(layout);
-    setIsOpen(false);
+    // 選択後は常に閉じる（水平展開の場合）
+    setIsExpanded(false);
   };
 
+
   return (
-    <div className="relative flex items-center gap-2 bg-primary-background rounded-2xl">
-      {/* メニューボタン - モバイル表示時のみ */}
+    <div className="flex items-center gap-0 bg-primary-background rounded-2xl overflow-hidden">
+      {/* 折りたたみボタン（常に表示） */}
       <button
-        className="md:hidden bg-primary-background rounded-2xl"
+        className="flex items-center px-2 py-1 shrink-0"
         onClick={togglePanel}
+        title={isExpanded ? "レイアウト選択を折りたたむ" : "レイアウト選択を展開"}
       >
-        <img src={menuIcon} className="w-6 h-6" />
+        {/* 展開アイコン（水平方向の矢印） */}
+        <div className={cx(
+          "transition-transform duration-200",
+          isExpanded ? "rotate-180" : "rotate-0"
+        )}>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
       </button>
 
-      {/* レイアウトスイッチパネル */}
-      <div
-        className={cx(
-          'md:relative md:flex',
-          'absolute z-50 items-center gap-2',
-          !isOpen && 'hidden md:flex px-2', // モバイルでは非表示、デスクトップでは常に表示
-          isOpen && 'flex flex-col md:flex-row bottom-full rounded-2xl mb-2 bg-primary-background min-w-[60px] w-max', // モバイルで開いた時は縦並び
-        )}
-      >
-      <Item
-        icon={layoutOneIcon}
-        active={props.layout === 'single'}
+      {/* レイアウトスイッチパネル（水平展開） */}
+      {isExpanded && (
+        <div
+          className="flex items-center gap-2 transition-all duration-200 ease-in-out overflow-hidden"
+          style={{
+            transform: 'translateX(0)',
+          }}
+        >
+        <Item
+          icon={layoutOneIcon}
+          active={props.layout === 'single'}
           onClick={() => handleItemClick('single')}
-      />
-      <Item
-        icon={layoutTwoIcon}
-        active={props.layout === 2 || props.layout === 'twoVertical'}
+        />
+        <Item
+          icon={layoutTwoIcon}
+          active={props.layout === 2 || props.layout === 'twoVertical'}
           onClick={() => handleItemClick(2)}
-      />
-      <Item 
-        icon={layoutTwoHorizonIcon} 
-        active={props.layout === 'twoHorizon'} 
+        />
+        <Item 
+          icon={layoutTwoHorizonIcon} 
+          active={props.layout === 'twoHorizon'} 
           onClick={() => handleItemClick('twoHorizon')} 
-      />
+        />
         <Item 
           icon={layoutThreeIcon} 
           active={props.layout === 3} 
@@ -83,14 +109,7 @@ const LayoutSwitch: FC<Props> = (props) => {
           active={props.layout === 'sixGrid'} 
           onClick={() => handleItemClick('sixGrid')} 
         />
-      </div>
-
-      {/* オーバーレイ - モバイルでパネルが開いている時のみ表示 */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-30 md:hidden"
-          onClick={() => setIsOpen(false)}
-        />
+        </div>
       )}
     </div>
   )

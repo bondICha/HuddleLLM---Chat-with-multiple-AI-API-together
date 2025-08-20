@@ -1,8 +1,6 @@
-import { useState, useMemo, memo, useCallback } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { Atom, ChevronDown } from 'lucide-react';
 import type { MouseEvent, FC } from 'react';
-import { useTranslation } from 'react-i18next';
-import { cx } from '~/utils';
 import type { SearchResultItem } from '~services/agent/web-search/base';
 
 const BUTTON_STYLES = {
@@ -64,17 +62,14 @@ const Thinking: React.ElementType = memo(({ children, searchResults }: { childre
         <ThinkingButton isExpanded={isExpanded} onClick={handleClick} label={children as string} />
       </div>
       <div
-        className={cx('grid transition-all duration-300 ease-out', isExpanded && 'mb-8')}
+        className="transition-all duration-300 ease-out"
         style={{
-          gridTemplateRows: isExpanded ? '1fr' : '0fr',
+          maxHeight: isExpanded ? '45vh' : '0',
+          marginBottom: isExpanded ? '2rem' : '0',
+          overflowY: isExpanded ? 'auto' : 'hidden',
+          overflowX: 'hidden',
         }}
       >
-        <div 
-          className="overflow-auto" 
-          style={{
-            maxHeight: isExpanded ? '45vh' : 'auto',
-          }}
-        >
           {searchResults && (
             <ThinkingContent isPart={true}>
               {(() => {
@@ -104,7 +99,6 @@ const Thinking: React.ElementType = memo(({ children, searchResults }: { childre
               })()}
             </ThinkingContent>
           )}
-        </div>
       </div>
     </>
   );

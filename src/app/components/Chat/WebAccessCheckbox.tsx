@@ -1,7 +1,7 @@
 import { Switch } from '@headlessui/react'
 import { FC, memo, useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { requestHostPermission } from '~app/utils/permissions'
+import { requestHostPermissions } from '~app/utils/permissions'
 import { getUserConfig, updateUserConfig, CustomApiConfig } from '~services/user-config'
 import Toggle from '../Toggle'
 
@@ -28,7 +28,7 @@ const WebAccessCheckbox: FC<Props> = (props) => {
 
   const onToggle = useCallback(
     async (newValue: boolean) => {
-      if (newValue && !(await requestHostPermission('https://*.duckduckgo.com/'))) {
+      if (newValue && !(await requestHostPermissions(['https://*/*', 'http://*/*']))) {
         return;
       }
       

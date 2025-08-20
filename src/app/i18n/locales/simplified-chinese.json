@@ -26,7 +26,9 @@
   "releasenote_v270_thinking_mode_fix": "改进了“思考模式”和“Temperature”设置的显示逻辑，确保根据所选的API提供商更清晰地显示。",
   "releasenote_v270_add_model_button_enhancement": "在自定义机器人设置页面的底部也添加了“添加新模型”按钮，以提高可用性。",
   "releasenote_v270_settings_bug_fix": "修复了在设置屏幕上所做的更改有时无法正确反映在应用程序设置中的错误。",
-  "releasenote_v277_expandable_textarea": "## All-in-One模式可调整输入区域高度\n\n现在可以在All-in-One模式下通过拖拽自由调整输入区域的高度。不进行调整时，高度会根据内容自动变化。\n\n![输入区域扩展演示](/HuddleLLM-ExpandableTextArea.gif)",
+  "releasenote_v290_session_restore": "## 新功能：会话恢复功能！\n\nHuddleLLM现在会记住您的聊天会话！重新启动应用时，会显示一个模态框让您选择是否恢复之前的对话。使用方向键浏览最近的会话，按Enter恢复，按Esc开始新会话。\n\n### 主要功能：\n- 自动会话检测和恢复\n- 键盘导航（↑↓浏览，Enter选择，Esc新会话）\n- 保存聊天历史和上下文\n- 支持All-in-One模式和单独机器人\n\n再也不会丢失重要对话了！",
+  "releasenote_v290_web_access_enhancement": "## Web搜索功能增强\n\n### PDF内容支持\nWeb搜索现在可以自动读取和处理搜索结果中找到的PDF文件！当AI在线发现PDF文档时，现在可以提取和分析文本内容，让研究和文档分析变得更强大。\n\n### 改用Google搜索\nWeb搜索现在使用Google取代DuckDuckGo，提供更全面且相关性更高的搜索结果，让AI回答质量更佳。",
+  "releasenote_v277_expandable_textarea": "## All-in-One模式可调整输入区域高度\n\n现在可以在All-in-One模式下通过拖拽自由调整输入区域的高度。不进行调整时，高度会根据内容自动变化。",
   "releasenote_v280_markdown_improvement": "## Markdown显示优化\n\n适配主题变化，提升表格和代码块的显示效果。",
   "releasenote_v281_url_fetch": "## URL内容获取功能\n\n现在可以在聊天中使用`@URL`语法直接获取网页内容。只需在消息中输入`@URL`后跟上任意网站的URL，内容就会自动获取并包含在与AI的对话中。\n\n![URL Fetch](/URL%20Fetch.png)\n\n示例：`@https://example.com 告诉我这个网站的内容`\n\n扩展程序会请求访问网站的权限，并在可折叠的区域中显示获取的内容以便参考。",
   "releasenote_v275_omnibox_search_fix": "## 修复：Omnibox 地址栏搜索无响应问题\n\n修复了使用地址栏搜索功能（@hl 关键字）时，聊天界面有时会一直显示\"等待响应\"的问题。现在，搜索功能会正确等待所有 AI 模型完全初始化后再处理查询。",
@@ -194,5 +196,10 @@
   "Start New Session": "开始新会话",
   "Begin a fresh conversation": "开始新的对话",
   "No previous sessions found": "未找到之前的会话",
-  "Click outside or press Esc to close": "点击外部或按Esc关闭"
+  "Click outside or press Esc to close": "点击外部或按Esc关闭",
+  "agent_search_thinking": "正在搜索\"{{query}}\"",
+  "agent_context_prompt": "使用三重引号分隔的参考资料来回答问题。答案应该使用与用户问题相同的语言或遵循用户指示，而不是参考资料的语言。",
+  "agent_question_label": "问题：",
+  "agent_context_label": "参考资料：",
+  "agent_final_instruction": "基于提供的参考资料，以自然对话的方式回答以下问题。"
 }
