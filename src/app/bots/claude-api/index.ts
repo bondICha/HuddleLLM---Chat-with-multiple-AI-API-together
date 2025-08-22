@@ -7,6 +7,7 @@ import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract
 import { file2base64 } from '~app/utils/file-utils'
 import { ChatMessageModel } from '~types'
 import { uuid } from '~utils'
+import { getUserLocaleInfo } from '~utils/system-prompt-variables'
 
 interface ChatMessage {
   role: string
@@ -232,6 +233,7 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       temperature: number;
       thinkingBudget?: number;
       isHostFullPath?: boolean; // Add isHostFullPath to the config type
+      webAccess?: boolean;
     },
     thinkingMode: boolean = false,
     private useCustomAuthorizationHeader: boolean = false

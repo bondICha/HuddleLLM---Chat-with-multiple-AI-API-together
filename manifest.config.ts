@@ -21,7 +21,7 @@ export default defineManifest(async () => {
     host_permissions: [
     ],
     optional_host_permissions: ['https://*/*', 'http://*/*', 'wss://*/*'],
-    permissions: ['storage', 'unlimitedStorage', 'sidePanel', 'scripting'],
+    permissions: ['storage', 'unlimitedStorage', 'sidePanel', 'scripting', 'offscreen'],
     // content_scripts: [
     // ],
     commands: {
@@ -32,7 +32,7 @@ export default defineManifest(async () => {
           linux: 'Alt+J',
           mac: 'Command+J',
         },
-        description: 'Open HuddleLLM app',
+        description: 'Open HuddleLLM',
       },
     },
     side_panel: {

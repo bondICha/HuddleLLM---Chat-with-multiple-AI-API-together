@@ -26,6 +26,7 @@ export enum SystemPromptMode {
 export const MODEL_LIST: Record<string, Record<string, string>> = {
     "OpenAI": {
         "GPT-5": "gpt-5",
+        "GPT-5 Chat": "gpt-5-chat-latest",
         "GPT-4.1": "gpt-4.1", // Default to current best
         "GPT-4.1 mini": "gpt-4.1-mini",
         "o4-mini": "o4-mini",

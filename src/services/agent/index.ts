@@ -1,5 +1,3 @@
-import { removeSlashes } from 'slashes';
-import { PROMPT_TEMPLATE } from './prompts';
 import { searchRelatedContext } from './web-search';
 import { AnwserPayload } from '~app/bots/abstract-bot';
 import Browser from 'webextension-polyfill';
@@ -32,16 +30,9 @@ function getLocalizedText(key: string, language: string = 'en', replacements?: R
   return text;
 }
 
-const TOOLS = {
-  web_search:
-    'a search engine. useful for when you need to answer questions about current events or recent information. input should be a search query. language should be decided based on user\'s query. query should be short and concise',
-}
-
 function buildToolUsingPrompt(input: string) {
-  const tools = Object.entries(TOOLS).map(([name, description]) => `- ${name}: ${description}`)
-  return PROMPT_TEMPLATE.replace('{{tools}}', tools.join('\n'))
-    .replace('{{tool_names}}', Object.keys(TOOLS).join(', '))
-    .replace('{{input}}', input)
+  // Web search指示はsystem promptに移行
+  return `${input}`
 }
 
 function buildPromptWithContext(input: string, context: string, language?: string) {
@@ -61,12 +52,16 @@ function buildPromptWithContext(input: string, context: string, language?: strin
 }
 
 
-function extractJsonPayload(text: string): { action: string; action_input: string } | null {
+function extractJsonPayload(text: string): { action: string; action_input: string; provider?: string } | null {
   // First, try to parse the text as JSON directly
   try {
     const parsed = JSON.parse(text);
     if (parsed.action && parsed.action_input) {
-      return { action: parsed.action, action_input: parsed.action_input };
+      return { 
+        action: parsed.action, 
+        action_input: parsed.action_input,
+        provider: parsed.provider 
+      };
     }
   } catch (e) {
     // If direct parsing fails, look for JSON in code blocks
@@ -83,7 +78,11 @@ function extractJsonPayload(text: string): { action: string; action_input: strin
       try {
         const parsed = JSON.parse(match[1]);
         if (parsed.action && parsed.action_input) {
-          return { action: parsed.action, action_input: parsed.action_input };
+          return { 
+            action: parsed.action, 
+            action_input: parsed.action_input,
+            provider: parsed.provider
+          };
         }
       } catch (e) {
         // Continue to next pattern
@@ -102,63 +101,109 @@ async function* execute(
   // Get user's language preference
   const language = getLanguage() || 'en';
   let prompt = buildToolUsingPrompt(input)
+  let searchCount = 0;
+  const maxSearches = 3; // 最大検索回数
+  let allSearchResults: any[] = [];
+  let allContents: string[] = [];
 
-  let llmOutputText = '';
-  for await (const payload of llm(prompt, input)) {
-    llmOutputText = payload.text;
-  }
+  while (searchCount < maxSearches) {
+    let llmOutputText = '';
+    for await (const payload of llm(prompt, input)) {
+      llmOutputText = payload.text;
+    }
 
-  const parsedJson = extractJsonPayload(llmOutputText);
+    const parsedJson = extractJsonPayload(llmOutputText);
 
-  if (!parsedJson) {
-    // No JSON found, treat as final answer
-    yield { text: llmOutputText };
-    return;
-  }
+    if (!parsedJson) {
+      // No JSON found, treat as final answer
+      yield { text: llmOutputText };
+      return;
+    }
 
-  if (parsedJson.action === 'web_search') {
-    const actionInput = parsedJson.action_input;
-        const searchResults = await searchRelatedContext(actionInput, signal);
-    const thinkingMessage = getLocalizedText('agent_search_thinking', language, { query: actionInput });
-    yield { text: '', thinking: thinkingMessage, searchResults };
-
-    // Deduplicate URLs while preserving provider information
-    const uniqueUrls = new Set<string>();
-    const uniqueResults = searchResults.filter(item => {
-      if (uniqueUrls.has(item.link)) {
-        return false;
-      }
-      uniqueUrls.add(item.link);
-      return true;
-    });
-
-    const fullContents = await Promise.all(
-      uniqueResults.map(async (item) => {
-        try {
-          const response = await Browser.runtime.sendMessage({
-            type: 'FETCH_URL',
-            url: item.link,
-          }) as { success: boolean, content?: string };
-          if (response.success && response.content) {
-            return `Content from ${item.link}:\n\n${htmlToText(response.content)}`;
-          }
-          return `Could not fetch content from ${item.link}`;
-        } catch (error) {
-          console.error(`Error fetching content for ${item.link}:`, error);
-          return `Error fetching content from ${item.link}`;
+    if (parsedJson.action === 'web_search') {
+      searchCount++;
+      const actionInput = parsedJson.action_input;
+      const provider = parsedJson.provider || 'google'; // デフォルトはgoogle
+      
+      let searchResults: any[] = [];
+      
+      try {
+        searchResults = await searchRelatedContext(actionInput, signal, provider);
+        
+        if (searchResults.length === 0) {
+          yield { text: `⚠️ 検索結果が見つかりませんでした。\nクエリ: "${actionInput}"\nプロバイダー: ${provider}\n\n検索エンジンから結果が返されていない可能性があります。別のキーワードで試してみてください。` };
+        } else {
+          const thinkingMessage = getLocalizedText('agent_search_thinking', language, { query: actionInput });
+          yield { text: '', thinking: thinkingMessage, searchResults };
         }
-      })
-    );
-    const context = `${fullContents.join('\n\n')}`;
-    const promptWithContext = buildPromptWithContext(input, context, language);
-    const finalInstruction = getLocalizedText('agent_final_instruction', language);
-    prompt = `${finalInstruction}\n\n${promptWithContext}`;
-    yield* llm(prompt, input);
-    return;
+      } catch (error) {
+        const errorMessage = `❌ 検索エラーが発生しました\nクエリ: "${actionInput}"\nプロバイダー: ${provider}\nエラー: ${error instanceof Error ? error.message : '不明なエラー'}\n\nネットワーク接続や検索プロバイダーの問題の可能性があります。`;
+        yield { text: errorMessage };
+        searchResults = []; // エラー時は空配列
+      }
+
+      const actualResults = searchResults;
+      allSearchResults.push(...actualResults);
+
+      // Deduplicate URLs while preserving provider information
+      const uniqueUrls = new Set<string>();
+      const uniqueResults = actualResults.filter((item: any) => {
+        if (uniqueUrls.has(item.link)) {
+          return false;
+        }
+        uniqueUrls.add(item.link);
+        return true;
+      });
+
+      const fullContents = await Promise.all(
+        uniqueResults.map(async (item) => {
+          try {
+            const response = await Browser.runtime.sendMessage({
+              type: 'FETCH_URL',
+              url: item.link,
+            }) as { success: boolean, content?: string };
+            if (response.success && response.content) {
+              return `Content from ${item.link}:\n\n${htmlToText(response.content)}`;
+            }
+            return `Could not fetch content from ${item.link}`;
+          } catch (error) {
+            console.error(`Error fetching content for ${item.link}:`, error);
+            return `Error fetching content from ${item.link}`;
+          }
+        })
+      );
+      
+      allContents.push(...fullContents);
+      
+      // 次の検索のために、これまでの検索結果を含めたプロンプトを構築
+      const context = `${allContents.join('\n\n')}`;
+      const promptWithContext = buildPromptWithContext(input, context, language);
+      
+      if (searchCount < maxSearches) {
+        // まだ検索可能な場合は、継続検索の指示を追加
+        const continueSearchInstruction = getLocalizedText('agent_continue_search_instruction', language);
+        prompt = `${continueSearchInstruction}\n\n${promptWithContext}`;
+      } else {
+        // 最大検索回数に達した場合は最終回答を生成
+        const finalInstruction = getLocalizedText('agent_final_instruction', language);
+        prompt = `${finalInstruction}\n\n${promptWithContext}`;
+        yield* llm(prompt, input);
+        return;
+      }
+    } else {
+      // 検索以外のアクション、または未知のアクション
+      if (parsedJson.action !== 'web_search') {
+        throw new Error(`Unexpected agent action: ${parsedJson.action}`);
+      }
+    }
   }
 
-  // If we reach here, it's an unknown action
-  throw new Error(`Unexpected agent action: ${parsedJson.action}`);
+  // ここに到達することは通常ありませんが、安全のため
+  const context = `${allContents.join('\n\n')}`;
+  const promptWithContext = buildPromptWithContext(input, context, language);
+  const finalInstruction = getLocalizedText('agent_final_instruction', language);
+  prompt = `${finalInstruction}\n\n${promptWithContext}`;
+  yield* llm(prompt, input);
 }
 
 export { execute }

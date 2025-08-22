@@ -7,6 +7,7 @@ import { file2base64 } from '~app/utils/file-utils'
 import { ChatMessage } from './types'
 import { ChatMessageModel } from '~types'
 import { uuid } from '~utils'
+import { getUserLocaleInfo } from '~utils/system-prompt-variables'
 
 interface ConversationContext {
   messages: ChatMessage[]
@@ -193,6 +194,8 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       temperature: number;
       systemMessage: string;
       isHostFullPath?: boolean;
+      webAccess?: boolean;
+      botIndex?: number; // CustomBotからのインデックス
     },
   ) {
     super()

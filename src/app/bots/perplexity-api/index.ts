@@ -23,6 +23,7 @@ export class PerplexityApiBot extends AbstractBot {
       model: string;
       host?: string; // Optional, as it might use a common host
       isHostFullPath?: boolean; // Optional
+      webAccess?: boolean;
     }
   ) {
     super()

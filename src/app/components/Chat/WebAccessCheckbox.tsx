@@ -3,6 +3,7 @@ import { FC, memo, useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { requestHostPermissions } from '~app/utils/permissions'
 import { getUserConfig, updateUserConfig, CustomApiConfig } from '~services/user-config'
+import { invalidateCustomBot } from '~app/bots'
 import Toggle from '../Toggle'
 
 interface Props {
@@ -45,6 +46,9 @@ const WebAccessCheckbox: FC<Props> = (props) => {
         };
         updatedCustomApiConfigs[props.index] = updatedConfig;
         updateUserConfig({ customApiConfigs: updatedCustomApiConfigs });
+        
+        // CustomBotインスタンスを無効化して再作成をトリガー
+        invalidateCustomBot(props.index);
       }
     },
     [props.index],

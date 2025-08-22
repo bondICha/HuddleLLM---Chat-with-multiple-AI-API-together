@@ -8,9 +8,22 @@ import { htmlToText } from '~app/utils/html-utils';
 
 const MAX_CONTEXT_ITEMS = 15
 
-const providers = [new GoogleSearch(), new BingNewsSearch()]
+const allProviders = {
+  google: new GoogleSearch(),
+  bing_news: new BingNewsSearch()
+}
 
-async function _searchRelatedContext(query: string, signal?: AbortSignal) {
+async function _searchRelatedContext(query: string, signal?: AbortSignal, provider?: string) {
+  let providers: any[];
+  
+  if (provider && allProviders[provider as keyof typeof allProviders]) {
+    // 指定されたプロバイダーのみ使用
+    providers = [allProviders[provider as keyof typeof allProviders]];
+  } else {
+    // デフォルトは全プロバイダー
+    providers = Object.values(allProviders);
+  }
+
   const results = await Promise.all(
     providers.map(async (provider) => {
       try {
@@ -50,11 +63,11 @@ async function _searchRelatedContext(query: string, signal?: AbortSignal) {
 
 const cache = new Map()
 
-export async function searchRelatedContext(query: string, signal?: AbortSignal): Promise<SearchResultItem[]> {
+export async function searchRelatedContext(query: string, signal?: AbortSignal, provider?: string): Promise<SearchResultItem[]> {
   return cachified({
     cache,
-    key: `search-context:${query}`,
+    key: `search-context:${query}:${provider || 'all'}`,
     ttl: 1000 * 60 * 5,
-    getFreshValue: () => _searchRelatedContext(query, signal),
+    getFreshValue: () => _searchRelatedContext(query, signal, provider),
   })
 }
