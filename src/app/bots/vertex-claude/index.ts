@@ -404,4 +404,8 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
   getSystemMessage() {
     return this.config.systemMessage
   }
+
+  setSystemMessage(systemMessage: string) {
+    this.config.systemMessage = systemMessage
+  }
 }

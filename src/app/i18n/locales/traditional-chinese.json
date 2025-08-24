@@ -197,6 +197,7 @@
   "No previous sessions found": "未找到先前的工作階段",
   "Click outside or press Esc to close": "點擊外部或按Esc關閉",
   "agent_search_thinking": "正在搜尋\"{{query}}\"",
+  "agent_empty_search_results": "搜尋結果為空\n⚠️ 未找到搜尋結果。\n查詢: \"{{query}}\"\n提供商: {{provider}}\n\n搜尋引擎可能未返回結果。",
   "agent_context_prompt": "使用三重引號分隔的參考資料來回答問題。答案應該使用與用戶問題相同的語言或遵循用戶指示，而不是參考資料的語言。",
   "agent_question_label": "問題：",
   "agent_context_label": "參考資料：",

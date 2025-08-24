@@ -198,6 +198,7 @@
   "No previous sessions found": "未找到之前的会话",
   "Click outside or press Esc to close": "点击外部或按Esc关闭",
   "agent_search_thinking": "正在搜索\"{{query}}\"",
+  "agent_empty_search_results": "搜索结果为空\n⚠️ 未找到搜索结果。\n查询: \"{{query}}\"\n提供商: {{provider}}\n\n搜索引擎可能未返回结果。",
   "agent_context_prompt": "使用三重引号分隔的参考资料来回答问题。答案应该使用与用户问题相同的语言或遵循用户指示，而不是参考资料的语言。",
   "agent_question_label": "问题：",
   "agent_context_label": "参考资料：",

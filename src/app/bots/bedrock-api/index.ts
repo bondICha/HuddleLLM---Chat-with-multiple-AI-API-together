@@ -612,4 +612,8 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
   getSystemMessage() {
     return this.config.systemMessage
   }
+
+  setSystemMessage(systemMessage: string) {
+    this.config.systemMessage = systemMessage
+  }
 }

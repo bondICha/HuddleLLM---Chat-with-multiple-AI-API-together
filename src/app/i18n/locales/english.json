@@ -210,6 +210,7 @@
     "Loading sessions...": "Loading sessions...",
     "Click outside or press Esc to close": "Click outside or press Esc to close",
     "agent_search_thinking": "Searching the web for \"{{query}}\"",
+    "agent_empty_search_results": "Search results were empty\n⚠️ No search results found.\nQuery: \"{{query}}\"\nProvider: {{provider}}\n\nThe search engine may not have returned results.",
     "agent_context_prompt": "Use the provided context delimited by triple quotes to answer questions. The answer should use the same language as the user question or follow user instruction, instead of context language.",
     "agent_question_label": "Question:",
     "agent_context_label": "Context:",

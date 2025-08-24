@@ -38,10 +38,11 @@ export function createBotInstance(index: number) {
  * @param index カスタムボットのインデックス（0ベース）
  */
 export function invalidateCustomBot(index: number) {
-  const bot = customBotRegistry.get(index);
-  if (bot) {
-    bot.invalidateBotInstance();
-  }
+  customBotRegistry.delete(index);
+}
+
+export function getCustomBot(index: number) {
+  return customBotRegistry.get(index);
 }
 
 /**

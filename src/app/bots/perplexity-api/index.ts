@@ -24,9 +24,14 @@ export class PerplexityApiBot extends AbstractBot {
       host?: string; // Optional, as it might use a common host
       isHostFullPath?: boolean; // Optional
       webAccess?: boolean;
+      systemMessage?: string; // Add system message support
     }
   ) {
     super()
+  }
+
+  setSystemMessage(systemMessage: string) {
+    this.config.systemMessage = systemMessage
   }
 
   // ConversationHistoryインターフェースの実装

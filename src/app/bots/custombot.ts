@@ -41,55 +41,8 @@ export class CustomBot extends AsyncAbstractBot {
 
 
 
-    // Web Access設定変更時にbotインスタンスを無効化してAsyncAbstractBotの#botを再作成
-    invalidateBotInstance() {
-        console.log(`🔄 CustomBot ${this.customBotNumber}: Invalidating bot instance due to web access change`);
-        
-        // AsyncAbstractBotの内部botを強制的に再初期化
-        this.forceReinitializeAsyncBot();
-    }
-    
-    private forceReinitializeAsyncBot() {
-        // AsyncAbstractBotのコンストラクタロジックを模倣して#botを再初期化
-        this.initializeBot()
-            .then((bot) => {
-                // 私的フィールドの命名規則を試行
-                const possibleKeys = ['#bot', '_bot', '__bot', '_AsyncAbstractBot_bot', '__AsyncAbstractBot_bot'];
-                
-                for (const key of possibleKeys) {
-                    try {
-                        (this as any)[key] = bot;
-                        console.log(`✅ CustomBot ${this.customBotNumber}: Internal bot updated with key: ${key}`);
-                        break;
-                    } catch (e) {
-                        // Continue trying other keys
-                    }
-                }
-                
-                // AsyncAbstractBotの#isInitializedも更新
-                try {
-                    (this as any)['#isInitialized'] = true;
-                } catch (e) {
-                    // Try alternative naming
-                    (this as any)['_isInitialized'] = true;
-                }
-            })
-            .catch((err) => {
-                console.error(`❌ CustomBot ${this.customBotNumber}: Failed to reinitialize internal bot:`, err);
-            });
-    }
-
-    // setConversationHistoryはAsyncAbstractBotが処理する
-
-    private async createBotInstance() {
-        const { customApiKey, customApiHost, customApiConfigs, commonSystemMessage } = await getUserConfig();
-        const config = customApiConfigs[this.customBotNumber - 1];
-
-        if (!config) {
-            throw new ChatError(`No configuration found for bot number ${this.customBotNumber}`, ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);
-        }
-        this.config = config
-
+    // System prompt作成の共通ロジック
+    private buildSystemPrompt(config: CustomApiConfig, commonSystemMessage: string): string {
         let combinedSystemMessage = '';
         switch (config.systemPromptMode) {
             case SystemPromptMode.APPEND:
@@ -112,6 +65,39 @@ export class CustomBot extends AsyncAbstractBot {
         // Prompt for Web Access 
         const { language } = getUserLocaleInfo();
         processedSystemMessage = this.enhanceSystemPromptWithWebSearch(processedSystemMessage, config.webAccess || false, language);
+
+        return processedSystemMessage;
+    }
+
+    // Web Access設定変更時にSystem Promptを動的更新
+    async updateSystemPrompt() {
+        const { customApiConfigs, commonSystemMessage } = await getUserConfig();
+        const config = customApiConfigs[this.customBotNumber - 1];
+        if (!config) {
+            return;
+        }
+
+        this.config = config;
+
+        const processedSystemMessage = this.buildSystemPrompt(config, commonSystemMessage);
+
+        // AsyncAbstractBotのsetSystemMessageを使用
+        this.setSystemMessage(processedSystemMessage);
+    }
+
+    // setConversationHistoryはAsyncAbstractBotが処理する
+
+    private async createBotInstance() {
+        const { customApiKey, customApiHost, customApiConfigs, commonSystemMessage } = await getUserConfig();
+        const config = customApiConfigs[this.customBotNumber - 1];
+
+        if (!config) {
+            throw new ChatError(`No configuration found for bot number ${this.customBotNumber}`, ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);
+        }
+        this.config = config
+
+        // 共通ロジックを使用
+        const processedSystemMessage = this.buildSystemPrompt(config, commonSystemMessage);
 
         const provider = config.provider || (
             config.model.includes('anthropic.claude') ? CustomApiProvider.Bedrock : CustomApiProvider.OpenAI

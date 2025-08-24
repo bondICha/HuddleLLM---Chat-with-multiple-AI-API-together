@@ -203,6 +203,9 @@ export abstract class AbstractBot {
 
   abstract doSendMessage(params: SendMessageParams): Promise<void>
   abstract resetConversation(): void
+  
+  // Optional system message setter - implement if supported
+  setSystemMessage?(systemMessage: string): void
 
   // すべてのモデルの実装が終わるまでとりあえず何もしない関数
   async modifyLastMessage(_message: string): Promise<void> {
@@ -322,5 +325,12 @@ export abstract class AsyncAbstractBot extends AbstractBot {
 
   get supportsImageInput() {
     return this.#bot.supportsImageInput
+  }
+
+  // System message setter for dynamic updates
+  setSystemMessage(systemMessage: string) {
+    if (!(this.#bot instanceof DummyBot) && this.#bot.setSystemMessage) {
+      this.#bot.setSystemMessage(systemMessage);
+    }
   }
 }

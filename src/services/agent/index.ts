@@ -53,9 +53,12 @@ function buildPromptWithContext(input: string, context: string, language?: strin
 
 
 function extractJsonPayload(text: string): { action: string; action_input: string; provider?: string } | null {
+  // Strict mode: Only accept pure JSON or JSON in code blocks with minimal extra content
+  
   // First, try to parse the text as JSON directly
   try {
-    const parsed = JSON.parse(text);
+    const trimmed = text.trim();
+    const parsed = JSON.parse(trimmed);
     if (parsed.action && parsed.action_input) {
       return { 
         action: parsed.action, 
@@ -64,7 +67,7 @@ function extractJsonPayload(text: string): { action: string; action_input: strin
       };
     }
   } catch (e) {
-    // If direct parsing fails, look for JSON in code blocks
+    // If direct parsing fails, check for code blocks
   }
 
   // Look for JSON in code blocks (both ```json``` and ``` patterns)
@@ -76,8 +79,16 @@ function extractJsonPayload(text: string): { action: string; action_input: strin
   for (const match of codeBlockMatches) {
     if (match) {
       try {
-        const parsed = JSON.parse(match[1]);
+        const jsonContent = match[1].trim();
+        const parsed = JSON.parse(jsonContent);
         if (parsed.action && parsed.action_input) {
+          // Strict check: ensure there's no significant extra content after the code block
+          const afterCodeBlock = text.split(match[0])[1];
+          if (afterCodeBlock && afterCodeBlock.trim().length > 50) {
+            console.log('⚠️ Agent: Rejecting response - contains significant content after JSON code block');
+            return null; // Reject if there's substantial extra content
+          }
+          
           return { 
             action: parsed.action, 
             action_input: parsed.action_input,
@@ -112,7 +123,7 @@ async function* execute(
     
     for await (const payload of llm(prompt, input)) {
       llmOutputText = payload.text;
-      // Stream the content as it comes in
+      // Stream content to UI
       if (payload.text && payload.text.length > 0) {
         yield payload;
         hasYieldedContent = true;
@@ -122,7 +133,7 @@ async function* execute(
     const parsedJson = extractJsonPayload(llmOutputText);
 
     if (!parsedJson) {
-      // No JSON found, treat as final answer - content already streamed
+      // No JSON found, treat as final answer
       if (!hasYieldedContent) {
         yield { text: llmOutputText };
       }
@@ -140,9 +151,15 @@ async function* execute(
         searchResults = await searchRelatedContext(actionInput, signal, provider);
         
         if (searchResults.length === 0) {
-          yield { text: `⚠️ 検索結果が見つかりませんでした。\nクエリ: "${actionInput}"\nプロバイダー: ${provider}\n\n検索エンジンから結果が返されていない可能性があります。別のキーワードで試してみてください。` };
+          const emptyResultsMessage = getLocalizedText('agent_empty_search_results', language, { 
+            query: actionInput, 
+            provider: provider 
+          });
+          yield { text: '', thinking: emptyResultsMessage, searchResults: [] };
+          // AIには簡潔な情報を渡すために空の結果として処理を続行
         } else {
           const thinkingMessage = getLocalizedText('agent_search_thinking', language, { query: actionInput });
+          console.log(`🔍 Agent: Search ${searchCount} - Yielding ${searchResults.length} results for: ${actionInput}`);
           yield { text: '', thinking: thinkingMessage, searchResults };
         }
       } catch (error) {
@@ -164,23 +181,30 @@ async function* execute(
         return true;
       });
 
-      const fullContents = await Promise.all(
-        uniqueResults.map(async (item) => {
-          try {
-            const response = await Browser.runtime.sendMessage({
-              type: 'FETCH_URL',
-              url: item.link,
-            }) as { success: boolean, content?: string };
-            if (response.success && response.content) {
-              return `Content from ${item.link}:\n\n${htmlToText(response.content)}`;
+      let fullContents: string[] = [];
+      
+      if (actualResults.length === 0) {
+        // 検索結果が空の場合、AIに伝える情報
+        fullContents = [`検索結果が空白でした。クエリ: "${actionInput}" (${provider})`];
+      } else {
+        fullContents = await Promise.all(
+          uniqueResults.map(async (item) => {
+            try {
+              const response = await Browser.runtime.sendMessage({
+                type: 'FETCH_URL',
+                url: item.link,
+              }) as { success: boolean, content?: string };
+              if (response.success && response.content) {
+                return `Content from ${item.link}:\n\n${htmlToText(response.content)}`;
+              }
+              return `Could not fetch content from ${item.link}`;
+            } catch (error) {
+              console.error(`Error fetching content for ${item.link}:`, error);
+              return `Error fetching content from ${item.link}`;
             }
-            return `Could not fetch content from ${item.link}`;
-          } catch (error) {
-            console.error(`Error fetching content for ${item.link}:`, error);
-            return `Error fetching content from ${item.link}`;
-          }
-        })
-      );
+          })
+        );
+      }
       
       allContents.push(...fullContents);
       
@@ -196,7 +220,11 @@ async function* execute(
         // 最大検索回数に達した場合は最終回答を生成
         const finalInstruction = getLocalizedText('agent_final_instruction', language);
         prompt = `${finalInstruction}\n\n${promptWithContext}`;
-        yield* llm(prompt, input);
+        
+        // 最終回答をストリーミングで表示
+        for await (const payload of llm(prompt, input)) {
+          yield payload;
+        }
         return;
       }
     } else {
@@ -212,7 +240,11 @@ async function* execute(
   const promptWithContext = buildPromptWithContext(input, context, language);
   const finalInstruction = getLocalizedText('agent_final_instruction', language);
   prompt = `${finalInstruction}\n\n${promptWithContext}`;
-  yield* llm(prompt, input);
+  
+  // 最終回答をストリーミングで表示
+  for await (const payload of llm(prompt, input)) {
+    yield payload;
+  }
 }
 
 export { execute }

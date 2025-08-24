@@ -5,16 +5,19 @@ import { FC } from 'react'
 interface Props {
   enabled: boolean
   onChange?: (enabled: boolean) => void
+  disabled?: boolean
 }
 
 const Toggle: FC<Props> = (props) => {
   return (
     <Switch
       checked={props.enabled}
-      onChange={props.onChange}
+      onChange={props.disabled ? undefined : props.onChange}
+      disabled={props.disabled}
       className={cx(
         props.enabled ? 'bg-primary-blue' : 'bg-secondary',
-        'relative inline-flex h-4 w-7 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out',
+        props.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+        'relative inline-flex h-4 w-7 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out',
       )}
     >
       <span

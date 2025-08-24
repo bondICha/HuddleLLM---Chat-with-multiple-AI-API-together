@@ -246,6 +246,10 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
     return this.config.systemMessage
   }
 
+  setSystemMessage(systemMessage: string) {
+    this.config.systemMessage = systemMessage
+  }
+
   async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal) {
     const hasImageInput = messages.some(
       (message) => isArray(message.content) && message.content.some((part) => part.type === 'image')

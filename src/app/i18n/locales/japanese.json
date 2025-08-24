@@ -218,6 +218,7 @@
   "Use ↑↓ keys to navigate, Enter to select, Esc to close": "↑↓キーで移動、Enterで選択、Escで閉じる",
   "Click outside or press Esc to close": "外側をクリックまたはEscキーで閉じる",
   "agent_search_thinking": "\"{{query}}\"をWebで検索しています。",
+  "agent_empty_search_results": "検索結果が空白でした\n⚠️ 検索結果が見つかりませんでした。\nクエリ: \"{{query}}\"\nプロバイダー: {{provider}}\n\n検索エンジンから結果が返されていない可能性があります。",
   "agent_context_prompt": "三重引用符で区切られた参考情報を使用して質問に回答してください。回答は参考情報の言語ではなく、ユーザーの質問と同じ言語またはユーザーの指示に従って行ってください。",
   "agent_question_label": "質問：",
   "agent_context_label": "参考情報：",

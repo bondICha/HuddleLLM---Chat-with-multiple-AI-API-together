@@ -82,6 +82,12 @@ or for news:
 - Web検索使用時（オプション1）：JSONコードスニペットのみを返してください。追加テキストは一切なし。
 - あなたの知識を超える最新または最近の情報が必要な場合にのみ使用
 - 必要に応じて異なるキーワードで複数回検索可能
+**CRITICAL RULES FOR WEB SEARCH:**
+- Use concise, specific search queries
+- Choose appropriate search provider: "google" for general searches, "bing_news" for recent news
+- When using web search (Option 1): Respond with ONLY the JSON code snippet. No additional text whatsoever.
+- Use this tool ONLY when you need current or recent information beyond your knowledge
+- You can search multiple times with different keywords if needed
 
 **Web検索JSON形式:**
 \`\`\`json
@@ -110,6 +116,12 @@ or for news:
 - 使用网络搜索时（选项1）：仅返回JSON代码片段。不要添加任何额外文本。
 - 仅在需要超出您知识范围的当前或最新信息时使用此工具
 - 如需要可以使用不同关键词多次搜索
+**CRITICAL RULES FOR WEB SEARCH:**
+- Use concise, specific search queries
+- Choose appropriate search provider: "google" for general searches, "bing_news" for recent news
+- When using web search (Option 1): Respond with ONLY the JSON code snippet. No additional text whatsoever.
+- Use this tool ONLY when you need current or recent information beyond your knowledge
+- You can search multiple times with different keywords if needed
 
 **网络搜索JSON格式:**
 \`\`\`json

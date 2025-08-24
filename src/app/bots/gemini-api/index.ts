@@ -184,6 +184,10 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
     return { role: 'system', parts: [{ text: this.config.geminiApiSystemMessage }] };
   }
 
+  setSystemMessage(systemMessage: string) {
+    this.config.geminiApiSystemMessage = systemMessage
+  }
+
   getGenerationConfig(): GenerationConfig {
     return {
       temperature: this.config.geminiApiTemperature ?? 0.4,
