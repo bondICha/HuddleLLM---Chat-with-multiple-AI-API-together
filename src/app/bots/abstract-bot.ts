@@ -2,7 +2,8 @@ import { Sentry } from '~services/sentry'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { streamAsyncIterable } from '~utils/stream-async-iterable'
 import { ThinkingParser } from '~utils/thinking-parser'
-import { replaceSystemPromptVariables, getCurrentDateTime, getUserLocaleInfo, getWebSearchInstructions } from '~utils/system-prompt-variables'
+import { replaceSystemPromptVariables, getCurrentDateTime, getUserLocaleInfo } from '~utils/system-prompt-variables'
+import { getWebSearchInstructions } from '~services/agent/prompts'
 
 import { SearchResultItem } from '~services/agent/web-search/base';
 

@@ -233,20 +233,13 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
           contentType: contentType,
         }
       } else {
-        // Detect charset from Content-Type header or default to UTF-8
-        let charset = 'utf-8'
-        const charsetMatch = contentType.match(/charset=([^;]+)/i)
-        if (charsetMatch) {
-          charset = charsetMatch[1].toLowerCase()
-        }
-        
         // Get response as ArrayBuffer first to properly handle encoding
         const buffer = await response.arrayBuffer()
         const uint8Array = new Uint8Array(buffer)
         
         // Check if content looks like binary data (PDF, images, etc.)
-        const possibleBinary = uint8Array.slice(0, 100).some(byte => byte === 0 || byte > 127)
-        if (possibleBinary && !charset.includes('utf')) {
+        const possibleBinary = uint8Array.slice(0, 100).some(byte => byte === 0)
+        if (possibleBinary) {
           console.log('⚠️ Background: Binary content detected, returning error')
           return {
             success: false,
@@ -254,14 +247,65 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
           }
         }
         
-        // Use TextDecoder with detected charset
+        // Detect charset from multiple sources
+        let charset = 'utf-8'
+        
+        // 1. Check Content-Type header
+        const charsetMatch = contentType.match(/charset=([^;]+)/i)
+        if (charsetMatch) {
+          charset = charsetMatch[1].toLowerCase()
+        }
+        
+        // 2. Try UTF-8 first and check for common encoding issues
         let content: string
         try {
-          const decoder = new TextDecoder(charset)
+          const decoder = new TextDecoder('utf-8')
           content = decoder.decode(uint8Array)
+          
+          // 3. Detect if content has meta charset tag with different encoding
+          const metaCharsetMatch = content.match(/<meta[^>]*charset\s*=\s*['"]*([^'">]+)/i)
+          if (metaCharsetMatch && metaCharsetMatch[1].toLowerCase() !== 'utf-8') {
+            const metaCharset = metaCharsetMatch[1].toLowerCase()
+            console.log('🔍 Background: Meta charset detected:', metaCharset)
+            
+            try {
+              const metaDecoder = new TextDecoder(metaCharset)
+              content = metaDecoder.decode(uint8Array)
+              charset = metaCharset
+            } catch (metaError) {
+              console.warn('Failed to decode with meta charset:', metaCharset)
+            }
+          }
+          
+          // 4. Check for mojibake patterns (common encoding mistakes)
+          const hasMojibake = /[��]|[\u00C0-\u00FF]{2,}|[\uFFFD]/.test(content.substring(0, 1000))
+          if (hasMojibake && charset === 'utf-8') {
+            console.log('🔍 Background: Mojibake detected, trying alternative encodings')
+            
+            // Try common encodings for different regions
+            const alternativeEncodings = ['shift_jis', 'euc-jp', 'iso-2022-jp', 'windows-1252', 'iso-8859-1']
+            
+            for (const encoding of alternativeEncodings) {
+              try {
+                const altDecoder = new TextDecoder(encoding)
+                const altContent = altDecoder.decode(uint8Array)
+                const altHasMojibake = /[��]|[\uFFFD]/.test(altContent.substring(0, 1000))
+                
+                if (!altHasMojibake) {
+                  console.log('✅ Background: Fixed encoding with:', encoding)
+                  content = altContent
+                  charset = encoding
+                  break
+                }
+              } catch (altError) {
+                // Continue trying other encodings
+              }
+            }
+          }
+          
         } catch (error) {
-          // Fallback to UTF-8 if charset detection fails
-          console.warn('Failed to decode with charset:', charset, 'Falling back to UTF-8')
+          // Fallback to UTF-8 if all else fails
+          console.warn('Failed to decode, falling back to UTF-8:', error)
           const decoder = new TextDecoder('utf-8')
           content = decoder.decode(uint8Array)
         }

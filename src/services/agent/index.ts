@@ -108,15 +108,24 @@ async function* execute(
 
   while (searchCount < maxSearches) {
     let llmOutputText = '';
+    let hasYieldedContent = false;
+    
     for await (const payload of llm(prompt, input)) {
       llmOutputText = payload.text;
+      // Stream the content as it comes in
+      if (payload.text && payload.text.length > 0) {
+        yield payload;
+        hasYieldedContent = true;
+      }
     }
 
     const parsedJson = extractJsonPayload(llmOutputText);
 
     if (!parsedJson) {
-      // No JSON found, treat as final answer
-      yield { text: llmOutputText };
+      // No JSON found, treat as final answer - content already streamed
+      if (!hasYieldedContent) {
+        yield { text: llmOutputText };
+      }
       return;
     }
 

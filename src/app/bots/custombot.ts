@@ -14,28 +14,10 @@ import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 export class CustomBot extends AsyncAbstractBot {
     private customBotNumber: number;
     private config: CustomApiConfig | undefined;
-    private botInstance: any = undefined;
-    private savedConversationHistory: any = undefined;
 
     constructor(params: { customBotNumber: number }) {
         super();
         this.customBotNumber = params.customBotNumber;
-    }
-
-    // Web Access設定変更時にbotインスタンスを無効化
-    invalidateBotInstance() {
-        console.log(`🔄 CustomBot ${this.customBotNumber}: Invalidating bot instance due to web access change`);
-        
-        // 履歴を保存
-        let savedHistory: any = undefined;
-        if (this.botInstance && typeof this.botInstance.setConversationHistory === 'function' && typeof this.botInstance.getConversationHistory === 'function') {
-            savedHistory = this.botInstance.getConversationHistory();
-            console.log(`💾 CustomBot ${this.customBotNumber}: Saved conversation history`);
-        }
-        
-        this.botInstance = undefined;
-        this.config = undefined;
-        this.savedConversationHistory = savedHistory;
     }
 
     async initializeBot() {
@@ -51,9 +33,53 @@ export class CustomBot extends AsyncAbstractBot {
     }
 
     sendMessage(params: MessageParams): AsyncGenerator<AnwserPayload> {
+        if (this.config?.webAccess) {
+            return agent.execute(params.prompt, (prompt) => this.doSendMessageGenerator({ ...params, prompt }), params.signal);
+        }
         return this.doSendMessageGenerator(params);
     }
 
+
+
+    // Web Access設定変更時にbotインスタンスを無効化してAsyncAbstractBotの#botを再作成
+    invalidateBotInstance() {
+        console.log(`🔄 CustomBot ${this.customBotNumber}: Invalidating bot instance due to web access change`);
+        
+        // AsyncAbstractBotの内部botを強制的に再初期化
+        this.forceReinitializeAsyncBot();
+    }
+    
+    private forceReinitializeAsyncBot() {
+        // AsyncAbstractBotのコンストラクタロジックを模倣して#botを再初期化
+        this.initializeBot()
+            .then((bot) => {
+                // 私的フィールドの命名規則を試行
+                const possibleKeys = ['#bot', '_bot', '__bot', '_AsyncAbstractBot_bot', '__AsyncAbstractBot_bot'];
+                
+                for (const key of possibleKeys) {
+                    try {
+                        (this as any)[key] = bot;
+                        console.log(`✅ CustomBot ${this.customBotNumber}: Internal bot updated with key: ${key}`);
+                        break;
+                    } catch (e) {
+                        // Continue trying other keys
+                    }
+                }
+                
+                // AsyncAbstractBotの#isInitializedも更新
+                try {
+                    (this as any)['#isInitialized'] = true;
+                } catch (e) {
+                    // Try alternative naming
+                    (this as any)['_isInitialized'] = true;
+                }
+            })
+            .catch((err) => {
+                console.error(`❌ CustomBot ${this.customBotNumber}: Failed to reinitialize internal bot:`, err);
+            });
+    }
+
+    // setConversationHistoryはAsyncAbstractBotが処理する
 
     private async createBotInstance() {
         const { customApiKey, customApiHost, customApiConfigs, commonSystemMessage } = await getUserConfig();
@@ -84,10 +110,8 @@ export class CustomBot extends AsyncAbstractBot {
         let processedSystemMessage = this.processSystemMessage(combinedSystemMessage);
         
         // Prompt for Web Access 
-        if (config.webAccess) {
-            const { language } = getUserLocaleInfo();
-            processedSystemMessage = this.enhanceSystemPromptWithWebSearch(processedSystemMessage, true, language);
-        }
+        const { language } = getUserLocaleInfo();
+        processedSystemMessage = this.enhanceSystemPromptWithWebSearch(processedSystemMessage, config.webAccess || false, language);
 
         const provider = config.provider || (
             config.model.includes('anthropic.claude') ? CustomApiProvider.Bedrock : CustomApiProvider.OpenAI
@@ -166,26 +190,7 @@ export class CustomBot extends AsyncAbstractBot {
                 throw new ChatError(`Unsupported provider: ${provider}`, ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);
         }
 
-        // 保存された履歴があれば復元
-        if (this.savedConversationHistory && typeof botInstance.setConversationHistory === 'function') {
-            botInstance.setConversationHistory(this.savedConversationHistory);
-            console.log(`🔄 CustomBot ${this.customBotNumber}: Restored conversation history`);
-            this.savedConversationHistory = undefined; // 復元後はクリア
-        }
 
         return botInstance;
-    }
-
-    async *doSendMessageGenerator(params: MessageParams): AsyncGenerator<AnwserPayload> {
-        // 初回のみbotインスタンス作成
-        if (!this.botInstance) {
-            this.botInstance = await this.createBotInstance();
-        }
-
-        if (this.config?.webAccess) {
-            yield* agent.execute(params.prompt, (prompt) => this.botInstance.sendMessage({ ...params, prompt }), params.signal);
-        } else {
-            yield* this.botInstance.sendMessage(params);
-        }
     }
 }
