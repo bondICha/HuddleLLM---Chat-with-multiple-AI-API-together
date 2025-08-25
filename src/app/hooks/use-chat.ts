@@ -146,7 +146,6 @@ export function useChat(index: number) {
             text: input, // 元のメッセージを保持（@URL含む）
             images,
             author: 'user',
-            thinking: fetchedContent || undefined,
             fetchedUrls: fetchedUrls.length > 0 ? fetchedUrls : undefined
           },
           { id: botMessageId, text: '', author: index }, // Use index as author

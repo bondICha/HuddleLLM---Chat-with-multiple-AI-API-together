@@ -1,7 +1,8 @@
 import { cx } from '~/utils'
-import { FC, PropsWithChildren } from 'react'
-import Thinking from './Thinking'
-import FetchedContentThinking from './FetchedContentThinking'
+import { FC, PropsWithChildren, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Atom, Globe } from 'lucide-react'
+import Expandable from '../common/Expandable'
 import type { FetchedUrlContent } from '~types/chat'
 
 interface Props {
@@ -14,6 +15,62 @@ interface Props {
 }
 
 const MessageBubble: FC<PropsWithChildren<Props>> = (props) => {
+  const { t } = useTranslation();
+
+  const fetchedContentTitle = (url: string) => {
+    try {
+      const urlObj = new URL(url);
+      return `${t('Fetched Content')} (${urlObj.hostname})`;
+    } catch {
+      return `${t('Fetched Content')} (${url})`;
+    }
+  }
+
+  const renderSearchResults = () => {
+    if (!props.searchResults) return null;
+
+    const groupedResults = props.searchResults.reduce((acc: Record<string, any[]>, result: any) => {
+      const provider = result.provider || 'Unknown';
+      if (!acc[provider]) {
+        acc[provider] = [];
+      }
+      acc[provider].push(result);
+      return acc;
+    }, {});
+
+    return Object.entries(groupedResults).map(([provider, results]) => (
+      <div key={provider} className="mb-4">
+        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{provider}</h4>
+        <ul className="space-y-2 pl-4">
+          {results.map((result: any, index: number) => (
+            <li key={index}>
+              <a href={result.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{result.title}</a>
+              {result.abstract && <p className="text-sm text-gray-500">{result.abstract}</p>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ));
+  };
+
+  const renderFetchedUrls = () => {
+    if (!props.fetchedUrls) return null;
+
+    return props.fetchedUrls.map((fetchedUrl, index) => (
+        <Expandable
+          key={`${fetchedUrl.url}-${index}`}
+          header={
+            <>
+              <Globe size={14} className="mr-1.5 text-text-secondary" />
+              {fetchedContentTitle(fetchedUrl.url)}
+            </>
+          }
+        >
+          {fetchedUrl.content}
+        </Expandable>
+    ));
+  };
+
   return (
     <div
       className={cx(
@@ -22,16 +79,31 @@ const MessageBubble: FC<PropsWithChildren<Props>> = (props) => {
         props.className,
       )}
     >
-      {props.thinking && !props.fetchedUrls && (
-        props.isUserMessage ? 
-          <FetchedContentThinking>{props.thinking}</FetchedContentThinking> : 
-          <Thinking searchResults={props.searchResults}>{props.thinking}</Thinking>
+      {props.thinking && (
+          <Expandable
+            header={
+              <>
+                <Atom size={14} className="mr-1.5 text-text-secondary" />
+                {t('com_ui_thoughts')}
+              </>
+            }
+          >
+            {props.thinking}
+          </Expandable>
       )}
-      {props.fetchedUrls && props.fetchedUrls.map((fetchedUrl, index) => (
-        <FetchedContentThinking key={`${fetchedUrl.url}-${index}`} url={fetchedUrl.url}>
-          {fetchedUrl.content}
-        </FetchedContentThinking>
-      ))}
+      {props.searchResults && props.searchResults.length > 0 && (
+          <Expandable
+            header={
+              <>
+                <Globe size={14} className="mr-1.5 text-text-secondary" />
+                {t('Web Search Results')}
+              </>
+            }
+          >
+            {renderSearchResults()}
+          </Expandable>
+      )}
+      {renderFetchedUrls()}
       {props.children}
     </div>
   )
