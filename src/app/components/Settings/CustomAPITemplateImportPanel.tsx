@@ -222,7 +222,8 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
             companyName: preset.companyName,
             version: preset.version,
             status: CompanyProfileStatus.IMPORTED,
-            lastChecked: Date.now()
+            lastChecked: Date.now(),
+            checkCount: 0
           });
         }
       }

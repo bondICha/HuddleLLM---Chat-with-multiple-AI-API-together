@@ -41,7 +41,7 @@ import {
   AllInOnePairConfig
 } from '~app/atoms/all-in-one'
 import { getUserConfig, saveChatPair, getSavedChatPairs, deleteChatPair, updateChatPair, ChatPair } from '~services/user-config'
-import { getCompanyProfileConfigs, checkCompanyProfile, shouldShowProfilePrompt } from '~services/company-profile'
+import { getCompanyProfileConfigs, checkCompanyProfile, shouldShowProfilePrompt, shouldCheckCompanyProfile } from '~services/company-profile'
 
 
 function IconButton(props: { icon: string; onClick?: () => void }) {
@@ -368,6 +368,12 @@ useEffect(() => {
       try {
         const configs = await getCompanyProfileConfigs();
         for (const preset of configs) {
+          // Check if we should perform the company profile check based on app usage
+          const shouldCheck = await shouldCheckCompanyProfile(preset);
+          if (!shouldCheck) {
+            continue; // Skip checking this company profile
+          }
+          
           const isCompanyEnvironment = await checkCompanyProfile(preset.checkUrl);
           if (isCompanyEnvironment) {
             const shouldShow = await shouldShowProfilePrompt(preset);

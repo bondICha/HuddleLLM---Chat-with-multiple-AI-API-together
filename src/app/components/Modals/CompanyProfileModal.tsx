@@ -20,7 +20,8 @@ const CompanyProfileModal: FC = () => {
       companyName: detectedCompany.companyName,
       version: detectedCompany.version,
       status: CompanyProfileStatus.UNCONFIRMED,
-      lastChecked: Date.now()
+      lastChecked: Date.now(),
+      checkCount: 0
     })
   }
 
@@ -41,7 +42,8 @@ const CompanyProfileModal: FC = () => {
       companyName: detectedCompany.companyName,
       version: detectedCompany.version,
       status: CompanyProfileStatus.REJECTED,
-      lastChecked: Date.now()
+      lastChecked: Date.now(),
+      checkCount: 0
     })
   }
 

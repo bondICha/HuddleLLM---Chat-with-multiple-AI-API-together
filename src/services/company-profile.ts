@@ -19,6 +19,7 @@ export interface CompanyProfileState {
   version: string
   status: CompanyProfileStatus
   lastChecked: number
+  checkCount: number // Track how many times we've checked this version
 }
 
 // Sample configuration for company profiles. 
@@ -94,6 +95,25 @@ export function compareVersions(version1: string, version2: string): number {
   return 0
 }
 
+export async function shouldCheckCompanyProfile(preset: CompanyProfilePreset): Promise<boolean> {
+  // Import the existing app open times function
+  const { getAppOpenTimes } = await import('~services/storage/open-times')
+  const openTimes = await getAppOpenTimes()
+  const state = await getCompanyProfileState(preset.companyName)
+  
+  // Only check company profile during the first 3 app launches
+  if (openTimes <= 3) {
+    return true
+  }
+  
+  // If there's a new version of the company profile, always check
+  if (state && compareVersions(preset.version, state.version) > 0) {
+    return true
+  }
+  
+  return false
+}
+
 export async function shouldShowProfilePrompt(preset: CompanyProfilePreset): Promise<boolean> {
   const state = await getCompanyProfileState(preset.companyName)
   
@@ -112,21 +132,26 @@ export async function shouldShowProfilePrompt(preset: CompanyProfilePreset): Pro
   return false
 }
 
+// CRITICAL: DO NOT MODIFY THIS VALIDATION LOGIC
+// This function MUST only return true for HTTP 200 status codes
+// DO NOT accept 302, 301, or any other status codes - this will break company profile detection
 export async function checkCompanyProfile(internalUrl: string): Promise<boolean> {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 1000)
 
-    await fetch(internalUrl, {
+    const response = await fetch(internalUrl, {
       signal: controller.signal,
-      mode: 'no-cors', // Use no-cors to avoid CORS errors
       method: 'HEAD',
+      redirect: 'manual', // Don't follow redirects automatically
     })
 
     clearTimeout(timeoutId)
 
-    return true // If fetch succeeds, we assume we are in the company network
+    // CRITICAL: Only accept HTTP 200 status code
+    // With host_permissions in manifest, we can now read the actual status code
+    return response.status === 200
   } catch {
-    return false // Network error
+    return false // Network error or redirect/other status codes will throw
   }
 }

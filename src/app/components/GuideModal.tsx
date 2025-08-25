@@ -24,7 +24,7 @@ const GuideModal: FC = () => {
         <div className="flex flex-col items-center gap-4 py-6">
           <p className="font-semibold text-primary-text">{t('Thank you for using HuddleLLM!')}</p>
           {/* <a
-            href="https://chrome.google.com/webstore/detail/chathub-all-in-one-chatbo/iaakpnchhognanibcahlpcplchdfmgma"
+            href="https://chromewebstore.google.com/detail/huddlellm-oss-all-in-one/edjbcjkcabpmpcpnpfjfcehegjkacgod"
             target="_blank"
             rel="noreferrer"
           >
