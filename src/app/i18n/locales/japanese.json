@@ -222,5 +222,10 @@
   "agent_context_prompt": "三重引用符で区切られた参考情報を使用して質問に回答してください。回答は参考情報の言語ではなく、ユーザーの質問と同じ言語またはユーザーの指示に従って行ってください。",
   "agent_question_label": "質問：",
   "agent_context_label": "参考情報：",
-  "agent_final_instruction": "参考情報に基づいて、以下の質問に自然な会話の流れで答えてください。"
+  "agent_final_instruction": "参考情報に基づいて、以下の質問に自然な会話の流れで答えてください。",
+  "company_profile_detected": "の社内環境が検出されました。",
+  "apply_company_profile": "のプロファイルを適用しますか？",
+  "company_template_import": "テンプレートのインポート",
+  "Ask me again": "あとで確認",
+  "Reject": "拒否"
 }

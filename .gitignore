@@ -18,6 +18,9 @@ dist-ssr
 *.suo
 *.ntvs*
 *.njsproj
+
+# Company-specific configuration (exclude from git tracking)
+config/company-profiles.ts
 *.sln
 *.sw?
 

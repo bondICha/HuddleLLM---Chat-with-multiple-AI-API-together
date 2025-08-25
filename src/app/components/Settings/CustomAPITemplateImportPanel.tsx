@@ -1,18 +1,20 @@
-import { FC, useState } from 'react'
+import { FC, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BiImport } from 'react-icons/bi'
 import { fileOpen } from 'browser-fs-access'
-import Browser from 'webextension-polyfill'
 import Button from '../Button'
 import Dialog from '../Dialog'
 import Select from '../Select'
 import Checkbox from '../Checkbox'
 import { UserConfig, CustomApiConfig, updateUserConfig } from '~services/user-config'
+import { setCompanyProfileState, CompanyProfileStatus, findCompanyPresetByName } from '~services/company-profile'
 import toast from 'react-hot-toast'
 
 interface Props {
   userConfig: UserConfig
   updateConfigValue: (update: Partial<UserConfig>) => void
+  autoImportTemplate?: string // 自動インポート用のテンプレートパス
+  companyName?: string // 会社名
 }
 
 
@@ -72,7 +74,7 @@ const _parseImportedTemplateData = (jsonData: any): { configs: CustomApiConfig[]
 };
 
 
-const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue }) => {
+const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue, autoImportTemplate, companyName }) => {
   const { t } = useTranslation()
   const [isOpen, setIsOpen] = useState(false)
   const [importedData, setImportedData] = useState<{ configs: CustomApiConfig[], host?: string, commonSystemMessage?: string }>({ configs: [] });
@@ -81,6 +83,51 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
   // Common要素のインポート選択状態（デフォルトはON）
   const [importCommonHost, setImportCommonHost] = useState(true);
   const [importCommonSystemMessage, setImportCommonSystemMessage] = useState(true);
+
+  // 自動テンプレートインポート処理
+  const handleAutoImport = async (companyName: string) => {
+    try {
+      const preset = await findCompanyPresetByName(companyName);
+      if (!preset) {
+        throw new Error('Company preset not found');
+      }
+      
+      const { configs: parsedConfigs, host: parsedHost, commonSystemMessage: parsedCommonSystemMessage } = _parseImportedTemplateData(preset.templateData);
+
+      if (parsedConfigs.length === 0) {
+        toast.error(t('No Custom API settings found in the file. Please check the file format.'));
+        return;
+      }
+
+      // チェックボックスの状態をリセット（デフォルトはON）
+      setImportCommonHost(true);
+      setImportCommonSystemMessage(true);
+
+      // デフォルト値上書きロジック：既存Bot数以下は上書き、超過時は「Add as new」
+      const defaultMappings = parsedConfigs.map((_, index) => {
+        if (index < userConfig.customApiConfigs.length) {
+          return index; // 上書き
+        } else {
+          return -2; // Add as new
+        }
+      });
+      
+      setImportedData({ configs: parsedConfigs, host: parsedHost, commonSystemMessage: parsedCommonSystemMessage });
+      setMappings(defaultMappings);
+      setIsOpen(true);
+
+    } catch (error: any) {
+      console.error('Error processing auto import template:', error);
+      toast.error(t('Failed to process template: ') + error.message);
+    }
+  };
+
+  // 自動インポートのuseEffect
+  useEffect(() => {
+    if (autoImportTemplate === 'templateData' && companyName) {
+      handleAutoImport(companyName);
+    }
+  }, [autoImportTemplate, companyName]);
 
 
   // ファイル選択処理
@@ -102,9 +149,14 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
       setImportCommonHost(true);
       setImportCommonSystemMessage(true);
 
-      const defaultMappings = parsedConfigs.map((_, index) =>
-        index < userConfig.customApiConfigs.length ? index : -1
-      );
+      // 既存Bot数以下は上書き、超過時は「Add as new」
+      const defaultMappings = parsedConfigs.map((_, index) => {
+        if (index < userConfig.customApiConfigs.length) {
+          return index; // 上書き
+        } else {
+          return -2; // Add as new
+        }
+      });
       
       setImportedData({ configs: parsedConfigs, host: parsedHost, commonSystemMessage: parsedCommonSystemMessage });
       setMappings(defaultMappings);
@@ -161,6 +213,19 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
 
       await updateUserConfig(updatePayload);
       updateConfigValue(updatePayload);
+      
+      // 会社プロファイルのImportが実行された場合、状態を「Import済み」に更新
+      if (companyName) {
+        const preset = await findCompanyPresetByName(companyName);
+        if (preset) {
+          await setCompanyProfileState({
+            companyName: preset.companyName,
+            version: preset.version,
+            status: CompanyProfileStatus.IMPORTED,
+            lastChecked: Date.now()
+          });
+        }
+      }
       
       toast.success(t('Custom API settings imported successfully'));
       setIsOpen(false);
