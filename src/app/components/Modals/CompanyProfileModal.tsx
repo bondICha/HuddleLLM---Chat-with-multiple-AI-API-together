@@ -46,15 +46,26 @@ const CompanyProfileModal: FC = () => {
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} title={`${detectedCompany.companyName}${t('company_profile_detected')}`}>
-      <div className="mb-6 px-2">
-        <p className="text-sm text-gray-500 mb-2">{`${detectedCompany.companyName}${t('apply_company_profile')}`}</p>
-        <p className="text-xs text-gray-400">バージョン: {detectedCompany.version}</p>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      title={`${detectedCompany.companyName} ${t('company_profile_detected')}`}
+      className="max-w-md"
+    >
+      <div className="mb-6 px-6 py-4">
+        {detectedCompany.logoUrl && (
+          <div className="mb-4 flex justify-center">
+            <img src={detectedCompany.logoUrl} alt={`${detectedCompany.companyName} logo`} className="h-12" />
+          </div>
+        )}
+        <p className="text-base text-primary-text mb-3">{`${detectedCompany.companyName} ${t('apply_company_profile')}`}</p>
+        <p className="text-sm text-primary-text mb-4">{t('apply_company_profile_description')}</p>
+        <p className="text-xs text-secondary-text">バージョン: {detectedCompany.version}</p>
       </div>
-      <div className="flex justify-between items-center gap-4 mt-6 px-2">
-        <button 
+      <div className="flex justify-between items-center gap-4 mt-4 px-6 pb-4">
+        <button
           onClick={handleReject}
-          className="text-xs text-gray-400 hover:text-gray-600 underline"
+          className="text-xs text-secondary-text hover:text-primary-text underline"
         >
           {t('Reject')}
         </button>

@@ -91,7 +91,7 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
       if (!preset) {
         throw new Error('Company preset not found');
       }
-      
+
       const { configs: parsedConfigs, host: parsedHost, commonSystemMessage: parsedCommonSystemMessage } = _parseImportedTemplateData(preset.templateData);
 
       if (parsedConfigs.length === 0) {
@@ -111,7 +111,7 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
           return -2; // Add as new
         }
       });
-      
+
       setImportedData({ configs: parsedConfigs, host: parsedHost, commonSystemMessage: parsedCommonSystemMessage });
       setMappings(defaultMappings);
       setIsOpen(true);
@@ -137,7 +137,7 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
       setLastOpenedFile(blob);
       const text = await blob.text()
       const json = JSON.parse(text);
-      
+
       const { configs: parsedConfigs, host: parsedHost, commonSystemMessage: parsedCommonSystemMessage } = _parseImportedTemplateData(json);
 
       if (parsedConfigs.length === 0) {
@@ -157,7 +157,7 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
           return -2; // Add as new
         }
       });
-      
+
       setImportedData({ configs: parsedConfigs, host: parsedHost, commonSystemMessage: parsedCommonSystemMessage });
       setMappings(defaultMappings);
       setIsOpen(true);
@@ -213,7 +213,7 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
 
       await updateUserConfig(updatePayload);
       updateConfigValue(updatePayload);
-      
+
       // 会社プロファイルのImportが実行された場合、状態を「Import済み」に更新
       if (companyName) {
         const preset = await findCompanyPresetByName(companyName);
@@ -226,7 +226,7 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
           });
         }
       }
-      
+
       toast.success(t('Custom API settings imported successfully'));
       setIsOpen(false);
       setLastOpenedFile(null); // 正常終了後リセット
@@ -236,9 +236,9 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
       toast.error(t('Failed to apply imported settings: ') + error.message);
       // エラー時、元の設定に戻す処理は updateConfigValue を使って行う
       updateConfigValue({
-         customApiConfigs: userConfig.customApiConfigs || [],
-         customApiHost: userConfig.customApiHost,
-         commonSystemMessage: userConfig.commonSystemMessage
+        customApiConfigs: userConfig.customApiConfigs || [],
+        customApiHost: userConfig.customApiHost,
+        commonSystemMessage: userConfig.commonSystemMessage
       });
     }
   };
@@ -253,84 +253,86 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
         color="flat"
         className="w-full justify-center bg-white dark:bg-slate-800 border border-indigo-300 dark:border-indigo-600/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
       />
-      
-      <Dialog 
-        open={isOpen} 
-        onClose={() => setIsOpen(false)} 
+
+      <Dialog
+        open={isOpen}
+        onClose={() => setIsOpen(false)}
         title={t('Import Custom API Template')}
       >
-        <div className="mb-6 px-2">
-          <p className="text-sm text-gray-500">
-            {t('Select which models to import and where to place them. Individual API keys will be overwritten, but common API key will be preserved.')}
-          </p>
-        </div>
-
-        {/* Common要素のインポート選択 */}
-        {(importedData.host !== undefined || importedData.commonSystemMessage !== undefined) && (
-          <div className="mb-6 px-2 border-t pt-4">
-            <h4 className="text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">{t('Common Settings')}</h4>
-            <div className="space-y-2">
-              {importedData.host !== undefined && (
-                <Checkbox
-                  label={t('Import Common API Host') + `: ${importedData.host}`}
-                  checked={importCommonHost}
-                  onChange={setImportCommonHost}
-                />
-              )}
-              {importedData.commonSystemMessage !== undefined && (
-                <Checkbox
-                  label={t('Import Common System Message')}
-                  checked={importCommonSystemMessage}
-                  onChange={setImportCommonSystemMessage}
-                />
-              )}
-            </div>
+        <div className="px-6 py-4 space-y-4">
+          <div>
+            <p className="text-sm text-secondary-text">
+              {t('Select which models to import and where to place them. Individual API keys will be overwritten, but common API key will be preserved.')}
+            </p>
           </div>
-        )}
-        
-        <div className="max-h-[60vh] overflow-y-auto px-5">
-          {importedData.configs.map((importConfig, index) => (
-            <div key={index} className="flex items-center gap-6 mb-2 py-2">
-              <div className="w-1/3">
-                <p className="font-medium">{importConfig.name}</p>
-                <p className="text-xs text-gray-400 mt-1">{importConfig.model}</p>
-              </div>
-              <div className="w-1/6 text-center text-lg">→</div>
-              <div className="w-1/2">
-                <Select
-                  options={[
-                    { name: t('Do not import'), value: '-1' },
-                    { name: t('Add as new'), value: '-2' },
-                    ...userConfig.customApiConfigs.map((config, i) => ({
-                      name: `${i+1}: ${config.name}`,
-                      value: String(i)
-                    }))
-                  ]}
-                  value={String(mappings[index])}
-                  onChange={(v) => {
-                    const newValue = parseInt(v, 10)
-                    const newMappings = [...mappings]
-                    
-                    if (newValue >= 0) {
-                      const duplicateIndex = newMappings.findIndex(
-                        (mapping, i) => i !== index && mapping === newValue
-                      )
-                      if (duplicateIndex !== -1) {
-                        newMappings[duplicateIndex] = -1
-                      }
-                    }
-                    newMappings[index] = newValue
-                    setMappings(newMappings)
-                  }}
-                />
+
+          {/* Common要素のインポート選択 */}
+          {(importedData.host !== undefined || importedData.commonSystemMessage !== undefined) && (
+            <div className="border-t border-primary-border pt-4">
+              <h4 className="text-sm font-medium mb-3 text-primary-text">{t('Common Settings')}</h4>
+              <div className="space-y-2">
+                {importedData.host !== undefined && (
+                  <Checkbox
+                    label={t('Import Common API Host') + `: ${importedData.host}`}
+                    checked={importCommonHost}
+                    onChange={setImportCommonHost}
+                  />
+                )}
+                {importedData.commonSystemMessage !== undefined && (
+                  <Checkbox
+                    label={t('Import Common System Message')}
+                    checked={importCommonSystemMessage}
+                    onChange={setImportCommonSystemMessage}
+                  />
+                )}
               </div>
             </div>
-          ))}
-        </div>
-        
-        <div className="flex justify-end gap-4 mt-6 px-2">
-          <Button text={t('Cancel')} onClick={() => setIsOpen(false)} color="flat" />
-          <Button text={t('Import')} onClick={handleImport} color="primary" />
+          )}
+
+          <div className="max-h-[50vh] overflow-y-auto -mx-6 px-6">
+            {importedData.configs.map((importConfig, index) => (
+              <div key={index} className="flex items-center gap-6 mb-2 py-2">
+                <div className="w-1/3">
+                  <p className="font-medium text-primary-text">{importConfig.name}</p>
+                  <p className="text-xs text-secondary-text mt-1">{importConfig.model}</p>
+                </div>
+                <div className="w-1/6 text-center text-lg text-secondary-text">→</div>
+                <div className="w-1/2">
+                  <Select
+                    options={[
+                      { name: t('Do not import'), value: '-1' },
+                      { name: t('Add as new'), value: '-2' },
+                      ...userConfig.customApiConfigs.map((config, i) => ({
+                        name: `${i + 1}: ${config.name}`,
+                        value: String(i)
+                      }))
+                    ]}
+                    value={String(mappings[index])}
+                    onChange={(v) => {
+                      const newValue = parseInt(v, 10)
+                      const newMappings = [...mappings]
+
+                      if (newValue >= 0) {
+                        const duplicateIndex = newMappings.findIndex(
+                          (mapping, i) => i !== index && mapping === newValue
+                        )
+                        if (duplicateIndex !== -1) {
+                          newMappings[duplicateIndex] = -1
+                        }
+                      }
+                      newMappings[index] = newValue
+                      setMappings(newMappings)
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end gap-4 pt-4">
+            <Button text={t('Cancel')} onClick={() => setIsOpen(false)} color="flat" />
+            <Button text={t('Import')} onClick={handleImport} color="primary" />
+          </div>
         </div>
       </Dialog>
     </>

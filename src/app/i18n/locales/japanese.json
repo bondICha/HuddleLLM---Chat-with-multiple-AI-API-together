@@ -225,6 +225,7 @@
   "agent_final_instruction": "参考情報に基づいて、以下の質問に自然な会話の流れで答えてください。",
   "company_profile_detected": "の社内環境が検出されました。",
   "apply_company_profile": "のプロファイルを適用しますか？",
+  "apply_company_profile_description": "「OK」をクリックすると、会社提供の設定をインポートする画面に移動します。インポート完了後、ご自身のAPIキーを設定してください（通常は共通APIキーのみで動作します）。",
   "company_template_import": "テンプレートのインポート",
   "Ask me again": "あとで確認",
   "Reject": "拒否"

@@ -119,6 +119,7 @@
     "Ask me again": "Ask me again",
     "Reject": "Reject",
     "Reset Company Profile Settings": "Reset Company Profile Settings",
+    "apply_company_profile_description": "Clicking 'OK' will take you to the settings import screen. After importing, please set your own API key (usually, the Common API Key is sufficient).",
     "Export/Import All Data": "Export/Import All Data",
     "Data includes all your settings, chat histories, and local prompts": "Data includes all your settings, chat histories, and local prompts",
     "Export": "Export",

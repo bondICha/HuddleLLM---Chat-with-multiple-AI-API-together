@@ -44,6 +44,8 @@ import sambaNovaLogo from '~/assets/logos/SambaNova.svg';
 import huddleLLMLogo from '~/assets/logos/HuddleLLM.png';
 import claude4Logo from '~/assets/logos/Claude4.webp';
 import deepinfraLogo from '~/assets/logos/deepinfra.svg';
+import sbIntuitionsLogo from '~/assets/logos/sb-intuitions.png';
+import tsuzumiLogo from '~/assets/logos/tsuzumi.png';
 
 // 特殊フォーマットのアイコンID用マッピング
 const specialFormatMap: Record<string, string> = {
@@ -94,6 +96,8 @@ const iconMap: Record<string, string> = {
   'stablelm': stablelmLogo,
   'sambanova': sambaNovaLogo,
   'huddlellm': huddleLLMLogo,
+  'sb-intuitions': sbIntuitionsLogo,
+  'tsuzumi': tsuzumiLogo,
 };
 
 // 安全なアイコン表示のための検証関数

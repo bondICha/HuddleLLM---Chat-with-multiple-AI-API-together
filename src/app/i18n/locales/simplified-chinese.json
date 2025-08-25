@@ -110,6 +110,7 @@
   "Ask me again": "稍后提醒",
   "Reject": "拒绝",
   "Reset Company Profile Settings": "重置公司配置文件设置",
+  "apply_company_profile_description": "点击“确定”将跳转到设置导入页面。导入后，请设置您自己的API密钥（通常，通用API密钥就足够了）。",
   "Export/Import All Data": "导出/导入数据",
   "Data includes all your settings, chat histories, and local prompts": "数据包括所有设置、聊天记录和本地prompts",
   "Export": "导出",

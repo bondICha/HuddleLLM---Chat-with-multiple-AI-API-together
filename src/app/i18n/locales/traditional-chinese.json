@@ -109,6 +109,7 @@
   "Ask me again": "稍後再問",
   "Reject": "拒絕",
   "Reset Company Profile Settings": "重設公司設定",
+  "apply_company_profile_description": "點擊「確定」將跳轉到設定導入頁面。導入後，請設定您自己的API金鑰（通常，通用API金鑰就足夠了）。",
   "Export/Import All Data": "導出/導入數據",
   "Data includes all your settings, chat histories, and local prompts": "數據包括所有設置、聊天記錄和本地prompts",
   "Export": "導出",

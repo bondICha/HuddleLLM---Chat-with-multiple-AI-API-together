@@ -43,6 +43,8 @@ import stablelmLogo from '~/assets/logos/stablelm.png';
 import sambaNovaLogo from '~/assets/logos/SambaNova.svg';
 import huddleLLMLogo from '~/assets/logos/HuddleLLM.png';
 import deepinfraLogo from '~/assets/logos/deepinfra.svg';
+import sbIntuitionsLogo from '~/assets/logos/sb-intuitions.png';
+import tsuzumiLogo from '~/assets/logos/tsuzumi.png';
 
 // アイコンオプションの定義
 interface IconOption {
@@ -119,8 +121,10 @@ const otherIcons: IconOption[] = [
   { id: 'qianwen', name: 'Qianwen', src: qianwenLogo },
   { id: 'rwkv', name: 'RWKV', src: rwkvLogo },
   { id: 'sambanova', name: 'SambaNova', src: sambaNovaLogo },
+  { id: 'sb-intuitions', name: 'SB Intuitions', src: sbIntuitionsLogo },
   { id: 'stablelm', name: 'StableLM', src: stablelmLogo },
   { id: 'vicuna', name: 'Vicuna', src: vicunaLogo },
+  { id: 'tsuzumi', name: 'Tsuzumi', src: tsuzumiLogo },
   { id: 'wizardlm', name: 'WizardLM', src: wizardlmLogo },
   { id: 'xunfei', name: 'XunFei', src: xunfeiLogo },
   { id: 'yi', name: 'Yi', src: yiLogo }

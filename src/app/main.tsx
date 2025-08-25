@@ -7,38 +7,16 @@ import '../services/sentry'
 import './base.scss'
 import './i18n'
 import { router } from './router'
-import { pendingSearchQueryAtom, sessionRestoreModalAtom, companyProfileModalAtom, detectedCompanyAtom } from './state'
+import { pendingSearchQueryAtom, sessionRestoreModalAtom } from './state'
 import { markOmniboxSearchAsUsed } from '../services/storage/open-times'
 import { loadHistoryMessages, loadAllInOneSessions } from '../services/chat-history'
-import { checkCompanyProfile, getCompanyProfileConfigs, shouldShowProfilePrompt } from '../services/company-profile'
 import CompanyProfileModal from './components/Modals/CompanyProfileModal'
 
 function App() {
   const setPendingSearchQuery = useSetAtom(pendingSearchQueryAtom)
   const setSessionRestoreModal = useSetAtom(sessionRestoreModalAtom)
-  const setCompanyProfileModal = useSetAtom(companyProfileModalAtom)
-  const setDetectedCompany = useSetAtom(detectedCompanyAtom)
 
   useEffect(() => {
-    const checkCompanyEnvironment = async () => {
-      try {
-        const configs = await getCompanyProfileConfigs()
-        for (const preset of configs) {
-          const isCompanyEnvironment = await checkCompanyProfile(preset.checkUrl)
-          if (isCompanyEnvironment) {
-            const shouldShow = await shouldShowProfilePrompt(preset)
-            if (shouldShow) {
-              setDetectedCompany(preset)
-              setCompanyProfileModal(true)
-              break
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error checking company environment:', error)
-      }
-    }
-
     const loadPendingSearch = async () => {
       try {
         const result = await Browser.storage.local.get('pendingOmniboxSearch')
@@ -98,7 +76,6 @@ function App() {
 
     loadPendingSearch()
     checkSessionRestore()
-    checkCompanyEnvironment()
   }, [setPendingSearchQuery, setSessionRestoreModal])
 
 

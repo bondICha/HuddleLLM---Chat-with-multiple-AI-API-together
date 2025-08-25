@@ -6,6 +6,7 @@ export const COMPANY_PROFILE_CONFIGS: CompanyProfilePreset[] = [
   {
     companyName: 'BIG COMPANY',
     checkUrl: 'https://this_url_is_accessible_only_from_company_intra_network.net',
+    logoUrl: 'https://dev.w3.org/SVG/tools/svgweb/samples/svg-files/w3c.svg',
     version: '2025.8.25',
     templateData: {
       "customApiConfigs": [

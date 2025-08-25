@@ -3,6 +3,7 @@ import Browser from 'webextension-polyfill'
 export interface CompanyProfilePreset {
   companyName: string
   checkUrl: string
+  logoUrl?: string
   templateData: any
   version: string
 }
@@ -113,20 +114,19 @@ export async function shouldShowProfilePrompt(preset: CompanyProfilePreset): Pro
 
 export async function checkCompanyProfile(internalUrl: string): Promise<boolean> {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1000);
-    
-    const response = await fetch(internalUrl, {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 1000)
+
+    await fetch(internalUrl, {
       signal: controller.signal,
-      mode: 'cors', // レスポンスコードをチェックするためcorsモードを使用
-      method: 'HEAD' // HEADリクエストで軽量化
-    });
-    
-    clearTimeout(timeoutId);
-    
-    // 200系レスポンスなら社内環境
-    return response.ok; // status 200-299
+      mode: 'no-cors', // Use no-cors to avoid CORS errors
+      method: 'HEAD',
+    })
+
+    clearTimeout(timeoutId)
+
+    return true // If fetch succeeds, we assume we are in the company network
   } catch {
-    return false; // エラーまたは非200レスポンス
+    return false // Network error
   }
 }
