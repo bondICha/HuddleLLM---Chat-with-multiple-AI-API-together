@@ -96,6 +96,8 @@
     "All Import Export　（Including API Key）": "All Import Export (Including API Key)",
     "Data includes all your settings, api key, chat histories, and local prompts. Do not share API Key with someone elses.": "Data includes all your settings, API key, chat histories, and local prompts. Do not share API Key with others.",
     "Template Import Export": "Template Import Export",
+    "Import ChatBot Settings": "Import ChatBot Settings",
+    "Override Chatbot": "Override Chatbot",
     "Import or export Custom API settings without affecting other data": "Import or export Custom API settings without affecting other data. API Key is not included.",
     "Import Template": "Import Template",
     "Export Template": "Export Template",

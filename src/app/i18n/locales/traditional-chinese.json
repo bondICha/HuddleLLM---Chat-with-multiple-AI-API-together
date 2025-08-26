@@ -86,6 +86,8 @@
   "All Import Export　（Including API Key）": "全數據導入導出（包含API密鑰）",
   "Data includes all your settings, api key, chat histories, and local prompts. Do not share API Key with someone elses.": "數據包括您的所有設置、API密鑰、聊天歷史和本地提示。請勿與他人分享API密鑰。",
   "Template Import Export": "模板導入導出",
+  "Import ChatBot Settings": "導入聊天機器人設置",
+  "Override Chatbot": "覆蓋聊天機器人",
   "Import or export Custom API settings without affecting other data": "導入或導出自定義API設置，不影響其他數據。不包含API密鑰。",
   "Import Template": "導入模板",
   "Export Template": "導出模板",

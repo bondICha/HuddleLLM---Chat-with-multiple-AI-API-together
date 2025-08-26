@@ -1,5 +1,7 @@
 {
   "com_ui_thoughts": "思考プロセス",
+  "Import ChatBot Settings": "ImportするChat Bot設定",
+  "Override Chatbot": "上書きするChat Bot設定",
   "Web Search Results": "Web検索結果",
   "releasenote-icon-fix-announcement": "## アイコン設定システム更新のお知らせ\n\nこれまでアイコンが正しく表示されないバグがあったため、バージョン2.5.0でカスタムボットアイコンの保存方法を変更しました。そのため、既存のアイコンを再設定する必要があります。お手数をおかけしますがよろしくお願いします。\n\n設定＞チャットボットセクションから各ボットのアイコンを設定できます。",
   "releasenote-thinkmode-fix": "## 思考モード（Thinking Mode）の改善\n\n思考モードシステムに重要な改善を行いました：\n\n- 思考モードのコンテンツ表示の問題を修正\n- 様々なAIモデルへのサポートを強化\n- すべてのボットにおける思考タグの処理パフォーマンスを改善",

@@ -138,7 +138,8 @@ Browser.action.onClicked.addListener(() => {
 
 Browser.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    Browser.tabs.create({ url: 'app.html#/setting' })
+    // Open welcome page for first-time users
+    Browser.tabs.create({ url: 'app.html#/welcome' })
   }
 })
 

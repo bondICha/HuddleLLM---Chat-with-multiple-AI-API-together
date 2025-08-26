@@ -1,5 +1,6 @@
 import { fileOpen, fileSave } from 'browser-fs-access'
 import Browser from 'webextension-polyfill'
+import { requestHostPermissions } from '~services/host-permissions'
 import { CustomApiConfig } from '~services/user-config'
 
 export async function exportData() {
@@ -90,6 +91,17 @@ export async function importData() {
     for (const [k, v] of Object.entries(json.localStorage as Record<string, string>)) {
       localStorage.setItem(k, v)
     }
+  }
+
+  // Request host permissions for imported API hosts
+  try {
+    const importedConfig = json.local
+    if (importedConfig?.customApiConfigs) {
+      await requestHostPermissions(importedConfig.customApiConfigs, importedConfig.customApiHost)
+    }
+  } catch (permissionError) {
+    console.error('Error requesting permissions after full import:', permissionError)
+    // Don't fail the import if permission request fails
   }
 
   alert('Imported data successfully. The page will now reload to apply changes.')

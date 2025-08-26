@@ -8,6 +8,7 @@ import Select from '../Select'
 import Checkbox from '../Checkbox'
 import { UserConfig, CustomApiConfig, updateUserConfig } from '~services/user-config'
 import { setCompanyProfileState, CompanyProfileStatus, findCompanyPresetByName } from '~services/company-profile'
+import { requestHostPermissions } from '~services/host-permissions'
 import toast from 'react-hot-toast'
 
 interface Props {
@@ -228,6 +229,9 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
         }
       }
 
+      // Request host permissions for imported API hosts
+      await requestHostPermissions(updatedConfigs, updatePayload.customApiHost || userConfig.customApiHost);
+
       toast.success(t('Custom API settings imported successfully'));
       setIsOpen(false);
       setLastOpenedFile(null); // 正常終了後リセット
@@ -289,6 +293,17 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
               </div>
             </div>
           )}
+
+          {/* Column headers */}
+          <div className="flex items-center gap-6 mb-4 py-2 border-b border-primary-border">
+            <div className="w-1/3">
+              <h4 className="text-sm font-medium text-primary-text">{t('Import ChatBot Settings')}</h4>
+            </div>
+            <div className="w-1/6"></div>
+            <div className="w-1/2">
+              <h4 className="text-sm font-medium text-primary-text">{t('Override Chatbot')}</h4>
+            </div>
+          </div>
 
           <div className="max-h-[50vh] overflow-y-auto -mx-6 px-6">
             {importedData.configs.map((importConfig, index) => (

@@ -43,7 +43,9 @@ export async function markOmniboxSearchAsUsed() {
 
 export async function shouldShowAddressBarModal() {
   const hasUsed = await hasUsedOmniboxSearch()
-  return !hasUsed // まだ使用していない場合に表示
+  const openTimes = await getAppOpenTimes()
+  // 20回目以降の起動で、まだ使用していない場合に表示
+  return !hasUsed && openTimes >= 20
 }
 
 export async function markAddressBarModalAsShown() {
