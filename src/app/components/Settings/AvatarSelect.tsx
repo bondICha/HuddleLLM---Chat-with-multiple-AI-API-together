@@ -136,7 +136,7 @@ const AvatarSelect: FC<AvatarSelectProps> = ({ value, onChange }) => {
                    onChange={(e) => setCustomUrl(e.currentTarget.value)}
                  />
                  <button
-                   className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" // Apply button dark mode styles
+                   className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-70 disabled:cursor-not-allowed" // Apply button dark mode styles
                    onClick={applyCustomUrl}
                    disabled={!customUrl}
                    type="button"

@@ -87,7 +87,7 @@ const NestedDropdown: FC<Props> = ({
                 <div
                   className={cx(
                     'px-4 py-2 text-sm text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer font-medium',
-                    option.disabled && 'opacity-50 cursor-not-allowed'
+                    option.disabled && 'opacity-70 cursor-not-allowed'
                   )}
                 >
                   {option.label}
@@ -107,7 +107,7 @@ const NestedDropdown: FC<Props> = ({
                           className={cx(
                             'px-4 py-2 text-sm text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer',
                             child.value === value && 'bg-blue-100 text-blue-900 dark:bg-blue-600 dark:text-white',
-                            child.disabled && 'opacity-50 cursor-not-allowed'
+                            child.disabled && 'opacity-70 cursor-not-allowed'
                           )}
                           onClick={() => {
                             if (!child.disabled && child.value) {

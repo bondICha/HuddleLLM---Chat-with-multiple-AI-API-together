@@ -61,7 +61,7 @@ function Select<T extends string>(props: Props<T>) {
               className={cx(
                 'relative w-full cursor-default rounded-md bg-white dark:bg-gray-700 pl-3 pr-10 text-left text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none leading-6', // Dark mode styles for button
                 size === 'normal' ? 'text-sm py-1.5' : 'text-xs py-1',
-                disabled && 'cursor-not-allowed opacity-50',
+                disabled && 'cursor-not-allowed opacity-70',
               )}
               onClick={calculatePosition}
             >

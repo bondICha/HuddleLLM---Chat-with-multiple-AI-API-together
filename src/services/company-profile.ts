@@ -42,7 +42,7 @@ async function loadCompanyProfiles(): Promise<CompanyProfilePreset[]> {
     const { COMPANY_PROFILE_CONFIGS } = await import('../../config/company-profiles')
     return COMPANY_PROFILE_CONFIGS
   } catch {
-    // Fallback to sample configuration if company-profiles.ts doesn't exist in config/
+    // Fallback to sample configuration if company-profiles.ts doesn't exist in src/config/
     return COMPANY_PROFILE_PRESETS
   }
 }

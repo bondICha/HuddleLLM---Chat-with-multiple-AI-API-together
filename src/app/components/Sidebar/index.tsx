@@ -487,7 +487,7 @@ useEffect(() => {
                   disabled={isSaving}
                   className={cx(
                     'p-1 rounded hover:bg-secondary hover:bg-opacity-20 transition-all',
-                    isSaving ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'
+                    isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:scale-110'
                   )}
                 >
                   {isSaving ? (

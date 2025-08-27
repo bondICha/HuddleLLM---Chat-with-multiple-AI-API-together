@@ -5,8 +5,6 @@ import toast from 'react-hot-toast'
 import {
     UserConfig,
     CustomApiProvider,
-    TemplateType,
-    presetApiConfigs,
     MODEL_LIST, // 新しいモデルリストをインポート
 } from '~services/user-config'
 import { Input, Textarea } from '../Input'
@@ -24,15 +22,7 @@ import BotIcon from '../BotIcon'
 import { BiPlus, BiTrash, BiHide, BiShow, BiInfoCircle } from 'react-icons/bi'
 import Button from '../Button'
 import { revalidateEnabledBots } from '~app/hooks/use-enabled-bots'
-// テンプレート選択オプション
-const TEMPLATE_OPTIONS = [
-    { name: '-- テンプレートを選択 --', value: TemplateType.None },
-    { name: 'OpenAI GPT-4.1', value: TemplateType.OpenAI },
-    { name: 'Anthropic Claude 4 Sonnet', value: TemplateType.Claude },
-    { name: 'Google Gemini 2.5 Pro', value: TemplateType.Gemini },
-    { name: 'Perplexity', value: TemplateType.Perplexity },
-    { name: 'Grok', value: TemplateType.Grok }
-]
+import { getTemplateOptions, getActivePresets, getPresetMapping } from '~services/preset-loader'
 
 
 interface Props {
@@ -53,6 +43,28 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     // 変数一覧の表示状態
     const [showVariables, setShowVariables] = useState(false);
 
+    // テンプレートオプションの状態
+    const [templateOptions, setTemplateOptions] = useState([
+        { name: t('Apply Template Settings'), value: 'none' }
+    ]);
+    const [nestedTemplateOptions, setNestedTemplateOptions] = useState<NestedDropdownOption[]>([]);
+    const [isHierarchical, setIsHierarchical] = useState(false);
+
+    // コンポーネント初期化時にテンプレートオプションを読み込み
+    useEffect(() => {
+        const loadTemplateOptions = async () => {
+            try {
+                const templateData = await getTemplateOptions();
+                setTemplateOptions(templateData.flatOptions);
+                setNestedTemplateOptions(templateData.nestedOptions || []);
+                setIsHierarchical(templateData.isHierarchical);
+            } catch (error) {
+                console.warn('Failed to load template options:', error);
+            }
+        };
+        loadTemplateOptions();
+    }, []);
+
     // 防御的チェック: customApiConfigsが未定義の場合は空配列として扱う
     const customApiConfigs = userConfig.customApiConfigs || [];
 
@@ -67,7 +79,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         toast.success(t('Common System Message has been reset to default'));
     }
 
-    const formRowClass = "grid grid-cols-[1fr_3fr] items-center gap-4"
+    const formRowClass = "grid grid-cols-[1fr_4fr] items-center gap-4"
     // const formRowClass = "grid grid-cols-[200px_1fr] items-center gap-4"
     const labelClass = "font-medium text-sm text-right self-start pt-2"
     const inputContainerClass = "flex-1"
@@ -110,24 +122,22 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         }));
     };
 
+
     // テンプレートを適用する関数
-    const applyTemplate = (templateType: TemplateType, index: number) => {
-        if (templateType === TemplateType.None) return;
+    const applyTemplate = async (templateType: string, index: number) => {
+        if (templateType === 'none') return;
 
         const updatedConfigs = [...userConfig.customApiConfigs];
-        const config = updatedConfigs[index];
+        
+        try {
+            // 動的にプリセットとマッピングを取得
+            const activePresets = await getActivePresets();
+            const presetMap = await getPresetMapping();
+            
+            const presetKey = presetMap[templateType];
+            if (presetKey && activePresets[presetKey]) {
+                const preset = activePresets[presetKey];
 
-        const presetMap = {
-            [TemplateType.OpenAI]: "OpenAI",
-            [TemplateType.Claude]: "Anthropic",
-            [TemplateType.Gemini]: "Gemini",
-            [TemplateType.Perplexity]: "Perplexity",
-            [TemplateType.Grok]: "Grok"
-        };
-
-        const presetKey = presetMap[templateType];
-        if (presetKey && presetApiConfigs[presetKey]) {
-            const preset = presetApiConfigs[presetKey];
 
             // オブジェクト全体を上書きするのではなく、各プロパティを個別に更新
             // モデル名と同じように個別のプロパティを更新することで、onChange と同じ動作にする
@@ -141,12 +151,14 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             updatedConfigs[index].avatar = preset.avatar;
             updatedConfigs[index].thinkingMode = preset.thinkingMode;
             updatedConfigs[index].thinkingBudget = preset.thinkingBudget;
-            updatedConfigs[index].provider = preset.provider;
+                updatedConfigs[index].provider = preset.provider;
 
-
+                updateConfigValue({ customApiConfigs: updatedConfigs });
+            }
+        } catch (error) {
+            console.error('Failed to apply template:', error);
+            toast.error('テンプレートの適用に失敗しました');
         }
-
-        updateCustomApiConfigs(updatedConfigs); // ヘルパー関数を使用
     };
 
     // 新しいカスタムモデルを追加
@@ -271,7 +283,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         <div className="w-full">
                             <button
                                 onClick={() => setShowVariables(!showVariables)}
-                                className="flex items-center gap-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-pointer transition-colors mb-2"
+                                className="flex items-center gap-1 opacity-70 hover:opacity-90 cursor-pointer transition-opacity mb-2"
                             >
                                 <BiInfoCircle className="w-4 h-4" />
                                 <span className="text-xs">{showVariables ? t('Hide') : t('Show available variables')}</span>
@@ -284,27 +296,27 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                         <div className="grid grid-cols-1 gap-1 text-xs">
                                             <div className="flex items-center gap-2">
                                                 <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{current_date}'}</code>
-                                                <span className="text-gray-600 dark:text-gray-400">- Current date (YYYY-MM-DD)</span>
+                                                <span className="opacity-70">- Current date (YYYY-MM-DD)</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{current_time}'}</code>
-                                                <span className="text-gray-600 dark:text-gray-400">- Current time (HH:MM:SS)</span>
+                                                <span className="opacity-70">- Current time (HH:MM:SS)</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{modelname}'}</code>
-                                                <span className="text-gray-600 dark:text-gray-400">- AI model name</span>
+                                                <span className="opacity-70">- AI model name</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{chatbotname}'}</code>
-                                                <span className="text-gray-600 dark:text-gray-400">- Chatbot display name</span>
+                                                <span className="opacity-70">- Chatbot display name</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{language}'}</code>
-                                                <span className="text-gray-600 dark:text-gray-400">- User language setting</span>
+                                                <span className="opacity-70">- User language setting</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{timezone}'}</code>
-                                                <span className="text-gray-600 dark:text-gray-400">- User timezone</span>
+                                                <span className="opacity-70">- User timezone</span>
                                             </div>
                                         </div>
                                     </div>
@@ -341,7 +353,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             />
                             <span className="text-sm">{t('Full Path')}</span>
                             <div className="relative group">
-                                <span className="cursor-help text-gray-400">ⓘ</span>
+                                <span className="cursor-help opacity-60">ⓘ</span>
                                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 hidden group-hover:block bg-gray-700 text-white text-xs p-2 rounded shadow-lg z-10">
                                     {t('If "Full Path" is ON, enter the complete API endpoint URL. Otherwise, enter only the base host (e.g., https://api.openai.com) and the standard path (e.g., /v1/chat/completions) will be appended automatically.')}
                                 </div>
@@ -369,17 +381,32 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                     <div className="flex gap-2">
                                         {/* テンプレート選択ドロップダウン */}
                                         <div className="mr-2">
-                                            <Select
-                                                options={TEMPLATE_OPTIONS}
-                                                value={TemplateType.None}
-                                                onChange={(v) => {
-                                                    if (v !== TemplateType.None) {
-                                                        applyTemplate(v as TemplateType, index);
-                                                    }
-                                                }}
-                                                position="top"
-                                            />
+                                            {isHierarchical && nestedTemplateOptions.length > 0 ? (
+                                                <NestedDropdown
+                                                    options={nestedTemplateOptions}
+                                                    value={'none'}
+                                                    onChange={(v) => {
+                                                        if (v !== 'none') {
+                                                            applyTemplate(v, index);
+                                                        }
+                                                    }}
+                                                    placeholder={t('Apply Template Settings')}
+                                                    showModelId={true}
+                                                />
+                                            ) : (
+                                                <Select
+                                                    options={templateOptions}
+                                                    value={'none'}
+                                                    onChange={(v) => {
+                                                        if (v !== 'none') {
+                                                            applyTemplate(v, index);
+                                                        }
+                                                    }}
+                                                    position="top"
+                                                />
+                                            )}
                                         </div>
+                                        
 
                                         {/* 表示/非表示ボタン */}
                                         <button
@@ -399,7 +426,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                             <BiTrash size={16} />
                                         </button>
                                         <button
-                                            className={`p-1 rounded ${index === 0 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-700'}`}
+                                            className={`p-1 rounded ${index === 0 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-700'}`}
                                             onClick={() => {
                                                 if (index > 0) {
                                                     const updatedConfigs = [...customApiConfigs];
@@ -418,7 +445,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                             </svg>
                                         </button>
                                         <button
-                                            className={`p-1 rounded ${index === customApiConfigs.length - 1 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-700'}`}
+                                            className={`p-1 rounded ${index === customApiConfigs.length - 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-700'}`}
                                             onClick={() => {
                                                 if (index < customApiConfigs.length - 1) {
                                                     const updatedConfigs = [...customApiConfigs];
@@ -494,7 +521,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                 {/* Dropdown Section - Wrapped in flex-1 div */}
                                                 <div className="flex-1">
                                                     <div>
-                                                        <p className="text-sm text-gray-300 mb-1">{t('Choose model')}</p>
+                                                        <p className="text-sm opacity-70 mb-1">{t('Choose model')}</p>
                                                         <div className="relative">
                                                             {/* NestedDropdown コンポーネントを使用 */}
                                                             <NestedDropdown
@@ -520,7 +547,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                 <div className="flex-1">
                                                     {/* Removed mt-2 */}
                                                     <div> {/* Wrap label and input */}
-                                                        <p className="text-sm text-gray-300 mb-1">{t('Or enter model name manually')}</p>
+                                                        <p className="text-sm opacity-70 mb-1">{t('Or enter model name manually')}</p>
                                                         <Input
                                                             className='w-full'
                                                             placeholder="Custom model name"
@@ -536,10 +563,25 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                             </div>
                                         </div>
 
+                                        {/* System Message Mode (moved from advanced settings) */}
+                                        <div className={formRowClass}>
+                                            <p className={labelClass}>{t('System Message Mode')}</p>
+                                            <div className={inputContainerClass}>
+                                                <TripleStateToggle
+                                                    value={config.systemPromptMode || SystemPromptMode.COMMON}
+                                                    onChange={(v: SystemPromptMode) => {
+                                                        const updatedConfigs = [...userConfig.customApiConfigs];
+                                                        updatedConfigs[index].systemPromptMode = v;
+                                                        updateCustomApiConfigs(updatedConfigs);
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+
                                         {/* 詳細設定セクション（展開可能） */}
                                         <div className="border-t pt-3">
                                             <button
-                                                className="flex items-center gap-2 w-full text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+                                                className="flex items-center gap-2 w-full text-left text-sm font-medium opacity-80 hover:opacity-100"
                                                 onClick={() => toggleSection(index)}
                                             >
                                                 <svg
@@ -638,7 +680,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                 </>
                                                             )}
                                                             <div className="relative group">
-                                                                <span className="cursor-help text-gray-400">ⓘ</span>
+                                                                <span className="cursor-help opacity-60">ⓘ</span>
                                                                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 hidden group-hover:block bg-gray-700 text-white text-xs p-2 rounded shadow-lg z-10">
                                                                     {t('If "Full Path" is ON, enter the complete API endpoint URL. Otherwise, enter only the base host. If host is blank, Common API Host settings will be used.')}
                                                                 </div>
@@ -688,7 +730,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                                 {config.thinkingMode ? t('Enabled') : t('hidden')}
                                                                             </span>
                                                                             <div className="relative group">
-                                                                                <span className="cursor-help text-gray-400">ⓘ</span>
+                                                                                <span className="cursor-help opacity-60">ⓘ</span>
                                                                                 <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
                                                                                     {t('Currently only supported by Claude(Bedrock)')}
                                                                                 </div>
@@ -738,30 +780,30 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                         );
                                                     })()}
 
-                                                    {/* System Message */}
+                                                    {/* System Message Text Field */}
                                                     <div className={formRowClass}>
-                                                        <p className={labelClass}>{t('System Message')}</p>
+                                                        <p className={labelClass}>{t('System Message Text')}</p>
                                                         <div className={inputContainerClass}>
-                                                            <TripleStateToggle
-                                                                value={config.systemPromptMode || SystemPromptMode.COMMON}
-                                                                onChange={(v: SystemPromptMode) => {
-                                                                    const updatedConfigs = [...userConfig.customApiConfigs];
-                                                                    updatedConfigs[index].systemPromptMode = v;
-                                                                    updateCustomApiConfigs(updatedConfigs);
-                                                                }}
-                                                            />
-                                                            {(config.systemPromptMode === SystemPromptMode.APPEND || config.systemPromptMode === SystemPromptMode.OVERRIDE) && (
-                                                                <Textarea
-                                                                    className='w-full mt-2'
-                                                                    maxRows={5}
-                                                                    value={config.systemMessage}
-                                                                    onChange={(e) => {
+                                                            <Textarea
+                                                                className={`w-full ${config.systemPromptMode === SystemPromptMode.COMMON ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                                maxRows={5}
+                                                                value={config.systemMessage}
+                                                                onChange={(e) => {
+                                                                    if (config.systemPromptMode !== SystemPromptMode.COMMON) {
                                                                         const updatedConfigs = [...userConfig.customApiConfigs]
                                                                         updatedConfigs[index].systemMessage = e.currentTarget.value;
                                                                         updateCustomApiConfigs(updatedConfigs);
-                                                                    }}
-                                                                />
-                                                            )}
+                                                                    }
+                                                                }}
+                                                                disabled={config.systemPromptMode === SystemPromptMode.COMMON}
+                                                                placeholder={
+                                                                    config.systemPromptMode === SystemPromptMode.COMMON 
+                                                                        ? t('Disabled when using Common system message') 
+                                                                        : config.systemPromptMode === SystemPromptMode.APPEND 
+                                                                            ? t('This text will be appended to the common system message')
+                                                                            : t('This text will override the common system message')
+                                                                }
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>

@@ -16,7 +16,7 @@ const Toggle: FC<Props> = (props) => {
       disabled={props.disabled}
       className={cx(
         props.enabled ? 'bg-primary-blue' : 'bg-secondary',
-        props.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+        props.disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
         'relative inline-flex h-4 w-7 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out',
       )}
     >
