@@ -46,6 +46,7 @@ import claude4Logo from '~/assets/logos/Claude4.webp';
 import deepinfraLogo from '~/assets/logos/deepinfra.svg';
 import sbIntuitionsLogo from '~/assets/logos/sb-intuitions.png';
 import tsuzumiLogo from '~/assets/logos/tsuzumi.png';
+import kimiLogo from '~/assets/logos/kimi.webp';
 
 // 特殊フォーマットのアイコンID用マッピング
 const specialFormatMap: Record<string, string> = {
@@ -98,6 +99,7 @@ const iconMap: Record<string, string> = {
   'huddlellm': huddleLLMLogo,
   'sb-intuitions': sbIntuitionsLogo,
   'tsuzumi': tsuzumiLogo,
+  'kimi': kimiLogo,
 };
 
 // 安全なアイコン表示のための検証関数

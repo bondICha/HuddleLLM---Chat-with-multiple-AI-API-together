@@ -45,6 +45,7 @@ import huddleLLMLogo from '~/assets/logos/HuddleLLM.png';
 import deepinfraLogo from '~/assets/logos/deepinfra.svg';
 import sbIntuitionsLogo from '~/assets/logos/sb-intuitions.png';
 import tsuzumiLogo from '~/assets/logos/tsuzumi.png';
+import kimiLogo from '~/assets/logos/kimi.webp';
 
 // アイコンオプションの定義
 interface IconOption {
@@ -115,6 +116,7 @@ const otherIcons: IconOption[] = [
   { id: 'guanaco', name: 'Guanaco', src: guanacoLogo },
   { id: 'huddlellm', name: 'HuddleLLM', src: huddleLLMLogo },
   { id: 'hyperbolic', name: 'Hyperbolic', src: hyperbolicLogo },
+  { id: 'kimi', name: 'Kimi', src: kimiLogo },
   { id: 'koala', name: 'Koala', src: koalaLogo },
   { id: 'oasst', name: 'OASST', src: oasstLogo },
   { id: 'pi', name: 'Pi', src: piLogo },
