@@ -279,24 +279,11 @@ const IconSelect: FC<IconSelectProps> = ({ value, onChange }) => {
       <section>
         <h3 className="font-medium mb-2 text-sm text-gray-700 dark:text-gray-300">{t('Other icons')}</h3>
         
-        {/* スクロール可能なコンテナ */}
-        <div className="max-h-72 overflow-y-auto pr-2 pb-2 custom-scrollbar">
-          <div className="grid grid-cols-4 gap-3">
-            {otherIcons.map(icon => renderIconItem(icon, 32))}
-          </div>
+        {/* その他のアイコングリッド */}
+        <div className="grid grid-cols-4 gap-3">
+          {otherIcons.map(icon => renderIconItem(icon, 32))}
         </div>
       </section>
-      
-      {/* 選択したアイコンの表示 */}
-      <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-        <div className="text-sm font-medium mb-2 dark:text-gray-200">{t('Selected icon')}:</div>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-700 rounded-md">
-            <BotIcon iconName={value} size={32} />
-          </div>
-          <div className="text-sm truncate dark:text-gray-300">{value || 'ChatGPT'}</div>
-        </div>
-      </div>
     </div>
   );
 };

@@ -29,10 +29,10 @@ function NavLink(props: LinkOptions & { text: string; icon: string; iconOnly?: b
       <span
         className={cx(
           'font-medium text-sm',
-          iconOnly && 'overflow-hidden text-ellipsis leading-tight text-center break-words w-full'
+          iconOnly && 'leading-tight text-center break-words w-full'
         )}
       >
-        {iconOnly ? shortText || text.slice(0, 4) : text}
+{iconOnly ? (shortText && shortText.length > 9 ? shortText.slice(0, 9) + '...' : shortText) || text.slice(0, 9) + (text.length > 9 ? '...' : '') : text}
       </span>
     </Link>
   )

@@ -146,21 +146,44 @@ const SubMenu: FC<{
 }> = ({ option, value, onChange, setIsOpen, showModelId }) => {
   const subMenuRef = useRef<HTMLDivElement>(null);
   const [showOnLeft, setShowOnLeft] = useState(false);
+  const [showOnTop, setShowOnTop] = useState(false);
+  const [maxHeight, setMaxHeight] = useState('37.5rem');
 
-  // 位置を計算する関数
+  // 位置と高さを計算する関数
   const calculatePosition = () => {
     if (subMenuRef.current) {
       const parentElement = subMenuRef.current.parentElement;
       if (parentElement) {
         const parentRect = parentElement.getBoundingClientRect();
         const subMenuWidth = 256; // 予想されるサブメニュー幅 (w-64 = 16rem = 256px)
-        const rightMargin = 20;
+        const estimatedSubMenuHeight = Math.min(600, (option.children?.length || 0) * 40); // 各項目約40px
+        const margin = 20;
         
-        // 右側に表示した場合の右端位置を計算
+        // 左右の位置計算
         const wouldBeRightEdge = parentRect.right + subMenuWidth;
+        setShowOnLeft(wouldBeRightEdge + margin > window.innerWidth);
         
-        // 画面右端を超える場合は左側に表示
-        setShowOnLeft(wouldBeRightEdge + rightMargin > window.innerWidth);
+        // 上下の位置計算
+        const wouldBeBottomEdge = parentRect.top + estimatedSubMenuHeight;
+        const availableSpaceBelow = window.innerHeight - parentRect.top - margin;
+        const availableSpaceAbove = parentRect.bottom - margin;
+        
+        if (wouldBeBottomEdge + margin > window.innerHeight) {
+          // 下にはみ出る場合
+          if (availableSpaceAbove > availableSpaceBelow && availableSpaceAbove > 150) {
+            // 上に十分なスペースがある場合は上に表示
+            setShowOnTop(true);
+            setMaxHeight(`${Math.min(600, availableSpaceAbove)}px`);
+          } else {
+            // 上にも十分なスペースがない場合は下のまま、高さ制限
+            setShowOnTop(false);
+            setMaxHeight(`${Math.max(200, availableSpaceBelow)}px`);
+          }
+        } else {
+          // はみ出ない場合は通常通り下に表示
+          setShowOnTop(false);
+          setMaxHeight('37.5rem');
+        }
       }
     }
   };
@@ -186,11 +209,12 @@ const SubMenu: FC<{
     <div
       ref={subMenuRef}
       className={cx(
-        'absolute top-0 w-64 max-w-sm rounded-md bg-white dark:bg-gray-700 shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none hidden group-hover:block z-[10000] overflow-hidden',
-        showOnLeft ? 'right-full' : 'left-full'
+        'absolute w-64 max-w-sm rounded-md bg-white dark:bg-gray-700 shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none hidden group-hover:block z-[10000] overflow-hidden',
+        showOnLeft ? 'right-full' : 'left-full',
+        showOnTop ? 'bottom-0' : 'top-0'
       )}
       style={{
-        maxHeight: '300px',
+        maxHeight: maxHeight,
         overflowY: 'auto'
       }}
       onMouseEnter={handleMouseEnter}
