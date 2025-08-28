@@ -297,13 +297,6 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         <div className="flex flex-col gap-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--theme-color-muted)' }}>
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-bold">{t('Custom API Models')}</h2>
-                <Button
-                    size="small"
-                    text={t('Add New Model')}
-                    icon={<BiPlus />}
-                    onClick={addNewCustomModel}
-                    color="primary"
-                />
             </div>
             <div className="flex flex-col gap-3">
                 {/* Common API Settings */}
@@ -413,7 +406,16 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 {/* Custom Chatbots */}
                 <hr className="border-gray-300 dark:border-gray-700" />
                 <div className="w-full">
-                    <h3 className="text-md font-semibold mb-4">{t('Individual Chatbot Settings')}</h3>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-md font-semibold">{t('Individual Chatbot Settings')}</h3>
+                        <Button
+                            size="small"
+                            text={t('Add New Model')}
+                            icon={<BiPlus />}
+                            onClick={addNewCustomModel}
+                            color="primary"
+                        />
+                    </div>
                     <div
                         className="grid gap-4"
                         style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))' }}
@@ -516,7 +518,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                     </div>
                                     <div className="flex items-start justify-between gap-3">
                                         {/* Left side: Preset button */}
-                                        <div className="relative" data-preset-dropdown>
+                                        <div className="relative" data-preset-dropdown data-preset-dropdown-index={index}>
                                             <button
                                                 className="p-2 rounded-lg hover:bg-white/20 flex flex-col items-center justify-center min-w-[60px]"
                                                 title={t('Apply Preset')}

@@ -155,7 +155,7 @@ const SubMenu: FC<{
       const parentElement = subMenuRef.current.parentElement;
       if (parentElement) {
         const parentRect = parentElement.getBoundingClientRect();
-        const subMenuWidth = 256; // 予想されるサブメニュー幅 (w-64 = 16rem = 256px)
+        const subMenuWidth = 320; // 予想されるサブメニュー幅 (w-80 = 20rem = 320px)
         const estimatedSubMenuHeight = Math.min(600, (option.children?.length || 0) * 40); // 各項目約40px
         const margin = 20;
         
@@ -209,7 +209,7 @@ const SubMenu: FC<{
     <div
       ref={subMenuRef}
       className={cx(
-        'absolute w-64 max-w-sm rounded-md bg-white dark:bg-gray-700 shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none hidden group-hover:block z-[10000] overflow-hidden',
+        'absolute w-80 max-w-md rounded-md bg-white dark:bg-gray-700 shadow-lg ring-1 ring-black dark:ring-gray-600 ring-opacity-5 focus:outline-none hidden group-hover:block z-[10000] overflow-hidden',
         showOnLeft ? 'right-full' : 'left-full',
         showOnTop ? 'bottom-0' : 'top-0'
       )}

@@ -263,8 +263,10 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
         open={isOpen}
         onClose={() => setIsOpen(false)}
         title={t('Import Custom API Template')}
+        className="w-full max-w-4xl h-full max-h-[95vh]"
       >
-        <div className="px-6 py-4 space-y-4">
+        <div className="flex flex-col h-full">
+          <div className="px-6 py-4 space-y-4 flex-shrink-0">
           <div>
             <p className="text-sm text-secondary-text">
               {t('Select which models to import and where to place them. Individual API keys will be overwritten, but common API key will be preserved.')}
@@ -305,7 +307,9 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
             </div>
           </div>
 
-          <div className="max-h-[50vh] overflow-y-auto -mx-6 px-6">
+          </div>
+          
+          <div className="flex-1 overflow-y-auto px-6">
             {importedData.configs.map((importConfig, index) => (
               <div key={index} className="flex items-center gap-6 mb-2 py-2">
                 <div className="w-1/3">
@@ -344,10 +348,12 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
               </div>
             ))}
           </div>
-
-          <div className="flex justify-end gap-4 pt-4">
-            <Button text={t('Cancel')} onClick={() => setIsOpen(false)} color="flat" />
-            <Button text={t('Import')} onClick={handleImport} color="primary" />
+          
+          <div className="px-6 py-4 flex-shrink-0 border-t border-primary-border">
+            <div className="flex justify-end gap-4">
+              <Button text={t('Cancel')} onClick={() => setIsOpen(false)} color="flat" />
+              <Button text={t('Import')} onClick={handleImport} color="primary" />
+            </div>
           </div>
         </div>
       </Dialog>

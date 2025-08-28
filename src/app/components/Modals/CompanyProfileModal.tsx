@@ -1,15 +1,28 @@
-import { FC } from 'react'
+import { FC, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAtom, useAtomValue } from 'jotai'
 import Button from '../Button'
 import Dialog from '../Dialog'
 import { companyProfileModalAtom, detectedCompanyAtom } from '~app/state'
-import { setCompanyProfileState, CompanyProfileStatus } from '~services/company-profile'
+import { setCompanyProfileState, CompanyProfileStatus, getCompanyProfileState, compareVersions } from '~services/company-profile'
 
 const CompanyProfileModal: FC = () => {
   const { t } = useTranslation()
   const [open, setOpen] = useAtom(companyProfileModalAtom)
   const detectedCompany = useAtomValue(detectedCompanyAtom)
+  const [currentVersion, setCurrentVersion] = useState<string | null>(null)
+  const [isVersionUpdate, setIsVersionUpdate] = useState(false)
+
+  useEffect(() => {
+    if (detectedCompany) {
+      getCompanyProfileState(detectedCompany.companyName).then(state => {
+        if (state) {
+          setCurrentVersion(state.version)
+          setIsVersionUpdate(compareVersions(detectedCompany.version, state.version) > 0)
+        }
+      })
+    }
+  }, [detectedCompany])
 
   if (!detectedCompany) return null
 
@@ -60,9 +73,23 @@ const CompanyProfileModal: FC = () => {
             <img src={detectedCompany.logoUrl} alt={`${detectedCompany.companyName} logo`} className="h-12" />
           </div>
         )}
-        <p className="text-base text-primary-text mb-3">{`${detectedCompany.companyName} ${t('apply_company_profile')}`}</p>
-        <p className="text-sm text-primary-text mb-4">{t('apply_company_profile_description')}</p>
-        <p className="text-xs text-secondary-text">バージョン: {detectedCompany.version}</p>
+        {isVersionUpdate && currentVersion ? (
+          <>
+            <p className="text-base text-primary-text mb-3">
+              {t('company_profile_version_update', { companyName: detectedCompany.companyName })}
+            </p>
+            <p className="text-sm text-primary-text mb-4">
+              {t('company_profile_version_info', { currentVersion, newVersion: detectedCompany.version })}
+            </p>
+            <p className="text-sm text-primary-text mb-4">{t('apply_company_profile_description')}</p>
+          </>
+        ) : (
+          <>
+            <p className="text-base text-primary-text mb-3">{`${detectedCompany.companyName} ${t('apply_company_profile')}`}</p>
+            <p className="text-sm text-primary-text mb-4">{t('apply_company_profile_description')}</p>
+            <p className="text-xs text-secondary-text">バージョン: {detectedCompany.version}</p>
+          </>
+        )}
       </div>
       <div className="flex justify-between items-center gap-4 mt-4 px-6 pb-4">
         <button

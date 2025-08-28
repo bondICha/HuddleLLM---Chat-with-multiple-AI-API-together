@@ -41,7 +41,7 @@ import {
   AllInOnePairConfig
 } from '~app/atoms/all-in-one'
 import { getUserConfig, saveChatPair, getSavedChatPairs, deleteChatPair, updateChatPair, ChatPair } from '~services/user-config'
-import { getCompanyProfileConfigs, checkCompanyProfile, shouldShowProfilePrompt, shouldCheckCompanyProfile } from '~services/company-profile'
+import { getCompanyProfileConfigs, checkCompanyProfile, shouldShowProfilePrompt, shouldCheckCompanyProfile, getCompanyProfileState, setCompanyProfileState, CompanyProfileStatus } from '~services/company-profile'
 
 
 function IconButton(props: { icon: string; onClick?: () => void }) {
@@ -375,6 +375,18 @@ useEffect(() => {
           }
           
           const isCompanyEnvironment = await checkCompanyProfile(preset.checkUrl);
+          
+          // Update check count regardless of result
+          const currentState = await getCompanyProfileState(preset.companyName);
+          const newState = {
+            companyName: preset.companyName,
+            version: preset.version,
+            status: currentState?.status || CompanyProfileStatus.UNCONFIRMED,
+            lastChecked: Date.now(),
+            checkCount: (currentState?.checkCount || 0) + 1
+          };
+          await setCompanyProfileState(newState);
+          
           if (isCompanyEnvironment) {
             const shouldShow = await shouldShowProfilePrompt(preset);
             if (shouldShow) {

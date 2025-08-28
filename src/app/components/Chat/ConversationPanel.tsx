@@ -104,10 +104,10 @@ const ConversationPanel: FC<Props> = (props) => {
 
   return (
     <ConversationContext.Provider value={context}>
-      <div className={cx('flex flex-col overflow-hidden bg-primary-background h-full rounded-2xl')}>
+      <div className={cx('relative flex flex-col overflow-hidden bg-primary-background h-full rounded-2xl')}>
         <div
           className={cx(
-            'border-b border-solid border-primary-border flex flex-row items-center justify-between gap-2 py-[10px]',
+            'absolute top-0 left-0 right-0 z-10 border-b border-solid border-primary-border flex flex-row items-center justify-between gap-2 py-[10px] bg-white/75 dark:bg-black/70',
             marginClass,
           )}
         >
@@ -161,25 +161,27 @@ const ConversationPanel: FC<Props> = (props) => {
         <ChatMessageList
           index={props.index}
           messages={props.messages}
-          className={marginClass}
+          className={cx(marginClass, 'pt-10 pb-16')}
           onPropaganda={props.onPropaganda}
         />
-        <div className={cx('mt-3 flex flex-col ', marginClass, mode === 'full' ? 'mb-3' : 'mb-[5px]')}>
+        <div className={cx('absolute bottom-0 left-0 right-0 z-10 flex flex-col', marginClass, 'pb-0', 'pt-3')}>
           <div className={cx('flex flex-row items-center gap-[5px]', mode === 'full' ? 'mb-3' : 'mb-0')}>
             {mode === 'compact' && (
               <span className="font-medium text-xs text-light-text cursor-default">Send to {botName}</span>
             )}
             <hr className="grow border-primary-border" />
           </div>
-          <ChatMessageInput
-            mode={mode}
-            disabled={props.generating}
-            placeholder={mode === 'compact' ? '' : undefined}
-            onSubmit={onSubmit}
-            autoFocus={mode === 'full'}
-            supportImageInput={mode === 'full' && props.bot.supportsImageInput}
-            actionButton={inputActionButton}
-          />
+          <div className="bg-white/85 dark:bg-black/75 rounded-b-2xl -mx-3 px-3 pb-3">
+            <ChatMessageInput
+              mode={mode}
+              disabled={props.generating}
+              placeholder={mode === 'compact' ? '' : undefined}
+              onSubmit={onSubmit}
+              autoFocus={mode === 'full'}
+              supportImageInput={mode === 'full' && props.bot.supportsImageInput}
+              actionButton={inputActionButton}
+            />
+          </div>
         </div>
       </div>
       {showShareDialog && (

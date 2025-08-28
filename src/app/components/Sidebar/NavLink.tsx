@@ -29,7 +29,7 @@ function NavLink(props: LinkOptions & { text: string; icon: string; iconOnly?: b
       <span
         className={cx(
           'font-medium text-sm',
-          iconOnly && 'leading-tight text-center break-words w-full'
+          iconOnly && 'leading-tight text-center break-words w-full max-w-[52px]'
         )}
       >
 {iconOnly ? (shortText && shortText.length > 9 ? shortText.slice(0, 9) + '...' : shortText) || text.slice(0, 9) + (text.length > 9 ? '...' : '') : text}
