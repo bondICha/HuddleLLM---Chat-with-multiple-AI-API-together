@@ -36,7 +36,7 @@ interface Props {
 const ConversationPanel: FC<Props> = (props) => {
   const { t } = useTranslation()
   const mode = props.mode || 'full'
-  const marginClass = 'mx-3'
+  const marginClass = 'ml-3 mr-1'
   const [showHistory, setShowHistory] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
   // ボット名とアバターを保持するための状態を追加
@@ -109,6 +109,7 @@ const ConversationPanel: FC<Props> = (props) => {
           className={cx(
             'absolute top-0 left-0 right-0 z-10 border-b border-solid border-primary-border flex flex-row items-center justify-between gap-2 py-[10px] bg-white/75 dark:bg-black/70',
             marginClass,
+            'mr-3',
           )}
         >
           <div className="flex flex-row items-center">
@@ -161,7 +162,7 @@ const ConversationPanel: FC<Props> = (props) => {
         <ChatMessageList
           index={props.index}
           messages={props.messages}
-          className={cx(marginClass, 'pt-10 pb-16')}
+          className={cx(marginClass)}
           onPropaganda={props.onPropaganda}
         />
         <div className={cx('absolute bottom-0 left-0 right-0 z-10 flex flex-col', marginClass, 'pb-0', 'pt-3')}>

@@ -196,7 +196,12 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
             </Tooltip>
           )
         },
-        code
+        code,
+        table: ({ node, ...props }) => (
+          <div className="table-wrapper">
+            <table {...props} />
+          </div>
+        ),
       }}
     >
       {children}
