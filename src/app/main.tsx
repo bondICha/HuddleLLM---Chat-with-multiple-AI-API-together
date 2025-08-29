@@ -9,7 +9,7 @@ import './i18n'
 import { router } from './router'
 import { pendingSearchQueryAtom, sessionRestoreModalAtom } from './state'
 import { markOmniboxSearchAsUsed } from '../services/storage/open-times'
-import { loadHistoryMessages, loadAllInOneSessions } from '../services/chat-history'
+import { quickCheckAnySession } from '../services/chat-history'
 import CompanyProfileModal from './components/Modals/CompanyProfileModal'
 
 function App() {
@@ -45,25 +45,9 @@ function App() {
           return
         }
         
-        // 過去のセッションがあるかチェック
-        let hasAnySessions = false
-        
-        // All-in-oneセッションのチェック
-        const allInOneSessions = await loadAllInOneSessions()
-        if (allInOneSessions.length > 0) {
-          hasAnySessions = true
-        }
-        
-        // 個別ボットセッションをチェック
-        if (!hasAnySessions) {
-          for (let botIndex = 0; botIndex < 10; botIndex++) {
-            const conversations = await loadHistoryMessages(botIndex)
-            if (conversations.length > 0) {
-              hasAnySessions = true
-              break
-            }
-          }
-        }
+        // 軽量なセッション存在チェック
+        const quickCheckStart = performance.now()
+        const hasAnySessions = await quickCheckAnySession()
         
         // 過去のセッションがある場合のみモーダルを表示
         if (hasAnySessions) {

@@ -261,3 +261,108 @@ export async function clearAllCustomBotHistory() {
     await clearHistoryMessages(botIndex)
   }
 }
+
+// 軽量なセッション存在チェック関数群
+export async function quickCheckSessionSnapshots(): Promise<boolean> {
+  const { sessionSnapshots } = await Browser.storage.local.get('sessionSnapshots')
+  return Array.isArray(sessionSnapshots) && sessionSnapshots.length > 0
+}
+
+export async function quickCheckIndividualSessions(): Promise<boolean> {
+  // 個別ボットセッション用のキーをチェック
+  const keys = []
+  for (let i = 0; i < 10; i++) {
+    keys.push(`conversations:${i}`)
+  }
+  
+  const results = await Browser.storage.local.get(keys)
+  
+  for (const key of keys) {
+    const conversations = results[key]
+    if (Array.isArray(conversations) && conversations.length > 0) {
+      return true
+    }
+  }
+  
+  return false
+}
+
+export async function quickCheckAnySession(): Promise<boolean> {
+  // セッションスナップショットをチェック
+  const hasSnapshots = await quickCheckSessionSnapshots()
+  if (hasSnapshots) return true
+  
+  // 個別ボットセッションをチェック
+  return await quickCheckIndividualSessions()
+}
+
+// 最新のセッション1つのみを読み込み
+export async function loadLatestSession(): Promise<SessionSnapshot | ConversationWithMessages | null> {
+  // まずセッションスナップショットから最新を取得
+  const { sessionSnapshots = [] } = await Browser.storage.local.get('sessionSnapshots')
+  
+  if (sessionSnapshots.length > 0) {
+    // 最新のセッションスナップショットを返す
+    const sorted = sessionSnapshots.sort((a: SessionSnapshot, b: SessionSnapshot) => b.lastUpdated - a.lastUpdated)
+    return sorted[0]
+  }
+  
+  // セッションスナップショットがない場合、個別ボットセッションから最新を取得
+  let latestConversation: ConversationWithMessages | null = null
+  let latestTime = 0
+  
+  for (let botIndex = 0; botIndex < 10; botIndex++) {
+    const conversations = await loadHistoryConversations(botIndex)
+    if (conversations.length > 0) {
+      const latest = conversations[0] // 最新の会話
+      if (latest.createdAt > latestTime) {
+        const messages = await loadConversationMessages(botIndex, latest.id)
+        latestConversation = {
+          ...latest,
+          messages
+        }
+        latestTime = latest.createdAt
+      }
+    }
+  }
+  
+  return latestConversation
+}
+
+// 最新3つのセッションを読み込み
+export async function loadLatest3Sessions(): Promise<(SessionSnapshot | ConversationWithMessages)[]> {
+  const allSessions: (SessionSnapshot | ConversationWithMessages & { lastUpdated: number })[] = []
+  
+  // セッションスナップショットを取得
+  const { sessionSnapshots = [] } = await Browser.storage.local.get('sessionSnapshots')
+  for (const snapshot of sessionSnapshots) {
+    allSessions.push(snapshot)
+  }
+  
+  // 個別ボットセッションを取得
+  for (let botIndex = 0; botIndex < 10; botIndex++) {
+    const conversations = await loadHistoryConversations(botIndex)
+    for (const conversation of conversations) {
+      const messages = await loadConversationMessages(botIndex, conversation.id)
+      allSessions.push({
+        ...conversation,
+        messages,
+        lastUpdated: conversation.createdAt // 個別セッションの場合はcreatedAtをlastUpdatedとして使用
+      })
+    }
+  }
+  
+  // lastUpdatedで降順ソートして最新3つを返す
+  allSessions.sort((a, b) => b.lastUpdated - a.lastUpdated)
+  return allSessions.slice(0, 3)
+}
+
+// All-in-Oneセッションの2-4件目を読み込み（1件目をスキップ）
+export async function loadNext3Sessions(): Promise<SessionSnapshot[]> {
+  // セッションスナップショット（All-in-One）のみ取得
+  const { sessionSnapshots = [] } = await Browser.storage.local.get('sessionSnapshots')
+  
+  // lastUpdatedで降順ソートして2-4件目を返す（1件目をスキップ）
+  const sortedSnapshots = sessionSnapshots.sort((a: SessionSnapshot, b: SessionSnapshot) => b.lastUpdated - a.lastUpdated)
+  return sortedSnapshots.slice(1, 4) // インデックス1-3 = 2-4件目
+}

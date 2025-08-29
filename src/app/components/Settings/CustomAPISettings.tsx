@@ -1,12 +1,14 @@
 // Removed duplicate import
 import { useTranslation } from 'react-i18next'
 import { FC, useState, useEffect } from 'react' // useEffect をインポート
+import { useAtomValue } from 'jotai'
 import toast from 'react-hot-toast'
 import {
     UserConfig,
     CustomApiProvider,
     MODEL_LIST, // 新しいモデルリストをインポート
 } from '~services/user-config'
+import { themeColorAtom } from '~app/state'
 import { Input, Textarea } from '../Input'
 import Dialog from '../Dialog'
 import { SystemPromptMode } from '~services/user-config'
@@ -35,6 +37,7 @@ const MAX_CUSTOM_MODELS = 50;
 
 const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     const { t } = useTranslation()
+    const themeColor = useAtomValue(themeColorAtom)
     const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
     // 選択されたモデルのプロバイダーを保持するステートを追加
     const [selectedProviderForModel, setSelectedProviderForModel] = useState<Record<number, string | null>>({});
@@ -294,7 +297,9 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
     return (
         <>
-        <div className="flex flex-col gap-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--theme-color-muted)' }}>
+        <div className="flex flex-col gap-4 p-4 rounded-lg relative" style={{ backgroundColor: themeColor ? `${themeColor}15` : 'rgba(17, 24, 39, 0.15)' }}>
+            <div className="absolute inset-0 bg-white/10 dark:bg-black/20 rounded-lg pointer-events-none"></div>
+            <div className="relative z-10">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-bold">{t('Custom API Models')}</h2>
             </div>
@@ -938,6 +943,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     </div>
                 </div>
             </div>
+        </div>
         </div>
 
         {/* Reset to Default Confirmation Dialog */}
