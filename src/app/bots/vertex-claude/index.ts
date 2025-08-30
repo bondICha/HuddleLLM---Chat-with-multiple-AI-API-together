@@ -202,6 +202,7 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
         role: 'assistant', 
         content: [{ type: 'text', text: '' }] 
       }
+      let thinkingContent = '';
       
       const finish = () => {
         done = true
@@ -241,7 +242,22 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
             if (dataLine) {
               const data = JSON.parse(dataLine);
               
-              if (eventType === 'content_block_delta' && data.delta?.text) {
+              // Handle thinking content block start
+              if (eventType === 'content_block_start' && data.content_block?.type === 'thinking') {
+                thinkingContent = ''; // Reset thinking content at the start of a new block
+              } else if (eventType === 'content_block_delta' && data.delta?.type === 'thinking_delta') {
+                // Extended Thinking content processing
+                thinkingContent += data.delta.thinking || '';
+                params.onEvent({
+                  type: 'UPDATE_ANSWER',
+                  data: {
+                    text: result.content && result.content.length > 0 && result.content[0].type === 'text'
+                          ? result.content[0].text || ''
+                          : "Empty Response",
+                    thinking: thinkingContent,
+                  },
+                });
+              } else if (eventType === 'content_block_delta' && data.delta?.text) {
                 // テキスト出力の処理
                 if (result.content && result.content.length > 0 && result.content[0].type === 'text') {
                   result.content[0].text += data.delta.text;
@@ -251,7 +267,8 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
                   data: {
                     text: result.content && result.content.length > 0 && result.content[0].type === 'text'
                           ? result.content[0].text || ''
-                          : "Empty Response"
+                          : "Empty Response",
+                    thinking: thinkingContent || undefined,
                   },
                 });
               } else if (eventType === 'message_stop') {
@@ -306,6 +323,7 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
 
 export class VertexClaudeBot extends AbstractVertexClaudeBot {
   private userConfig?: UserConfig;
+  private thinkingMode: boolean;
 
   constructor(
     private config: {
@@ -314,11 +332,14 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
       model: string;
       systemMessage: string;
       temperature: number;
+      thinkingMode?: boolean;
+      thinkingBudget?: number;
       isHostFullPath?: boolean;
       webAccess?: boolean;
     },
   ) {
     super()
+    this.thinkingMode = config.thinkingMode ?? false;
   }
 
   async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal): Promise<Response> {
@@ -327,8 +348,9 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
       const url = this.config.host;
       
       // リクエストボディを楽天のVertexAI API仕様に合わせて構築
-      const requestBody = {
-        anthropic_version: "vertex-2023-10-16",
+      // Extended Thinking requires a newer anthropic version
+      const requestBody: any = {
+        anthropic_version: "vertex-2023-10-16", // Keep stable version for now
         messages: messages.map(msg => ({
           role: msg.role,
           content: msg.content.map(part => {
@@ -347,11 +369,22 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
             return { type: 'text', text: '' };
           })
         })),
-        max_tokens: 8192,
-        temperature: this.config.temperature,
         system: this.getSystemMessage(),
         stream: true
       };
+
+      // Add Extended Thinking configuration or temperature based on thinkingMode flag
+      if (this.thinkingMode) {
+        requestBody.thinking = {
+          type: "enabled",
+          budget_tokens: Math.max(this.config.thinkingBudget || 2000, 1024) // Minimum 1024 tokens as per Extended Thinking spec
+        };
+        requestBody.max_tokens = 64000; // Larger token limit for Extended Thinking like Bedrock
+        // Temperature is not compatible with Extended Thinking mode
+      } else {
+        requestBody.max_tokens = 16384; // Increased from 8192 for better output capacity
+        requestBody.temperature = this.config.temperature;
+      }
 
       const response = await fetch(url, {
         method: 'POST',
@@ -394,7 +427,7 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
   }
 
   get name() {
-    return `VertexAI Claude (${this.config.model})`
+    return this.thinkingMode ? `VertexAI Claude (Thinking)` : `VertexAI Claude (${this.config.model})`
   }
 
   get supportsImageInput() {

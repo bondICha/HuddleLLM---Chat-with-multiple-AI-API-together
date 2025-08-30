@@ -1,0 +1,76 @@
+{
+  "version": "1.0.0",
+  "description": "API provider presets configuration",
+  "settings": {
+    "enableCompanyPresets": false,
+    "showPerplexityTemplate": false
+  },
+  "presets": {
+    "OpenAI": {
+      "name": "OpenAI",
+      "shortName": "GPT",
+      "model": "gpt-5",
+      "host": "https://api.openai.com",
+      "temperature": 1,
+      "systemMessage": "",
+      "systemPromptMode": "common",
+      "avatar": "OpenAI.Green",
+      "thinkingMode": false,
+      "thinkingBudget": 2000,
+      "provider": "openai"
+    },
+    "Anthropic": {
+      "name": "Anthropic",
+      "shortName": "Claud",
+      "model": "claude-sonnet-4-0",
+      "host": "https://api.anthropic.com/",
+      "temperature": 1,
+      "systemMessage": "",
+      "systemPromptMode": "common",
+      "avatar": "Claude.Orange",
+      "thinkingMode": false,
+      "thinkingBudget": 2000,
+      "provider": "anthropic"
+    },
+    "Gemini": {
+      "name": "Google Gemini",
+      "shortName": "GGem",
+      "model": "gemini-2.5-pro",
+      "host": "",
+      "temperature": 1,
+      "systemMessage": "",
+      "systemPromptMode": "common",
+      "avatar": "Gemini.Color",
+      "thinkingBudget": 2000,
+      "thinkingMode": false,
+      "provider": "google"
+    },
+    "DeepSeek": {
+      "name": "DeepSeek",
+      "shortName": "DS",
+      "model": "deepseek-chat",
+      "host": "",
+      "temperature": 1,
+      "systemMessage": "",
+      "systemPromptMode": "common",
+      "avatar": "deepseek",
+      "thinkingMode": false,
+      "thinkingBudget": 2000,
+      "provider": "openai"
+    },
+    "Grok": {
+      "name": "Grok",
+      "shortName": "Grok",
+      "model": "grok-4",
+      "host": "https://api.x.ai/v1",
+      "temperature": 1,
+      "systemMessage": "",
+      "systemPromptMode": "common",
+      "avatar": "grok",
+      "thinkingMode": false,
+      "thinkingBudget": 2000,
+      "provider": "openai"
+    }
+  },
+  "companyPresets": {}
+}

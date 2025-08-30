@@ -16,15 +16,15 @@ import logo from '~/assets/logo.png'
 import BotIcon from '../BotIcon'
 import { cx } from '~/utils'
 import { useEnabledBots } from '~app/hooks/use-enabled-bots'
-import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom } from '~app/state'
+import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, companyProfileModalAtom, detectedCompanyAtom } from '~app/state'
 import { checkReleaseNotes } from '~services/release-notes'
 import * as api from '~services/server-api'
-import { 
-  getAppOpenTimes, 
-  getPremiumModalOpenTimes, 
-  shouldShowAddressBarModal, 
+import {
+  getAppOpenTimes,
+  getPremiumModalOpenTimes,
+  shouldShowAddressBarModal,
   markAddressBarModalAsShown,
-  markAddressBarModalAsDisabled 
+  markAddressBarModalAsDisabled
 } from '~services/storage/open-times'
 import GuideModal from '../GuideModal'
 import ThemeSettingModal from '../ThemeSettingModal'
@@ -33,14 +33,15 @@ import Tooltip from '../Tooltip'
 import NavLink from './NavLink'
 import PremiumEntry from './PremiumEntry'
 import { Layout } from '~app/consts'
-import { 
-  allInOnePairsAtom, 
+import {
+  allInOnePairsAtom,
   activeAllInOneAtom,
   saveAllInOneConfigAtom,
-  DEFAULT_PAIR_CONFIG, 
-  AllInOnePairConfig 
+  DEFAULT_PAIR_CONFIG,
+  AllInOnePairConfig
 } from '~app/atoms/all-in-one'
 import { getUserConfig, saveChatPair, getSavedChatPairs, deleteChatPair, updateChatPair, ChatPair } from '~services/user-config'
+import { getCompanyProfileConfigs, checkCompanyProfile, shouldShowProfilePrompt, shouldCheckCompanyProfile, getCompanyProfileState, setCompanyProfileState, CompanyProfileStatus } from '~services/company-profile'
 
 
 function IconButton(props: { icon: string; onClick?: () => void }) {
@@ -61,6 +62,8 @@ function Sidebar() {
   const [addressBarModalOpen, setAddressBarModalOpen] = useState(false)
   const enabledBots = useEnabledBots()
   const setReleaseNotes = useSetAtom(releaseNotesAtom)
+  const setCompanyProfileModal = useSetAtom(companyProfileModalAtom)
+  const setDetectedCompany = useSetAtom(detectedCompanyAtom)
   // ボットの情報を保持するための状態（インデックスベース）
   const [botNames, setBotNames] = useState<Record<number, string>>({})
   const [botShortNames, setBotShortNames] = useState<Record<number, string>>({})
@@ -360,17 +363,58 @@ useEffect(() => {
   }, [location.pathname, setActiveAllInOne])
 
   useEffect(() => {
-    Promise.all([getAppOpenTimes(), getPremiumModalOpenTimes(), checkReleaseNotes()]).then(
-      async ([appOpenTimes, premiumModalOpenTimes, releaseNotes]) => {
-        setReleaseNotes(releaseNotes)
-        
-        // Address bar モーダルの表示チェック
-        const shouldShow = await shouldShowAddressBarModal()
-        if (shouldShow) {
-          setAddressBarModalOpen(true)
+    const runChecks = async () => {
+      // 1. Company Profile Check (Highest priority)
+      try {
+        const configs = await getCompanyProfileConfigs();
+        for (const preset of configs) {
+          // Check if we should perform the company profile check based on app usage
+          const shouldCheck = await shouldCheckCompanyProfile(preset);
+          if (!shouldCheck) {
+            continue; // Skip checking this company profile
+          }
+          
+          const isCompanyEnvironment = await checkCompanyProfile(preset.checkUrl);
+          
+          // Update check count regardless of result
+          const currentState = await getCompanyProfileState(preset.companyName);
+          const newState = {
+            companyName: preset.companyName,
+            version: preset.version,
+            status: currentState?.status || CompanyProfileStatus.UNCONFIRMED,
+            lastChecked: Date.now(),
+            checkCount: (currentState?.checkCount || 0) + 1
+          };
+          await setCompanyProfileState(newState);
+          
+          if (isCompanyEnvironment) {
+            const shouldShow = await shouldShowProfilePrompt(preset);
+            if (shouldShow) {
+              setDetectedCompany(preset);
+              setCompanyProfileModal(true);
+              return; // Stop further checks
+            }
+          }
         }
-      },
-    )
+      } catch (error) {
+        console.error('Error checking company environment:', error)
+      }
+
+      // 2. Release Notes Check (Second priority)
+      const releaseNotes = await checkReleaseNotes();
+      if (releaseNotes && releaseNotes.length > 0) {
+        setReleaseNotes(releaseNotes);
+        return; // Stop further checks
+      }
+
+      // 3. Omnibox Search Modal Check (Lowest priority)
+      const shouldShowOmnibox = await shouldShowAddressBarModal();
+      if (shouldShowOmnibox) {
+        setAddressBarModalOpen(true);
+      }
+    };
+
+    runChecks();
   }, [])
 
   // Address bar モーダルのクローズハンドラー
@@ -455,7 +499,7 @@ useEffect(() => {
                   disabled={isSaving}
                   className={cx(
                     'p-1 rounded hover:bg-secondary hover:bg-opacity-20 transition-all',
-                    isSaving ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'
+                    isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:scale-110'
                   )}
                 >
                   {isSaving ? (
@@ -604,14 +648,14 @@ useEffect(() => {
         <div className={cx('flex mt-5 gap-[10px] mb-4', collapsed ? 'flex-col' : 'flex-row ')}>
           {!collapsed && (
             <Tooltip content={t('GitHub')}>
-              <a href="https://github.com/bondICha/chathub-OSS" target="_blank" rel="noreferrer">
+              <a href="https://github.com/bondICha/HuddleLLM---Chat-with-multiple-AI-API-together" target="_blank" rel="noreferrer">
                 <IconButton icon={githubIcon} />
               </a>
             </Tooltip>
           )}
           {!collapsed && (
             <Tooltip content={t('Feedback')}>
-              <a href="https://github.com/bondICha/chathub-OSS/issues" target="_blank" rel="noreferrer">
+              <a href="https://github.com/bondICha/HuddleLLM---Chat-with-multiple-AI-API-together/issues" target="_blank" rel="noreferrer">
                 <IconButton icon={feedbackIcon} />
               </a>
             </Tooltip>

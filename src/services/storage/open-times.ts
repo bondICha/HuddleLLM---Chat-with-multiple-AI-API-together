@@ -1,4 +1,5 @@
 import Browser from 'webextension-polyfill'
+import { compareVersions } from 'compare-versions'
 
 export async function getAppOpenTimes() {
   const { openTimes = 0 } = await Browser.storage.sync.get('openTimes')
@@ -6,7 +7,16 @@ export async function getAppOpenTimes() {
 }
 
 export async function incrAppOpenTimes() {
+  const { lastCheckReleaseNotesVersion } = await Browser.storage.sync.get('lastCheckReleaseNotesVersion')
   const openTimes = await getAppOpenTimes()
+  
+  // Reset open times for users upgrading from version < 2.10.0 to enable company profile checking
+  if (lastCheckReleaseNotesVersion && 
+    compareVersions(lastCheckReleaseNotesVersion, '2.10.0') < 0) {
+    Browser.storage.sync.set({ openTimes: 1 })
+    return 1
+  }
+  
   Browser.storage.sync.set({ openTimes: openTimes + 1 })
   return openTimes + 1
 }
@@ -33,7 +43,9 @@ export async function markOmniboxSearchAsUsed() {
 
 export async function shouldShowAddressBarModal() {
   const hasUsed = await hasUsedOmniboxSearch()
-  return !hasUsed // まだ使用していない場合に表示
+  const openTimes = await getAppOpenTimes()
+  // 20回目以降の起動で、まだ使用していない場合に表示
+  return !hasUsed && openTimes >= 20
 }
 
 export async function markAddressBarModalAsShown() {

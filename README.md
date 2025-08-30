@@ -63,6 +63,10 @@
 - Enable Developer Mode
 - Drag the `dist` folder anywhere on the page to import it (do not delete the folder afterward)
 
+## Company Profile Setup
+
+For organizations wanting to automatically apply company-specific API configurations, see [Company Profile Setup Guide](docs/COMPANY_PROFILE_SETUP.md).
+
 ## Privacy Policy 
 ## 📜 Privacy Policy / プライバシーポリシー / 隐私政策
 ### 🇯🇵 日本語

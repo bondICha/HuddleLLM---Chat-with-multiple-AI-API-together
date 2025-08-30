@@ -5,11 +5,15 @@ const COLOR_SCHEME_QUERY = '(prefers-color-scheme: dark)'
 function light() {
   document.documentElement.classList.remove('dark')
   document.documentElement.classList.add('light')
+  document.documentElement.style.setProperty('--theme-color', '#7EB8D6FF');
+  document.documentElement.style.setProperty('--theme-color-muted', '#7EB8D633'); // 20% opacity
 }
 
 function dark() {
   document.documentElement.classList.remove('light')
   document.documentElement.classList.add('dark')
+  document.documentElement.style.setProperty('--theme-color', '#7EB8D6FF');
+  document.documentElement.style.setProperty('--theme-color-muted', '#7EB8D633'); // 20% opacity
 }
 
 function isSystemDarkMode() {

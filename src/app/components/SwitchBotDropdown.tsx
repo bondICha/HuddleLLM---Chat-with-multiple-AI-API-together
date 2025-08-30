@@ -55,7 +55,7 @@ const SwitchBotDropdown: FC<Props> = (props) => {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="absolute left-0 z-10 mt-1 py-1 rounded-md bg-secondary shadow-lg focus:outline-none max-h-[300px] overflow-y-auto">
+        <Menu.Items className="absolute left-0 mt-1 py-1 rounded-md bg-secondary shadow-lg focus:outline-none max-h-[300px] overflow-y-auto">
           {enabledBots.map(({ index, bot }) => { // Destructure index and bot
             if (index === props.selectedIndex) {
               return null

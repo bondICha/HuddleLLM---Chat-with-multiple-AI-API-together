@@ -21,13 +21,30 @@ export enum SystemPromptMode {
 }
 
 
+// モデル情報の型定義
+export interface ModelInfo {
+    value: string;
+    icon?: string; // 個別のアイコン（オプション）
+}
+
+// プロバイダー情報（デフォルトアイコン含む）
+export const PROVIDER_INFO: Record<string, { icon: string }> = {
+    "OpenAI": { icon: "openai" },
+    "Anthropic": { icon: "anthropic" },
+    "Google": { icon: "gemini" },
+    "Grok": { icon: "grok" },
+    "Deepseek": { icon: "deepseek" },
+    "Perplexity": { icon: "perplexity" },
+    "Rakuten": { icon: "rakuten" },
+    "Custom": { icon: "openai" },
+};
+
 // モデルリストをプロバイダーごとに階層化
-// Explicitly type MODEL_LIST to ensure values are strings
-export const MODEL_LIST: Record<string, Record<string, string>> = {
+export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
     "OpenAI": {
         "GPT-5": "gpt-5",
         "GPT-5 Chat": "gpt-5-chat-latest",
-        "GPT-4.1": "gpt-4.1", // Default to current best
+        "GPT-4.1": "gpt-4.1",
         "GPT-4.1 mini": "gpt-4.1-mini",
         "o4-mini": "o4-mini",
         "o3": "o3",
@@ -43,8 +60,6 @@ export const MODEL_LIST: Record<string, Record<string, string>> = {
     },
     "Grok": {
         "Grok 4": "grok-4",
-        "Grok 3": "grok-3",
-        "Grok 3 Fast": "grok-3-fast",
         "Grok 3 Mini": "grok-3-mini",
         "Grok 3 Mini Fast": "grok-3-mini-fast",
     },
@@ -70,35 +85,24 @@ export const MODEL_LIST: Record<string, Record<string, string>> = {
     // ベンダー特有のモデルIDを「Custom」カテゴリとして追加
     "Custom": {
         // Bedrock用のGeminiモデル
-        "Google Gemini 2.5 Flash": "google/gemini-2.5-flash",
-        "Google Gemini 2.5 Pro": "google/gemini-2.5-pro",
+        "Google Gemini 2.5 Flash": { value: "google/gemini-2.5-flash", icon: "gemini" },
+        "Google Gemini 2.5 Pro": { value: "google/gemini-2.5-pro", icon: "gemini" },
         // Bedrock用のClaudeモデル
-        "Claude Sonnet 4 (Bedrock, US)": "us.anthropic.claude-sonnet-4-20250514-v1:0",
-        "Claude Sonnet 4 (Bedrock)": "anthropic.claude-sonnet-4-20250514-v1:0",
-        "Claude 3.5 Haiku (Bedrock)": "anthropic.claude-3-5-haiku-20241022-v1:0",
-        "OpenAI/GPT-OSS-120b": "openai/gpt-oss-120b",
-        "OpenAI/GPT-OSS-20b": "openai/gpt-oss-20b",
-        "通义千问/Qwen3-Coder-480B-A35B-Instruct": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
-        "通义千问/Qwen3-235B-A22B-Thinking-2507": "Qwen/Qwen3-235B-A22B-Thinking-2507",
-        "通义千问/Qwen3-235B-A22B-Instruct-2507": "Qwen/Qwen3-235B-A22B-Instruct-2507",
-        "DeepSeek/DeepSeek-V3": "deepseek-ai/DeepSeek-V3",
-        "DeepSeek/DeepSeek-R1": "deepseek-ai/DeepSeek-R1",
-        "moonshotai/Kimi-K2-Instruct": "moonshotai/Kimi-K2-Instruct",
+        "Claude Sonnet 4 (Bedrock, US)": { value: "us.anthropic.claude-sonnet-4-20250514-v1:0", icon: "anthropic" },
+        "Claude Sonnet 4 (Bedrock)": { value: "anthropic.claude-sonnet-4-20250514-v1:0", icon: "anthropic" },
+        "Claude 3.5 Haiku (Bedrock)": { value: "anthropic.claude-3-5-haiku-20241022-v1:0", icon: "anthropic" },
+        "OpenAI/GPT-OSS-120b": { value: "openai/gpt-oss-120b", icon: "openai" },
+        "OpenAI/GPT-OSS-20b": { value: "openai/gpt-oss-20b", icon: "openai" },
+        "通义千问/Qwen3-Coder-480B-A35B-Instruct": { value: "Qwen/Qwen3-Coder-480B-A35B-Instruct", icon: "qianwen" },
+        "通义千问/Qwen3-235B-A22B-Thinking-2507": { value: "Qwen/Qwen3-235B-A22B-Thinking-2507", icon: "qianwen" },
+        "通义千问/Qwen3-235B-A22B-Instruct-2507": { value: "Qwen/Qwen3-235B-A22B-Instruct-2507", icon: "qianwen" },
+        "DeepSeek/DeepSeek-V3.1": { value: "deepseek-ai/DeepSeek-V3.1", icon: "deepseek" },
+        "DeepSeek/DeepSeek-R1": { value: "deepseek-ai/DeepSeek-R1", icon: "deepseek" },
+        "moonshotai/Kimi-K2-Instruct": { value: "moonshotai/Kimi-K2-Instruct", icon: "kimi" },
     },
 };
 // Note: Removed individual model enums (ClaudeAPIModel, GeminiAPIModel, etc.) and CustomAPIModel enum
 
-
-
-// テンプレートの種類を定義
-export enum TemplateType {
-  None = 'none',
-  OpenAI = 'openai',
-  Claude = 'claude',
-  Gemini = 'gemini',
-  Perplexity = 'perplexity',
-  Grok = 'grok'
-}
 
 export enum CustomApiProvider {
   OpenAI = 'openai',
@@ -125,8 +129,10 @@ export interface CustomApiConfig {
   systemPromptMode: SystemPromptMode, // System promptの使用方法
   avatar: string,
   apiKey: string,
-  thinkingMode: boolean,
-  thinkingBudget: number,
+  thinkingMode?: boolean, // Anthropic thinking mode
+  thinkingBudget?: number, // Anthropic thinking budget
+  reasoningMode?: boolean, // OpenAI reasoning mode
+  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high', // OpenAI reasoning effort
   provider: CustomApiProvider,
   webAccess?: boolean,
   isAnthropicUsingAuthorizationHeader?: boolean, // Anthropicの認証ヘッダータイプを指定するフラグ
@@ -150,151 +156,8 @@ export interface ChatPair {
  * デフォルトのカスタムAPI設定
  */
 const defaultCustomApiConfigs: CustomApiConfig[] = [
-  {
-    id: 1,
-    name: 'Custom Ai1',
-    shortName: 'o4-mi',
-    model: 'o4-mini',
-    host: '',
-    temperature: 0.7,
-    systemMessage: '',
-    systemPromptMode: SystemPromptMode.COMMON,
-    avatar: 'OpenAI.SimpleBlack',
-    apiKey: '',
-    thinkingMode: false,
-    thinkingBudget: 2000,
-    provider: CustomApiProvider.OpenAI,
-    webAccess: false, // デフォルトは無効
-    enabled: true // 
-  },
-  {
-    id: 2,
-    name: 'Custom Ai2',
-    shortName: 'o1',
-    model: 'o1',
-    host: '',
-    temperature: 1.0,
-    systemMessage: '',
-    systemPromptMode: SystemPromptMode.COMMON,
-    avatar: 'OpenAI.SimpleGreen',
-    apiKey: '',
-    thinkingMode: false,
-    thinkingBudget: 2000,
-    provider: CustomApiProvider.OpenAI,
-    webAccess: false, // デフォルトは無効
-    enabled: true // 
-  },
-  {
-    id: 3,
-    name: 'Custom Ai3',
-    shortName: 'LessT',
-    model: 'o3-mini',
-    host: '',
-    temperature: 0.2,
-    systemMessage: '',
-    systemPromptMode: SystemPromptMode.COMMON,
-    avatar: 'OpenAI.SimpleYellow',
-    apiKey: '',
-    thinkingMode: false,
-    thinkingBudget: 2000,
-    provider: CustomApiProvider.OpenAI,
-    webAccess: false, // デフォルトは無効
-    enabled: true // 
-  },
-  {
-    id: 4,
-    name: 'Custom Ai4',
-    shortName: 'rand',
-    model: 'o3-mini',
-    host: '',
-    temperature: 2.0,
-    systemMessage: '',
-    systemPromptMode: SystemPromptMode.COMMON,
-    avatar: 'OpenAI.SimplePurple',
-    apiKey: '',
-    thinkingMode: false,
-    thinkingBudget: 2000,
-    provider: CustomApiProvider.OpenAI,
-    webAccess: false, // デフォルトは無効
-    enabled: true
-  }
+
 ]
-
-
-// Define presets for API models only | Template
-/**
- * APIモデルのプリセット設定
- */
-export const presetApiConfigs: Record<string, Omit<CustomApiConfig, 'id' | 'apiKey'>> = {
-  "OpenAI": {
-    name: 'OpenAI',
-    shortName: "GPT",
-    model: MODEL_LIST.OpenAI["GPT-5"],
-    host: 'https://api.openai.com',
-    temperature: 1,
-    systemMessage: '',
-    systemPromptMode: SystemPromptMode.COMMON,
-    avatar: 'OpenAI.Green',
-    thinkingMode: false,
-    thinkingBudget: 2000,
-    provider: CustomApiProvider.OpenAI
-  },
-  "Anthropic": {
-    name: 'Anthropic',
-    shortName: "Claud",
-    model: MODEL_LIST.Anthropic["Claude Sonnet 4"],
-    host: 'https://api.anthropic.com/',
-    temperature: 1.0,
-    systemMessage: '',
-    systemPromptMode: SystemPromptMode.COMMON,
-    avatar: 'Claude.Orange',
-    thinkingMode: false,
-    thinkingBudget: 2000,
-    provider: CustomApiProvider.Anthropic
-  },
-  "Gemini": {
-    name: 'Google Gemini',
-    shortName: "GGem",
-    model: MODEL_LIST.Google["Gemini 2.5 Pro"],
-    host: '',
-    temperature: 1.0,
-    systemMessage: '',
-    systemPromptMode: SystemPromptMode.COMMON,
-    avatar: 'Gemini.Color',
-    thinkingMode: false,
-    thinkingBudget: 2000,
-    provider: CustomApiProvider.Google
-  },
-   "Perplexity": {
-     name: 'Perplexity',
-     shortName: "pplx",
-     model: MODEL_LIST.Perplexity["Sonar Pro"], // Set default Perplexity model from MODEL_LIST
-     host: 'https://api.perplexity.ai',
-     temperature: 1.0,
-     systemMessage: '', // Keep system message empty or set a default if needed
-     systemPromptMode: SystemPromptMode.OVERRIDE,
-     avatar: 'Perplexity.Sonar',
-     thinkingMode: false,
-     thinkingBudget: 2000,
-     provider: CustomApiProvider.Perplexity // Ensure Perplexity provider exists and is correct
-  },
-  "Grok": {
-     name: 'Grok',
-     shortName: 'Grok',
-     model: MODEL_LIST.Grok["Grok 3"], // Ensure this is the intended default
-     host: 'https://api.x.ai/v1', // Verify Grok API host
-     temperature: 1.0,
-     systemMessage: '', // Keep system message empty or set a default if needed
-     systemPromptMode: SystemPromptMode.OVERRIDE,
-     avatar: 'grok', // Ensure 'grok' avatar exists
-     thinkingMode: false,
-     thinkingBudget: 2000,
-     provider: CustomApiProvider.OpenAI // Grok uses OpenAI compatible API, keep this provider
-  },
-
-};
-// Note: 'id', 'shortName', 'apiKey', and potentially 'host' for Bedrock/Gemini need user input or further setup.
-
 
 
 

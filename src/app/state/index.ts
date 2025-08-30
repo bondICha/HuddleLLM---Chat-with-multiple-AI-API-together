@@ -6,6 +6,7 @@ import { getDefaultThemeColor } from '~app/utils/color-scheme'
 import { Campaign } from '~services/server-api'
 import { ChatMessageModel } from '~types'
 import { uuid } from '~utils'
+import { CompanyProfilePreset } from '~services/company-profile'
 
 
 type Param = { index: number; page: string }
@@ -34,6 +35,8 @@ export const showDiscountModalAtom = atom<false | true | Campaign>(false)
 export const releaseNotesAtom = atom<string[]>([])
 export const pendingSearchQueryAtom = atom<string | null>(null)
 export const sessionRestoreModalAtom = atom(false)
+export const companyProfileModalAtom = atom(false)
+export const detectedCompanyAtom = atom<CompanyProfilePreset | null>(null)
 export const sessionToRestoreAtom = atom<{
   type: 'single' | 'allInOne' | 'sessionSnapshot'
   botIndex?: number

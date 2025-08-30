@@ -30,7 +30,6 @@ import vicunaLogo from '~/assets/logos/vicuna.jpg';
 import wizardlmLogo from '~/assets/logos/wizardlm.png';
 import xunfeiLogo from '~/assets/logos/xunfei.png';
 import yiLogo from '~/assets/logos/yi.svg';
-import chathubLogo from '~/assets/logos/chathub.svg';
 import alpacaLogo from '~/assets/logos/alpaca.png';
 import deepseekLogo from '~/assets/logos/deepseek.svg';
 import dollyLogo from '~/assets/logos/dolly.png';
@@ -43,6 +42,9 @@ import stablelmLogo from '~/assets/logos/stablelm.png';
 import sambaNovaLogo from '~/assets/logos/SambaNova.svg';
 import huddleLLMLogo from '~/assets/logos/HuddleLLM.png';
 import deepinfraLogo from '~/assets/logos/deepinfra.svg';
+import sbIntuitionsLogo from '~/assets/logos/sb-intuitions.png';
+import tsuzumiLogo from '~/assets/logos/tsuzumi.png';
+import kimiLogo from '~/assets/logos/kimi.webp';
 
 // アイコンオプションの定義
 interface IconOption {
@@ -103,7 +105,6 @@ const otherIcons: IconOption[] = [
   { id: 'alpaca', name: 'Alpaca', src: alpacaLogo },
   { id: 'baichuan', name: 'Baichuan', src: baichuanLogo },
   { id: 'chatglm', name: 'ChatGLM', src: chatglmLogo },
-  { id: 'chathub', name: 'ChatHub', src: chathubLogo },
   { id: 'deepinfra', name: 'DeepInfra', src: deepinfraLogo },
   { id: 'deepseek', name: 'DeepSeek', src: deepseekLogo },
   { id: 'dolly', name: 'Dolly', src: dollyLogo },
@@ -113,14 +114,17 @@ const otherIcons: IconOption[] = [
   { id: 'guanaco', name: 'Guanaco', src: guanacoLogo },
   { id: 'huddlellm', name: 'HuddleLLM', src: huddleLLMLogo },
   { id: 'hyperbolic', name: 'Hyperbolic', src: hyperbolicLogo },
+  { id: 'kimi', name: 'Kimi', src: kimiLogo },
   { id: 'koala', name: 'Koala', src: koalaLogo },
   { id: 'oasst', name: 'OASST', src: oasstLogo },
   { id: 'pi', name: 'Pi', src: piLogo },
   { id: 'qianwen', name: 'Qianwen', src: qianwenLogo },
   { id: 'rwkv', name: 'RWKV', src: rwkvLogo },
   { id: 'sambanova', name: 'SambaNova', src: sambaNovaLogo },
+  { id: 'sb-intuitions', name: 'SB Intuitions', src: sbIntuitionsLogo },
   { id: 'stablelm', name: 'StableLM', src: stablelmLogo },
   { id: 'vicuna', name: 'Vicuna', src: vicunaLogo },
+  { id: 'tsuzumi', name: 'Tsuzumi', src: tsuzumiLogo },
   { id: 'wizardlm', name: 'WizardLM', src: wizardlmLogo },
   { id: 'xunfei', name: 'XunFei', src: xunfeiLogo },
   { id: 'yi', name: 'Yi', src: yiLogo }
@@ -273,24 +277,11 @@ const IconSelect: FC<IconSelectProps> = ({ value, onChange }) => {
       <section>
         <h3 className="font-medium mb-2 text-sm text-gray-700 dark:text-gray-300">{t('Other icons')}</h3>
         
-        {/* スクロール可能なコンテナ */}
-        <div className="max-h-72 overflow-y-auto pr-2 pb-2 custom-scrollbar">
-          <div className="grid grid-cols-4 gap-3">
-            {otherIcons.map(icon => renderIconItem(icon, 32))}
-          </div>
+        {/* その他のアイコングリッド */}
+        <div className="grid grid-cols-4 gap-3">
+          {otherIcons.map(icon => renderIconItem(icon, 32))}
         </div>
       </section>
-      
-      {/* 選択したアイコンの表示 */}
-      <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-        <div className="text-sm font-medium mb-2 dark:text-gray-200">{t('Selected icon')}:</div>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-700 rounded-md">
-            <BotIcon iconName={value} size={32} />
-          </div>
-          <div className="text-sm truncate dark:text-gray-300">{value || 'ChatGPT'}</div>
-        </div>
-      </div>
     </div>
   );
 };

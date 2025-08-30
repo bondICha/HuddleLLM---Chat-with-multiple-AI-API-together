@@ -183,7 +183,7 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
         ? [rehypeRaw, [rehypeHighlight, { detect: true, ignoreMissing: true }]]
         : [[rehypeHighlight, { detect: true, ignoreMissing: true }]]
       }
-      className={`markdown-body markdown-custom-styles !text-base font-normal`}
+      className={`markdown-body markdown-custom-styles code-block-no-margin !text-base font-normal`}
       // linkTarget="_blank" // Deprecated at markdown 9.0.0
       components={{
         a: ({ node, ...props }) => {
@@ -196,7 +196,12 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
             </Tooltip>
           )
         },
-        code
+        code,
+        table: ({ node, ...props }) => (
+          <div className="table-wrapper">
+            <table {...props} />
+          </div>
+        ),
       }}
     >
       {children}

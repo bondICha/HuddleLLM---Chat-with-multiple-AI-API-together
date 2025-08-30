@@ -186,12 +186,12 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
   return (
     <div
       className={cx(
-        'group flex gap-3 w-full',
+        'group flex gap-2 w-full',
         message.author === 'user' ? 'flex-row-reverse' : 'flex-row',
         className,
       )}
     >
-      <div ref={messageRef} className="flex flex-col w-11/12 max-w-fit items-start gap-2">
+      <div ref={messageRef} className="flex flex-col max-w-fit items-start gap-2 min-w-0">
         <MessageBubble 
           color={message.author === 'user' ? 'primary' : 'flat'}
           thinking={message.thinking}

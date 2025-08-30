@@ -1,7 +1,7 @@
 import { RouterProvider } from '@tanstack/react-router'
 import { createRoot } from 'react-dom/client'
 import { useSetAtom } from 'jotai'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Browser from 'webextension-polyfill'
 import '../services/sentry'
 import './base.scss'
@@ -9,7 +9,8 @@ import './i18n'
 import { router } from './router'
 import { pendingSearchQueryAtom, sessionRestoreModalAtom } from './state'
 import { markOmniboxSearchAsUsed } from '../services/storage/open-times'
-import { loadHistoryMessages, loadAllInOneSessions } from '../services/chat-history'
+import { quickCheckAnySession } from '../services/chat-history'
+import CompanyProfileModal from './components/Modals/CompanyProfileModal'
 
 function App() {
   const setPendingSearchQuery = useSetAtom(pendingSearchQueryAtom)
@@ -35,7 +36,7 @@ function App() {
 
     const checkSessionRestore = async () => {
       try {
-        // @hlから始まった場合（pendingOmniboxSearchがある場合）はSession復旧画面を表示しない
+        // 検索バーから呼び出された場合（pendingOmniboxSearchがある場合）はSession復旧画面を表示しない
         const result = await Browser.storage.local.get('pendingOmniboxSearch')
         const hasPendingSearch = result.pendingOmniboxSearch && typeof result.pendingOmniboxSearch === 'string' && result.pendingOmniboxSearch.trim() !== ''
         
@@ -44,25 +45,9 @@ function App() {
           return
         }
         
-        // 過去のセッションがあるかチェック
-        let hasAnySessions = false
-        
-        // All-in-oneセッションのチェック
-        const allInOneSessions = await loadAllInOneSessions()
-        if (allInOneSessions.length > 0) {
-          hasAnySessions = true
-        }
-        
-        // 個別ボットセッションをチェック
-        if (!hasAnySessions) {
-          for (let botIndex = 0; botIndex < 10; botIndex++) {
-            const conversations = await loadHistoryMessages(botIndex)
-            if (conversations.length > 0) {
-              hasAnySessions = true
-              break
-            }
-          }
-        }
+        // 軽量なセッション存在チェック
+        const quickCheckStart = performance.now()
+        const hasAnySessions = await quickCheckAnySession()
         
         // 過去のセッションがある場合のみモーダルを表示
         if (hasAnySessions) {
@@ -75,9 +60,15 @@ function App() {
 
     loadPendingSearch()
     checkSessionRestore()
-  }, [setPendingSearchQuery, setSessionRestoreModal]) // 初回マウント時のみ実行
+  }, [setPendingSearchQuery, setSessionRestoreModal])
 
-  return <RouterProvider router={router} />
+
+  return (
+    <>
+      <RouterProvider router={router} />
+      <CompanyProfileModal />
+    </>
+  )
 }
 
 const container = document.getElementById('app')!

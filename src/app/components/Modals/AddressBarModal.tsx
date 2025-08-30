@@ -18,10 +18,10 @@ const AddressBarModal: FC<Props> = ({ open, onClose, onDontShowAgain }) => {
       onClose={onClose}
       className="w-[min(600px,90vw)]"
     >
-      <div className="space-y-4">
+      <div className="space-y-4 px-6 py-4">
         <div className="text-base text-primary-text">
-          <div 
-            dangerouslySetInnerHTML={{ 
+          <div
+            dangerouslySetInnerHTML={{
               __html: t('addressbar_search_feature_description') 
             }} 
           />

@@ -67,3 +67,19 @@
   }
 
 }
+
+/* コードブロック専用の余白なしクラス */
+.markdown-body.code-block-no-margin pre {
+  margin-top: 0;
+  margin-bottom: 5px;
+  padding: 0;
+}
+
+.markdown-body.code-block-no-margin pre code {
+  padding: 0;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}

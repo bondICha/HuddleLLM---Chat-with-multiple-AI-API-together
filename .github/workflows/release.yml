@@ -37,9 +37,9 @@ jobs:
         uses: vimtor/action-zip@v1.1
         with:
           files: dist/
-          dest: chathub.zip
+          dest: huddlellm.zip
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: chathub.zip
+          files: huddlellm.zip

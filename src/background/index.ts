@@ -138,7 +138,8 @@ Browser.action.onClicked.addListener(() => {
 
 Browser.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    Browser.tabs.create({ url: 'app.html#/setting' })
+    // Open welcome page for first-time users
+    Browser.tabs.create({ url: 'app.html#/welcome' })
   }
 })
 
@@ -161,19 +162,6 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
     console.log('🚀 Background: Fetching URL:', message.url)
     
     try {
-      // Check if user has all-hosts permission
-      const allHostsPermissions = { origins: ['https://*/*', 'http://*/*'] }
-      const hasAllHosts = await Browser.permissions.contains(allHostsPermissions)
-      
-      if (!hasAllHosts) {
-        console.log('🔒 Background: All-hosts permission required')
-        return {
-          success: false,
-          error: 'Web access permission required. Please enable "Allow access to all websites" in settings.',
-        }
-      }
-      
-      console.log('✅ Background: All-hosts permission verified')
       
       const response = await fetch(message.url)
       console.log('📡 Background: Fetch response status:', response.status)

@@ -158,9 +158,7 @@ async function* execute(
           yield { text: '', thinking: emptyResultsMessage, searchResults: [] };
           // AIには簡潔な情報を渡すために空の結果として処理を続行
         } else {
-          const thinkingMessage = getLocalizedText('agent_search_thinking', language, { query: actionInput });
-          console.log(`🔍 Agent: Search ${searchCount} - Yielding ${searchResults.length} results for: ${actionInput}`);
-          yield { text: '', thinking: thinkingMessage, searchResults };
+          yield { text: '', searchResults };
         }
       } catch (error) {
         const errorMessage = `❌ 検索エラーが発生しました\nクエリ: "${actionInput}"\nプロバイダー: ${provider}\nエラー: ${error instanceof Error ? error.message : '不明なエラー'}\n\nネットワーク接続や検索プロバイダーの問題の可能性があります。`;

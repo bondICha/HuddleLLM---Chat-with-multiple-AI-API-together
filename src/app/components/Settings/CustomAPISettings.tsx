@@ -1,14 +1,16 @@
 // Removed duplicate import
 import { useTranslation } from 'react-i18next'
 import { FC, useState, useEffect } from 'react' // useEffect をインポート
+import { useAtomValue } from 'jotai'
 import toast from 'react-hot-toast'
+import { cx } from '~/utils'
 import {
     UserConfig,
     CustomApiProvider,
-    TemplateType,
-    presetApiConfigs,
+    CustomApiConfig,
     MODEL_LIST, // 新しいモデルリストをインポート
 } from '~services/user-config'
+import { themeColorAtom } from '~app/state'
 import { Input, Textarea } from '../Input'
 import Dialog from '../Dialog'
 import { SystemPromptMode } from '~services/user-config'
@@ -21,18 +23,10 @@ import Range from '../Range'
 import Switch from '~app/components/Switch'
 import AvatarSelect from './AvatarSelect'
 import BotIcon from '../BotIcon'
-import { BiPlus, BiTrash, BiHide, BiShow, BiInfoCircle } from 'react-icons/bi'
+import { BiPlus, BiTrash, BiHide, BiShow, BiInfoCircle, BiPencil, BiChevronDown } from 'react-icons/bi'
 import Button from '../Button'
 import { revalidateEnabledBots } from '~app/hooks/use-enabled-bots'
-// テンプレート選択オプション
-const TEMPLATE_OPTIONS = [
-    { name: '-- テンプレートを選択 --', value: TemplateType.None },
-    { name: 'OpenAI GPT-4.1', value: TemplateType.OpenAI },
-    { name: 'Anthropic Claude 4 Sonnet', value: TemplateType.Claude },
-    { name: 'Google Gemini 2.5 Pro', value: TemplateType.Gemini },
-    { name: 'Perplexity', value: TemplateType.Perplexity },
-    { name: 'Grok', value: TemplateType.Grok }
-]
+import { getTemplateOptions, getActivePresets, getPresetMapping } from '~services/preset-loader'
 
 
 interface Props {
@@ -45,6 +39,7 @@ const MAX_CUSTOM_MODELS = 50;
 
 const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     const { t } = useTranslation()
+    const themeColor = useAtomValue(themeColorAtom)
     const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
     // 選択されたモデルのプロバイダーを保持するステートを追加
     const [selectedProviderForModel, setSelectedProviderForModel] = useState<Record<number, string | null>>({});
@@ -52,6 +47,44 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     const [showResetDialog, setShowResetDialog] = useState(false);
     // 変数一覧の表示状態
     const [showVariables, setShowVariables] = useState(false);
+    const [editingNameIndex, setEditingNameIndex] = useState<number | null>(null);
+    const [editingShortNameIndex, setEditingShortNameIndex] = useState<number | null>(null);
+
+    // クリックアウトサイド処理
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            
+            // 編集モードの終了
+            if (editingNameIndex !== null && !target.closest('input') && !target.closest('.editing-area')) {
+                setEditingNameIndex(null);
+            }
+            
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [editingNameIndex]);
+
+    // テンプレートオプションの状態
+    const [templateOptions, setTemplateOptions] = useState([
+        { name: t('Apply Template Settings'), value: 'none' }
+    ]);
+    const [nestedTemplateOptions, setNestedTemplateOptions] = useState<NestedDropdownOption[]>([]);
+
+    // コンポーネント初期化時にテンプレートオプションを読み込み
+    useEffect(() => {
+        const loadTemplateOptions = async () => {
+            try {
+                const templateData = await getTemplateOptions();
+                setTemplateOptions(templateData.flatOptions);
+                setNestedTemplateOptions(templateData.nestedOptions || []);
+            } catch (error) {
+                console.warn('Failed to load template options:', error);
+            }
+        };
+        loadTemplateOptions();
+    }, []);
 
     // 防御的チェック: customApiConfigsが未定義の場合は空配列として扱う
     const customApiConfigs = userConfig.customApiConfigs || [];
@@ -67,7 +100,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         toast.success(t('Common System Message has been reset to default'));
     }
 
-    const formRowClass = "grid grid-cols-[1fr_3fr] items-center gap-4"
+    const formRowClass = "grid grid-cols-[1fr_4fr] items-center gap-4"
     // const formRowClass = "grid grid-cols-[200px_1fr] items-center gap-4"
     const labelClass = "font-medium text-sm text-right self-start pt-2"
     const inputContainerClass = "flex-1"
@@ -76,20 +109,40 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     const createModelOptions = (): NestedDropdownOption[] => {
         const options: NestedDropdownOption[] = [];
 
+        // プロバイダー名からより適切なアイコン名へのマッピング
+        const getProviderIcon = (provider: string): string => {
+            switch (provider.toLowerCase()) {
+                case 'openai': return 'openai';
+                case 'anthropic': return 'anthropic';
+                case 'google': return 'gemini';
+                case 'grok': return 'grok';
+                case 'deepseek': return 'deepseek';
+                case 'rakuten': return 'rakuten';
+                case 'custom': return 'huddlellm'; // カスタムモデル用
+                default: return 'chatgpt'; // デフォルト
+            }
+        };
+
         Object.keys(MODEL_LIST).forEach(provider => {
+            const providerIcon = getProviderIcon(provider);
+            
             // プロバイダーカテゴリを作成
             const categoryOption: NestedDropdownOption = {
                 label: provider, // プロバイダー名をラベルに
-                // カテゴリ自体は選択できないように value を設定しないか、disabled: true を設定
-                disabled: true, // カテゴリ行を選択不可にする
                 children: [], // 子要素（モデル）を格納する配列
+                icon: providerIcon, // より適切なアイコン
             };
 
             // そのプロバイダーのモデルを子要素として追加
-            Object.entries(MODEL_LIST[provider]).forEach(([modelName, modelValue]) => {
+            Object.entries(MODEL_LIST[provider]).forEach(([modelName, modelData]) => {
+                // modelDataが文字列の場合とオブジェクトの場合を処理
+                const modelValue = typeof modelData === 'string' ? modelData : modelData.value;
+                const modelIcon = typeof modelData === 'object' && modelData.icon ? modelData.icon : providerIcon;
+                
                 categoryOption.children?.push({
                     label: modelName, // モデル名をラベルに
                     value: modelValue, // モデル値を value に
+                    icon: modelIcon, // 個別のアイコンまたはプロバイダーアイコン
                 });
             });
 
@@ -110,24 +163,22 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         }));
     };
 
+
     // テンプレートを適用する関数
-    const applyTemplate = (templateType: TemplateType, index: number) => {
-        if (templateType === TemplateType.None) return;
+    const applyTemplate = async (templateType: string, index: number) => {
+        if (templateType === 'none') return;
 
         const updatedConfigs = [...userConfig.customApiConfigs];
-        const config = updatedConfigs[index];
+        
+        try {
+            // 動的にプリセットとマッピングを取得
+            const activePresets = await getActivePresets();
+            const presetMap = await getPresetMapping();
+            
+            const presetKey = presetMap[templateType];
+            if (presetKey && activePresets[presetKey]) {
+                const preset = activePresets[presetKey];
 
-        const presetMap = {
-            [TemplateType.OpenAI]: "OpenAI",
-            [TemplateType.Claude]: "Anthropic",
-            [TemplateType.Gemini]: "Gemini",
-            [TemplateType.Perplexity]: "Perplexity",
-            [TemplateType.Grok]: "Grok"
-        };
-
-        const presetKey = presetMap[templateType];
-        if (presetKey && presetApiConfigs[presetKey]) {
-            const preset = presetApiConfigs[presetKey];
 
             // オブジェクト全体を上書きするのではなく、各プロパティを個別に更新
             // モデル名と同じように個別のプロパティを更新することで、onChange と同じ動作にする
@@ -137,16 +188,18 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             updatedConfigs[index].host = preset.host;
             updatedConfigs[index].temperature = preset.temperature;
             updatedConfigs[index].systemMessage = preset.systemMessage;
-            updatedConfigs[index].systemPromptMode = preset.systemPromptMode;
+            updatedConfigs[index].systemPromptMode = preset.systemPromptMode as SystemPromptMode;
             updatedConfigs[index].avatar = preset.avatar;
             updatedConfigs[index].thinkingMode = preset.thinkingMode;
             updatedConfigs[index].thinkingBudget = preset.thinkingBudget;
-            updatedConfigs[index].provider = preset.provider;
+                updatedConfigs[index].provider = preset.provider as CustomApiProvider;
 
-
+                updateConfigValue({ customApiConfigs: updatedConfigs });
+            }
+        } catch (error) {
+            console.error('Failed to apply template:', error);
+            toast.error(t('Failed to apply template'));
         }
-
-        updateCustomApiConfigs(updatedConfigs); // ヘルパー関数を使用
     };
 
     // 新しいカスタムモデルを追加
@@ -160,8 +213,8 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         const newConfig = {
             id: newId,
             name: `Custom AI ${newId}`,
-            shortName: `Cus${newId}`,
-            model: 'gpt-4o',
+            shortName: `Custom${newId}`,
+            model: '',
             host: '',
             temperature: 0.7,
             systemMessage: '',
@@ -237,309 +290,569 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
     return (
         <>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 p-4 rounded-lg relative" style={{ backgroundColor: themeColor ? `${themeColor}15` : 'rgba(17, 24, 39, 0.15)' }}>
+            <div className="absolute inset-0 bg-white/10 dark:bg-black/20 rounded-lg pointer-events-none"></div>
+            <div className="relative">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold">{t('Custom API Models')}</h2>
-                <Button
-                    size="small"
-                    text={t('Add New Model')}
-                    icon={<BiPlus />}
-                    onClick={addNewCustomModel}
-                    color="primary"
-                />
+                <h2 className="text-lg font-bold">{t('Chatbots configuration')}</h2>
             </div>
             <div className="flex flex-col gap-3">
                 {/* Common API Settings */}
-                <div className="space-y-3">
-                    <div className={formRowClass}>
-                        <p className={labelClass}>{t("Common API Key")}</p>
-                        <div className={inputContainerClass}>
-                            <Input
-                                className='w-full'
-                                placeholder="AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                                value={userConfig.customApiKey}
-                                onChange={(e) => updateConfigValue({ customApiKey: e.currentTarget.value })}
-                                type="password"
-                            />
-                        </div>
-
-                    </div>
-                    <Blockquote className="mt-1 ml-[25%]">{t('Your keys are stored locally')}</Blockquote>
-
-                    <div className={formRowClass}>
-                        <p className={labelClass}>{t('Common System Message')}</p>
-                        <div className="w-full">
-                            <button
-                                onClick={() => setShowVariables(!showVariables)}
-                                className="flex items-center gap-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-pointer transition-colors mb-2"
-                            >
-                                <BiInfoCircle className="w-4 h-4" />
-                                <span className="text-xs">{showVariables ? t('Hide') : t('Show available variables')}</span>
-                            </button>
-                            <div className="flex flex-col gap-2 w-full">
-                                {/* 変数一覧の展開可能セクション */}
-                                {showVariables && (
-                                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border">
-                                        <p className="font-medium mb-2 text-sm">{t('Variables description')}</p>
-                                        <div className="grid grid-cols-1 gap-1 text-xs">
-                                            <div className="flex items-center gap-2">
-                                                <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{current_date}'}</code>
-                                                <span className="text-gray-600 dark:text-gray-400">- Current date (YYYY-MM-DD)</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{current_time}'}</code>
-                                                <span className="text-gray-600 dark:text-gray-400">- Current time (HH:MM:SS)</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{modelname}'}</code>
-                                                <span className="text-gray-600 dark:text-gray-400">- AI model name</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{chatbotname}'}</code>
-                                                <span className="text-gray-600 dark:text-gray-400">- Chatbot display name</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{language}'}</code>
-                                                <span className="text-gray-600 dark:text-gray-400">- User language setting</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{timezone}'}</code>
-                                                <span className="text-gray-600 dark:text-gray-400">- User timezone</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                <Textarea
+                <div className="p-4 rounded-lg bg-white/20 dark:bg-black/20 border border-gray-300 dark:border-gray-700 space-y-4">
+                    <h3 className="text-md font-semibold">{t('Common Settings')}</h3>
+                    <Blockquote>{t('These settings are used by all custom chatbots. Individual chatbot settings will override these.')}</Blockquote>
+                    <div className="space-y-3">
+                        <div className={formRowClass}>
+                            <p className={labelClass}>{t("Common API Key")}</p>
+                            <div className={inputContainerClass}>
+                                <Input
                                     className='w-full'
-                                    maxRows={5}
-                                    value={userConfig.commonSystemMessage}
-                                    onChange={(e) => updateConfigValue({ commonSystemMessage: e.currentTarget.value })}
-                                />
-                                <Button
-                                    text={t('Reset Common system prompt to default')}
-                                    color="flat"
-                                    size="small"
-                                    onClick={() => setShowResetDialog(true)}
-                                    className="self-start"
+                                    placeholder="AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                    value={userConfig.customApiKey}
+                                    onChange={(e) => updateConfigValue({ customApiKey: e.currentTarget.value })}
+                                    type="password"
                                 />
                             </div>
                         </div>
-                    </div>
+                        <Blockquote className="mt-1 ml-[25%]">{t('Your keys are stored locally')}</Blockquote>
 
-                    <div className={formRowClass}>
-                        <p className={labelClass}>{t(userConfig.isCustomApiHostFullPath ? 'API Endpoint (Full Path)' : 'Common API Host')}</p>
-                        <div className="flex items-center gap-2 flex-1"> {/* Changed from inputContainerClass to allow flex items */}
-                            <Input
-                                className='flex-1'
-                                placeholder={userConfig.isCustomApiHostFullPath ? t("https://api.example.com/v1/chat/completions") : "https://api.openai.com"}
-                                value={userConfig.customApiHost}
-                                onChange={(e) => updateConfigValue({ customApiHost: e.currentTarget.value })}
-                            />
-                            <Switch
-                                checked={userConfig.isCustomApiHostFullPath ?? false}
-                                onChange={(checked) => updateConfigValue({ isCustomApiHostFullPath: checked })}
-                            />
-                            <span className="text-sm">{t('Full Path')}</span>
-                            <div className="relative group">
-                                <span className="cursor-help text-gray-400">ⓘ</span>
-                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 hidden group-hover:block bg-gray-700 text-white text-xs p-2 rounded shadow-lg z-10">
-                                    {t('If "Full Path" is ON, enter the complete API endpoint URL. Otherwise, enter only the base host (e.g., https://api.openai.com) and the standard path (e.g., /v1/chat/completions) will be appended automatically.')}
+                        <div className={formRowClass}>
+                            <p className={labelClass}>{t('Common System Message')}</p>
+                            <div className="w-full">
+                                <button
+                                    onClick={() => setShowVariables(!showVariables)}
+                                    className="flex items-center gap-1 opacity-70 hover:opacity-90 cursor-pointer transition-opacity mb-2"
+                                >
+                                    <BiInfoCircle className="w-4 h-4" />
+                                    <span className="text-xs">{showVariables ? t('Hide') : t('Show available variables')}</span>
+                                </button>
+                                <div className="flex flex-col gap-2 w-full">
+                                    {showVariables && (
+                                        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border">
+                                            <p className="font-medium mb-2 text-sm">{t('Variables description')}</p>
+                                            <div className="grid grid-cols-1 gap-1 text-xs">
+                                                <div className="flex items-center gap-2">
+                                                    <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{current_date}'}</code>
+                                                    <span className="opacity-70">- Current date (YYYY-MM-DD)</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{current_time}'}</code>
+                                                    <span className="opacity-70">- Current time (HH:MM:SS)</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{modelname}'}</code>
+                                                    <span className="opacity-70">- AI model name</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{chatbotname}'}</code>
+                                                    <span className="opacity-70">- Chatbot display name</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{language}'}</code>
+                                                    <span className="opacity-70">- User language setting</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <code className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1 rounded">{'{timezone}'}</code>
+                                                    <span className="opacity-70">- User timezone</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <Textarea
+                                        className='w-full'
+                                        maxRows={5}
+                                        value={userConfig.commonSystemMessage}
+                                        onChange={(e) => updateConfigValue({ commonSystemMessage: e.currentTarget.value })}
+                                    />
+                                    <Button
+                                        text={t('Reset Common system prompt to default')}
+                                        color="flat"
+                                        size="small"
+                                        onClick={() => setShowResetDialog(true)}
+                                        className="self-start"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={formRowClass}>
+                            <p className={labelClass}>{t(userConfig.isCustomApiHostFullPath ? 'API Endpoint (Full Path)' : 'Common API Host')}</p>
+                            <div className="flex items-center gap-2 flex-1">
+                                <Input
+                                    className='flex-1'
+                                    placeholder={userConfig.isCustomApiHostFullPath ? t("https://api.example.com/v1/chat/completions") : "https://api.openai.com"}
+                                    value={userConfig.customApiHost}
+                                    onChange={(e) => updateConfigValue({ customApiHost: e.currentTarget.value })}
+                                />
+                                <Switch
+                                    checked={userConfig.isCustomApiHostFullPath ?? false}
+                                    onChange={(checked) => updateConfigValue({ isCustomApiHostFullPath: checked })}
+                                />
+                                <div className="flex items-center gap-1">
+                                    <span className="text-sm">{t('Full Path')}</span>
+                                    <span className="cursor-help group">ⓘ
+                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-72 hidden group-hover:block bg-gray-900 dark:bg-gray-800 text-white text-xs p-2 rounded shadow-lg z-50">
+                                            {t('If "Full Path" is ON, enter the complete API endpoint URL. Otherwise, enter only the base host (e.g., https://api.openai.com) and the standard path (e.g., /v1/chat/completions) will be appended automatically.')}
+                                        </div>
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-
                 </div>
 
                 {/* Custom Chatbots */}
+                <hr className="border-gray-300 dark:border-gray-700" />
                 <div className="w-full">
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-md font-semibold">{t('Individual Chatbot Settings')}</h3>
+                        <Button
+                            size="small"
+                            text={t('Add New Model')}
+                            icon={<BiPlus />}
+                            onClick={addNewCustomModel}
+                            color="primary"
+                        />
+                    </div>
+                    <div
+                        className="grid gap-4"
+                        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))' }}
+                    >
                         {userConfig.customApiConfigs.map((config, index) => (
-                            <div key={index} className="min-w-[600px] flex-1 max-w-[800px] p-3 border border-gray-600 rounded-lg hover:shadow-lg transition-shadow space-y-4">
-                                <div className="flex justify-between items-center mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <p className="font-semibold text-base">{t(`Custom Chatbot No. ${index + 1}`)}</p>
+                            <div key={config.id || index} className={cx(
+                                "bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(255,255,255,0.07),0_4px_6px_-2px_rgba(255,255,255,0.04)] transition-all hover:shadow-xl dark:hover:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1),0_10px_10px_-5px_rgba(255,255,255,0.04)]"
+                            )}>
+                                {/* Header */}
+                                <div className="grid grid-cols-[60px_1fr_140px] items-center p-4 border-b border-white/20 dark:border-white/10 gap-2">
+                                    <span className="font-bold text-lg text-primary text-center">#{index + 1}</span>
+                                    <div className="flex flex-col items-center justify-center">
+                                        <div className="w-16 h-16 mb-2 cursor-pointer">
+                                            <AvatarSelect
+                                                value={config.avatar}
+                                                onChange={(value) => {
+                                                    const updatedConfigs = [...userConfig.customApiConfigs]
+                                                    updatedConfigs[index].avatar = value;
+                                                    updateCustomApiConfigs(updatedConfigs);
+                                                }}
+                                                size={64}
+                                            />
+                                        </div>
+                                        <div className="relative w-full max-w-[200px]">
+                                            {editingNameIndex === index ? (
+                                                <div className="space-y-3 editing-area">
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-center mb-1 opacity-80">
+                                                            {t('Chatbot Name')}
+                                                        </label>
+                                                        <Input
+                                                            value={config.name}
+                                                            onChange={(e) => {
+                                                                const updatedConfigs = [...userConfig.customApiConfigs];
+                                                                updatedConfigs[index].name = e.currentTarget.value;
+                                                                updateCustomApiConfigs(updatedConfigs);
+                                                            }}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' || e.key === 'Escape') {
+                                                                    setEditingNameIndex(null);
+                                                                }
+                                                            }}
+                                                            autoFocus
+                                                            className="text-center"
+                                                            placeholder="Enter chatbot name"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center justify-center mb-1">
+                                                            <label className="text-xs font-medium opacity-80 mr-1">
+                                                                {t('Short Name (10 chars)')}
+                                                            </label>
+                                                            <span className="cursor-help text-xs group relative">ⓘ
+                                                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 hidden group-hover:block bg-gray-900 dark:bg-gray-800 text-white text-xs p-3 rounded-md shadow-xl z-50 border border-gray-600">
+                                                                    {t('Short name displayed when sidebar is collapsed. Will wrap to multiple lines if needed.')}
+                                                                </div>
+                                                            </span>
+                                                        </div>
+                                                        <Input
+                                                            value={config.shortName}
+                                                            onChange={(e) => {
+                                                                const updatedConfigs = [...userConfig.customApiConfigs];
+                                                                updatedConfigs[index].shortName = e.currentTarget.value;
+                                                                updateCustomApiConfigs(updatedConfigs);
+                                                            }}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' || e.key === 'Escape') {
+                                                                    setEditingNameIndex(null);
+                                                                }
+                                                            }}
+                                                            className="text-center text-sm"
+                                                            placeholder="Enter short name"
+                                                            maxLength={10}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="relative group">
+                                                    <div 
+                                                        className="cursor-pointer"
+                                                        onClick={() => setEditingNameIndex(index)}
+                                                    >
+                                                        <p className="font-semibold text-center truncate">
+                                                            {config.name}
+                                                        </p>
+                                                        <p className="text-sm text-center truncate opacity-60 mt-1">
+                                                            {config.shortName}
+                                                        </p>
+                                                    </div>
+                                                    <BiPencil 
+                                                        className="absolute right-0 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-70 transition-opacity cursor-pointer"
+                                                        onClick={() => setEditingNameIndex(index)}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
                                         {!config.enabled && (
-                                            <span className="text-xs bg-gray-600 text-white px-2 py-0.5 rounded">
+                                            <span className="text-xs bg-gray-500 text-white px-2 py-0.5 rounded-full mt-2">
                                                 {t('Disabled')}
                                             </span>
                                         )}
                                     </div>
-                                    <div className="flex gap-2">
-                                        {/* テンプレート選択ドロップダウン */}
-                                        <div className="mr-2">
-                                            <Select
-                                                options={TEMPLATE_OPTIONS}
-                                                value={TemplateType.None}
-                                                onChange={(v) => {
-                                                    if (v !== TemplateType.None) {
-                                                        applyTemplate(v as TemplateType, index);
-                                                    }
-                                                }}
-                                                position="top"
-                                            />
+                                    <div className="flex items-center gap-2">
+                                        {/* Preset button with wider dropdown */}
+                                        <div className="flex-1">
+                                           <NestedDropdown
+                                               options={nestedTemplateOptions}
+                                               value={'none'}
+                                               onChange={(v) => {
+                                                   if (v && v !== 'none') {
+                                                       applyTemplate(v, index);
+                                                   }
+                                               }}
+                                               placeholder={t('Choose a preset to apply')}
+                                               showModelId={false}
+                                               trigger={
+                                                   <div className="p-2 rounded-lg hover:bg-white/20 flex flex-col items-center justify-center min-w-[60px] w-full">
+                                                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" className="mb-1">
+                                                           <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+                                                       </svg>
+                                                       <span className="text-xs font-medium">Preset</span>
+                                                   </div>
+                                               }
+                                           />
                                         </div>
 
-                                        {/* 表示/非表示ボタン */}
-                                        <button
-                                            className="p-1 rounded hover:bg-gray-700"
-                                            onClick={() => toggleBotEnabledState(index)}
-                                            title={config.enabled ? t('Disable') : t('Enable')}
-                                        >
-                                            {config.enabled ? <BiShow size={16} /> : <BiHide size={16} />}
-                                        </button>
+                                        {/* 2x2 grid of control buttons */}
+                                        <div className="grid grid-cols-2 gap-1 flex-shrink-0">
+                                            {/* Top row: Up and Down buttons */}
+                                            <button
+                                                className={`p-2 rounded-lg ${index === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/20'} flex items-center justify-center`}
+                                                onClick={() => {
+                                                    if (index > 0) {
+                                                        const updatedConfigs = [...customApiConfigs];
+                                                        [updatedConfigs[index - 1], updatedConfigs[index]] = [updatedConfigs[index], updatedConfigs[index - 1]];
+                                                        updateCustomApiConfigs(updatedConfigs);
+                                                    }
+                                                }}
+                                                disabled={index === 0}
+                                                title={t('Move up')}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z" /></svg>
+                                            </button>
+                                            <button
+                                                className={`p-2 rounded-lg ${index === customApiConfigs.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/20'} flex items-center justify-center`}
+                                                onClick={() => {
+                                                    if (index < customApiConfigs.length - 1) {
+                                                        const updatedConfigs = [...customApiConfigs];
+                                                        [updatedConfigs[index], updatedConfigs[index + 1]] = [updatedConfigs[index + 1], updatedConfigs[index]];
+                                                        updateCustomApiConfigs(updatedConfigs);
+                                                    }
+                                                }}
+                                                disabled={index === customApiConfigs.length - 1}
+                                                title={t('Move down')}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" /></svg>
+                                            </button>
 
-                                        {/* 削除ボタン */}
-                                        <button
-                                            className="p-1 rounded hover:bg-gray-700 text-red-400"
-                                            onClick={() => deleteCustomModel(index)}
-                                            title={t('Delete')}
-                                        >
-                                            <BiTrash size={16} />
-                                        </button>
-                                        <button
-                                            className={`p-1 rounded ${index === 0 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-700'}`}
-                                            onClick={() => {
-                                                if (index > 0) {
-                                                    const updatedConfigs = [...customApiConfigs];
-                                                    // 設定を入れ替え
-                                                    [updatedConfigs[index - 1], updatedConfigs[index]] = [updatedConfigs[index], updatedConfigs[index - 1]];
-                                                    
-                                                    // カスタムAPI設定のみを更新
-                                                    updateCustomApiConfigs(updatedConfigs);
-                                                }
-                                            }}
-                                            disabled={index === 0}
-                                            title={t('Move up')}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fillRule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z" />
-                                            </svg>
-                                        </button>
-                                        <button
-                                            className={`p-1 rounded ${index === customApiConfigs.length - 1 ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-700'}`}
-                                            onClick={() => {
-                                                if (index < customApiConfigs.length - 1) {
-                                                    const updatedConfigs = [...customApiConfigs];
-                                                    // 設定を入れ替え
-                                                    [updatedConfigs[index], updatedConfigs[index + 1]] = [updatedConfigs[index + 1], updatedConfigs[index]];
-                                                    
-                                                    // カスタムAPI設定のみを更新
-                                                    updateCustomApiConfigs(updatedConfigs);
-                                                }
-                                            }}
-                                            disabled={index === userConfig.customApiConfigs.length - 1}
-                                            title={t('Move down')}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                                <path fillRule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" />
-                                            </svg>
-                                        </button>
+                                            {/* Bottom row: Show/Hide and Delete buttons */}
+                                            <button
+                                                className="p-2 rounded-lg hover:bg-white/20 flex items-center justify-center"
+                                                onClick={() => toggleBotEnabledState(index)}
+                                                title={config.enabled ? t('Disable') : t('Enable')}
+                                            >
+                                                {config.enabled ? <BiShow size={14} /> : <BiHide size={14} />}
+                                            </button>
+                                            <button
+                                                className="p-2 rounded-lg hover:bg-white/20 text-red-400 flex items-center justify-center"
+                                                onClick={() => deleteCustomModel(index)}
+                                                title={t('Delete')}
+                                            >
+                                                <BiTrash size={14} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4">
+                                <div className="p-4 space-y-6">
                                     {/* 基本設定セクション（常に表示） */}
                                     <div className="space-y-4">
-                                        {/* Name Row */}
-                                        <div className={formRowClass}>
-                                            <p className={labelClass}>{t('Custom Chatbot Name')}</p>
-                                            <div className="flex gap-1">
-                                                <Input
-                                                    className="flex-1"
-                                                    value={config.name}
-                                                    onChange={(e) => {
-                                                        const updatedConfigs = [...userConfig.customApiConfigs]
-                                                        updatedConfigs[index].name = e.currentTarget.value;
-                                                        updateCustomApiConfigs(updatedConfigs); // ヘルパー関数を使用
-                                                    }}
-                                                />
-                                                <div className="w-[80px]">
-                                                    <Input
-                                                        className='w-full'
-                                                        value={config.shortName}
-                                                        placeholder="5char"
-                                                        maxLength={5}
-                                                        onChange={(e) => {
-                                                            const updatedConfigs = [...userConfig.customApiConfigs]
-                                                            updatedConfigs[index].shortName = e.currentTarget.value;
-                                                            updateCustomApiConfigs(updatedConfigs); // ヘルパー関数を使用
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
 
-                                        {/* Avatar */}
-                                        <div className={formRowClass}>
-                                            <p className={labelClass}>{t('Avatar')}</p>
-                                            <div className="flex flex-col gap-2">
-                                                <AvatarSelect
-                                                    value={config.avatar}
-                                                    onChange={(value) => {
-                                                        const updatedConfigs = [...userConfig.customApiConfigs]
-                                                        updatedConfigs[index].avatar = value;
-                                                        updateCustomApiConfigs(updatedConfigs); // ヘルパー関数を使用
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
 
                                         {/* Model Selection */}
                                         <div className={formRowClass}>
                                             <p className={labelClass}>{t('AI Model')}</p>
-                                            {/* Changed grid to flex for horizontal layout, align items to end */}
-                                            <div className="flex items-end gap-4">
-                                                {/* Dropdown Section - Wrapped in flex-1 div */}
-                                                <div className="flex-1">
-                                                    <div>
-                                                        <p className="text-sm text-gray-300 mb-1">{t('Choose model')}</p>
-                                                        <div className="relative">
-                                                            {/* NestedDropdown コンポーネントを使用 */}
-                                                            <NestedDropdown
-                                                                options={createModelOptions()}
-                                                                value={config.model}
-                                                                onChange={(v) => {
-                                                                    // カテゴリ行や無効な値が選択された場合は無視
-                                                                    if (!v || v.startsWith('header-')) {
-                                                                      return;
-                                                                    }
-                                                                    const updatedConfigs = [...userConfig.customApiConfigs]
-                                                                    updatedConfigs[index].model = v;
-                                                                    updateCustomApiConfigs(updatedConfigs); // ヘルパー関数を使用
-                                                                }}
-                                                                placeholder={t('Select a model')}
-                                                                showModelId={true} // モデルIDを表示する設定
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div> {/* End Dropdown Section Wrapper */}
-
-                                                {/* Manual Input Section - Wrapped in flex-1 div */}
-                                                <div className="flex-1">
-                                                    {/* Removed mt-2 */}
-                                                    <div> {/* Wrap label and input */}
-                                                        <p className="text-sm text-gray-300 mb-1">{t('Or enter model name manually')}</p>
+                                            <div className="flex flex-col gap-3">
+                                                {/* Dropdown for preset models */}
+                                                <NestedDropdown
+                                                    options={createModelOptions()}
+                                                    value={config.model}
+                                                    onChange={(v) => {
+                                                        if (!v || v.startsWith('header-')) {
+                                                            return;
+                                                        }
+                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                        updatedConfigs[index].model = v;
+                                                        updateCustomApiConfigs(updatedConfigs);
+                                                    }}
+                                                    placeholder={config.model && config.model.trim() !== '' ? t('user-defined-model') : t('Choose model')}
+                                                    showModelId={true}
+                                                />
+                                                
+                                                {/* Editable model name display */}
+                                                <div className="relative group">
+                                                    {editingNameIndex === index + 1000 ? (
                                                         <Input
-                                                            className='w-full'
-                                                            placeholder="Custom model name"
                                                             value={config.model}
                                                             onChange={(e) => {
-                                                                const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                const updatedConfigs = [...userConfig.customApiConfigs];
                                                                 updatedConfigs[index].model = e.currentTarget.value;
-                                                                updateCustomApiConfigs(updatedConfigs); // ヘルパー関数を使用
+                                                                updateCustomApiConfigs(updatedConfigs);
                                                             }}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' || e.key === 'Escape') {
+                                                                    setEditingNameIndex(null);
+                                                                }
+                                                            }}
+                                                            onBlur={() => setEditingNameIndex(null)}
+                                                            autoFocus
+                                                            className="w-full font-mono text-sm"
+                                                            placeholder={t('Enter model name')}
                                                         />
-                                                    </div> {/* End label and input wrapper */}
-                                                </div> {/* End Manual Input Section Wrapper */}
+                                                    ) : (
+                                                        <div className="flex items-center gap-2 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
+                                                            <span className="flex-1 font-mono text-sm">
+                                                                {config.model || t('No model selected')}
+                                                            </span>
+                                                            <button
+                                                                className="p-1 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                                                                onClick={() => setEditingNameIndex(index + 1000)}
+                                                                title={t('Edit model name')}
+                                                            >
+                                                                <BiPencil size={14} />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* 詳細設定セクション（展開可能） */}
+
+                                        {/* System Prompt */}
+                                        <div className={formRowClass}>
+                                            <p className={labelClass}>{t('System Prompt')}</p>
+                                            <div className={inputContainerClass}>
+                                                <div className="space-y-2">
+                                                    <TripleStateToggle
+                                                        value={config.systemPromptMode || SystemPromptMode.COMMON}
+                                                        onChange={(v: SystemPromptMode) => {
+                                                            const updatedConfigs = [...userConfig.customApiConfigs];
+                                                            updatedConfigs[index].systemPromptMode = v;
+                                                            updateCustomApiConfigs(updatedConfigs);
+                                                        }}
+                                                    />
+                                                    <div className="relative">
+                                                        <Textarea
+                                                            className={`w-full ${config.systemPromptMode === SystemPromptMode.COMMON ? 'opacity-50 cursor-not-allowed' : ''} ${expandedSections[index + 2000] ? '' : 'max-h-[4.5rem]'}`}
+                                                            maxRows={expandedSections[index + 2000] ? undefined : 3}
+                                                            value={config.systemMessage}
+                                                            onChange={(e) => {
+                                                                if (config.systemPromptMode !== SystemPromptMode.COMMON) {
+                                                                    const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                    updatedConfigs[index].systemMessage = e.currentTarget.value;
+                                                                    updateCustomApiConfigs(updatedConfigs);
+                                                                }
+                                                            }}
+                                                            disabled={config.systemPromptMode === SystemPromptMode.COMMON}
+                                                            placeholder={
+                                                                config.systemPromptMode === SystemPromptMode.COMMON 
+                                                                    ? t('Disabled when using Common system message') 
+                                                                    : config.systemPromptMode === SystemPromptMode.APPEND 
+                                                                        ? t('This text will be appended to the common system message')
+                                                                        : t('This text will override the common system message')
+                                                            }
+                                                        />
+                                                        {/* Expand/Collapse bar at bottom */}
+                                                        <div 
+                                                            className="absolute bottom-0 left-0 right-0 h-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center justify-center rounded-b-md"
+                                                            onClick={() => {
+                                                                setExpandedSections(prev => ({
+                                                                    ...prev,
+                                                                    [index + 2000]: !prev[index + 2000]
+                                                                }));
+                                                            }}
+                                                            title={expandedSections[index + 2000] ? t('Collapse') : t('Expand')}
+                                                        >
+                                                            <BiChevronDown 
+                                                                size={16}
+                                                                className={`text-gray-600 dark:text-gray-300 transition-transform ${expandedSections[index + 2000] ? 'rotate-180' : ''}`}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Thinking Mode / Reasoning Mode / Temperature */}
+                                        {(() => {
+                                            const isAnthropicProvider = config.provider === CustomApiProvider.Anthropic ||
+                                                                      config.provider === CustomApiProvider.Bedrock ||
+                                                                      config.provider === CustomApiProvider.Anthropic_CustomAuth ||
+                                                                      config.provider === CustomApiProvider.VertexAI_Claude;
+                                            const isOpenAIProvider = config.provider === CustomApiProvider.OpenAI;
+
+                                            return (
+                                                <>
+                                                    {/* Anthropic Thinking Mode */}
+                                                    {isAnthropicProvider && (
+                                                        <div className={formRowClass}>
+                                                            <p className={labelClass}>{t('Thinking Mode')}</p>
+                                                            <div className="flex items-center gap-3">
+                                                                <Switch
+                                                                    checked={config.thinkingMode ?? false}
+                                                                    onChange={(enabled) => {
+                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                        updatedConfigs[index].thinkingMode = enabled;
+                                                                        updateCustomApiConfigs(updatedConfigs);
+                                                                    }}
+                                                                />
+                                                                <span className="text-sm font-medium">
+                                                                    {config.thinkingMode ? t('Enabled') : t('hidden')}
+                                                                </span>
+                                                                <div className="relative">
+                                                                    <span className="cursor-help opacity-60 group">ⓘ
+                                                                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
+                                                                            {t('thinking_mode_support_note')}
+                                                                        </div>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* OpenAI Reasoning Mode */}
+                                                    {isOpenAIProvider && (
+                                                        <div className={formRowClass}>
+                                                            <p className={labelClass}>{t('Reasoning Mode')}</p>
+                                                            <div className="flex items-center gap-3">
+                                                                <Switch
+                                                                    checked={config.reasoningMode ?? false}
+                                                                    onChange={(enabled) => {
+                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                        updatedConfigs[index].reasoningMode = enabled;
+                                                                        updateCustomApiConfigs(updatedConfigs);
+                                                                    }}
+                                                                />
+                                                                <span className="text-sm font-medium">
+                                                                    {config.reasoningMode ? t('Enabled') : t('hidden')}
+                                                                </span>
+                                                                <div className="relative">
+                                                                    <span className="cursor-help opacity-60 group">ⓘ
+                                                                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
+                                                                            {t('OpenAI Reasoning models like o4-mini, GPT-5 support reasoning mode')}
+                                                                        </div>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Anthropic Thinking Budget or OpenAI Reasoning Effort or Temperature */}
+                                                    {(isAnthropicProvider && config.thinkingMode) ? (
+                                                        <div className={formRowClass}>
+                                                            <p className={labelClass}>{t('Thinking Budget')}</p>
+                                                            <div className={inputContainerClass}>
+                                                                <Range
+                                                                    value={config.thinkingBudget ?? 2000}
+                                                                    onChange={(value) => {
+                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                        updatedConfigs[index].thinkingBudget = value;
+                                                                        updateCustomApiConfigs(updatedConfigs);
+                                                                    }}
+                                                                    min={2000}
+                                                                    max={32000}
+                                                                    step={1000}
+                                                                />
+                                                                <div className="text-sm text-right mt-1">{config.thinkingBudget} tokens</div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (isOpenAIProvider && config.reasoningMode) ? (
+                                                        <div className={formRowClass}>
+                                                            <p className={labelClass}>{t('Reasoning Effort')}</p>
+                                                            <div className={inputContainerClass}>
+                                                                <Range
+                                                                    value={
+                                                                        config.reasoningEffort === 'minimal' ? 0 :
+                                                                        config.reasoningEffort === 'low' ? 1 :
+                                                                        config.reasoningEffort === 'medium' ? 2 :
+                                                                        config.reasoningEffort === 'high' ? 3 : 2
+                                                                    }
+                                                                    onChange={(value) => {
+                                                                        const effortMap: Record<number, 'minimal' | 'low' | 'medium' | 'high'> = {
+                                                                            0: 'minimal',
+                                                                            1: 'low',
+                                                                            2: 'medium',
+                                                                            3: 'high'
+                                                                        };
+                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                        updatedConfigs[index].reasoningEffort = effortMap[value];
+                                                                        updateCustomApiConfigs(updatedConfigs);
+                                                                    }}
+                                                                    min={0}
+                                                                    max={3}
+                                                                    step={1}
+                                                                />
+                                                                <div className="flex justify-between text-xs opacity-70 mt-1">
+                                                                    <span>{t('Minimal')}</span>
+                                                                    <span>{t('Low')}</span>
+                                                                    <span>{t('Medium')}</span>
+                                                                    <span>{t('High')}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className={formRowClass}>
+                                                            <p className={labelClass}>{t('Temperature')}</p>
+                                                            <div className={inputContainerClass}>
+                                                                <Range
+                                                                    value={config.temperature}
+                                                                    onChange={(value) => {
+                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                        updatedConfigs[index].temperature = value;
+                                                                        updateCustomApiConfigs(updatedConfigs);
+                                                                    }}
+                                                                    min={0}
+                                                                    max={2}
+                                                                    step={0.1}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
+
+                                        {/* Advanced Settings - now collapsible */}
                                         <div className="border-t pt-3">
                                             <button
-                                                className="flex items-center gap-2 w-full text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+                                                className="flex items-center gap-2 w-full text-left text-sm font-medium opacity-80 hover:opacity-100"
                                                 onClick={() => toggleSection(index)}
                                             >
                                                 <svg
@@ -555,8 +868,9 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                 {t('Advanced Settings')}
                                             </button>
 
-                                            {expandedSections[index] && (
+                                            {expandedSections[index] ? (
                                                 <div className="mt-3 space-y-4">
+
                                                     {/* Provider Selection */}
                                                     <div className={formRowClass}>
                                                         <p className={labelClass}>{t('API Provider')}</p>
@@ -634,15 +948,16 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                             updateCustomApiConfigs(updatedConfigs);
                                                                         }}
                                                                     />
-                                                                    <span className="text-sm">{t('Full Path')}</span>
+                                                                    <div className="flex items-center gap-1">
+                                                                        <span className="text-sm">{t('Full Path')}</span>
+                                                                        <span className="cursor-help group">ⓘ
+                                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-72 hidden group-hover:block bg-gray-900 dark:bg-gray-800 text-white text-xs p-2 rounded shadow-lg z-50">
+                                                                                {t('If "Full Path" is ON, enter the complete API endpoint URL. Otherwise, enter only the base host. If host is blank, Common API Host settings will be used.')}
+                                                                            </div>
+                                                                        </span>
+                                                                    </div>
                                                                 </>
                                                             )}
-                                                            <div className="relative group">
-                                                                <span className="cursor-help text-gray-400">ⓘ</span>
-                                                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 hidden group-hover:block bg-gray-700 text-white text-xs p-2 rounded shadow-lg z-10">
-                                                                    {t('If "Full Path" is ON, enter the complete API endpoint URL. Otherwise, enter only the base host. If host is blank, Common API Host settings will be used.')}
-                                                                </div>
-                                                            </div>
                                                         </div>
                                                     </div>
                                                     {/* Blockquote removed as per user request */}
@@ -668,6 +983,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                     {(() => {
                                                         const isAnthropicProvider = config.provider === CustomApiProvider.Anthropic ||
                                                                                   config.provider === CustomApiProvider.Bedrock ||
+                                                                                  config.provider === CustomApiProvider.VertexAI_Claude ||
                                                                                   config.provider === CustomApiProvider.Anthropic_CustomAuth;
 
                                                         return (
@@ -687,11 +1003,12 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                             <span className="text-sm font-medium">
                                                                                 {config.thinkingMode ? t('Enabled') : t('hidden')}
                                                                             </span>
-                                                                            <div className="relative group">
-                                                                                <span className="cursor-help text-gray-400">ⓘ</span>
-                                                                                <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
-                                                                                    {t('Currently only supported by Claude(Bedrock)')}
-                                                                                </div>
+                                                                            <div className="relative">
+                                                                                <span className="cursor-help opacity-60 group">ⓘ
+                                                                                    <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
+                                                                                        {t('Extended Thinking mode supported by Claude API, Vertex Claude, and Bedrock')}
+                                                                                    </div>
+                                                                                </span>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -708,9 +1025,9 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                                     updatedConfigs[index].thinkingBudget = value;
                                                                                     updateCustomApiConfigs(updatedConfigs);
                                                                                 }}
-                                                                                min={2000}
+                                                                                min={1024}
                                                                                 max={32000}
-                                                                                step={1000}
+                                                                                step={256}
                                                                             />
                                                                             <div className="text-sm text-right mt-1">{config.thinkingBudget} tokens</div>
                                                                         </div>
@@ -738,36 +1055,15 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                         );
                                                     })()}
 
-                                                    {/* System Message */}
-                                                    <div className={formRowClass}>
-                                                        <p className={labelClass}>{t('System Message')}</p>
-                                                        <div className={inputContainerClass}>
-                                                            <TripleStateToggle
-                                                                value={config.systemPromptMode || SystemPromptMode.COMMON}
-                                                                onChange={(v: SystemPromptMode) => {
-                                                                    const updatedConfigs = [...userConfig.customApiConfigs];
-                                                                    updatedConfigs[index].systemPromptMode = v;
-                                                                    updateCustomApiConfigs(updatedConfigs);
-                                                                }}
-                                                            />
-                                                            {(config.systemPromptMode === SystemPromptMode.APPEND || config.systemPromptMode === SystemPromptMode.OVERRIDE) && (
-                                                                <Textarea
-                                                                    className='w-full mt-2'
-                                                                    maxRows={5}
-                                                                    value={config.systemMessage}
-                                                                    onChange={(e) => {
-                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
-                                                                        updatedConfigs[index].systemMessage = e.currentTarget.value;
-                                                                        updateCustomApiConfigs(updatedConfigs);
-                                                                    }}
-                                                                />
-                                                            )}
-                                                        </div>
-                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="mt-3 text-xs opacity-80 space-y-1">
+                                                    <p><strong>{t('Provider')}:</strong> {config.provider || 'OpenAI Compatible'}</p>
+                                                    <p><strong>{t('API Host')}:</strong> {config.host || t('Common Host')}</p>
                                                 </div>
                                             )}
                                         </div>
-                                    </div> {/* Close space-y-4 div (line 363) */}
+                                    </div> {/* Close space-y-4 div */}
                                 </div>
                             </div>
                         ))}
@@ -782,6 +1078,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         />
                     </div>
                 </div>
+            </div>
             </div>
         </div>
 
