@@ -36,48 +36,6 @@ export async function importData() {
     delete json.sync.customApiConfigs
   }
 
-  // Convert old rakutenApiConfig to customApiConfig format
-  if (json.sync.rakutenApiConfigCount) {
-    console.log('Converting old rakutenApiConfig format to modern customApiConfigs')
-    const count = json.sync.rakutenApiConfigCount
-    const convertedConfigs = []
-    for (let i = 0; i < count; i++) {
-      const oldKey = `rakutenApiConfig_${i}`
-      if (json.sync[oldKey]) {
-        const oldConfig = json.sync[oldKey]
-        convertedConfigs.push({
-          id: i + 1,
-          name: oldConfig.name || '',
-          shortName: oldConfig.shortName || oldConfig.name?.slice(0, 4) || '',
-          host: oldConfig.host || oldConfig.url || '',
-          model: oldConfig.model || '',
-          temperature: oldConfig.temperature || 0.7,
-          systemMessage: oldConfig.systemMessage || '',
-          avatar: oldConfig.avatar || '',
-          apiKey: oldConfig.apiKey || oldConfig.token || '',
-          thinkingMode: oldConfig.thinkingMode || false,
-          thinkingBudget: oldConfig.thinkingBudget || 2000,
-          provider: oldConfig.provider || 'openai',
-          webAccess: oldConfig.webAccess || false
-        })
-        delete json.sync[oldKey]
-      }
-    }
-    // Place converted configs in local storage (modern format)
-    json.local.customApiConfigs = convertedConfigs
-    // Convert top-level rakuten keys to custom keys
-    if (json.sync.rakutenApiHost) {
-      json.sync.customApiHost = json.sync.rakutenApiHost
-    }
-    if (json.sync.rakutenApiKey) {
-      json.sync.customApiKey = json.sync.rakutenApiKey
-    }
-
-    json.sync.customApiConfigCount = count
-    delete json.sync.rakutenApiConfigCount
-    delete json.sync.rakutenApiHost
-    delete json.sync.rakutenApiKey
-  }
 
   if (!window.confirm('Are you sure you want to import data? This will overwrite your current data')) {
     return

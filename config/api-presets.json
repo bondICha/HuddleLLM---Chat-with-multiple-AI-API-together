@@ -61,7 +61,7 @@
     "Grok": {
       "name": "Grok",
       "shortName": "Grok",
-      "model": "grok-3",
+      "model": "grok-4",
       "host": "https://api.x.ai/v1",
       "temperature": 1,
       "systemMessage": "",
