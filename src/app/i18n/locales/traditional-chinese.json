@@ -182,7 +182,7 @@
   "Avatar": "頭像",
   "AI Model": "AI模型",
   "hidden": "隱藏",
-  "Currently only supported by Claude(Bedrock)": "目前僅Claude(Bedrock)支援",
+  "thinking_mode_support_note": "請確認支援的模型並相應設定。在不支援的模型上啟用此功能可能會導致錯誤。",
   "System Message": "系統訊息",
   "OpenSource": "開源",
   "GitHub": "GitHub",

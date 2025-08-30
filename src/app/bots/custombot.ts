@@ -140,6 +140,8 @@ export class CustomBot extends AsyncAbstractBot {
                     isHostFullPath: config.isHostFullPath,
                     webAccess: config.webAccess,
                     botIndex: this.customBotNumber - 1, // 0ベースのインデックス
+                    reasoningMode: config.reasoningMode,
+                    reasoningEffort: config.reasoningEffort,
                 });
                 break;
             case CustomApiProvider.Google:
@@ -167,6 +169,8 @@ export class CustomBot extends AsyncAbstractBot {
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
+                    thinkingMode: config.thinkingMode, // Now properly supported with correct max_tokens
+                    thinkingBudget: config.thinkingBudget,
                     isHostFullPath: config.isHostFullPath,
                     webAccess: config.webAccess,
                 });

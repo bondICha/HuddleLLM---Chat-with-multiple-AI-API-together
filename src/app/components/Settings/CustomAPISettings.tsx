@@ -7,6 +7,7 @@ import { cx } from '~/utils'
 import {
     UserConfig,
     CustomApiProvider,
+    CustomApiConfig,
     MODEL_LIST, // 新しいモデルリストをインポート
 } from '~services/user-config'
 import { themeColorAtom } from '~app/state'
@@ -709,14 +710,17 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                             </div>
                                         </div>
 
-                                        {/* Thinking Mode / Temperature */}
+                                        {/* Thinking Mode / Reasoning Mode / Temperature */}
                                         {(() => {
                                             const isAnthropicProvider = config.provider === CustomApiProvider.Anthropic ||
                                                                       config.provider === CustomApiProvider.Bedrock ||
-                                                                      config.provider === CustomApiProvider.Anthropic_CustomAuth;
+                                                                      config.provider === CustomApiProvider.Anthropic_CustomAuth ||
+                                                                      config.provider === CustomApiProvider.VertexAI_Claude;
+                                            const isOpenAIProvider = config.provider === CustomApiProvider.OpenAI;
 
                                             return (
                                                 <>
+                                                    {/* Anthropic Thinking Mode */}
                                                     {isAnthropicProvider && (
                                                         <div className={formRowClass}>
                                                             <p className={labelClass}>{t('Thinking Mode')}</p>
@@ -735,7 +739,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                 <div className="relative">
                                                                     <span className="cursor-help opacity-60 group">ⓘ
                                                                         <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
-                                                                            {t('Currently only supported by Claude(Bedrock)')}
+                                                                            {t('thinking_mode_support_note')}
                                                                         </div>
                                                                     </span>
                                                                 </div>
@@ -743,6 +747,34 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                         </div>
                                                     )}
 
+                                                    {/* OpenAI Reasoning Mode */}
+                                                    {isOpenAIProvider && (
+                                                        <div className={formRowClass}>
+                                                            <p className={labelClass}>{t('Reasoning Mode')}</p>
+                                                            <div className="flex items-center gap-3">
+                                                                <Switch
+                                                                    checked={config.reasoningMode ?? false}
+                                                                    onChange={(enabled) => {
+                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                        updatedConfigs[index].reasoningMode = enabled;
+                                                                        updateCustomApiConfigs(updatedConfigs);
+                                                                    }}
+                                                                />
+                                                                <span className="text-sm font-medium">
+                                                                    {config.reasoningMode ? t('Enabled') : t('hidden')}
+                                                                </span>
+                                                                <div className="relative">
+                                                                    <span className="cursor-help opacity-60 group">ⓘ
+                                                                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
+                                                                            {t('OpenAI Reasoning models like o4-mini, GPT-5 support reasoning mode')}
+                                                                        </div>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Anthropic Thinking Budget or OpenAI Reasoning Effort or Temperature */}
                                                     {(isAnthropicProvider && config.thinkingMode) ? (
                                                         <div className={formRowClass}>
                                                             <p className={labelClass}>{t('Thinking Budget')}</p>
@@ -759,6 +791,40 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                     step={1000}
                                                                 />
                                                                 <div className="text-sm text-right mt-1">{config.thinkingBudget} tokens</div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (isOpenAIProvider && config.reasoningMode) ? (
+                                                        <div className={formRowClass}>
+                                                            <p className={labelClass}>{t('Reasoning Effort')}</p>
+                                                            <div className={inputContainerClass}>
+                                                                <Range
+                                                                    value={
+                                                                        config.reasoningEffort === 'minimal' ? 0 :
+                                                                        config.reasoningEffort === 'low' ? 1 :
+                                                                        config.reasoningEffort === 'medium' ? 2 :
+                                                                        config.reasoningEffort === 'high' ? 3 : 2
+                                                                    }
+                                                                    onChange={(value) => {
+                                                                        const effortMap: Record<number, 'minimal' | 'low' | 'medium' | 'high'> = {
+                                                                            0: 'minimal',
+                                                                            1: 'low',
+                                                                            2: 'medium',
+                                                                            3: 'high'
+                                                                        };
+                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                        updatedConfigs[index].reasoningEffort = effortMap[value];
+                                                                        updateCustomApiConfigs(updatedConfigs);
+                                                                    }}
+                                                                    min={0}
+                                                                    max={3}
+                                                                    step={1}
+                                                                />
+                                                                <div className="flex justify-between text-xs opacity-70 mt-1">
+                                                                    <span>{t('Minimal')}</span>
+                                                                    <span>{t('Low')}</span>
+                                                                    <span>{t('Medium')}</span>
+                                                                    <span>{t('High')}</span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     ) : (
@@ -914,6 +980,80 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                         </div>
                                                     </div>
 
+                                                    {(() => {
+                                                        const isAnthropicProvider = config.provider === CustomApiProvider.Anthropic ||
+                                                                                  config.provider === CustomApiProvider.Bedrock ||
+                                                                                  config.provider === CustomApiProvider.VertexAI_Claude ||
+                                                                                  config.provider === CustomApiProvider.Anthropic_CustomAuth;
+
+                                                        return (
+                                                            <>
+                                                                {isAnthropicProvider && (
+                                                                    <div className={formRowClass}>
+                                                                        <p className={labelClass}>{t('Thinking Mode')}</p>
+                                                                        <div className="flex items-center gap-3">
+                                                                            <Switch
+                                                                                checked={config.thinkingMode ?? false}
+                                                                                onChange={(enabled) => {
+                                                                                    const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                                    updatedConfigs[index].thinkingMode = enabled;
+                                                                                    updateCustomApiConfigs(updatedConfigs);
+                                                                                }}
+                                                                            />
+                                                                            <span className="text-sm font-medium">
+                                                                                {config.thinkingMode ? t('Enabled') : t('hidden')}
+                                                                            </span>
+                                                                            <div className="relative">
+                                                                                <span className="cursor-help opacity-60 group">ⓘ
+                                                                                    <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
+                                                                                        {t('Extended Thinking mode supported by Claude API, Vertex Claude, and Bedrock')}
+                                                                                    </div>
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {(isAnthropicProvider && config.thinkingMode) ? (
+                                                                    <div className={formRowClass}>
+                                                                        <p className={labelClass}>{t('Thinking Budget')}</p>
+                                                                        <div className={inputContainerClass}>
+                                                                            <Range
+                                                                                value={config.thinkingBudget ?? 2000}
+                                                                                onChange={(value) => {
+                                                                                    const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                                    updatedConfigs[index].thinkingBudget = value;
+                                                                                    updateCustomApiConfigs(updatedConfigs);
+                                                                                }}
+                                                                                min={1024}
+                                                                                max={32000}
+                                                                                step={256}
+                                                                            />
+                                                                            <div className="text-sm text-right mt-1">{config.thinkingBudget} tokens</div>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    // Show Temperature if not Anthropic provider OR if Anthropic provider and Thinking Mode is off
+                                                                    <div className={formRowClass}>
+                                                                        <p className={labelClass}>{t('Temperature')}</p>
+                                                                        <div className={inputContainerClass}>
+                                                                            <Range
+                                                                                value={config.temperature}
+                                                                                onChange={(value) => {
+                                                                                    const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                                    updatedConfigs[index].temperature = value;
+                                                                                    updateCustomApiConfigs(updatedConfigs);
+                                                                                }}
+                                                                                min={0}
+                                                                                max={2}
+                                                                                step={0.1}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        );
+                                                    })()}
 
                                                 </div>
                                             ) : (

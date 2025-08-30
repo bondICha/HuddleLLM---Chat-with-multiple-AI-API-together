@@ -263,14 +263,14 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       system: this.getSystemMessage(),
     }
 
-    // Add reasoning configuration or temperature based on thinkingMode flag
+    // Add Extended Thinking configuration or temperature based on thinkingMode flag
     if (this.thinkingMode) {
       body.thinking = {
         type: "enabled",
-        budget_tokens: this.config.thinkingBudget || 2000 // Use config.thinkingBudget
+        budget_tokens: Math.max(this.config.thinkingBudget || 2000, 1024) // Minimum 1024 tokens as per Extended Thinking spec
       };
-      // Temperature is not used in Thinking Mode, so set to undefined
-      body.temperature = undefined;
+      // Temperature is not compatible with Extended Thinking mode
+      // Do not set temperature when thinking mode is enabled
     } else {
       body.temperature = this.config.temperature; // Use config.temperature
     }
@@ -280,6 +280,11 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true',
     };
+
+    // Add beta header for Extended Thinking if thinking mode is enabled
+    if (this.thinkingMode) {
+      headers['anthropic-beta'] = 'thinking-2024-12-19';
+    }
 
     if (this.useCustomAuthorizationHeader) {
       headers['Authorization'] = this.config.apiKey; // Use config.apiKey

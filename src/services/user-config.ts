@@ -129,8 +129,10 @@ export interface CustomApiConfig {
   systemPromptMode: SystemPromptMode, // System promptの使用方法
   avatar: string,
   apiKey: string,
-  thinkingMode?: boolean,
-  thinkingBudget?: number,
+  thinkingMode?: boolean, // Anthropic thinking mode
+  thinkingBudget?: number, // Anthropic thinking budget
+  reasoningMode?: boolean, // OpenAI reasoning mode
+  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high', // OpenAI reasoning effort
   provider: CustomApiProvider,
   webAccess?: boolean,
   isAnthropicUsingAuthorizationHeader?: boolean, // Anthropicの認証ヘッダータイプを指定するフラグ

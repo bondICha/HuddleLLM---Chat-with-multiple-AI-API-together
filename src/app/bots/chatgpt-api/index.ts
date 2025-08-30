@@ -137,6 +137,7 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
 
     let done = false
     const result: ChatMessage = { role: 'assistant', content: '' }
+    let reasoningSummary = ''
 
     const finish = () => {
       done = true
@@ -158,6 +159,34 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
         console.error(err)
         return
       }
+      
+      // Handle reasoning summary for OpenAI reasoning models
+      if (data?.output && Array.isArray(data.output)) {
+        data.output.forEach((item: any) => {
+          if (item.type === 'reasoning' && item.summary) {
+            // Extract reasoning summary text
+            item.summary.forEach((summaryItem: any) => {
+              if (summaryItem.type === 'summary_text' && summaryItem.text) {
+                reasoningSummary = summaryItem.text
+              }
+            })
+          } else if (item.type === 'message' && item.content) {
+            // Extract message content
+            item.content.forEach((contentItem: any) => {
+              if (contentItem.type === 'output_text' && contentItem.text) {
+                result.content = contentItem.text
+              }
+            })
+          }
+        })
+        // Update the answer with reasoning summary if available
+        this.emitUpdateAnswer(params, { 
+          text: result.content, 
+          thinking: reasoningSummary 
+        })
+      }
+      
+      // Handle traditional streaming response (non-reasoning models)
       if (data?.choices?.length) {
         const delta = data.choices[0].delta
         if (delta?.content) {
@@ -196,6 +225,8 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       isHostFullPath?: boolean;
       webAccess?: boolean;
       botIndex?: number; // CustomBotからのインデックス
+      reasoningMode?: boolean; // OpenAI reasoning mode
+      reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
     },
   ) {
     super()
@@ -256,6 +287,14 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
         messages,
         max_tokens: undefined,
         stream: true,
+        // Add reasoning parameters if reasoning mode is enabled
+        ...(this.config.reasoningMode && {
+          reasoning_effort: this.config.reasoningEffort || 'medium'
+        }),
+        // Include temperature only if reasoning mode is disabled
+        ...((!this.config.reasoningMode) && {
+          temperature: this.config.temperature
+        })
       }),
     })
     if (!resp.ok) {
