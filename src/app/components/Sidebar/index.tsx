@@ -648,14 +648,14 @@ useEffect(() => {
         <div className={cx('flex mt-5 gap-[10px] mb-4', collapsed ? 'flex-col' : 'flex-row ')}>
           {!collapsed && (
             <Tooltip content={t('GitHub')}>
-              <a href="https://github.com/bondICha/chathub-OSS" target="_blank" rel="noreferrer">
+              <a href="https://github.com/bondICha/HuddleLLM---Chat-with-multiple-AI-API-together" target="_blank" rel="noreferrer">
                 <IconButton icon={githubIcon} />
               </a>
             </Tooltip>
           )}
           {!collapsed && (
             <Tooltip content={t('Feedback')}>
-              <a href="https://github.com/bondICha/chathub-OSS/issues" target="_blank" rel="noreferrer">
+              <a href="https://github.com/bondICha/HuddleLLM---Chat-with-multiple-AI-API-together/issues" target="_blank" rel="noreferrer">
                 <IconButton icon={feedbackIcon} />
               </a>
             </Tooltip>

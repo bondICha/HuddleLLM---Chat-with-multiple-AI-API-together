@@ -162,6 +162,7 @@
   "Delete": "刪除",
   "Custom Chatbot Name": "給你的AI伯特取個名字吧～",
   "Choose model": "選擇 model",
+  "user-defined-model": "用戶自定義模型",
   "Or enter model name manually": "或是手動輸入 model 名稱",
   "Advanced Settings": "進階設定",
   "API Provider": "API 供應商",

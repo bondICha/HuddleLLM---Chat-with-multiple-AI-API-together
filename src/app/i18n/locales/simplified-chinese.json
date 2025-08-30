@@ -163,6 +163,7 @@
   "Delete": "删除",
   "Custom Chatbot Name": "给你的AI伯特起个名字吧～",
   "Choose model": "选择模型",
+  "user-defined-model": "用户自定义模型",
   "Or enter model name manually": "或手动输入模型名称",
   "Advanced Settings": "高级设置",
   "API Provider": "API提供商",

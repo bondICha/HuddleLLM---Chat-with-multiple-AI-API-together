@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { FC, useState, useEffect } from 'react' // useEffect をインポート
 import { useAtomValue } from 'jotai'
 import toast from 'react-hot-toast'
+import { cx } from '~/utils'
 import {
     UserConfig,
     CustomApiProvider,
@@ -21,7 +22,7 @@ import Range from '../Range'
 import Switch from '~app/components/Switch'
 import AvatarSelect from './AvatarSelect'
 import BotIcon from '../BotIcon'
-import { BiPlus, BiTrash, BiHide, BiShow, BiInfoCircle, BiPencil } from 'react-icons/bi'
+import { BiPlus, BiTrash, BiHide, BiShow, BiInfoCircle, BiPencil, BiChevronDown } from 'react-icons/bi'
 import Button from '../Button'
 import { revalidateEnabledBots } from '~app/hooks/use-enabled-bots'
 import { getTemplateOptions, getActivePresets, getPresetMapping } from '~services/preset-loader'
@@ -47,7 +48,6 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     const [showVariables, setShowVariables] = useState(false);
     const [editingNameIndex, setEditingNameIndex] = useState<number | null>(null);
     const [editingShortNameIndex, setEditingShortNameIndex] = useState<number | null>(null);
-    const [presetDropdownOpen, setPresetDropdownOpen] = useState<number | null>(null);
 
     // クリックアウトサイド処理
     useEffect(() => {
@@ -59,22 +59,17 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 setEditingNameIndex(null);
             }
             
-            // Presetドロップダウンの終了
-            if (presetDropdownOpen !== null && !target.closest('[data-preset-dropdown]')) {
-                setPresetDropdownOpen(null);
-            }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [editingNameIndex, presetDropdownOpen]);
+    }, [editingNameIndex]);
 
     // テンプレートオプションの状態
     const [templateOptions, setTemplateOptions] = useState([
         { name: t('Apply Template Settings'), value: 'none' }
     ]);
     const [nestedTemplateOptions, setNestedTemplateOptions] = useState<NestedDropdownOption[]>([]);
-    const [isHierarchical, setIsHierarchical] = useState(false);
 
     // コンポーネント初期化時にテンプレートオプションを読み込み
     useEffect(() => {
@@ -83,7 +78,6 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 const templateData = await getTemplateOptions();
                 setTemplateOptions(templateData.flatOptions);
                 setNestedTemplateOptions(templateData.nestedOptions || []);
-                setIsHierarchical(templateData.isHierarchical);
             } catch (error) {
                 console.warn('Failed to load template options:', error);
             }
@@ -122,9 +116,8 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 case 'google': return 'gemini';
                 case 'grok': return 'grok';
                 case 'deepseek': return 'deepseek';
-                case 'perplexity': return 'chatgpt'; // Perplexityのロゴがない場合の代替
                 case 'rakuten': return 'rakuten';
-                case 'custom': return 'chathub'; // カスタムモデル用
+                case 'custom': return 'huddlellm'; // カスタムモデル用
                 default: return 'chatgpt'; // デフォルト
             }
         };
@@ -135,7 +128,6 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             // プロバイダーカテゴリを作成
             const categoryOption: NestedDropdownOption = {
                 label: provider, // プロバイダー名をラベルに
-                disabled: true, // カテゴリ行を選択不可にする
                 children: [], // 子要素（モデル）を格納する配列
                 icon: providerIcon, // より適切なアイコン
             };
@@ -195,17 +187,17 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             updatedConfigs[index].host = preset.host;
             updatedConfigs[index].temperature = preset.temperature;
             updatedConfigs[index].systemMessage = preset.systemMessage;
-            updatedConfigs[index].systemPromptMode = preset.systemPromptMode;
+            updatedConfigs[index].systemPromptMode = preset.systemPromptMode as SystemPromptMode;
             updatedConfigs[index].avatar = preset.avatar;
             updatedConfigs[index].thinkingMode = preset.thinkingMode;
             updatedConfigs[index].thinkingBudget = preset.thinkingBudget;
-                updatedConfigs[index].provider = preset.provider;
+                updatedConfigs[index].provider = preset.provider as CustomApiProvider;
 
                 updateConfigValue({ customApiConfigs: updatedConfigs });
             }
         } catch (error) {
             console.error('Failed to apply template:', error);
-            toast.error('テンプレートの適用に失敗しました');
+            toast.error(t('Failed to apply template'));
         }
     };
 
@@ -220,8 +212,8 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         const newConfig = {
             id: newId,
             name: `Custom AI ${newId}`,
-            shortName: `Cus${newId}`,
-            model: 'gpt-4o',
+            shortName: `Custom${newId}`,
+            model: '',
             host: '',
             temperature: 0.7,
             systemMessage: '',
@@ -299,9 +291,9 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         <>
         <div className="flex flex-col gap-4 p-4 rounded-lg relative" style={{ backgroundColor: themeColor ? `${themeColor}15` : 'rgba(17, 24, 39, 0.15)' }}>
             <div className="absolute inset-0 bg-white/10 dark:bg-black/20 rounded-lg pointer-events-none"></div>
-            <div className="relative z-10">
+            <div className="relative">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold">{t('Custom API Models')}</h2>
+                <h2 className="text-lg font-bold">{t('Chatbots configuration')}</h2>
             </div>
             <div className="flex flex-col gap-3">
                 {/* Common API Settings */}
@@ -426,11 +418,13 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))' }}
                     >
                         {userConfig.customApiConfigs.map((config, index) => (
-                            <div key={config.id || index} className="bg-white/30 dark:bg-black/30 backdrop-blur-md border border-gray-300 dark:border-gray-700 rounded-2xl shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(255,255,255,0.07),0_4px_6px_-2px_rgba(255,255,255,0.04)] transition-all hover:shadow-xl dark:hover:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1),0_10px_10px_-5px_rgba(255,255,255,0.04)]">
+                            <div key={config.id || index} className={cx(
+                                "bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(255,255,255,0.07),0_4px_6px_-2px_rgba(255,255,255,0.04)] transition-all hover:shadow-xl dark:hover:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1),0_10px_10px_-5px_rgba(255,255,255,0.04)]"
+                            )}>
                                 {/* Header */}
-                                <div className="flex items-center justify-between p-4 border-b border-white/20 dark:border-white/10">
-                                    <span className="font-bold text-lg text-primary">#{index + 1}</span>
-                                    <div className="flex-1 flex flex-col items-center justify-center min-w-0">
+                                <div className="grid grid-cols-[60px_1fr_140px] items-center p-4 border-b border-white/20 dark:border-white/10 gap-2">
+                                    <span className="font-bold text-lg text-primary text-center">#{index + 1}</span>
+                                    <div className="flex flex-col items-center justify-center">
                                         <div className="w-16 h-16 mb-2 cursor-pointer">
                                             <AvatarSelect
                                                 value={config.avatar}
@@ -521,54 +515,32 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                             </span>
                                         )}
                                     </div>
-                                    <div className="flex items-start justify-between gap-3">
-                                        {/* Left side: Preset button */}
-                                        <div className="relative" data-preset-dropdown data-preset-dropdown-index={index}>
-                                            <button
-                                                className="p-2 rounded-lg hover:bg-white/20 flex flex-col items-center justify-center min-w-[60px]"
-                                                title={t('Apply Preset')}
-                                                onClick={() => setPresetDropdownOpen(presetDropdownOpen === index ? null : index)}
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" className="mb-1">
-                                                    <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
-                                                </svg>
-                                                <span className="text-xs font-medium">Preset</span>
-                                            </button>
-                                            {presetDropdownOpen === index && (
-                                                <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-600 z-[9999]">
-                                                    {isHierarchical && nestedTemplateOptions.length > 0 ? (
-                                                        <NestedDropdown
-                                                            options={nestedTemplateOptions}
-                                                            value={'none'}
-                                                            onChange={(v) => {
-                                                                if (v !== 'none') {
-                                                                    applyTemplate(v, index);
-                                                                    setPresetDropdownOpen(null);
-                                                                }
-                                                            }}
-                                                            placeholder={t('Apply Template Settings')}
-                                                            showModelId={true}
-                                                        />
-                                                    ) : (
-                                                        <div className="p-2">
-                                                            <Select
-                                                                options={templateOptions}
-                                                                value={'none'}
-                                                                onChange={(v) => {
-                                                                    if (v !== 'none') {
-                                                                        applyTemplate(v, index);
-                                                                        setPresetDropdownOpen(null);
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
+                                    <div className="flex items-center gap-2">
+                                        {/* Preset button with wider dropdown */}
+                                        <div className="flex-1">
+                                           <NestedDropdown
+                                               options={nestedTemplateOptions}
+                                               value={'none'}
+                                               onChange={(v) => {
+                                                   if (v && v !== 'none') {
+                                                       applyTemplate(v, index);
+                                                   }
+                                               }}
+                                               placeholder={t('Choose a preset to apply')}
+                                               showModelId={false}
+                                               trigger={
+                                                   <div className="p-2 rounded-lg hover:bg-white/20 flex flex-col items-center justify-center min-w-[60px] w-full">
+                                                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" className="mb-1">
+                                                           <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+                                                       </svg>
+                                                       <span className="text-xs font-medium">Preset</span>
+                                                   </div>
+                                               }
+                                           />
                                         </div>
 
-                                        {/* Right side: 2x2 grid of control buttons */}
-                                        <div className="grid grid-cols-2 gap-1">
+                                        {/* 2x2 grid of control buttons */}
+                                        <div className="grid grid-cols-2 gap-1 flex-shrink-0">
                                             {/* Top row: Up and Down buttons */}
                                             <button
                                                 className={`p-2 rounded-lg ${index === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/20'} flex items-center justify-center`}
@@ -626,47 +598,192 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                         {/* Model Selection */}
                                         <div className={formRowClass}>
                                             <p className={labelClass}>{t('AI Model')}</p>
-                                            <div className="flex flex-col gap-2">
-                                                {/* Dropdown Section */}
-                                                <div>
-                                                    <p className="text-sm opacity-70 mb-1">{t('Choose model')}</p>
-                                                    <div className="relative">
-                                                        <NestedDropdown
-                                                            options={createModelOptions()}
+                                            <div className="flex flex-col gap-3">
+                                                {/* Dropdown for preset models */}
+                                                <NestedDropdown
+                                                    options={createModelOptions()}
+                                                    value={config.model}
+                                                    onChange={(v) => {
+                                                        if (!v || v.startsWith('header-')) {
+                                                            return;
+                                                        }
+                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                        updatedConfigs[index].model = v;
+                                                        updateCustomApiConfigs(updatedConfigs);
+                                                    }}
+                                                    placeholder={config.model && config.model.trim() !== '' ? t('user-defined-model') : t('Choose model')}
+                                                    showModelId={true}
+                                                />
+                                                
+                                                {/* Editable model name display */}
+                                                <div className="relative group">
+                                                    {editingNameIndex === index + 1000 ? (
+                                                        <Input
                                                             value={config.model}
-                                                            onChange={(v) => {
-                                                                if (!v || v.startsWith('header-')) {
-                                                                    return;
-                                                                }
-                                                                const updatedConfigs = [...userConfig.customApiConfigs]
-                                                                updatedConfigs[index].model = v;
+                                                            onChange={(e) => {
+                                                                const updatedConfigs = [...userConfig.customApiConfigs];
+                                                                updatedConfigs[index].model = e.currentTarget.value;
                                                                 updateCustomApiConfigs(updatedConfigs);
                                                             }}
-                                                            placeholder={t('Select a model')}
-                                                            showModelId={true}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' || e.key === 'Escape') {
+                                                                    setEditingNameIndex(null);
+                                                                }
+                                                            }}
+                                                            onBlur={() => setEditingNameIndex(null)}
+                                                            autoFocus
+                                                            className="w-full font-mono text-sm"
+                                                            placeholder={t('Enter model name')}
                                                         />
-                                                    </div>
-                                                </div>
-
-                                                {/* Manual Input Section */}
-                                                <div>
-                                                    <p className="text-sm opacity-70 mb-1">{t('Or enter model name manually')}</p>
-                                                    <Input
-                                                        className='w-full'
-                                                        placeholder="Custom model name"
-                                                        value={config.model}
-                                                        onChange={(e) => {
-                                                            const updatedConfigs = [...userConfig.customApiConfigs]
-                                                            updatedConfigs[index].model = e.currentTarget.value;
-                                                            updateCustomApiConfigs(updatedConfigs);
-                                                        }}
-                                                    />
+                                                    ) : (
+                                                        <div className="flex items-center gap-2 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
+                                                            <span className="flex-1 font-mono text-sm">
+                                                                {config.model || t('No model selected')}
+                                                            </span>
+                                                            <button
+                                                                className="p-1 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                                                                onClick={() => setEditingNameIndex(index + 1000)}
+                                                                title={t('Edit model name')}
+                                                            >
+                                                                <BiPencil size={14} />
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
 
 
-                                        {/* 詳細設定セクション（展開可能） */}
+                                        {/* System Prompt */}
+                                        <div className={formRowClass}>
+                                            <p className={labelClass}>{t('System Prompt')}</p>
+                                            <div className={inputContainerClass}>
+                                                <div className="space-y-2">
+                                                    <TripleStateToggle
+                                                        value={config.systemPromptMode || SystemPromptMode.COMMON}
+                                                        onChange={(v: SystemPromptMode) => {
+                                                            const updatedConfigs = [...userConfig.customApiConfigs];
+                                                            updatedConfigs[index].systemPromptMode = v;
+                                                            updateCustomApiConfigs(updatedConfigs);
+                                                        }}
+                                                    />
+                                                    <div className="relative">
+                                                        <Textarea
+                                                            className={`w-full ${config.systemPromptMode === SystemPromptMode.COMMON ? 'opacity-50 cursor-not-allowed' : ''} ${expandedSections[index + 2000] ? '' : 'max-h-[4.5rem]'}`}
+                                                            maxRows={expandedSections[index + 2000] ? undefined : 3}
+                                                            value={config.systemMessage}
+                                                            onChange={(e) => {
+                                                                if (config.systemPromptMode !== SystemPromptMode.COMMON) {
+                                                                    const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                    updatedConfigs[index].systemMessage = e.currentTarget.value;
+                                                                    updateCustomApiConfigs(updatedConfigs);
+                                                                }
+                                                            }}
+                                                            disabled={config.systemPromptMode === SystemPromptMode.COMMON}
+                                                            placeholder={
+                                                                config.systemPromptMode === SystemPromptMode.COMMON 
+                                                                    ? t('Disabled when using Common system message') 
+                                                                    : config.systemPromptMode === SystemPromptMode.APPEND 
+                                                                        ? t('This text will be appended to the common system message')
+                                                                        : t('This text will override the common system message')
+                                                            }
+                                                        />
+                                                        {/* Expand/Collapse bar at bottom */}
+                                                        <div 
+                                                            className="absolute bottom-0 left-0 right-0 h-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center justify-center rounded-b-md"
+                                                            onClick={() => {
+                                                                setExpandedSections(prev => ({
+                                                                    ...prev,
+                                                                    [index + 2000]: !prev[index + 2000]
+                                                                }));
+                                                            }}
+                                                            title={expandedSections[index + 2000] ? t('Collapse') : t('Expand')}
+                                                        >
+                                                            <BiChevronDown 
+                                                                size={16}
+                                                                className={`text-gray-600 dark:text-gray-300 transition-transform ${expandedSections[index + 2000] ? 'rotate-180' : ''}`}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Thinking Mode / Temperature */}
+                                        {(() => {
+                                            const isAnthropicProvider = config.provider === CustomApiProvider.Anthropic ||
+                                                                      config.provider === CustomApiProvider.Bedrock ||
+                                                                      config.provider === CustomApiProvider.Anthropic_CustomAuth;
+
+                                            return (
+                                                <>
+                                                    {isAnthropicProvider && (
+                                                        <div className={formRowClass}>
+                                                            <p className={labelClass}>{t('Thinking Mode')}</p>
+                                                            <div className="flex items-center gap-3">
+                                                                <Switch
+                                                                    checked={config.thinkingMode ?? false}
+                                                                    onChange={(enabled) => {
+                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                        updatedConfigs[index].thinkingMode = enabled;
+                                                                        updateCustomApiConfigs(updatedConfigs);
+                                                                    }}
+                                                                />
+                                                                <span className="text-sm font-medium">
+                                                                    {config.thinkingMode ? t('Enabled') : t('hidden')}
+                                                                </span>
+                                                                <div className="relative">
+                                                                    <span className="cursor-help opacity-60 group">ⓘ
+                                                                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
+                                                                            {t('Currently only supported by Claude(Bedrock)')}
+                                                                        </div>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {(isAnthropicProvider && config.thinkingMode) ? (
+                                                        <div className={formRowClass}>
+                                                            <p className={labelClass}>{t('Thinking Budget')}</p>
+                                                            <div className={inputContainerClass}>
+                                                                <Range
+                                                                    value={config.thinkingBudget ?? 2000}
+                                                                    onChange={(value) => {
+                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                        updatedConfigs[index].thinkingBudget = value;
+                                                                        updateCustomApiConfigs(updatedConfigs);
+                                                                    }}
+                                                                    min={2000}
+                                                                    max={32000}
+                                                                    step={1000}
+                                                                />
+                                                                <div className="text-sm text-right mt-1">{config.thinkingBudget} tokens</div>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className={formRowClass}>
+                                                            <p className={labelClass}>{t('Temperature')}</p>
+                                                            <div className={inputContainerClass}>
+                                                                <Range
+                                                                    value={config.temperature}
+                                                                    onChange={(value) => {
+                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                        updatedConfigs[index].temperature = value;
+                                                                        updateCustomApiConfigs(updatedConfigs);
+                                                                    }}
+                                                                    min={0}
+                                                                    max={2}
+                                                                    step={0.1}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
+
+                                        {/* Advanced Settings - now collapsible */}
                                         <div className="border-t pt-3">
                                             <button
                                                 className="flex items-center gap-2 w-full text-left text-sm font-medium opacity-80 hover:opacity-100"
@@ -687,47 +804,6 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
                                             {expandedSections[index] ? (
                                                 <div className="mt-3 space-y-4">
-                                                    {/* System Prompt */}
-                                                    <div className={formRowClass}>
-                                                        <p className={labelClass}>{t('System Prompt')}</p>
-                                                        <div className={inputContainerClass}>
-                                                            <TripleStateToggle
-                                                                value={config.systemPromptMode || SystemPromptMode.COMMON}
-                                                                onChange={(v: SystemPromptMode) => {
-                                                                    const updatedConfigs = [...userConfig.customApiConfigs];
-                                                                    updatedConfigs[index].systemPromptMode = v;
-                                                                    updateCustomApiConfigs(updatedConfigs);
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    {/* System Prompt Text Field */}
-                                                    <div className={formRowClass}>
-                                                        <p className={labelClass}></p>
-                                                        <div className={inputContainerClass}>
-                                                            <Textarea
-                                                                className={`w-full ${config.systemPromptMode === SystemPromptMode.COMMON ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                                maxRows={5}
-                                                                value={config.systemMessage}
-                                                                onChange={(e) => {
-                                                                    if (config.systemPromptMode !== SystemPromptMode.COMMON) {
-                                                                        const updatedConfigs = [...userConfig.customApiConfigs]
-                                                                        updatedConfigs[index].systemMessage = e.currentTarget.value;
-                                                                        updateCustomApiConfigs(updatedConfigs);
-                                                                    }
-                                                                }}
-                                                                disabled={config.systemPromptMode === SystemPromptMode.COMMON}
-                                                                placeholder={
-                                                                    config.systemPromptMode === SystemPromptMode.COMMON 
-                                                                        ? t('Disabled when using Common system message') 
-                                                                        : config.systemPromptMode === SystemPromptMode.APPEND 
-                                                                            ? t('This text will be appended to the common system message')
-                                                                            : t('This text will override the common system message')
-                                                                }
-                                                            />
-                                                        </div>
-                                                    </div>
 
                                                     {/* Provider Selection */}
                                                     <div className={formRowClass}>
@@ -838,92 +914,12 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                         </div>
                                                     </div>
 
-                                                    {(() => {
-                                                        const isAnthropicProvider = config.provider === CustomApiProvider.Anthropic ||
-                                                                                  config.provider === CustomApiProvider.Bedrock ||
-                                                                                  config.provider === CustomApiProvider.Anthropic_CustomAuth;
-
-                                                        return (
-                                                            <>
-                                                                {isAnthropicProvider && (
-                                                                    <div className={formRowClass}>
-                                                                        <p className={labelClass}>{t('Thinking Mode')}</p>
-                                                                        <div className="flex items-center gap-3">
-                                                                            <Switch
-                                                                                checked={config.thinkingMode ?? false}
-                                                                                onChange={(enabled) => {
-                                                                                    const updatedConfigs = [...userConfig.customApiConfigs]
-                                                                                    updatedConfigs[index].thinkingMode = enabled;
-                                                                                    updateCustomApiConfigs(updatedConfigs);
-                                                                                }}
-                                                                            />
-                                                                            <span className="text-sm font-medium">
-                                                                                {config.thinkingMode ? t('Enabled') : t('hidden')}
-                                                                            </span>
-                                                                            <div className="relative">
-                                                                                <span className="cursor-help opacity-60 group">ⓘ
-                                                                                    <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
-                                                                                        {t('Currently only supported by Claude(Bedrock)')}
-                                                                                    </div>
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                {(isAnthropicProvider && config.thinkingMode) ? (
-                                                                    <div className={formRowClass}>
-                                                                        <p className={labelClass}>{t('Thinking Budget')}</p>
-                                                                        <div className={inputContainerClass}>
-                                                                            <Range
-                                                                                value={config.thinkingBudget ?? 2000}
-                                                                                onChange={(value) => {
-                                                                                    const updatedConfigs = [...userConfig.customApiConfigs]
-                                                                                    updatedConfigs[index].thinkingBudget = value;
-                                                                                    updateCustomApiConfigs(updatedConfigs);
-                                                                                }}
-                                                                                min={2000}
-                                                                                max={32000}
-                                                                                step={1000}
-                                                                            />
-                                                                            <div className="text-sm text-right mt-1">{config.thinkingBudget} tokens</div>
-                                                                        </div>
-                                                                    </div>
-                                                                ) : (
-                                                                    // Show Temperature if not Anthropic provider OR if Anthropic provider and Thinking Mode is off
-                                                                    <div className={formRowClass}>
-                                                                        <p className={labelClass}>{t('Temperature')}</p>
-                                                                        <div className={inputContainerClass}>
-                                                                            <Range
-                                                                                value={config.temperature}
-                                                                                onChange={(value) => {
-                                                                                    const updatedConfigs = [...userConfig.customApiConfigs]
-                                                                                    updatedConfigs[index].temperature = value;
-                                                                                    updateCustomApiConfigs(updatedConfigs);
-                                                                                }}
-                                                                                min={0}
-                                                                                max={2}
-                                                                                step={0.1}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        );
-                                                    })()}
 
                                                 </div>
                                             ) : (
                                                 <div className="mt-3 text-xs opacity-80 space-y-1">
-                                                    <p><strong>{t('System Prompt')}:</strong> {
-                                                        config.systemPromptMode === SystemPromptMode.COMMON ? t('Common') :
-                                                        config.systemPromptMode === SystemPromptMode.APPEND ? t('Append') :
-                                                        config.systemPromptMode === SystemPromptMode.OVERRIDE ? t('Override') :
-                                                        t('Common')
-                                                    }</p>
                                                     <p><strong>{t('Provider')}:</strong> {config.provider || 'OpenAI Compatible'}</p>
                                                     <p><strong>{t('API Host')}:</strong> {config.host || t('Common Host')}</p>
-                                                    <p><strong>{t('Temperature')}:</strong> {config.temperature}</p>
                                                 </div>
                                             )}
                                         </div>
@@ -943,7 +939,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
         </div>
 
         {/* Reset to Default Confirmation Dialog */}

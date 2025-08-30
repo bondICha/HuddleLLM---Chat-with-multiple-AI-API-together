@@ -177,6 +177,7 @@
   "Delete": "削除",
   "Custom Chatbot Name": "チャットボットちゃんにお名前をつけてね",
   "Choose model": "モデルを選択",
+  "user-defined-model": "user様が独自に入力しました",
   "Or enter model name manually": "またはモデル名を直接入力",
   "Advanced Settings": "詳細設定",
   "API Provider": "APIプロバイダー",

@@ -109,11 +109,7 @@ function SettingPage() {
         </div>
 
         <div className="flex flex-col gap-4 w-full">
-          <p className="font-bold text-lg">{t('Chatbots configuration')}</p>
-          <div className="p-3 w-full border border-gray-500 shadow-md rounded-lg hover:shadow-lg transition-shadow">
-            <p className="font-bold text-md">{t("API Settings")}</p>
-            <CustomAPISettings userConfig={userConfig} updateConfigValue={updateConfigValue} />
-          </div>
+          <CustomAPISettings userConfig={userConfig} updateConfigValue={updateConfigValue} />
         </div>
         
 {/* Temporarily hidden - Web Access Permissions

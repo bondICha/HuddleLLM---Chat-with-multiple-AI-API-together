@@ -48,6 +48,12 @@ export default defineManifest(async () => {
     // as web access is handled differently.
     "omnibox": {
       "keyword": "@hl"
-    }
+    },
+    web_accessible_resources: [
+      {
+        resources: ["config/*"],
+        matches: ["<all_urls>"]
+      }
+    ]
   }
 })

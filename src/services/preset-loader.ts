@@ -1,6 +1,7 @@
 import presetConfig from '../../config/api-presets.json'
 import { MODEL_LIST, SystemPromptMode, CustomApiProvider } from './user-config'
 import { getCompanyProfileConfigs, getCompanyProfileState, CompanyProfileStatus } from './company-profile'
+import { NestedDropdownOption } from '~/app/components/NestedDropdown'
 
 export interface PresetConfig {
   version: string
@@ -193,7 +194,7 @@ export async function getTemplateOptions() {
   })
   
   // NestedDropdown用の階層構造を作成
-  const nestedOptions: any[] = []
+  const nestedOptions: NestedDropdownOption[] = []
   
   // まず「テンプレート設定を適用」オプションを追加
   nestedOptions.push({
@@ -204,12 +205,11 @@ export async function getTemplateOptions() {
   if (publicModels.length > 0) {
     nestedOptions.push({
       label: 'Public Models',
-      disabled: true,
       children: publicModels.map(option => {
         const preset = activePresets[option.name] || activePresets[Object.keys(activePresets).find(k => k.toLowerCase() === option.value) || '']
         return {
           label: option.name,
-          value: preset?.model || option.value  // モデル名を表示用に使用
+          value: option.value
         }
       })
     })
@@ -218,12 +218,11 @@ export async function getTemplateOptions() {
   if (companyModels.length > 0 && companyName) {
     nestedOptions.push({
       label: companyName,
-      disabled: true,
       children: companyModels.map(option => {
         const preset = activePresets[option.name] || activePresets[Object.keys(activePresets).find(k => k.toLowerCase() === option.value) || '']
         return {
           label: option.name,
-          value: preset?.model || option.value  // モデル名を表示用に使用
+          value: option.value
         }
       })
     })

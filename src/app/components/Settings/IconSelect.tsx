@@ -30,7 +30,6 @@ import vicunaLogo from '~/assets/logos/vicuna.jpg';
 import wizardlmLogo from '~/assets/logos/wizardlm.png';
 import xunfeiLogo from '~/assets/logos/xunfei.png';
 import yiLogo from '~/assets/logos/yi.svg';
-import chathubLogo from '~/assets/logos/chathub.svg';
 import alpacaLogo from '~/assets/logos/alpaca.png';
 import deepseekLogo from '~/assets/logos/deepseek.svg';
 import dollyLogo from '~/assets/logos/dolly.png';
@@ -106,7 +105,6 @@ const otherIcons: IconOption[] = [
   { id: 'alpaca', name: 'Alpaca', src: alpacaLogo },
   { id: 'baichuan', name: 'Baichuan', src: baichuanLogo },
   { id: 'chatglm', name: 'ChatGLM', src: chatglmLogo },
-  { id: 'chathub', name: 'ChatHub', src: chathubLogo },
   { id: 'deepinfra', name: 'DeepInfra', src: deepinfraLogo },
   { id: 'deepseek', name: 'DeepSeek', src: deepseekLogo },
   { id: 'dolly', name: 'Dolly', src: dollyLogo },

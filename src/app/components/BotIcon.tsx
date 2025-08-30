@@ -30,7 +30,6 @@ import vicunaLogo from '~/assets/logos/vicuna.jpg';
 import wizardlmLogo from '~/assets/logos/wizardlm.png';
 import xunfeiLogo from '~/assets/logos/xunfei.png';
 import yiLogo from '~/assets/logos/yi.svg';
-import chathubLogo from '~/assets/logos/chathub.svg';
 import alpacaLogo from '~/assets/logos/alpaca.png';
 import deepseekLogo from '~/assets/logos/deepseek.svg';
 import dollyLogo from '~/assets/logos/dolly.png';
@@ -69,7 +68,6 @@ const iconMap: Record<string, string> = {
   'bing': bingLogo,
   'chatglm': chatglmLogo,
   'chatgpt': chatgptLogo,
-  'chathub': chathubLogo,
   'deepinfra': deepinfraLogo,
   'deepseek': deepseekLogo,
   'openai': chatgptLogo,
@@ -167,8 +165,8 @@ const BotIcon: React.FC<BotIconProps> = ({ iconName, size = 24, className = '' }
     if (!iconName || typeof iconName !== 'string') {
       return (
         <img
-          src={chathubLogo}
-          alt="ChatHub"
+          src={huddleLLMLogo}
+          alt="HuddleLLM_logo"
           style={{ width: size, height: size, objectFit: 'contain' }}
           className={className}
         />
@@ -314,7 +312,7 @@ const BotIcon: React.FC<BotIconProps> = ({ iconName, size = 24, className = '' }
     // エラー時は常にデフォルトアイコンを表示
     return (
       <img
-        src={chathubLogo}
+        src={chatgptLogo}
         alt="Error"
         style={{ width: size, height: size, objectFit: 'contain' }}
         className={className}
