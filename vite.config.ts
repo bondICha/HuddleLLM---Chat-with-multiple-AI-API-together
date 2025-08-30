@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
     ],
     build: {
       rollupOptions: {
-        input: ['app.html'],
+        input: ['app.html', 'src/offscreen/pdf-processor.html'],
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom'],

@@ -92,10 +92,25 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
   }, [copied])
 
   useEffect(() => {
-    if (messageRef.current) {
-      setMessageHeight(messageRef.current.offsetHeight)
+    const updateHeight = () => {
+      if (messageRef.current) {
+        setMessageHeight(messageRef.current.offsetHeight)
+      }
     }
-  }, [message.text, message.error])
+    
+    updateHeight()
+    
+    // ResizeObserverを使って動的に高さを監視
+    const resizeObserver = new ResizeObserver(updateHeight)
+    if (messageRef.current) {
+      resizeObserver.observe(messageRef.current)
+    }
+    
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [message.text, message.error, message.thinking])
+
 
   useEffect(() => {
     return () => {
@@ -180,6 +195,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
         <MessageBubble 
           color={message.author === 'user' ? 'primary' : 'flat'}
           thinking={message.thinking}
+          searchResults={message.searchResults}
           isUserMessage={message.author === 'user'}
           fetchedUrls={message.fetchedUrls}
         >
@@ -203,7 +219,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
         </MessageBubble>
       </div>
       {!!copyText && (
-        <div className="flex flex-col justify-between py-1" style={{ height: messageHeight }}>
+        <div className="flex flex-col justify-between py-1 self-stretch">
           <ActionButton />
           {messageHeight > MESSAGE_HEIGHT_THRESHOLD && <ActionButton />}
         </div>

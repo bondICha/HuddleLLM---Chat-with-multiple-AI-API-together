@@ -2,6 +2,7 @@ import { Outlet } from '@tanstack/react-router'
 import { useAtomValue } from 'jotai'
 import { followArcThemeAtom, themeColorAtom } from '~app/state'
 import ReleaseNotesModal from './Modals/ReleaseNotesModal'
+import SessionRestoreModal from './Modals/SessionRestoreModal'
 import Sidebar from './Sidebar'
 
 function Layout() {
@@ -17,6 +18,7 @@ function Layout() {
         <Outlet />
       </div>
       <ReleaseNotesModal />
+      <SessionRestoreModal />
     </main>
   )
 }

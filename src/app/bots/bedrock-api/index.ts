@@ -7,6 +7,7 @@ import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract
 import { file2base64 } from '~app/utils/file-utils';
 import { ChatMessageModel } from '~types';
 import { uuid } from '~utils';
+import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 import {
   BedrockRuntimeClient,
   ConverseCommand,
@@ -432,6 +433,7 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
       thinkingMode?: boolean;
       thinkingBudget?: number;
       isHostFullPath?: boolean; // isHostFullPath を型定義に追加
+      webAccess?: boolean;
     },
   ) {
     super()
@@ -609,5 +611,9 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
 
   getSystemMessage() {
     return this.config.systemMessage
+  }
+
+  setSystemMessage(systemMessage: string) {
+    this.config.systemMessage = systemMessage
   }
 }

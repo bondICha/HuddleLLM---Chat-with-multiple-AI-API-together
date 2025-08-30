@@ -13,6 +13,7 @@ import { cloneDeep } from 'lodash-es'
 import CustomAPISettings from '~app/components/Settings/CustomAPISettings'
 import ExportDataPanel from '~app/components/Settings/ExportDataPanel'
 import ShortcutPanel from '~app/components/Settings/ShortcutPanel'
+import AllHostsPermissionPanel from '~app/components/Settings/AllHostsPermissionPanel'
 import Switch from '~app/components/Switch'
 
 import { ALL_IN_ONE_PAGE_ID } from '~app/consts'
@@ -131,6 +132,15 @@ function SettingPage() {
             <CustomAPISettings userConfig={userConfig} updateConfigValue={updateConfigValue} />
           </div>
         </div>
+        
+{/* Temporarily hidden - Web Access Permissions
+        <div className="flex flex-col gap-4 w-full">
+          <p className="font-bold text-lg">{t('Web Access Permissions')}</p>
+          <div className="p-3 w-full border border-gray-500 shadow-md rounded-lg hover:shadow-lg transition-shadow">
+            <AllHostsPermissionPanel />
+          </div>
+        </div>
+        */}
         <ShortcutPanel />
       </div>
       {dirty && (

@@ -1,0 +1,2 @@
+- タスク終了やある程度の単位の変更が終わったら、yarn buildでbuildが通るか確認してください。
+- This is Chrome Exntension, to output debug message, use alert instead of Console.log. Debug Alert message should start from DEBUG: to ease to find DEBUG alert.

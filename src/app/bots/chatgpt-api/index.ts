@@ -7,6 +7,7 @@ import { file2base64 } from '~app/utils/file-utils'
 import { ChatMessage } from './types'
 import { ChatMessageModel } from '~types'
 import { uuid } from '~utils'
+import { getUserLocaleInfo } from '~utils/system-prompt-variables'
 
 interface ConversationContext {
   messages: ChatMessage[]
@@ -193,6 +194,8 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       temperature: number;
       systemMessage: string;
       isHostFullPath?: boolean;
+      webAccess?: boolean;
+      botIndex?: number; // CustomBotからのインデックス
     },
   ) {
     super()
@@ -202,22 +205,15 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
     return this.config.systemMessage
   }
 
+  setSystemMessage(systemMessage: string) {
+    this.config.systemMessage = systemMessage
+  }
+
   
 
   async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal) {
 
     const model = this.getModelName()
-
-    if (model === 'o1' || model.startsWith('o1-')) {
-      // System PromptはArrayの最初の要素にしか存在しないから、一番目だけチェックする
-      if (messages[0]?.role === 'system') {
-        const systemMessage = messages[0];
-        messages[0] = {
-          role: 'user',
-          content: systemMessage.content,
-        };
-      }
-    }
 
     const { apiKey: openaiApiKey, host: configHost, isHostFullPath: configIsHostFullPath } = this.config;
     const userConfig = await getUserConfig(); // Get common user config

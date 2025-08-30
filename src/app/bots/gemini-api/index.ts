@@ -4,6 +4,7 @@ import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract
 import { file2base64 } from '~app/utils/file-utils'
 import { ChatMessageModel } from '~types'
 import { uuid } from '~utils'
+import { getUserLocaleInfo } from '~utils/system-prompt-variables'
 
 // GeminiApiBotのコンストラクタに渡すオプションの型定義
 interface GeminiApiBotOptions {
@@ -11,6 +12,7 @@ interface GeminiApiBotOptions {
   geminiApiModel: string;
   geminiApiSystemMessage?: string;
   geminiApiTemperature?: number;
+  webAccess?: boolean;
 }
 
 interface ConversationContext {
@@ -180,6 +182,10 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
     }
     // The new SDK expects system instruction as a top-level parameter, not in contents
     return { role: 'system', parts: [{ text: this.config.geminiApiSystemMessage }] };
+  }
+
+  setSystemMessage(systemMessage: string) {
+    this.config.geminiApiSystemMessage = systemMessage
   }
 
   getGenerationConfig(): GenerationConfig {

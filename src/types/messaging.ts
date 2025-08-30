@@ -29,10 +29,12 @@ export interface FetchUrlMessage {
   type: 'FETCH_URL'
   target: 'background'
   url: string
+  responseType?: 'text' | 'arraybuffer'
 }
 
 export interface FetchUrlResponse {
   success: boolean
-  content?: string
+  content?: string | number[]
+  contentType?: string
   error?: string
 }

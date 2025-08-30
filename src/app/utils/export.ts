@@ -24,15 +24,27 @@ export async function importData() {
     json.local = {}
   }
 
+  // Handle modern customApiConfigs that should be in local storage
+  if (json.local.customApiConfigs && Array.isArray(json.local.customApiConfigs)) {
+    // Modern format: customApiConfigs are already in local storage, no conversion needed
+    console.log('Found modern customApiConfigs in local storage')
+  } else if (json.sync.customApiConfigs && Array.isArray(json.sync.customApiConfigs)) {
+    // Transition format: move customApiConfigs from sync to local
+    console.log('Moving customApiConfigs from sync to local storage')
+    json.local.customApiConfigs = json.sync.customApiConfigs
+    delete json.sync.customApiConfigs
+  }
+
   // Convert old rakutenApiConfig to customApiConfig format
   if (json.sync.rakutenApiConfigCount) {
+    console.log('Converting old rakutenApiConfig format to modern customApiConfigs')
     const count = json.sync.rakutenApiConfigCount
+    const convertedConfigs = []
     for (let i = 0; i < count; i++) {
       const oldKey = `rakutenApiConfig_${i}`
-      const newKey = `customApiConfig_${i}`
       if (json.sync[oldKey]) {
         const oldConfig = json.sync[oldKey]
-        json.sync[newKey] = {
+        convertedConfigs.push({
           id: i + 1,
           name: oldConfig.name || '',
           shortName: oldConfig.shortName || oldConfig.name?.slice(0, 4) || '',
@@ -46,10 +58,12 @@ export async function importData() {
           thinkingBudget: oldConfig.thinkingBudget || 2000,
           provider: oldConfig.provider || 'openai',
           webAccess: oldConfig.webAccess || false
-        }
+        })
         delete json.sync[oldKey]
       }
     }
+    // Place converted configs in local storage (modern format)
+    json.local.customApiConfigs = convertedConfigs
     // Convert top-level rakuten keys to custom keys
     if (json.sync.rakutenApiHost) {
       json.sync.customApiHost = json.sync.rakutenApiHost

@@ -6,6 +6,13 @@ import { getVersion } from '~utils'
 
 const RELEASE_NOTES = [
   {
+    version: '2.9.0',
+    notes: [
+      'releasenote_v290_session_restore',
+      'releasenote_v290_web_access_enhancement'
+    ],
+  },
+  {
     version: '2.8.2',
     notes: [
       'releasenote_v282_chat_pair_feature',

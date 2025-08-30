@@ -9,6 +9,7 @@ export interface SystemPromptVariables {
   chatbotname: string
   language: string
   timezone: string
+  web_search_instructions?: string
 }
 
 /**
@@ -47,6 +48,10 @@ export function replaceSystemPromptVariables(
   if (variables.timezone) {
     result = result.replace(/\{timezone\}/g, variables.timezone)
   }
+  
+  if (variables.web_search_instructions) {
+    result = result.replace(/\{web_search_instructions\}/g, variables.web_search_instructions)
+  }
 
   return result
 }
@@ -68,10 +73,11 @@ export function getCurrentDateTime() {
 export function getUserLocaleInfo() {
   // First try to get app's language setting from localStorage, then fallback to browser language
   const appLanguage = localStorage.getItem('language')
-  const language = appLanguage || navigator.language || 'zh-CN'  // App setting -> Browser -> Default to Chinese
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Shanghai'  // Default to China timezone
+  const language = appLanguage || navigator.language || 'en'  // App setting -> Browser -> Default to English
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'  // Default to UTC
   return {
     language,
     timezone,
   }
 }
+

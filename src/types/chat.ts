@@ -1,4 +1,5 @@
-import { ChatError } from '~utils/errors'
+import { ChatError } from '~utils/errors';
+import { SearchResultItem } from '~services/agent/web-search/base';
 
 export interface FetchedUrlContent {
   url: string
@@ -12,7 +13,8 @@ export interface ChatMessageModel {
   images?: File[]
   error?: ChatError
   thinking?: string
-  fetchedUrls?: FetchedUrlContent[]
+  fetchedUrls?: FetchedUrlContent[];
+  searchResults?: SearchResultItem[];
 }
 
 export interface ConversationModel {

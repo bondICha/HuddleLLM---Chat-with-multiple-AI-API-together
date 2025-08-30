@@ -35,7 +35,8 @@ import PremiumEntry from './PremiumEntry'
 import { Layout } from '~app/consts'
 import { 
   allInOnePairsAtom, 
-  activeAllInOneAtom, 
+  activeAllInOneAtom,
+  saveAllInOneConfigAtom,
   DEFAULT_PAIR_CONFIG, 
   AllInOnePairConfig 
 } from '~app/atoms/all-in-one'
@@ -74,6 +75,7 @@ function Sidebar() {
   // アクティブなAll-In-Oneを管理
   const [activeAllInOne, setActiveAllInOne] = useAtom(activeAllInOneAtom)
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
+  const saveConfig = useSetAtom(saveAllInOneConfigAtom)
   
   // 現在のペア設定を取得
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
@@ -95,6 +97,7 @@ function Sidebar() {
         ...updates
       }
     }))
+    setTimeout(() => saveConfig(), 100)
   }
 
 // コンポーネントマウント時にアバター情報を含めて設定を取得
@@ -174,6 +177,9 @@ useEffect(() => {
       
       // 新しく作成したAll-In-Oneをアクティブにする
       setActiveAllInOne(newPair.id)
+      
+      // 設定を保存
+      setTimeout(() => saveConfig(), 100)
     } catch (error) {
       console.error('Failed to create new All-In-One:', error)
     } finally {
@@ -197,6 +203,9 @@ useEffect(() => {
       if (activeAllInOne === pairId) {
         setActiveAllInOne('default')
       }
+      
+      // 設定を保存
+      setTimeout(() => saveConfig(), 100)
     } catch (error) {
       console.error('Failed to delete All-In-One:', error)
     }
@@ -205,36 +214,38 @@ useEffect(() => {
   // All-In-Oneを切り替え
   const handleSwitchAllInOne = (pairId: string, pair?: ChatPair) => {
     if (pair && pairId !== 'default') {
-      // 新しいペアの設定を初期化（まだ存在しない場合）
-      if (!allInOnePairs[pairId]) {
-        const botCount = pair.botIndices.length
-        let newLayout: Layout = 2
-        const newConfig: AllInOnePairConfig = { ...DEFAULT_PAIR_CONFIG }
-        
-        if (botCount === 1) {
-          newLayout = 'single'
-          newConfig.singlePanelBots = pair.botIndices
-        } else if (botCount === 2) {
-          newLayout = 2
-          newConfig.twoPanelBots = pair.botIndices
-        } else if (botCount === 3) {
-          newLayout = 3
-          newConfig.threePanelBots = pair.botIndices
-        } else if (botCount === 4) {
-          newLayout = 4
-          newConfig.fourPanelBots = pair.botIndices
-        } else if (botCount >= 6) {
-          newLayout = 'sixGrid'
-          newConfig.sixPanelBots = pair.botIndices.slice(0, 6)
-        }
-        
-        newConfig.layout = newLayout
-        
-        setAllInOnePairs(prev => ({
-          ...prev,
-          [pairId]: newConfig
-        }))
+      // チャットペアの設定を常に更新（ボットインデックスが変更されている可能性があるため）
+      const botCount = pair.botIndices.length
+      let newLayout: Layout = 2
+      const existingConfig = allInOnePairs[pairId] || { ...DEFAULT_PAIR_CONFIG }
+      const newConfig: AllInOnePairConfig = { ...existingConfig }
+      
+      if (botCount === 1) {
+        newLayout = 'single'
+        newConfig.singlePanelBots = pair.botIndices
+      } else if (botCount === 2) {
+        newLayout = 2
+        newConfig.twoPanelBots = pair.botIndices
+      } else if (botCount === 3) {
+        newLayout = 3
+        newConfig.threePanelBots = pair.botIndices
+      } else if (botCount === 4) {
+        newLayout = 4
+        newConfig.fourPanelBots = pair.botIndices
+      } else if (botCount >= 6) {
+        newLayout = 'sixGrid'
+        newConfig.sixPanelBots = pair.botIndices.slice(0, 6)
       }
+      
+      newConfig.layout = newLayout
+      
+      setAllInOnePairs(prev => ({
+        ...prev,
+        [pairId]: newConfig
+      }))
+      
+      // 設定を保存
+      setTimeout(() => saveConfig(), 100)
     }
     
     // アクティブなAll-In-Oneを切り替え

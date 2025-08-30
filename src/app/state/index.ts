@@ -12,6 +12,7 @@ type Param = { index: number; page: string }
 
 export const chatFamily = atomFamily(
   (param: Param) => {
+    console.log(`chatFamily atom created with param:`, param);
     return atomWithImmer({
       index: param.index,
       bot: createBotInstance(param.index),
@@ -32,3 +33,20 @@ export const sidePanelBotAtom = atomWithStorage<number>('sidePanelBot', 0)
 export const showDiscountModalAtom = atom<false | true | Campaign>(false)
 export const releaseNotesAtom = atom<string[]>([])
 export const pendingSearchQueryAtom = atom<string | null>(null)
+export const sessionRestoreModalAtom = atom(false)
+export const sessionToRestoreAtom = atom<{
+  type: 'single' | 'allInOne' | 'sessionSnapshot'
+  botIndex?: number
+  conversationId?: string
+  sessionId?: string
+  sessionUUID?: string
+  botIndices?: number[]
+  layout?: string
+  pairName?: string
+  conversations?: { [botIndex: number]: { id: string; messages: any[] }[] }
+  conversationSnapshots?: { [botIndex: number]: string }
+  snapshotMessages?: { [botIndex: number]: any[] }
+} | null>(null)
+
+// All-in-one複数ボット同時復元用のatom
+export const allInOneRestoreDataAtom = atom<{ [botIndex: number]: { conversationId: string; messages: any[] } } | null>(null)

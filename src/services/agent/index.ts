@@ -1,76 +1,250 @@
-import { removeSlashes } from 'slashes'
-import { PROMPT_TEMPLATE } from './prompts'
-import { searchRelatedContext } from './web-search'
-import { AnwserPayload } from '~app/bots/abstract-bot'
+import { searchRelatedContext } from './web-search';
+import { AnwserPayload } from '~app/bots/abstract-bot';
+import Browser from 'webextension-polyfill';
+import { htmlToText } from '~app/utils/html-utils';
+import { getLanguage } from '~services/storage/language';
 
-const TOOLS = {
-  web_search:
-    'a search engine. useful for when you need to answer questions about current events. input should be a search query. prefer English query or decide based on user\'s query. query should be short and concise',
+// Import i18n resources for all supported languages
+import enLocale from '~app/i18n/locales/english.json';
+import jaLocale from '~app/i18n/locales/japanese.json';
+import zhCNLocale from '~app/i18n/locales/simplified-chinese.json';
+import zhTWLocale from '~app/i18n/locales/traditional-chinese.json';
+
+const locales = {
+  'en': enLocale,
+  'ja': jaLocale,
+  'zh-CN': zhCNLocale,
+  'zh-TW': zhTWLocale,
+} as const;
+
+function getLocalizedText(key: string, language: string = 'en', replacements?: Record<string, string>): string {
+  const locale = locales[language as keyof typeof locales] || locales['en'];
+  let text = (locale as any)[key] || (enLocale as any)[key] || key;
+  
+  if (replacements) {
+    Object.entries(replacements).forEach(([placeholder, value]) => {
+      text = text.replace(new RegExp(`\\{\\{${placeholder}\\}\\}`, 'g'), value);
+    });
+  }
+  
+  return text;
 }
 
 function buildToolUsingPrompt(input: string) {
-  const tools = Object.entries(TOOLS).map(([name, description]) => `- ${name}: ${description}`)
-  return PROMPT_TEMPLATE.replace('{{tools}}', tools.join('\n'))
-    .replace('{{tool_names}}', Object.keys(TOOLS).join(', '))
-    .replace('{{input}}', input)
+  // Web search指示はsystem promptに移行
+  return `${input}`
 }
 
-function buildPromptWithContext(input: string, context: string) {
-  if (!context) {
-    return `Question: ${input}`
+function buildPromptWithContext(input: string, context: string, language?: string) {
+  if (!language) {
+    language = getLanguage() || 'en';
   }
-  const currentDate = new Date().toISOString().split('T')[0]
-  return `Current date: ${currentDate}. Use the provided context delimited by triple quotes to answer questions. The answer should use the same language as the user question instead of context.\n\nContext: """${context}"""\n\nQuestion: ${input}`
+
+  if (!context) {
+    return `${getLocalizedText('agent_question_label', language)} ${input}`
+  }
+  
+  const contextPrompt = getLocalizedText('agent_context_prompt', language);
+  const questionLabel = getLocalizedText('agent_question_label', language);
+  const contextLabel = getLocalizedText('agent_context_label', language);
+  
+  return `${contextPrompt}\n\n${contextLabel} """${context}"""\n\n${questionLabel} ${input}`
 }
 
-const FINAL_ANSWER_KEYWORD_REGEX = /"action":\s*"Final Answer"/
-const WEB_SEARCH_KEYWORD_REGEX = /"action":\s*"web_search"/
-const ACTION_INPUT_REGEX = /"action_input":\s*"((?:\\.|[^"])+)(?:"\s*(```)?)?/
+
+function extractJsonPayload(text: string): { action: string; action_input: string; provider?: string } | null {
+  // Strict mode: Only accept pure JSON or JSON in code blocks with minimal extra content
+  
+  // First, try to parse the text as JSON directly
+  try {
+    const trimmed = text.trim();
+    const parsed = JSON.parse(trimmed);
+    if (parsed.action && parsed.action_input) {
+      return { 
+        action: parsed.action, 
+        action_input: parsed.action_input,
+        provider: parsed.provider 
+      };
+    }
+  } catch (e) {
+    // If direct parsing fails, check for code blocks
+  }
+
+  // Look for JSON in code blocks (both ```json``` and ``` patterns)
+  const codeBlockMatches = [
+    text.match(/```json\s*([\s\S]*?)\s*```/),
+    text.match(/```\s*([\s\S]*?)\s*```/)
+  ];
+
+  for (const match of codeBlockMatches) {
+    if (match) {
+      try {
+        const jsonContent = match[1].trim();
+        const parsed = JSON.parse(jsonContent);
+        if (parsed.action && parsed.action_input) {
+          // Strict check: ensure there's no significant extra content after the code block
+          const afterCodeBlock = text.split(match[0])[1];
+          if (afterCodeBlock && afterCodeBlock.trim().length > 50) {
+            console.log('⚠️ Agent: Rejecting response - contains significant content after JSON code block');
+            return null; // Reject if there's substantial extra content
+          }
+          
+          return { 
+            action: parsed.action, 
+            action_input: parsed.action_input,
+            provider: parsed.provider
+          };
+        }
+      } catch (e) {
+        // Continue to next pattern
+      }
+    }
+  }
+
+  return null;
+}
 
 async function* execute(
   input: string,
   llm: (prompt: string, rawUserInput: string) => AsyncGenerator<AnwserPayload>,
   signal?: AbortSignal,
 ): AsyncGenerator<AnwserPayload> {
+  // Get user's language preference
+  const language = getLanguage() || 'en';
   let prompt = buildToolUsingPrompt(input)
+  let searchCount = 0;
+  const maxSearches = 3; // 最大検索回数
+  let allSearchResults: any[] = [];
+  let allContents: string[] = [];
 
-  let outputType: 'tool' | 'answer' | undefined = undefined
-  let output: AnwserPayload | undefined = undefined
-
-  for await (const payload of llm(prompt, input)) {
-    output = payload
-    console.debug('llm output', output)
-    if (outputType === 'answer' || FINAL_ANSWER_KEYWORD_REGEX.test(payload.text)) {
-      outputType = 'answer'
-      const answer = payload.text.match(ACTION_INPUT_REGEX)?.[1]
-      if (answer) {
-        yield { text: removeSlashes(answer) }
+  while (searchCount < maxSearches) {
+    let llmOutputText = '';
+    let hasYieldedContent = false;
+    
+    for await (const payload of llm(prompt, input)) {
+      llmOutputText = payload.text;
+      // Stream content to UI
+      if (payload.text && payload.text.length > 0) {
+        yield payload;
+        hasYieldedContent = true;
       }
-    } else if (outputType === 'tool') {
-      continue
-    } else if (WEB_SEARCH_KEYWORD_REGEX.test(payload.text)) {
-      outputType = 'tool'
+    }
+
+    const parsedJson = extractJsonPayload(llmOutputText);
+
+    if (!parsedJson) {
+      // No JSON found, treat as final answer
+      if (!hasYieldedContent) {
+        yield { text: llmOutputText };
+      }
+      return;
+    }
+
+    if (parsedJson.action === 'web_search') {
+      searchCount++;
+      const actionInput = parsedJson.action_input;
+      const provider = parsedJson.provider || 'google'; // デフォルトはgoogle
+      
+      let searchResults: any[] = [];
+      
+      try {
+        searchResults = await searchRelatedContext(actionInput, signal, provider);
+        
+        if (searchResults.length === 0) {
+          const emptyResultsMessage = getLocalizedText('agent_empty_search_results', language, { 
+            query: actionInput, 
+            provider: provider 
+          });
+          yield { text: '', thinking: emptyResultsMessage, searchResults: [] };
+          // AIには簡潔な情報を渡すために空の結果として処理を続行
+        } else {
+          const thinkingMessage = getLocalizedText('agent_search_thinking', language, { query: actionInput });
+          console.log(`🔍 Agent: Search ${searchCount} - Yielding ${searchResults.length} results for: ${actionInput}`);
+          yield { text: '', thinking: thinkingMessage, searchResults };
+        }
+      } catch (error) {
+        const errorMessage = `❌ 検索エラーが発生しました\nクエリ: "${actionInput}"\nプロバイダー: ${provider}\nエラー: ${error instanceof Error ? error.message : '不明なエラー'}\n\nネットワーク接続や検索プロバイダーの問題の可能性があります。`;
+        yield { text: errorMessage };
+        searchResults = []; // エラー時は空配列
+      }
+
+      const actualResults = searchResults;
+      allSearchResults.push(...actualResults);
+
+      // Deduplicate URLs while preserving provider information
+      const uniqueUrls = new Set<string>();
+      const uniqueResults = actualResults.filter((item: any) => {
+        if (uniqueUrls.has(item.link)) {
+          return false;
+        }
+        uniqueUrls.add(item.link);
+        return true;
+      });
+
+      let fullContents: string[] = [];
+      
+      if (actualResults.length === 0) {
+        // 検索結果が空の場合、AIに伝える情報
+        fullContents = [`検索結果が空白でした。クエリ: "${actionInput}" (${provider})`];
+      } else {
+        fullContents = await Promise.all(
+          uniqueResults.map(async (item) => {
+            try {
+              const response = await Browser.runtime.sendMessage({
+                type: 'FETCH_URL',
+                url: item.link,
+              }) as { success: boolean, content?: string };
+              if (response.success && response.content) {
+                return `Content from ${item.link}:\n\n${htmlToText(response.content)}`;
+              }
+              return `Could not fetch content from ${item.link}`;
+            } catch (error) {
+              console.error(`Error fetching content for ${item.link}:`, error);
+              return `Error fetching content from ${item.link}`;
+            }
+          })
+        );
+      }
+      
+      allContents.push(...fullContents);
+      
+      // 次の検索のために、これまでの検索結果を含めたプロンプトを構築
+      const context = `${allContents.join('\n\n')}`;
+      const promptWithContext = buildPromptWithContext(input, context, language);
+      
+      if (searchCount < maxSearches) {
+        // まだ検索可能な場合は、継続検索の指示を追加
+        const continueSearchInstruction = getLocalizedText('agent_continue_search_instruction', language);
+        prompt = `${continueSearchInstruction}\n\n${promptWithContext}`;
+      } else {
+        // 最大検索回数に達した場合は最終回答を生成
+        const finalInstruction = getLocalizedText('agent_final_instruction', language);
+        prompt = `${finalInstruction}\n\n${promptWithContext}`;
+        
+        // 最終回答をストリーミングで表示
+        for await (const payload of llm(prompt, input)) {
+          yield payload;
+        }
+        return;
+      }
+    } else {
+      // 検索以外のアクション、または未知のアクション
+      if (parsedJson.action !== 'web_search') {
+        throw new Error(`Unexpected agent action: ${parsedJson.action}`);
+      }
     }
   }
 
-  if (outputType === 'answer') {
-    return
+  // ここに到達することは通常ありませんが、安全のため
+  const context = `${allContents.join('\n\n')}`;
+  const promptWithContext = buildPromptWithContext(input, context, language);
+  const finalInstruction = getLocalizedText('agent_final_instruction', language);
+  prompt = `${finalInstruction}\n\n${promptWithContext}`;
+  
+  // 最終回答をストリーミングで表示
+  for await (const payload of llm(prompt, input)) {
+    yield payload;
   }
-
-  if (outputType === 'tool') {
-    const actionInput = removeSlashes(output!.text.match(ACTION_INPUT_REGEX)![1])
-    let context = ''
-    if (actionInput) {
-      yield { text: `Searching the web for _${actionInput}_` }
-      context = await searchRelatedContext(actionInput, signal)
-    }
-    const promptWithContext = buildPromptWithContext(input, context)
-    prompt = `Ignore previous instructions you have been given about RESPONSE FORMAT INSTRUCTIONS and tools, answer the question directly and conversationally to the human. Don't surround your entire reponse as markdown code snippet. \n\n${promptWithContext}`
-    yield* llm(prompt, input)
-    return
-  }
-
-  throw new Error('Unexpected agent error')
 }
 
 export { execute }

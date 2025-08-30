@@ -3,11 +3,15 @@ import { ChatError, ErrorCode } from '~utils/errors'
 import { streamAsyncIterable } from '~utils/stream-async-iterable'
 import { ThinkingParser } from '~utils/thinking-parser'
 import { replaceSystemPromptVariables, getCurrentDateTime, getUserLocaleInfo } from '~utils/system-prompt-variables'
+import { getWebSearchInstructions } from '~services/agent/prompts'
+
+import { SearchResultItem } from '~services/agent/web-search/base';
 
 export type AnwserPayload = {
-  text: string
-  thinking?: string
-}
+  text: string;
+  thinking?: string;
+  searchResults?: SearchResultItem[];
+};
 
 export type Event =
   | {
@@ -31,6 +35,7 @@ export interface MessageParams {
 
 export interface SendMessageParams extends MessageParams {
   onEvent: (event: Event) => void
+  webAccessEnabled?: boolean
 }
 
 export interface ConversationHistory {
@@ -41,8 +46,8 @@ export abstract class AbstractBot {
   // 思考パーサーインスタンス
   private thinkingParser = new ThinkingParser();
 
-  public async sendMessage(params: MessageParams) {
-    return this.doSendMessageGenerator(params)
+  public sendMessage(params: MessageParams): AsyncGenerator<AnwserPayload> {
+    return this.doSendMessageGenerator(params);
   }
 
   // 会話履歴を設定するメソッド (空の実装 - 各ボット固有の実装に任せる)
@@ -78,7 +83,15 @@ export abstract class AbstractBot {
   }
 
   // 前回のストリーミングチャンクで送信した思考内容を保持
-  private previousThinking: string = '';
+  private previousThinking: string = ''
+
+  /**
+   * Web search instructions をsystem promptに動的追加
+   */
+  protected enhanceSystemPromptWithWebSearch(systemPrompt: string, webAccessEnabled: boolean, language: string = 'en'): string {
+    const webSearchInstructions = getWebSearchInstructions(webAccessEnabled, language)
+    return systemPrompt + webSearchInstructions
+  };
 
   /**
    * 各ボットの実装から使用するためのイベント発行ヘルパーメソッド
@@ -190,6 +203,9 @@ export abstract class AbstractBot {
 
   abstract doSendMessage(params: SendMessageParams): Promise<void>
   abstract resetConversation(): void
+  
+  // Optional system message setter - implement if supported
+  setSystemMessage?(systemMessage: string): void
 
   // すべてのモデルの実装が終わるまでとりあえず何もしない関数
   async modifyLastMessage(_message: string): Promise<void> {
@@ -263,11 +279,11 @@ export abstract class AsyncAbstractBot extends AbstractBot {
 
   abstract initializeBot(): Promise<AbstractBot>
 
-  doSendMessage(params: SendMessageParams) {
+  async doSendMessage(params: SendMessageParams): Promise<void> {
     if (this.#bot instanceof DummyBot && this.#initializeError) {
-      throw this.#initializeError
+      throw this.#initializeError;
     }
-    return this.#bot.doSendMessage(params)
+    return this.#bot.doSendMessage(params);
   }
 
   resetConversation() {
@@ -309,5 +325,12 @@ export abstract class AsyncAbstractBot extends AbstractBot {
 
   get supportsImageInput() {
     return this.#bot.supportsImageInput
+  }
+
+  // System message setter for dynamic updates
+  setSystemMessage(systemMessage: string) {
+    if (!(this.#bot instanceof DummyBot) && this.#bot.setSystemMessage) {
+      this.#bot.setSystemMessage(systemMessage);
+    }
   }
 }

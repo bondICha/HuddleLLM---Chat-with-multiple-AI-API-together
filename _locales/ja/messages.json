@@ -1,6 +1,6 @@
 {
   "appName": {
-    "message": "HuddleLLM OSS - オールインワンチャットボットクライアント オープンソース版"
+    "message": "ハドルLLM"
   },
   "appDesc": {
     "message": "ChatGPT、Gemini、およびClaudeを一つのプラットフォームで使用します。OpenSourceアプリケーションです。"

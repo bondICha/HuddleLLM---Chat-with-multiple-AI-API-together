@@ -6,6 +6,7 @@ import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract
 import { file2base64 } from '~app/utils/file-utils';
 import { ChatMessageModel } from '~types';
 import { uuid } from '~utils';
+import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
 const CONTEXT_SIZE = 40;
 
@@ -314,6 +315,7 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
       systemMessage: string;
       temperature: number;
       isHostFullPath?: boolean;
+      webAccess?: boolean;
     },
   ) {
     super()
@@ -401,5 +403,9 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
 
   getSystemMessage() {
     return this.config.systemMessage
+  }
+
+  setSystemMessage(systemMessage: string) {
+    this.config.systemMessage = systemMessage
   }
 }

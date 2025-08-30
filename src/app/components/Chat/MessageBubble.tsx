@@ -9,7 +9,8 @@ interface Props {
   className?: string
   thinking?: string
   isUserMessage?: boolean
-  fetchedUrls?: FetchedUrlContent[]
+  searchResults?: any[];
+  fetchedUrls?: FetchedUrlContent[];
 }
 
 const MessageBubble: FC<PropsWithChildren<Props>> = (props) => {
@@ -24,7 +25,7 @@ const MessageBubble: FC<PropsWithChildren<Props>> = (props) => {
       {props.thinking && !props.fetchedUrls && (
         props.isUserMessage ? 
           <FetchedContentThinking>{props.thinking}</FetchedContentThinking> : 
-          <Thinking>{props.thinking}</Thinking>
+          <Thinking searchResults={props.searchResults}>{props.thinking}</Thinking>
       )}
       {props.fetchedUrls && props.fetchedUrls.map((fetchedUrl, index) => (
         <FetchedContentThinking key={`${fetchedUrl.url}-${index}`} url={fetchedUrl.url}>
