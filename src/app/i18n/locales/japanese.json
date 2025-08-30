@@ -216,7 +216,7 @@
   "Host Blockquote Full Path": "入力されたURLがそのまま使用されます。",
   "Host Blockquote Base Individual": "ホストが空欄の場合は共通APIホストが使用されます。それ以外の場合、標準パス（例: /v1/chat/completions）が含まれていなければ付加されます。",
   "Not applicable for Google Gemini": "Google Geminiには適用されません",
-  "Settings saved. API changes require reload": "設定が保存されました。APIパラメータの変更は、拡張機能を再読み込みすると完全に適用されます。",
+  "Settings saved. API changes require reload": "⚠ 要再読み込み ⚠\n\n設定が保存されました。APIパラメータの変更は、拡張機能を再読み込みすると完全に適用されます。",
   "Show Variables": "変数一覧を表示",
   "Show available variables": "利用可能な変数を表示",
   "Hide": "隠す",

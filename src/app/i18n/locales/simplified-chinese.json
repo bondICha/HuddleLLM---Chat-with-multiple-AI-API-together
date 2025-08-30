@@ -200,7 +200,7 @@
   "Host Blockquote Full Path": "输入的URL将按原样使用。",
   "Host Blockquote Base Individual": "如果主机名为空，则使用通用API主机。否则，如果标准路径（例如 /v1/chat/completions）未包含，则会自动附加。",
   "Not applicable for Google Gemini": "不适用于 Google Gemini",
-  "Settings saved. API changes require reload": "设置已保存。API参数更改将在重新加载扩展程序后完全生效。",
+  "Settings saved. API changes require reload": "⚠ 需要重新加载 ⚠\n\n设置已保存。API参数更改将在重新加载扩展程序后完全生效。",
   "Show Variables": "显示变量列表",
   "Show available variables": "显示可用变量",
   "Hide": "隐藏",
