@@ -729,6 +729,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                     {/* Anthropic Thinking Mode */}
                                                     {isAnthropicProvider && (
                                                         <div className={formRowClass}>
+                                                            <p className={labelClass}>{t('Mode/Tuning')}</p>
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <div className="flex border-b border-gray-300 dark:border-gray-600">
                                                                     <button
@@ -807,6 +808,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                     {/* OpenAI Provider with Temperature/Reasoning Toggle */}
                                                     {isOpenAIProvider ? (
                                                         <div className={formRowClass}>
+                                                            <p className={labelClass}>{t('Mode/Tuning')}</p>
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <div className="flex border-b border-gray-300 dark:border-gray-600">
                                                                     <button

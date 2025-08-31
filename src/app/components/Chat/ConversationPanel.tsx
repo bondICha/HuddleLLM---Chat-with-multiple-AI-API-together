@@ -42,6 +42,7 @@ const ConversationPanel: FC<Props> = (props) => {
   // ボット名とアバターを保持するための状態を追加
   const [botName, setBotName] = useState<string>('Custom Bot')
   const [botAvatar, setBotAvatar] = useState<string>('OpenAI.Black')
+  const [botConfig, setBotConfig] = useState<any>(null)
 
   // コンポーネントマウント時に設定を取得
   useEffect(() => {
@@ -51,10 +52,12 @@ const ConversationPanel: FC<Props> = (props) => {
 
       // インデックスが有効な範囲内かどうかを確認
       if (props.index >= 0 && props.index < customApiConfigs.length) {
-        setBotName(customApiConfigs[props.index].name);
+        const currentBotConfig = customApiConfigs[props.index];
+        setBotName(currentBotConfig.name);
+        setBotConfig(currentBotConfig);
         // アバター情報も設定
-        if (customApiConfigs[props.index].avatar) {
-          setBotAvatar(customApiConfigs[props.index].avatar);
+        if (currentBotConfig.avatar) {
+          setBotAvatar(currentBotConfig.avatar);
         }
       }
     };
@@ -128,6 +131,7 @@ const ConversationPanel: FC<Props> = (props) => {
               fullName={props.bot.name}
               model={props.bot.modelName ?? 'Default'}
               onSwitchBot={mode === 'compact' ? (index) => props.onSwitchBot?.(index) : undefined}
+              botConfig={botConfig}
             />
           </div>
           <WebAccessCheckbox index={props.index} />

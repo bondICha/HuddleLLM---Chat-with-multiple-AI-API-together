@@ -9,18 +9,68 @@ interface Props {
   model: string | undefined
   fullName?: string
   onSwitchBot?: (index: number) => void
+  botConfig?: any
 }
 
 const ChatbotName: FC<Props> = (props) => {
+  // 詳細情報を含むツールチップコンテンツを文字列で作成
+  const createDetailedTooltip = () => {
+    if (!props.botConfig) {
+      return props.fullName || props.name
+    }
+
+    const config = props.botConfig
+    const details = []
+    
+    // ヘッダー
+    details.push(`━━━ ${props.fullName || props.name} ━━━`)
+    
+    // 基本情報
+    if (config.model) details.push(`🤖 Model: ${config.model}`)
+    if (config.host) details.push(`🌐 Host: ${config.host}`)
+    if (config.provider) details.push(`⚡ Provider: ${config.provider}`)
+    
+    details.push('') // 空行
+    
+    // 設定情報
+    details.push('⚙️  Configuration:')
+    
+    if (config.temperature !== undefined) {
+      details.push(`   🌡️  Temperature: ${config.temperature}`)
+    }
+    
+    if (config.thinkingMode !== undefined) {
+      details.push(`   🧠 Thinking Mode: ${config.thinkingMode ? 'Enabled' : 'Disabled'}`)
+    }
+    
+    if (config.thinkingBudget !== undefined && config.thinkingMode) {
+      details.push(`   💰 Thinking Budget: ${config.thinkingBudget}`)
+    }
+    
+    if (config.reasoningMode !== undefined) {
+      details.push(`   🔍 Reasoning Mode: ${config.reasoningMode ? 'Enabled' : 'Disabled'}`)
+    }
+    
+    if (config.reasoningEffort && config.reasoningMode) {
+      details.push(`   🎯 Reasoning Effort: ${config.reasoningEffort}`)
+    }
+    
+    
+    
+    return details.join('\n')
+  }
+
+  const tooltipContent = createDetailedTooltip()
+
   const node = (
-    <Tooltip content={props.fullName || props.name}>
-      <span className="font-semibold text-primary-text text-sm cursor-pointer">{props.name}</span>
+    <Tooltip content={tooltipContent}>
+      <span className="font-semibold text-primary-text text-sm cursor-pointer max-w-[120px] truncate block">{props.name}</span>
     </Tooltip>
   )
 
   const modelNode = props.model ? (
-    <Tooltip content={props.model}>
-      <div className="bg-gray-200 text-gray-700 text-xs rounded-full px-2 py-1 ml-1 max-w-[200px]"> {/* max-widthを追加 */}
+    <Tooltip content={tooltipContent}>
+      <div className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-full px-2 py-1 ml-1 max-w-[100px]">
         <div className="truncate">
         {props.model}
       </div>

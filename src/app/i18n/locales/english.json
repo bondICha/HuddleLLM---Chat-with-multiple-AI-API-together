@@ -234,5 +234,6 @@
     "agent_question_label": "Question:",
     "agent_context_label": "Context:",
     "agent_final_instruction": "Answer the following question based on the provided context in a natural, conversational way.",
-    "agent_continue_search_instruction": "Based on the search results so far, if you need more information to provide a complete answer, you can search again with different keywords. Otherwise, provide your final answer based on the available context."
-}
+    "agent_continue_search_instruction": "Based on the search results so far, if you need more information to provide a complete answer, you can search again with different keywords. Otherwise, provide your final answer based on the available context.",
+    "Mode/Tuning": "Mode/Tuning"
+  }
