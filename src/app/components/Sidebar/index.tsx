@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { PencilIcon, ArrowPathIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline'
 import allInOneIcon from '~/assets/all-in-one.svg'
 import collapseIcon from '~/assets/icons/collapse.svg'
+import hamburgerIcon from '~/assets/icons/hamburger.svg'
 import feedbackIcon from '~/assets/icons/feedback.svg'
 import githubIcon from '~/assets/icons/github.svg'
 import settingIcon from '~/assets/icons/setting.svg'
@@ -16,7 +17,7 @@ import logo from '~/assets/logo.png'
 import BotIcon from '../BotIcon'
 import { cx } from '~/utils'
 import { useEnabledBots } from '~app/hooks/use-enabled-bots'
-import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, companyProfileModalAtom, detectedCompanyAtom } from '~app/state'
+import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom } from '~app/state'
 import { checkReleaseNotes } from '~services/release-notes'
 import * as api from '~services/server-api'
 import {
@@ -58,6 +59,8 @@ function IconButton(props: { icon: string; onClick?: () => void }) {
 function Sidebar() {
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useAtom(sidebarCollapsedAtom)
+  const [sidebarDisplayMode] = useAtom(sidebarDisplayModeAtom)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [themeSettingModalOpen, setThemeSettingModalOpen] = useState(false)
   const [addressBarModalOpen, setAddressBarModalOpen] = useState(false)
   const enabledBots = useEnabledBots()
@@ -444,22 +447,99 @@ useEffect(() => {
     return botAvatars[index] ?? 'OpenAI.Black';
   }
 
+  // Check if it's mobile mode
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 520
+  const shouldShowAsHamburger = sidebarDisplayMode === 'hamburger' || (sidebarDisplayMode === 'auto' && isMobile)
+  const isFixedSidebar = sidebarDisplayMode === 'fixed'
+
+  // Effect to listen for screen size changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const handleResize = () => {
+      // Close mobile menu when resizing to larger screen
+      if (window.innerWidth > 520 && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [isMobileMenuOpen])
+
+  // Effect to handle clicks outside sidebar when in hamburger mode
+  useEffect(() => {
+    if (!shouldShowAsHamburger || !isMobileMenuOpen) return
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      const sidebar = document.getElementById('mobile-sidebar')
+      const hamburgerButton = document.getElementById('hamburger-button')
+      
+      if (sidebar && !sidebar.contains(e.target as Node) && 
+          hamburgerButton && !hamburgerButton.contains(e.target as Node)) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [shouldShowAsHamburger, isMobileMenuOpen])
+
+  // Render hamburger button for mobile
+  if (shouldShowAsHamburger && !isMobileMenuOpen) {
+    return (
+      <button
+        id="hamburger-button"
+        onClick={() => setIsMobileMenuOpen(true)}
+        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-primary-background bg-opacity-90 hover:bg-opacity-100 transition-all"
+      >
+        <img src={hamburgerIcon} className="w-6 h-6" />
+      </button>
+    )
+  }
 
   return (
-    <motion.aside
-      className={cx(
-        'flex flex-col bg-primary-background bg-opacity-40 overflow-hidden',
-        collapsed ? 'items-center px-[2px]' : 'w-[230px] px-4',
-      )}
-    >
-      <div className={cx('flex mt-8 gap-3 items-center', collapsed ? 'flex-col-reverse' : 'flex-row justify-between')}>
-        {collapsed ? <img src={minimalLogo} className="w-[30px]" /> : <img src={logo} className="w-[140px] ml-2" />}
-        <motion.img
-          src={collapseIcon}
-          className={cx('w-10 h-10 cursor-pointer')}
-          animate={{ rotate: collapsed ? 180 : 0 }}
-          onClick={() => setCollapsed((c) => !c)}
+    <>
+      {shouldShowAsHamburger && isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40" 
+          onClick={() => setIsMobileMenuOpen(false)}
         />
+      )}
+      <motion.aside
+        id="mobile-sidebar"
+        className={cx(
+          'flex flex-col',
+          shouldShowAsHamburger && !isMobileMenuOpen && 'hidden',
+          shouldShowAsHamburger && isMobileMenuOpen && 'fixed left-0 top-0 h-full z-50 shadow-lg overflow-y-auto',
+          shouldShowAsHamburger ? 'w-[230px] px-4' : (collapsed ? 'items-center px-[2px] overflow-hidden bg-primary-background bg-opacity-40' : 'w-[230px] px-4 overflow-hidden bg-primary-background bg-opacity-40'),
+        )}
+        style={shouldShowAsHamburger ? { 
+          backgroundColor: 'var(--theme-color)' 
+        } : {}}
+        initial={shouldShowAsHamburger ? { x: -280 } : false}
+        animate={shouldShowAsHamburger ? { x: isMobileMenuOpen ? 0 : -280 } : {}}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+      <div className={cx('flex mt-8 gap-3 items-center', (shouldShowAsHamburger || !collapsed) ? 'flex-row justify-between' : 'flex-col-reverse')}>
+        {shouldShowAsHamburger ? <img src={logo} className="w-[140px] ml-2" /> : (collapsed ? <img src={minimalLogo} className="w-[30px]" /> : <img src={logo} className="w-[140px] ml-2" />)}
+        {shouldShowAsHamburger ? (
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="p-2 rounded-lg hover:bg-secondary hover:bg-opacity-20 transition-all"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        ) : (
+          <motion.img
+            src={collapseIcon}
+            className={cx('w-10 h-10 cursor-pointer')}
+            animate={{ rotate: collapsed ? 180 : 0 }}
+            onClick={() => setCollapsed((c) => !c)}
+          />
+        )}
       </div>
       {/* All-In-One Section */}
       <div className="mt-10 flex flex-col flex-shrink-0 max-h-[70%]">
@@ -476,22 +556,22 @@ useEffect(() => {
               activeAllInOne === 'default' 
                 ? 'bg-white text-primary-text dark:bg-primary-blue'
                 : 'bg-secondary bg-opacity-20 text-primary-text opacity-80 hover:opacity-100',
-              collapsed 
-                ? 'flex-col justify-center items-center gap-1 px-1 py-[5px]' 
-                : 'flex-row gap-3 py-[11px]'
+              (shouldShowAsHamburger || !collapsed)
+                ? 'flex-row gap-3 py-[11px]'
+                : 'flex-col justify-center items-center gap-1 px-1 py-[5px]'
             )}
           >
             <img src={allInOneIcon} className="w-5 h-5" />
             <span className={cx(
               'font-medium text-sm',
-              collapsed && 'overflow-hidden text-ellipsis leading-tight text-center break-words w-full'
+              !shouldShowAsHamburger && collapsed && 'overflow-hidden text-ellipsis leading-tight text-center break-words w-full'
             )}>
-              {collapsed ? 'A-One' : 'All-In-One'}
+              {shouldShowAsHamburger || !collapsed ? 'All-In-One' : 'A-One'}
             </span>
           </Link>
           
           {/* Create new All-In-One button */}
-          {!collapsed && activeAllInOne === 'default' && (
+          {(shouldShowAsHamburger || !collapsed) && activeAllInOne === 'default' && (
             <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary-background bg-opacity-90 rounded px-1">
               <Tooltip content={t('create_new_all_in_one')}>
                 <button
@@ -524,13 +604,13 @@ useEffect(() => {
                 activeAllInOne === pair.id 
                   ? 'bg-white text-primary-text dark:bg-primary-blue'
                   : 'bg-secondary bg-opacity-20 text-primary-text opacity-80 hover:opacity-100',
-                collapsed 
-                  ? 'flex-col justify-center items-center gap-1 px-1 py-[5px]' 
-                  : 'flex-row gap-3 py-[11px]'
+                (shouldShowAsHamburger || !collapsed)
+                  ? 'flex-row gap-3 py-[11px]'
+                  : 'flex-col justify-center items-center gap-1 px-1 py-[5px]'
               )}
             >
               <div className="flex -space-x-1">
-                {pair.botIndices.slice(0, Math.min(4, collapsed ? 2 : 4)).map((botIndex, i) => (
+                {pair.botIndices.slice(0, Math.min(4, shouldShowAsHamburger || !collapsed ? 4 : 2)).map((botIndex, i) => (
                   <div key={i} className={cx(
                     "rounded-full border border-white overflow-hidden",
                     collapsed ? "w-4 h-4" : "w-4 h-4"
@@ -538,16 +618,16 @@ useEffect(() => {
                     <BotIcon iconName={getBotAvatar(botIndex)} size={16} />
                   </div>
                 ))}
-                {pair.botIndices.length > (collapsed ? 2 : 4) && (
+                {pair.botIndices.length > (shouldShowAsHamburger || !collapsed ? 4 : 2) && (
                   <div className={cx(
                     "rounded-full bg-secondary text-xs flex items-center justify-center border border-white",
                     collapsed ? "w-4 h-4" : "w-4 h-4"
                   )}>
-                    +{pair.botIndices.length - (collapsed ? 2 : 4)}
+                    +{pair.botIndices.length - (shouldShowAsHamburger || !collapsed ? 4 : 2)}
                   </div>
                 )}
               </div>
-              {!collapsed && (
+              {(shouldShowAsHamburger || !collapsed) && (
                 <div className="flex-1 min-w-0">
                   {editingPairId === pair.id ? (
                     <input
@@ -575,7 +655,7 @@ useEffect(() => {
             </Link>
 
             {/* Action buttons */}
-            {!collapsed && (
+            {(shouldShowAsHamburger || !collapsed) && (
               <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary-background bg-opacity-90 rounded px-1 flex gap-1">
                 <Tooltip content={t('rename')}>
                   <button
@@ -623,7 +703,7 @@ useEffect(() => {
       </div>
       
       {/* Separator line */}
-      {!collapsed && <div className="border-t border-gray-400 dark:border-gray-500 mx-2 my-2" />}
+      {(shouldShowAsHamburger || !collapsed) && <div className="border-t border-gray-400 dark:border-gray-500 mx-2 my-2" />}
       
       {/* Scrollable area for enabled bots */}
       <div className="flex flex-col gap-[13px] mt-2 overflow-y-auto scrollbar-none flex-grow"> {/* 個別チャットエリアは残り空間を使用 */}
@@ -638,29 +718,29 @@ useEffect(() => {
               text={getBotDisplayName(index)}
               shortText={getBotShortDisplayName(index)}
               icon={getBotAvatar(index)}
-              iconOnly={collapsed}
+              iconOnly={shouldShowAsHamburger ? false : collapsed}
             />
           )
         })}
       </div>
       <div className="mt-auto pt-2">
-        {!collapsed && <hr className="border-[#ffffff4d]" />}
-        <div className={cx('flex mt-5 gap-[10px] mb-4', collapsed ? 'flex-col' : 'flex-row ')}>
-          {!collapsed && (
+        {(shouldShowAsHamburger || !collapsed) && <hr className="border-[#ffffff4d]" />}
+        <div className={cx('flex mt-5 gap-[10px] mb-4', (shouldShowAsHamburger || !collapsed) ? 'flex-row' : 'flex-col')}>
+          {(shouldShowAsHamburger || !collapsed) && (
             <Tooltip content={t('GitHub')}>
               <a href="https://github.com/bondICha/HuddleLLM---Chat-with-multiple-AI-API-together" target="_blank" rel="noreferrer">
                 <IconButton icon={githubIcon} />
               </a>
             </Tooltip>
           )}
-          {!collapsed && (
+          {(shouldShowAsHamburger || !collapsed) && (
             <Tooltip content={t('Feedback')}>
               <a href="https://github.com/bondICha/HuddleLLM---Chat-with-multiple-AI-API-together/issues" target="_blank" rel="noreferrer">
                 <IconButton icon={feedbackIcon} />
               </a>
             </Tooltip>
           )}
-          {!collapsed && (
+          {(shouldShowAsHamburger || !collapsed) && (
             <Tooltip content={t('Display')}>
               <a onClick={() => setThemeSettingModalOpen(true)}>
                 <IconButton icon={themeIcon} />
@@ -682,6 +762,7 @@ useEffect(() => {
         onDontShowAgain={handleAddressBarModalDontShowAgain} 
       />
     </motion.aside>
+    </>
   )
 }
 

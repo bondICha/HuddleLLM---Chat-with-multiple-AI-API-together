@@ -5,7 +5,7 @@ import { ComponentPropsWithoutRef, FC, useCallback, useEffect, useMemo, useState
 import { ColorResult, TwitterPicker } from 'react-color'
 import { useTranslation } from 'react-i18next'
 import Browser from 'webextension-polyfill'
-import { followArcThemeAtom, themeColorAtom } from '~app/state'
+import { followArcThemeAtom, themeColorAtom, sidebarDisplayModeAtom } from '~app/state'
 import { applyThemeMode } from '~app/utils/color-scheme'
 import { isArcBrowser } from '~app/utils/env'
 import { getLanguage, setLanguage } from '~services/storage/language'
@@ -51,6 +51,7 @@ const ThemeSettingModal: FC<Props> = (props) => {
   const [themeColor, setThemeColor] = useAtom(themeColorAtom)
   const [themeMode, setThemeMode] = useState(getUserThemeMode())
   const [followArcTheme, setFollowArcTheme] = useAtom(followArcThemeAtom)
+  const [sidebarDisplayMode, setSidebarDisplayMode] = useAtom(sidebarDisplayModeAtom)
   const [zoomLevel, setZoomLevel] = useState<number | null>(null)
   const [lang, setLang] = useState(() => getLanguage() || 'auto')
 
@@ -174,6 +175,19 @@ const ThemeSettingModal: FC<Props> = (props) => {
             options={[{ name: t('Auto'), value: 'auto' }, { name: 'English', value: 'en' }, ...languageOptions]}
             value={lang}
             onChange={onLanguageChange}
+            position="top"
+          />
+        </div>
+        <div className="w-[300px]">
+          <p className="font-bold text-lg mb-3">{t('Sidebar Display Mode')}</p>
+          <Select
+            options={[
+              { name: t('Auto (Dynamic based on screen size)'), value: 'auto' },
+              { name: t('Hamburger Menu'), value: 'hamburger' },
+              { name: t('Fixed Sidebar'), value: 'fixed' },
+            ]}
+            value={sidebarDisplayMode}
+            onChange={(mode: 'auto' | 'hamburger' | 'fixed') => setSidebarDisplayMode(mode)}
             position="top"
           />
         </div>
