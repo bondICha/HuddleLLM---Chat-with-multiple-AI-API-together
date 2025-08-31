@@ -18,7 +18,7 @@ interface ConversationContext {
   messages: ChatMessage[]
 }
 
-const CONTEXT_SIZE = 40
+const CONTEXT_SIZE = 120
 
 export abstract class AbstractClaudeApiBot extends AbstractBot {
   private conversationContext?: ConversationContext
@@ -280,11 +280,6 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true',
     };
-
-    // Add beta header for Extended Thinking if thinking mode is enabled
-    if (this.thinkingMode) {
-      headers['anthropic-beta'] = 'thinking-2024-12-19';
-    }
 
     if (this.useCustomAuthorizationHeader) {
       headers['Authorization'] = this.config.apiKey; // Use config.apiKey

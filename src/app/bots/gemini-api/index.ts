@@ -19,7 +19,7 @@ interface ConversationContext {
   messages: Content[]
 }
 
-const CONTEXT_SIZE = 40
+const CONTEXT_SIZE = 120
 
 export abstract class AbstractGeminiApiBot extends AbstractBot {
   private conversationContext?: ConversationContext

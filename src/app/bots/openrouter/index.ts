@@ -12,7 +12,7 @@ interface ConversationContext {
   messages: ChatMessage[]
 }
 
-const CONTEXT_SIZE = 40
+const CONTEXT_SIZE = 120
 
 export class OpenRouterBot extends AbstractBot {
   private conversationContext?: ConversationContext
