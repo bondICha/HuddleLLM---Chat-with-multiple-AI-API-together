@@ -263,11 +263,11 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
         open={isOpen}
         onClose={() => setIsOpen(false)}
         title={t('Import Custom API Template')}
-        className="w-full max-w-4xl max-h-[90vh]"
+        className="w-full max-w-4xl max-h-[85vh]"
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full max-h-[85vh]">
           
-          <div className="flex-1 overflow-y-auto px-6 py-3 min-h-0">
+          <div className="flex-1 overflow-y-scroll px-6 py-3 min-h-0 max-h-[calc(85vh-100px)]">
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-secondary-text">
