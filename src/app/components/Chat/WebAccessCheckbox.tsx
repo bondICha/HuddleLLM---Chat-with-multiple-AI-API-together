@@ -1,6 +1,7 @@
 import { Switch } from '@headlessui/react'
 import { Globe } from 'lucide-react'
 import { FC, memo, useCallback, useEffect, useState, useRef } from 'react'
+import Tooltip from '../Tooltip'
 import { useTranslation } from 'react-i18next'
 import { requestHostPermissions } from '~app/utils/permissions'
 import { getUserConfig, updateUserConfig, CustomApiConfig } from '~services/user-config'
@@ -95,30 +96,31 @@ const WebAccessCheckbox: FC<Props> = (props) => {
   )
 
   return (
-    <div
-      ref={containerRef}
-      className={`flex flex-row items-center gap-2 group flex-shrink-0 ${props.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
-      title={t('Web Access')}
-    >
-      <Switch.Group>
-        <div className="flex flex-row items-center gap-2">
-          <Toggle
-            enabled={checked}
-            onChange={onToggle}
-            disabled={props.disabled}
-          />
-          <Switch.Label
-            className={`text-[13px] font-medium select-none ${props.disabled ? 'text-gray-400' : 'text-light-text'}`}
-          >
-            {useIcon ? (
-              <Globe size={16} />
-            ) : (
-              <span className="whitespace-nowrap">{t('Web Access')}</span>
-            )}
-          </Switch.Label>
-        </div>
-      </Switch.Group>
-    </div>
+    <Tooltip content={t('Web Access')}>
+      <div
+        ref={containerRef}
+        className={`flex flex-row items-center gap-2 group flex-shrink-0 ${props.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+      >
+        <Switch.Group>
+          <div className="flex flex-row items-center gap-2">
+            <Toggle
+              enabled={checked}
+              onChange={onToggle}
+              disabled={props.disabled}
+            />
+            <Switch.Label
+              className={`text-[13px] font-medium select-none ${props.disabled ? 'text-gray-400' : 'text-light-text'}`}
+            >
+              {useIcon ? (
+                <Globe size={16} />
+              ) : (
+                <span className="whitespace-nowrap">{t('Web Access')}</span>
+              )}
+            </Switch.Label>
+          </div>
+        </Switch.Group>
+      </div>
+    </Tooltip>
   )
 }
 

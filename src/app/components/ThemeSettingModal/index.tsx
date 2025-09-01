@@ -98,6 +98,8 @@ const ThemeSettingModal: FC<Props> = (props) => {
   const onThemeColorChange = useCallback(
     (color: ColorResult) => {
       setThemeColor(color.hex)
+      document.documentElement.style.setProperty('--theme-color', color.hex)
+      document.documentElement.style.setProperty('--theme-color-muted', `${color.hex}33`)
     },
     [setThemeColor],
   )
@@ -183,7 +185,7 @@ const ThemeSettingModal: FC<Props> = (props) => {
           <Select
             options={[
               { name: t('Auto (Dynamic based on screen size)'), value: 'auto' },
-              { name: t('Hamburger Menu'), value: 'hamburger' },
+              { name: t('Drawer Menu'), value: 'hamburger' },
               { name: t('Fixed Sidebar'), value: 'fixed' },
             ]}
             value={sidebarDisplayMode}

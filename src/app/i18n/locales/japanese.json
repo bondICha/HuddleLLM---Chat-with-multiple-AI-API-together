@@ -1,5 +1,6 @@
 {
   "com_ui_thoughts": "思考プロセス",
+  "Drawer Menu": "引き出しメニュー",
   "Import ChatBot Settings": "ImportするChat Bot設定",
   "Override Chatbot": "上書きするChat Bot設定",
   "Web Search Results": "Web検索結果",
@@ -173,7 +174,6 @@
   "Enable": "有効",
   "Disable": "無効",
   "Disabled": "無効",
-
   "Delete": "削除",
   "Custom Chatbot Name": "チャットボットちゃんにお名前をつけてね",
   "Choose model": "モデルを選択",

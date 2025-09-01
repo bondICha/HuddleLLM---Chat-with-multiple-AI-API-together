@@ -555,7 +555,7 @@ useEffect(() => {
               'rounded-[10px] w-full pl-3 flex items-center shrink-0',
               activeAllInOne === 'default' 
                 ? 'bg-white text-primary-text dark:bg-primary-blue'
-                : 'bg-secondary bg-opacity-20 text-primary-text opacity-80 hover:opacity-100',
+                : 'bg-secondary bg-opacity-20 text-primary-text hover:opacity-100',
               (shouldShowAsHamburger || !collapsed)
                 ? 'flex-row gap-3 py-[11px]'
                 : 'flex-col justify-center items-center gap-1 px-1 py-[5px]'
@@ -603,7 +603,7 @@ useEffect(() => {
                 'rounded-[10px] w-full pl-3 flex items-center shrink-0',
                 activeAllInOne === pair.id 
                   ? 'bg-white text-primary-text dark:bg-primary-blue'
-                  : 'bg-secondary bg-opacity-20 text-primary-text opacity-80 hover:opacity-100',
+                  : 'bg-secondary bg-opacity-20 text-primary-text hover:opacity-100',
                 (shouldShowAsHamburger || !collapsed)
                   ? 'flex-row gap-3 py-[11px]'
                   : 'flex-col justify-center items-center gap-1 px-1 py-[5px]'
