@@ -64,13 +64,13 @@ const ChatbotName: FC<Props> = (props) => {
 
   const node = (
     <Tooltip content={tooltipContent}>
-      <span className="font-semibold text-primary-text text-sm cursor-pointer max-w-[120px] truncate block">{props.name}</span>
+      <span className="font-semibold text-primary-text text-sm cursor-pointer truncate flex-shrink-[1] min-w-0">{props.name}</span>
     </Tooltip>
   )
 
   const modelNode = props.model ? (
     <Tooltip content={tooltipContent}>
-      <div className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-full px-2 py-1 ml-1 max-w-[100px]">
+      <div className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-full px-2 py-1 flex-shrink-[3] min-w-[60px]">
         <div className="truncate">
         {props.model}
       </div>
@@ -80,17 +80,21 @@ const ChatbotName: FC<Props> = (props) => {
 
   if (!props.onSwitchBot) {
     return (
-      <div className="flex items-center">
+      <div className="flex items-center min-w-0 flex-1">
         {node}
+        <div className="flex-shrink-[5] min-w-0 w-2"></div>
         {modelNode}
+        <div className="flex-shrink-[5] min-w-0 w-2"></div>
       </div>
     )
   }
   const triggerNode = (
-    <div className="flex flex-row items-center gap-[2px]">
+    <div className="flex flex-row items-center min-w-0 w-full">
       {node}
-      {modelNode} 
-      <img src={dropdownIcon} className="w-5 h-5" />
+      <div className="flex-shrink-[5] min-w-0 w-2"></div>
+      {modelNode}
+      <div className="flex-shrink-[5] min-w-0 w-2"></div>
+      <img src={dropdownIcon} className="w-5 h-5 flex-shrink-0" />
     </div>
   )
   return <SwitchBotDropdown

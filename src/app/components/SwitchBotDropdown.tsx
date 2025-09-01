@@ -44,8 +44,8 @@ const SwitchBotDropdown: FC<Props> = (props) => {
   }, [enabledBots]);
 
   return (
-    <Menu as="div" className="relative inline-block text-left h-5">
-      <Menu.Button className="flex">{props.triggerNode}</Menu.Button>
+    <Menu as="div" className="relative text-left h-5 flex-1 min-w-0">
+      <Menu.Button className="flex w-full min-w-0">{props.triggerNode}</Menu.Button>
       <Transition
         as={Fragment}
         enter="transition ease-out duration-100"
@@ -55,7 +55,7 @@ const SwitchBotDropdown: FC<Props> = (props) => {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <Menu.Items className="absolute left-0 mt-1 py-1 rounded-md bg-secondary shadow-lg focus:outline-none max-h-[300px] overflow-y-auto">
+        <Menu.Items className="absolute left-0 z-10 mt-1 py-1 rounded-md bg-secondary shadow-lg focus:outline-none max-h-[300px] overflow-y-auto">
           {enabledBots.map(({ index, bot }) => { // Destructure index and bot
             if (index === props.selectedIndex) {
               return null

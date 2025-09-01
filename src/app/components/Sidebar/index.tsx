@@ -491,7 +491,7 @@ useEffect(() => {
       <button
         id="hamburger-button"
         onClick={() => setIsMobileMenuOpen(true)}
-        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-primary-background bg-opacity-90 hover:bg-opacity-100 transition-all"
+        className="fixed top-8 left-2 z-50 p-2 rounded-lg bg-primary-background bg-opacity-90 hover:bg-opacity-100 transition-all"
       >
         <img src={hamburgerIcon} className="w-6 h-6" />
       </button>

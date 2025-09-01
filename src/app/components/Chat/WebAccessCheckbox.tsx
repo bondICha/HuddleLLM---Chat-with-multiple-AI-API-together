@@ -1,5 +1,6 @@
 import { Switch } from '@headlessui/react'
-import { FC, memo, useCallback, useEffect, useState } from 'react'
+import { Globe } from 'lucide-react'
+import { FC, memo, useCallback, useEffect, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { requestHostPermissions } from '~app/utils/permissions'
 import { getUserConfig, updateUserConfig, CustomApiConfig } from '~services/user-config'
@@ -14,6 +15,8 @@ interface Props {
 const WebAccessCheckbox: FC<Props> = (props) => {
   const { t } = useTranslation()
   const [checked, setChecked] = useState<boolean>(false) // 初期値は false
+  const [useIcon, setUseIcon] = useState<boolean>(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchWebAccessState = async () => {
@@ -27,6 +30,15 @@ const WebAccessCheckbox: FC<Props> = (props) => {
     };
     fetchWebAccessState();
   }, [props.index]);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      const parentWidth = containerRef.current.closest('.chat-container, [class*="chat"]')?.clientWidth || 
+                         containerRef.current.parentElement?.clientWidth || 
+                         window.innerWidth;
+      setUseIcon(parentWidth < 600); // 600px未満でアイコン表示
+    }
+  }, []);
 
   const onToggle = useCallback(
     async (newValue: boolean) => {
@@ -83,19 +95,26 @@ const WebAccessCheckbox: FC<Props> = (props) => {
   )
 
   return (
-    <div 
-      className={`flex flex-row items-center gap-2 shrink-0 group ${props.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
-      title={props.disabled ? t('Web Access can only be changed before starting conversation. Clear chat to enable switching.') : undefined}
+    <div
+      ref={containerRef}
+      className={`flex flex-row items-center gap-2 group flex-shrink-0 ${props.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+      title={t('Web Access')}
     >
       <Switch.Group>
         <div className="flex flex-row items-center gap-2">
-          <Toggle 
-            enabled={checked} 
+          <Toggle
+            enabled={checked}
             onChange={onToggle}
             disabled={props.disabled}
           />
-          <Switch.Label className={`text-[13px] whitespace-nowrap font-medium select-none ${props.disabled ? 'text-gray-400' : 'text-light-text'}`}>
-            {t('Web Access')}
+          <Switch.Label
+            className={`text-[13px] font-medium select-none ${props.disabled ? 'text-gray-400' : 'text-light-text'}`}
+          >
+            {useIcon ? (
+              <Globe size={16} />
+            ) : (
+              <span className="whitespace-nowrap">{t('Web Access')}</span>
+            )}
           </Switch.Label>
         </div>
       </Switch.Group>

@@ -1,6 +1,6 @@
 
 import { motion } from 'framer-motion'
-import { FC, ReactNode, useCallback, useMemo, useState, useEffect, useRef } from 'react'
+import { FC, ReactNode, useCallback, useMemo, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import clearIcon from '~/assets/icons/clear.svg'
 import historyIcon from '~/assets/icons/history.svg'
@@ -36,7 +36,7 @@ interface Props {
 const ConversationPanel: FC<Props> = (props) => {
   const { t } = useTranslation()
   const mode = props.mode || 'full'
-  const marginClass = 'ml-3 mr-1'
+  const marginClass = 'mx-3'
   const [showHistory, setShowHistory] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
   // ボット名とアバターを保持するための状態を追加
@@ -107,24 +107,25 @@ const ConversationPanel: FC<Props> = (props) => {
 
   return (
     <ConversationContext.Provider value={context}>
-      <div className={cx('relative flex flex-col overflow-hidden bg-primary-background h-full rounded-2xl')}>
+      <div className={cx('flex flex-col overflow-hidden bg-primary-background h-full rounded-2xl')}>
         <div
           className={cx(
-            'border-b border-solid border-primary-border flex flex-row items-center justify-between gap-2 py-[10px]',
+            'border-b border-solid border-primary-border flex flex-row items-center py-[10px]',
             marginClass,
           )}
         >
-          <div className="flex flex-row items-center">
-          <motion.div
-            className="mr-2"
-            whileHover={{ rotate: 180 }}
-          >
-            <BotIcon
-              iconName={botAvatar}
-              size={18}
-              className="object-contain rounded-sm"
-            />
-          </motion.div>
+          {/* 左側：フレキシブル領域（アイコン + ボット名 + モデル名 + スペーサー） */}
+          <div className="flex flex-row items-center min-w-0 flex-1 gap-2">
+            <motion.div
+              className="flex-shrink-0"
+              whileHover={{ rotate: 180 }}
+            >
+              <BotIcon
+                iconName={botAvatar}
+                size={18}
+                className="object-contain rounded-sm"
+              />
+            </motion.div>
             <ChatbotName
               index={props.index}
               name={props.bot.chatBotName ?? botName}
@@ -134,8 +135,10 @@ const ConversationPanel: FC<Props> = (props) => {
               botConfig={botConfig}
             />
           </div>
-          <WebAccessCheckbox index={props.index} />
-          <div className="flex flex-row items-center gap-3">
+          
+          {/* 右側：固定領域（Web検索 + ボタン群） */}
+          <div className="flex flex-row items-center gap-3 flex-shrink-0">
+            <WebAccessCheckbox index={props.index} />
             <Tooltip content={t('Share conversation')}>
               <motion.img
                 src={shareIcon}
@@ -168,7 +171,7 @@ const ConversationPanel: FC<Props> = (props) => {
           className={cx(marginClass)}
           onPropaganda={props.onPropaganda}
         />
-        <div className={cx('flex flex-col', marginClass)}>
+        <div className={cx('mt-3 flex flex-col ', marginClass, mode === 'full' ? 'mb-3' : 'mb-[5px]')}>
           <div className={cx('flex flex-row items-center gap-[5px]', mode === 'full' ? 'mb-3' : 'mb-0')}>
             {mode === 'compact' && (
               <span className="font-medium text-xs text-light-text cursor-default">Send to {botName}</span>
