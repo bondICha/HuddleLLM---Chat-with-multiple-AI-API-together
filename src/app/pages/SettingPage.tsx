@@ -10,6 +10,9 @@ import Select from '~app/components/Select'
 import Blockquote from '~app/components/Settings/Blockquote'
 import { cloneDeep } from 'lodash-es'
 import { requestHostPermissions } from '~services/host-permissions'
+import { useAtomValue } from 'jotai'
+import { themeColorAtom } from '~app/state'
+
 
 import CustomAPISettings from '~app/components/Settings/CustomAPISettings'
 import ExportDataPanel from '~app/components/Settings/ExportDataPanel'
@@ -41,6 +44,8 @@ function SettingPage() {
   const { t } = useTranslation()
   const [userConfig, setUserConfig] = useState<UserConfig | undefined>(undefined)
   const [dirty, setDirty] = useState(false)
+  const themeColor = useAtomValue(themeColorAtom)
+
 
   useEffect(() => {
     getUserConfig().then((config) => {
@@ -89,7 +94,7 @@ function SettingPage() {
 
   return (
     <PagePanel title={`${t('Settings')} (v${getVersion()})`}>
-      <div className="flex flex-col gap-5 mt-3 mb-10 px-10">
+      <div className="flex flex-col gap-5 mt-3 mb-10 px-10" style={{ backgroundColor: themeColor ? `${themeColor}15` : 'rgba(17, 24, 39, 0.15)' }}>
         <ExportDataPanel userConfig={userConfig} updateConfigValue={updateConfigValue} />
         <div>
           <p className="font-bold mb-2 text-lg">{t('Startup page')}</p>

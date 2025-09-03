@@ -8,7 +8,7 @@ import { ChatMessageModel } from '~types';
 import { uuid } from '~utils';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
-const CONTEXT_SIZE = 40;
+const CONTEXT_SIZE = 120;
 
 interface ContentPart {
   type: 'text' | 'image';

@@ -60,13 +60,14 @@ const TripleStateToggle: React.FC<TripleStateToggleProps> = ({ value, onChange, 
           width: 210px;
           height: 36px;
           border-radius: 18px;
-          background-color: #e5e7eb;
+          background-color: rgba(255, 255, 255, 0.8);
+          border: 1px solid #d1d5db;
           position: relative;
-          box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .dark .triple-toggle-container {
-          background-color: #374151;
+          background-color: rgba(0, 0, 0, 0.3);
+          border: 1px solid #4b5563;
         }
 
         .toggle-switch {
@@ -77,11 +78,13 @@ const TripleStateToggle: React.FC<TripleStateToggleProps> = ({ value, onChange, 
           position: absolute;
           top: 4px;
           transition: all 0.3s ease;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          border: 1px solid #d1d5db;
         }
 
         .dark .toggle-switch {
-          background-color: #1f2937;
+          background-color: #374151;
+          border: 1px solid #4b5563;
         }
 
         .toggle-switch.left-position {
@@ -106,31 +109,32 @@ const TripleStateToggle: React.FC<TripleStateToggleProps> = ({ value, onChange, 
           border-radius: 18px;
           cursor: pointer;
           z-index: 10;
-          color: #6b7280;
+          color: #374151;
           font-size: 11px;
           font-weight: 500;
-          transition: color 0.2s ease;
+          transition: all 0.2s ease;
         }
 
         .toggle-label:hover {
-          color: #374151;
+          color: #1f2937;
         }
 
         .dark .toggle-label {
-          color: #9ca3af;
+          color: #d1d5db;
         }
 
         .dark .toggle-label:hover {
-          color: #d1d5db;
+          color: #f9fafb;
         }
 
         .toggle-label.active {
           color: #1f2937 !important;
-          font-weight: 600;
+          font-weight: 700;
         }
 
         .dark .toggle-label.active {
           color: #f9fafb !important;
+          font-weight: 700;
         }
 
         .label-left {

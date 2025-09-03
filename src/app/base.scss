@@ -18,13 +18,13 @@
 
 html,
 body {
-  font-family: 'Inter', 'Noto Sans JP', 'system-ui';
+  font-family: 'Inter', 'Noto Sans CJK JP', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'system-ui';
 }
 
 @supports (font-variation-settings: normal) {
   html,
   body {
-    font-family: 'Inter var', 'Noto Sans JP', 'system-ui';
+    font-family: 'Inter var', 'Noto Sans CJK JP', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'system-ui';
   }
 }
 

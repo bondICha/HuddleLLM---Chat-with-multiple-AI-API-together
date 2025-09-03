@@ -13,7 +13,7 @@ interface ConversationContext {
   messages: ChatMessage[]
 }
 
-const CONTEXT_SIZE = 40
+const CONTEXT_SIZE = 120
 
 export abstract class AbstractChatGPTApiBot extends AbstractBot {
   private conversationContext?: ConversationContext

@@ -1,6 +1,6 @@
 
 import { motion } from 'framer-motion'
-import { FC, ReactNode, useCallback, useMemo, useState, useEffect, useRef } from 'react'
+import { FC, ReactNode, useCallback, useMemo, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import clearIcon from '~/assets/icons/clear.svg'
 import historyIcon from '~/assets/icons/history.svg'
@@ -36,12 +36,13 @@ interface Props {
 const ConversationPanel: FC<Props> = (props) => {
   const { t } = useTranslation()
   const mode = props.mode || 'full'
-  const marginClass = 'ml-3 mr-1'
+  const marginClass = 'mx-3'
   const [showHistory, setShowHistory] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
   // ボット名とアバターを保持するための状態を追加
   const [botName, setBotName] = useState<string>('Custom Bot')
   const [botAvatar, setBotAvatar] = useState<string>('OpenAI.Black')
+  const [botConfig, setBotConfig] = useState<any>(null)
 
   // コンポーネントマウント時に設定を取得
   useEffect(() => {
@@ -51,10 +52,12 @@ const ConversationPanel: FC<Props> = (props) => {
 
       // インデックスが有効な範囲内かどうかを確認
       if (props.index >= 0 && props.index < customApiConfigs.length) {
-        setBotName(customApiConfigs[props.index].name);
+        const currentBotConfig = customApiConfigs[props.index];
+        setBotName(currentBotConfig.name);
+        setBotConfig(currentBotConfig);
         // アバター情報も設定
-        if (customApiConfigs[props.index].avatar) {
-          setBotAvatar(customApiConfigs[props.index].avatar);
+        if (currentBotConfig.avatar) {
+          setBotAvatar(currentBotConfig.avatar);
         }
       }
     };
@@ -104,35 +107,38 @@ const ConversationPanel: FC<Props> = (props) => {
 
   return (
     <ConversationContext.Provider value={context}>
-      <div className={cx('relative flex flex-col overflow-hidden bg-primary-background h-full rounded-2xl')}>
+      <div className={cx('flex flex-col overflow-hidden bg-primary-background h-full rounded-2xl')}>
         <div
           className={cx(
-            'absolute top-0 left-0 right-0 z-10 border-b border-solid border-primary-border flex flex-row items-center justify-between gap-2 py-[10px] bg-white/75 dark:bg-black/70',
+            'border-b border-solid border-primary-border flex flex-row items-center py-[10px]',
             marginClass,
-            'mr-3',
           )}
         >
-          <div className="flex flex-row items-center">
-          <motion.div
-            className="mr-2"
-            whileHover={{ rotate: 180 }}
-          >
-            <BotIcon
-              iconName={botAvatar}
-              size={18}
-              className="object-contain rounded-sm"
-            />
-          </motion.div>
+          {/* 左側：フレキシブル領域（アイコン + ボット名 + モデル名 + スペーサー） */}
+          <div className="flex flex-row items-center min-w-0 flex-1 gap-2">
+            <motion.div
+              className="flex-shrink-0"
+              whileHover={{ rotate: 180 }}
+            >
+              <BotIcon
+                iconName={botAvatar}
+                size={18}
+                className="object-contain rounded-sm"
+              />
+            </motion.div>
             <ChatbotName
               index={props.index}
               name={props.bot.chatBotName ?? botName}
               fullName={props.bot.name}
               model={props.bot.modelName ?? 'Default'}
               onSwitchBot={mode === 'compact' ? (index) => props.onSwitchBot?.(index) : undefined}
+              botConfig={botConfig}
             />
           </div>
-          <WebAccessCheckbox index={props.index} />
-          <div className="flex flex-row items-center gap-3">
+          
+          {/* 右側：固定領域（Web検索 + ボタン群） */}
+          <div className="flex flex-row items-center gap-3 flex-shrink-0">
+            <WebAccessCheckbox index={props.index} />
             <Tooltip content={t('Share conversation')}>
               <motion.img
                 src={shareIcon}
@@ -165,24 +171,22 @@ const ConversationPanel: FC<Props> = (props) => {
           className={cx(marginClass)}
           onPropaganda={props.onPropaganda}
         />
-        <div className={cx('absolute bottom-0 left-0 right-0 z-10 flex flex-col', marginClass, 'pb-0', 'pt-3')}>
+        <div className={cx('mt-3 flex flex-col ', marginClass, mode === 'full' ? 'mb-3' : 'mb-[5px]')}>
           <div className={cx('flex flex-row items-center gap-[5px]', mode === 'full' ? 'mb-3' : 'mb-0')}>
             {mode === 'compact' && (
               <span className="font-medium text-xs text-light-text cursor-default">Send to {botName}</span>
             )}
             <hr className="grow border-primary-border" />
           </div>
-          <div className="bg-white/85 dark:bg-black/75 rounded-b-2xl -mx-3 px-3 pb-3">
-            <ChatMessageInput
-              mode={mode}
-              disabled={props.generating}
-              placeholder={mode === 'compact' ? '' : undefined}
-              onSubmit={onSubmit}
-              autoFocus={mode === 'full'}
-              supportImageInput={mode === 'full' && props.bot.supportsImageInput}
-              actionButton={inputActionButton}
-            />
-          </div>
+          <ChatMessageInput
+            mode={mode}
+            disabled={props.generating}
+            placeholder={mode === 'compact' ? '' : undefined}
+            onSubmit={onSubmit}
+            autoFocus={mode === 'full'}
+            supportImageInput={mode === 'full' && props.bot.supportsImageInput}
+            actionButton={inputActionButton}
+          />
         </div>
       </div>
       {showShareDialog && (

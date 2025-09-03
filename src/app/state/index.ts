@@ -28,6 +28,7 @@ export const chatFamily = atomFamily(
 
 export const licenseKeyAtom = atomWithStorage('licenseKey', '', undefined, { getOnInit: true })
 export const sidebarCollapsedAtom = atomWithStorage('sidebarCollapsed', false, undefined, { getOnInit: true })
+export const sidebarDisplayModeAtom = atomWithStorage<'auto' | 'hamburger' | 'fixed'>('sidebarDisplayMode', 'auto', undefined, { getOnInit: true })
 export const themeColorAtom = atomWithStorage('themeColor', getDefaultThemeColor())
 export const followArcThemeAtom = atomWithStorage('followArcTheme', false)
 export const sidePanelBotAtom = atomWithStorage<number>('sidePanelBot', 0)

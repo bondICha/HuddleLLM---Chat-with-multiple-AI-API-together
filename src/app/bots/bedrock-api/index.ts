@@ -21,7 +21,7 @@ import { HttpRequest } from "@smithy/protocol-http";
 
 
 
-const CONTEXT_SIZE = 40;
+const CONTEXT_SIZE = 120;
 
 // interface ContentPart {
 //   type: 'text' | 'image';

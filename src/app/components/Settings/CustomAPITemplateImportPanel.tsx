@@ -263,54 +263,54 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
         open={isOpen}
         onClose={() => setIsOpen(false)}
         title={t('Import Custom API Template')}
-        className="w-full max-w-4xl h-full max-h-[95vh]"
+        className="w-full max-w-4xl max-h-[85vh]"
       >
-        <div className="flex flex-col h-full">
-          <div className="px-6 py-4 space-y-4 flex-shrink-0">
-          <div>
-            <p className="text-sm text-secondary-text">
-              {t('Select which models to import and where to place them. Individual API keys will be overwritten, but common API key will be preserved.')}
-            </p>
-          </div>
-
-          {/* Common要素のインポート選択 */}
-          {(importedData.host !== undefined || importedData.commonSystemMessage !== undefined) && (
-            <div className="border-t border-primary-border pt-4">
-              <h4 className="text-sm font-medium mb-3 text-primary-text">{t('Common Settings')}</h4>
-              <div className="space-y-2">
-                {importedData.host !== undefined && (
-                  <Checkbox
-                    label={t('Import Common API Host') + `: ${importedData.host}`}
-                    checked={importCommonHost}
-                    onChange={setImportCommonHost}
-                  />
-                )}
-                {importedData.commonSystemMessage !== undefined && (
-                  <Checkbox
-                    label={t('Import Common System Message')}
-                    checked={importCommonSystemMessage}
-                    onChange={setImportCommonSystemMessage}
-                  />
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Column headers */}
-          <div className="flex items-center gap-6 mb-4 py-2 border-b border-primary-border">
-            <div className="w-1/3">
-              <h4 className="text-sm font-medium text-primary-text">{t('Import ChatBot Settings')}</h4>
-            </div>
-            <div className="w-1/6"></div>
-            <div className="w-1/2">
-              <h4 className="text-sm font-medium text-primary-text">{t('Override Chatbot')}</h4>
-            </div>
-          </div>
-
-          </div>
+        <div className="flex flex-col h-full max-h-[85vh]">
           
-          <div className="flex-1 overflow-y-auto px-6">
-            {importedData.configs.map((importConfig, index) => (
+          <div className="flex-1 overflow-y-scroll px-6 py-3 min-h-0 max-h-[calc(85vh-100px)]">
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-secondary-text">
+                  {t('Select which models to import and where to place them. Individual API keys will be overwritten, but common API key will be preserved.')}
+                </p>
+              </div>
+
+              {/* Common要素のインポート選択 */}
+              {(importedData.host !== undefined || importedData.commonSystemMessage !== undefined) && (
+                <div className="border-t border-primary-border pt-3">
+                  <h4 className="text-sm font-medium mb-2 text-primary-text">{t('Common Settings')}</h4>
+                  <div className="space-y-2">
+                    {importedData.host !== undefined && (
+                      <Checkbox
+                        label={t('Import Common API Host') + `: ${importedData.host}`}
+                        checked={importCommonHost}
+                        onChange={setImportCommonHost}
+                      />
+                    )}
+                    {importedData.commonSystemMessage !== undefined && (
+                      <Checkbox
+                        label={t('Import Common System Message')}
+                        checked={importCommonSystemMessage}
+                        onChange={setImportCommonSystemMessage}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Column headers */}
+              <div className="flex items-center gap-6 mb-2 py-2 border-b border-primary-border">
+                <div className="w-1/3">
+                  <h4 className="text-sm font-medium text-primary-text">{t('Import ChatBot Settings')}</h4>
+                </div>
+                <div className="w-1/6"></div>
+                <div className="w-1/2">
+                  <h4 className="text-sm font-medium text-primary-text">{t('Override Chatbot')}</h4>
+                </div>
+              </div>
+
+              {/* ChatBot configurations list */}
+              {importedData.configs.map((importConfig, index) => (
               <div key={index} className="flex items-center gap-6 mb-2 py-2">
                 <div className="w-1/3">
                   <p className="font-medium text-primary-text">{importConfig.name}</p>
@@ -344,12 +344,13 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
                       setMappings(newMappings)
                     }}
                   />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
           
-          <div className="px-6 py-4 flex-shrink-0 border-t border-primary-border">
+          <div className="px-6 py-3 flex-shrink-0 border-t border-primary-border">
             <div className="flex justify-end gap-4">
               <Button text={t('Cancel')} onClick={() => setIsOpen(false)} color="flat" />
               <Button text={t('Import')} onClick={handleImport} color="primary" />
