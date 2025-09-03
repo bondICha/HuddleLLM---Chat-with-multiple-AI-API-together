@@ -298,10 +298,19 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       }),
     })
     if (!resp.ok) {
-      const error = await resp.text()
-      if (error.includes('insufficient_quota')) {
-        throw new ChatError('Insufficient ChatGPT API usage quota', ErrorCode.CHATGPT_INSUFFICIENT_QUOTA)
+      const statusLine = `${resp.status} ${resp.statusText || 'Error'}`;
+      const errorText = await resp.text();
+      let cause;
+      let apiMessage = '';
+      try {
+        cause = JSON.parse(errorText);
+        apiMessage = (cause as any)?.error?.message || '';
+      } catch (e) {
+        cause = errorText;
+        apiMessage = errorText.substring(0, 300); // Take a snippet if not JSON
       }
+      const combinedMessage = `${statusLine}; ${apiMessage}`;
+      throw new ChatError(combinedMessage, ErrorCode.UNKOWN_ERROR, cause);
     }
     return resp
   }

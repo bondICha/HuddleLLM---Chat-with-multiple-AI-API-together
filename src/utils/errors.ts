@@ -33,10 +33,24 @@ export enum ErrorCode {
   CUSTOMBOT_CONFIGURATION_ERROR = 'CUSTOMBOT_CONFIGURATION_ERROR',
 }
 
+/**
+ * Represents a chat-specific error.
+ *
+ * @param {string} message - The primary error message to be displayed directly in the UI.
+ *   e.g., "400 Bad Request; Unsupported value: 'temperature'..."
+ *
+ * @param {ErrorCode} code - An internal error code for categorizing the error type.
+ *
+ * @param {any} [cause] - The original error object or full response body from the API.
+ *   This is used to display detailed, expandable error information (e.g., the full JSON payload).
+ */
 export class ChatError extends Error {
   code: ErrorCode
-  constructor(message: string, code: ErrorCode) {
+  cause?: any
+
+  constructor(message: string, code: ErrorCode, cause?: any) {
     super(message)
     this.code = code
+    this.cause = cause
   }
 }

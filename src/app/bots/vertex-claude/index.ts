@@ -186,15 +186,6 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
     try {
       const resp = await this.fetchCompletionApi(this.buildMessages(params.prompt, images_for_api), params.signal)
 
-      if (!resp.ok) {
-        params.onEvent({
-          type: 'ERROR',
-          error: new ChatError('Failed to fetch API', ErrorCode.UNKOWN_ERROR)
-        });
-        console.error('Failed to fetch API:', await resp.text());
-        return;
-      }
-
       this.conversationContext.messages.push(this.buildUserMessage(params.rawUserInput || params.prompt, images_for_api))
   
       let done = false
@@ -287,10 +278,13 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      params.onEvent({
-        type: 'ERROR',
-        error: new ChatError('Error sending message', ErrorCode.UNKOWN_ERROR)
-      });
+      if (error instanceof ChatError) {
+        params.onEvent({ type: 'ERROR', error });
+      } else {
+        const err = error as any;
+        const message = err.message || 'Unknown error sending message';
+        params.onEvent({ type: 'ERROR', error: new ChatError(message, ErrorCode.UNKOWN_ERROR, err) });
+      }
     }
   }
 
@@ -343,79 +337,70 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
   }
 
   async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal): Promise<Response> {
-    try {
-      // hostをフルURLとして使用
-      const url = this.config.host;
-      
-      // リクエストボディを楽天のVertexAI API仕様に合わせて構築
-      // Extended Thinking requires a newer anthropic version
-      const requestBody: any = {
-        anthropic_version: "vertex-2023-10-16", // Keep stable version for now
-        messages: messages.map(msg => ({
-          role: msg.role,
-          content: msg.content.map(part => {
-            if (part.type === 'text') {
-              return { type: 'text', text: part.text || '' };
-            } else if (part.type === 'image' && part.image) {
-              return {
-                type: 'image',
-                source: {
-                  type: 'base64',
-                  media_type: part.image.media_type,
-                  data: part.image.data
-                }
-              };
-            }
-            return { type: 'text', text: '' };
-          })
-        })),
-        system: this.getSystemMessage(),
-        stream: true
+    const url = this.config.host;
+    
+    const requestBody: any = {
+      anthropic_version: "vertex-2023-10-16",
+      messages: messages.map(msg => ({
+        role: msg.role,
+        content: msg.content.map(part => {
+          if (part.type === 'text') {
+            return { type: 'text', text: part.text || '' };
+          } else if (part.type === 'image' && part.image) {
+            return {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: part.image.media_type,
+                data: part.image.data
+              }
+            };
+          }
+          return { type: 'text', text: '' };
+        })
+      })),
+      system: this.getSystemMessage(),
+      stream: true
+    };
+
+    if (this.thinkingMode) {
+      requestBody.thinking = {
+        type: "enabled",
+        budget_tokens: Math.max(this.config.thinkingBudget || 2000, 1024)
       };
-
-      // Add Extended Thinking configuration or temperature based on thinkingMode flag
-      if (this.thinkingMode) {
-        requestBody.thinking = {
-          type: "enabled",
-          budget_tokens: Math.max(this.config.thinkingBudget || 2000, 1024) // Minimum 1024 tokens as per Extended Thinking spec
-        };
-        requestBody.max_tokens = 64000; // Larger token limit for Extended Thinking like Bedrock
-        // Temperature is not compatible with Extended Thinking mode
-      } else {
-        requestBody.max_tokens = 16384; // Increased from 8192 for better output capacity
-        requestBody.temperature = this.config.temperature;
-      }
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': this.config.apiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody),
-        signal
-      });
-
-      return response;
-
-    } catch (error: unknown) {
-      console.error('VertexAI Claude API error:', error);
-      
-      // エラーオブジェクトの型を判定
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Unknown error occurred';
-    
-      // statusCodeの取得
-      const statusCode = (error as { statusCode?: number })?.statusCode || 500;
-    
-      return new Response(JSON.stringify({ error: errorMessage }), {
-        status: statusCode,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+      requestBody.max_tokens = 64000;
+    } else {
+      requestBody.max_tokens = 16384;
+      requestBody.temperature = this.config.temperature;
     }
+
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': this.config.apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody),
+      signal
+    });
+
+    if (!resp.ok) {
+      const statusLine = `${resp.status} ${resp.statusText || 'Error'}`;
+      const errorText = await resp.text();
+      let cause;
+      let apiMessage = '';
+      try {
+        cause = JSON.parse(errorText);
+        apiMessage = (cause as any)?.error?.message || '';
+      } catch (e) {
+        cause = errorText;
+        apiMessage = errorText.substring(0, 300);
+      }
+      const combinedMessage = `${statusLine}; ${apiMessage}`;
+      throw new ChatError(combinedMessage, ErrorCode.UNKOWN_ERROR, cause);
+    }
+
+    return resp;
   }
 
   public getModelName() {

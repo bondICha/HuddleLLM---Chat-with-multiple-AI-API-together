@@ -83,3 +83,15 @@
   overflow-x: auto;
   width: 100%;
 }
+
+
+/* Override github-markdown-css font-family */
+.markdown-body {
+  font-family: 'Inter', 'Noto Sans CJK JP', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'system-ui';
+}
+
+@supports (font-variation-settings: normal) {
+  .markdown-body {
+    font-family: 'Inter var', 'Noto Sans CJK JP', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'system-ui';
+  }
+}

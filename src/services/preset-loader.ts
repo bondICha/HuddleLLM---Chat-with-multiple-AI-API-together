@@ -113,9 +113,6 @@ export async function getActivePresets() {
       case 'google':
         preset.provider = CustomApiProvider.Google
         break
-      case 'perplexity':
-        preset.provider = CustomApiProvider.Perplexity
-        break
       case 'bedrock':
         preset.provider = CustomApiProvider.Bedrock
         break

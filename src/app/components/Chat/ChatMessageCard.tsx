@@ -6,6 +6,7 @@ import { BsCheckAll } from "react-icons/bs";
 import { LuCircleCheckBig } from "react-icons/lu";
 import { BeatLoader } from 'react-spinners'
 import { ChatMessageModel } from '~/types'
+import Expandable from '../common/Expandable'
 import Markdown from '../Markdown'
 import MessageBubble from './MessageBubble'
 import { useTranslation } from 'react-i18next'
@@ -214,7 +215,28 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
             )
           )}
           {!!message.error && (
-            <p className="text-[#cc0000] dark:text-[#ff0033]">{message.error.message}</p>
+            <div className="text-[#cc0000] dark:text-[#ff0033] space-y-1">
+              <p>{message.error.message}</p>
+              {message.error.cause && (
+                <Expandable
+                  header={<p className="text-sm opacity-80">({t('Error Details')})</p>}
+                  initiallyExpanded={false}
+                >
+                  <pre className="whitespace-pre-wrap text-sm">
+                    {(() => {
+                      try {
+                        const causeObj = typeof message.error.cause === 'string'
+                          ? JSON.parse(message.error.cause)
+                          : message.error.cause;
+                        return JSON.stringify(causeObj, null, 2);
+                      } catch {
+                        return String(message.error.cause);
+                      }
+                    })()}
+                  </pre>
+                </Expandable>
+              )}
+            </div>
           )}
         </MessageBubble>
       </div>

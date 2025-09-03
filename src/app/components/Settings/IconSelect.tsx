@@ -20,7 +20,7 @@ import chatgptLogo from '~/assets/logos/chatgpt.svg';
 import falconLogo from '~/assets/logos/falcon.jpeg';
 import geminiLogo from '~/assets/logos/gemini.svg';
 import geminiPngLogo from '~/assets/logos/gemini.png';
-import grokLogo from '~/assets/logos/grok.png';
+import grokLogo from '~/assets/logos/grok.svg';
 import llamaLogo from '~/assets/logos/llama.png';
 import mistralLogo from '~/assets/logos/mistral.png';
 import piLogo from '~/assets/logos/pi.png';
@@ -45,6 +45,8 @@ import deepinfraLogo from '~/assets/logos/deepinfra.svg';
 import sbIntuitionsLogo from '~/assets/logos/sb-intuitions.png';
 import tsuzumiLogo from '~/assets/logos/tsuzumi.png';
 import kimiLogo from '~/assets/logos/kimi.webp';
+import tongyiLogo from '~/assets/logos/tongyi.svg';
+import xaiLogo from '~/assets/logos/xai.svg';
 
 // アイコンオプションの定義
 interface IconOption {
@@ -123,9 +125,11 @@ const otherIcons: IconOption[] = [
   { id: 'sambanova', name: 'SambaNova', src: sambaNovaLogo },
   { id: 'sb-intuitions', name: 'SB Intuitions', src: sbIntuitionsLogo },
   { id: 'stablelm', name: 'StableLM', src: stablelmLogo },
-  { id: 'vicuna', name: 'Vicuna', src: vicunaLogo },
   { id: 'tsuzumi', name: 'Tsuzumi', src: tsuzumiLogo },
+  { id: 'tongyi', name: 'Tongyi', src: tongyiLogo },
+  { id: 'vicuna', name: 'Vicuna', src: vicunaLogo },
   { id: 'wizardlm', name: 'WizardLM', src: wizardlmLogo },
+  { id: 'xai', name: 'xAI', src: xaiLogo },
   { id: 'xunfei', name: 'XunFei', src: xunfeiLogo },
   { id: 'yi', name: 'Yi', src: yiLogo }
 ];

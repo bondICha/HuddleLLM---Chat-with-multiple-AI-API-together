@@ -729,49 +729,28 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                     {/* Anthropic Thinking Mode */}
                                                     {isAnthropicProvider && (
                                                         <div className={formRowClass}>
-                                                            <p className={labelClass}>{t('Mode/Tuning')}</p>
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <div className="flex border-b border-gray-300 dark:border-gray-600">
-                                                                    <button
-                                                                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
-                                                                            !config.thinkingMode 
-                                                                                ? 'border-blue-500 text-blue-600 dark:text-blue-400' 
-                                                                                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                                                                        }`}
-                                                                        onClick={() => {
-                                                                            const updatedConfigs = [...userConfig.customApiConfigs]
-                                                                            updatedConfigs[index].thinkingMode = false;
-                                                                            updateCustomApiConfigs(updatedConfigs);
-                                                                        }}
-                                                                    >
-                                                                        {t('Temperature')}
-                                                                    </button>
-                                                                    <button
-                                                                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
-                                                                            config.thinkingMode 
-                                                                                ? 'border-blue-500 text-blue-600 dark:text-blue-400' 
-                                                                                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                                                                        }`}
-                                                                        onClick={() => {
-                                                                            const updatedConfigs = [...userConfig.customApiConfigs]
-                                                                            updatedConfigs[index].thinkingMode = true;
-                                                                            updateCustomApiConfigs(updatedConfigs);
-                                                                        }}
-                                                                    >
-                                                                        {t('Thinking')}
-                                                                    </button>
-                                                                </div>
-                                                                <div className="relative">
-                                                                    <span className="cursor-help opacity-60 group">ⓘ
-                                                                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64">
-                                                                            {config.thinkingMode 
-                                                                                ? t('thinking_mode_support_note')
-                                                                                : 'Temperature controls randomness. Higher = more creative, lower = more focused'
-                                                                            }
-                                                                        </div>
-                                                                    </span>
-                                                                </div>
-                                                            </div>
+                                                           <div className="flex items-center justify-between">
+                                                               <p className={labelClass}>{config.thinkingMode ? t('Thinking Budget') : t('Temperature')}</p>
+                                                               <div className="flex items-center gap-1">
+                                                                   <span className="text-sm">{t('Thinking Mode')}</span>
+                                                                   <Switch
+                                                                       checked={config.thinkingMode ?? false}
+                                                                       onChange={(checked) => {
+                                                                           const updatedConfigs = [...userConfig.customApiConfigs];
+                                                                           updatedConfigs[index].thinkingMode = checked;
+                                                                           updateCustomApiConfigs(updatedConfigs);
+                                                                       }}
+                                                                   />
+                                                                   <span className="cursor-help group relative">ⓘ
+                                                                       <div className="absolute top-full right-0 mt-2 w-72 hidden group-hover:block bg-gray-900 dark:bg-gray-800 text-white text-xs p-2 rounded shadow-lg z-50">
+                                                                           {config.thinkingMode
+                                                                               ? t('thinking_mode_support_note')
+                                                                               : 'Temperature controls randomness. Higher = more creative, lower = more focused'
+                                                                           }
+                                                                       </div>
+                                                                   </span>
+                                                               </div>
+                                                           </div>
                                                             <div className={inputContainerClass}>
                                                                 {config.thinkingMode ? (
                                                                     <Range
@@ -808,40 +787,21 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                     {/* OpenAI Provider with Temperature/Reasoning Toggle */}
                                                     {isOpenAIProvider ? (
                                                         <div className={formRowClass}>
-                                                            <p className={labelClass}>{t('Mode/Tuning')}</p>
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <div className="flex border-b border-gray-300 dark:border-gray-600">
-                                                                    <button
-                                                                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
-                                                                            (temperatureMode[index] || 'temperature') === 'temperature' 
-                                                                                ? 'border-blue-500 text-blue-600 dark:text-blue-400' 
-                                                                                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                                                                        }`}
-                                                                        onClick={() => setTemperatureMode(prev => ({
-                                                                            ...prev,
-                                                                            [index]: 'temperature'
-                                                                        }))}
-                                                                    >
-                                                                        {t('Temperature')}
-                                                                    </button>
-                                                                    <button
-                                                                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-all ${
-                                                                            temperatureMode[index] === 'reasoning' 
-                                                                                ? 'border-blue-500 text-blue-600 dark:text-blue-400' 
-                                                                                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                                                                        }`}
-                                                                        onClick={() => setTemperatureMode(prev => ({
-                                                                            ...prev,
-                                                                            [index]: 'reasoning'
-                                                                        }))}
-                                                                    >
-                                                                        {t('Reasoning')}
-                                                                    </button>
-                                                                </div>
-                                                                <div className="relative">
-                                                                    <span className="cursor-help opacity-60 group">ⓘ
-                                                                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded shadow-lg w-64 z-50">
-                                                                            {temperatureMode[index] === 'reasoning' 
+                                                            <div className="flex items-center justify-between">
+                                                               <p className={labelClass}>{config.reasoningMode ? t('Reasoning Effort') : t('Temperature')}</p>
+                                                                <div className="flex items-center gap-1">
+                                                                   <span className="text-sm">{t('Reasoning Mode')}</span>
+                                                                   <Switch
+                                                                       checked={config.reasoningMode ?? false}
+                                                                       onChange={(checked) => {
+                                                                           const updatedConfigs = [...userConfig.customApiConfigs];
+                                                                           updatedConfigs[index].reasoningMode = checked;
+                                                                           updateCustomApiConfigs(updatedConfigs);
+                                                                       }}
+                                                                   />
+                                                                    <span className="cursor-help group relative">ⓘ
+                                                                        <div className="absolute top-full right-0 mt-2 w-72 hidden group-hover:block bg-gray-900 dark:bg-gray-800 text-white text-xs p-2 rounded shadow-lg z-50">
+                                                                            {config.reasoningMode
                                                                                 ? 'OpenAI Reasoning models (o1-mini, o1-preview) support reasoning mode for better problem-solving'
                                                                                 : 'Temperature controls randomness. Higher = more creative, lower = more focused'
                                                                             }
@@ -852,7 +812,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                             <div className={inputContainerClass}>
                                                                 <Range
                                                                     value={
-                                                                        temperatureMode[index] === 'reasoning' 
+                                                                        config.reasoningMode
                                                                             ? (config.reasoningEffort === 'minimal' ? 0 :
                                                                                config.reasoningEffort === 'low' ? 1 :
                                                                                config.reasoningEffort === 'medium' ? 2 :
@@ -861,7 +821,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                     }
                                                                     onChange={(value) => {
                                                                         const updatedConfigs = [...userConfig.customApiConfigs];
-                                                                        if (temperatureMode[index] === 'reasoning') {
+                                                                        if (config.reasoningMode) {
                                                                             const effortMap: Record<number, 'minimal' | 'low' | 'medium' | 'high'> = {
                                                                                 0: 'minimal',
                                                                                 1: 'low',
@@ -874,12 +834,12 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                         }
                                                                         updateCustomApiConfigs(updatedConfigs);
                                                                     }}
-                                                                    min={temperatureMode[index] === 'reasoning' ? 0 : 0}
-                                                                    max={temperatureMode[index] === 'reasoning' ? 3 : 2}
-                                                                    step={temperatureMode[index] === 'reasoning' ? 1 : 0.1}
+                                                                    min={config.reasoningMode ? 0 : 0}
+                                                                    max={config.reasoningMode ? 3 : 2}
+                                                                    step={config.reasoningMode ? 1 : 0.1}
                                                                 />
                                                                 <div className="flex justify-between text-xs opacity-70 mt-1" style={{ minHeight: '16px' }}>
-                                                                    {temperatureMode[index] === 'reasoning' ? (
+                                                                    {config.reasoningMode ? (
                                                                         <>
                                                                             <span>{t('Minimal')}</span>
                                                                             <span>{t('Low')}</span>
@@ -958,7 +918,6 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                     { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
                                                                     { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock },
                                                                     { name: 'Google Gemini API', value: CustomApiProvider.Google },
-                                                                    { name: 'Perplexity API', value: CustomApiProvider.Perplexity },
                                                                     { name: 'VertexAI (Claude)', value: CustomApiProvider.VertexAI_Claude }
                                                                 ]}
                                                                 value={config.provider || CustomApiProvider.OpenAI}

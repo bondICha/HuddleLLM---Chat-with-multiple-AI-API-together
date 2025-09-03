@@ -20,7 +20,8 @@ import chatglmLogo from '~/assets/logos/chatglm.svg';
 import chatgptLogo from '~/assets/logos/chatgpt.svg';
 import falconLogo from '~/assets/logos/falcon.jpeg';
 import geminiLogo from '~/assets/logos/gemini.svg';
-import grokLogo from '~/assets/logos/grok.png';
+import grokOldLogo from '~/assets/logos/grok.png';
+import grokLogo from '~/assets/logos/grok.svg';
 import llamaLogo from '~/assets/logos/llama.png';
 import mistralLogo from '~/assets/logos/mistral.png';
 import piLogo from '~/assets/logos/pi.png';
@@ -46,6 +47,8 @@ import deepinfraLogo from '~/assets/logos/deepinfra.svg';
 import sbIntuitionsLogo from '~/assets/logos/sb-intuitions.png';
 import tsuzumiLogo from '~/assets/logos/tsuzumi.png';
 import kimiLogo from '~/assets/logos/kimi.webp';
+import tongyiLogo from '~/assets/logos/tongyi.svg';
+import xaiLogo from '~/assets/logos/xai.svg';
 
 // 特殊フォーマットのアイコンID用マッピング
 const specialFormatMap: Record<string, string> = {
@@ -98,6 +101,8 @@ const iconMap: Record<string, string> = {
   'sb-intuitions': sbIntuitionsLogo,
   'tsuzumi': tsuzumiLogo,
   'kimi': kimiLogo,
+  'tongyi': tongyiLogo,
+  'xai': xaiLogo,
 };
 
 // 安全なアイコン表示のための検証関数

@@ -1,4 +1,5 @@
 {
+  "Error Details": "詳細エラーメッセージ",
   "com_ui_thoughts": "思考プロセス",
   "Drawer Menu": "引き出しメニュー",
   "Import ChatBot Settings": "ImportするChat Bot設定",
@@ -239,6 +240,5 @@
   "company_profile_version_info": "現在のバージョン: {currentVersion} → 新バージョン: {newVersion}",
   "company_template_import": "テンプレートのインポート",
   "Ask me again": "あとで確認",
-  "Reject": "拒否",
-  "Mode/Tuning": "モード/チューニング"
+  "Reject": "拒否"
 }

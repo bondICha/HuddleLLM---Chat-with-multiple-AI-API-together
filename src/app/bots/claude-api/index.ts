@@ -319,11 +319,25 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       body: JSON.stringify(body),
     })
     if (!resp.ok) {
-      const error = await resp.text()
-      if (error.includes('insufficient_quota')) {
-        throw new ChatError('Insufficient Claude API usage quota', ErrorCode.CLAUDE_INSUFFICIENT_QUOTA)
+      const statusLine = `${resp.status} ${resp.statusText || 'Error'}`;
+      const errorText = await resp.text();
+      let cause;
+      let apiMessage = '';
+      try {
+        cause = JSON.parse(errorText);
+        apiMessage = (cause as any)?.error?.message || (cause as any)?.error?.type || '';
+      } catch (e) {
+        cause = errorText;
+        apiMessage = errorText.substring(0, 300);
       }
+      const combinedMessage = `${statusLine}; ${apiMessage}`;
+
+      if (apiMessage.includes('insufficient_quota')) {
+        throw new ChatError(combinedMessage, ErrorCode.CLAUDE_INSUFFICIENT_QUOTA, cause);
       }
+      
+      throw new ChatError(combinedMessage, ErrorCode.UNKOWN_ERROR, cause);
+    }
     return resp
   }
 

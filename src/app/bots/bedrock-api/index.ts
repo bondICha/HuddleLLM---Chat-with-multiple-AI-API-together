@@ -558,36 +558,14 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
 
     } catch (error: unknown) {
       console.error('Bedrock API error:', error);
-      
-      // より詳細なエラー情報をログに出力
-      if (error instanceof Error) {
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-      }
-      
-      // AWS SDK固有のエラー情報
-      if (error && typeof error === 'object') {
-        const errorObj = error as any;
-        console.error('Error code:', errorObj.$metadata?.httpStatusCode || errorObj.statusCode);
-        console.error('Error response:', errorObj.$response);
-        console.error('Full error object:', JSON.stringify(error, null, 2));
-      }
-      
-      // エラーオブジェクトの型を判定
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Unknown error occurred';
-    
-      // statusCodeの取得
-      const statusCode = (error as { statusCode?: number })?.statusCode || 500;
-    
-      return new Response(JSON.stringify({ error: errorMessage }), {
-        status: statusCode,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+      const err = error as any;
+      const statusCode = err.$metadata?.httpStatusCode || err.statusCode || 'N/A';
+      const statusText = err.name || 'Bedrock API Error';
+      const statusLine = `${statusCode} ${statusText}`;
+      const apiMessage = err.message || 'Unknown error occurred';
+      const combinedMessage = `${statusLine}; ${apiMessage}`;
+
+      throw new ChatError(combinedMessage, ErrorCode.UNKOWN_ERROR, err);
     }
     // Ensure the try...catch block is properly closed before the method ends.
   } // This closes the fetchCompletionApi method

@@ -6,9 +6,8 @@ import { ClaudeApiBot } from './claude-api';
 import { getUserConfig, CustomApiConfig, CustomApiProvider, SystemPromptMode } from '~/services/user-config';
 import { ChatError, ErrorCode } from '~utils/errors';
 import { BedrockApiBot } from './bedrock-api';
-import { GeminiApiBot } from './gemini-api'; // Import GeminiApiBot
-import { PerplexityApiBot } from './perplexity-api'; // Import PerplexityApiBot
-import { VertexClaudeBot } from './vertex-claude'; // Import VertexClaudeBot
+import { GeminiApiBot } from './gemini-api';
+import { VertexClaudeBot } from './vertex-claude';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
 export class CustomBot extends AsyncAbstractBot {
@@ -102,8 +101,6 @@ export class CustomBot extends AsyncAbstractBot {
         const provider = config.provider || (
             config.model.includes('anthropic.claude') ? CustomApiProvider.Bedrock : CustomApiProvider.OpenAI
         );
-
-        // 既存のswitch文と同じbotインスタンス作成ロジック
         let botInstance;
         switch (provider) {
             case CustomApiProvider.Bedrock:
@@ -150,15 +147,6 @@ export class CustomBot extends AsyncAbstractBot {
                     geminiApiModel: config.model,
                     geminiApiSystemMessage: processedSystemMessage,
                     geminiApiTemperature: config.temperature,
-                    webAccess: config.webAccess,
-                });
-                break;
-            case CustomApiProvider.Perplexity:
-                botInstance = new PerplexityApiBot({
-                    apiKey: config.apiKey || customApiKey,
-                    model: config.model,
-                    host: config.host || customApiHost,
-                    isHostFullPath: config.isHostFullPath,
                     webAccess: config.webAccess,
                 });
                 break;

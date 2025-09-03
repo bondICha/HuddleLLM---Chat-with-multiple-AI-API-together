@@ -110,7 +110,6 @@ export enum CustomApiProvider {
   Bedrock = 'bedrock',
   Anthropic_CustomAuth = 'anthropic-customauth', // Uses Authorization header
   Google = 'google', // For Gemini API
-  Perplexity = 'perplexity', // For Perplexity API
   VertexAI_Claude = 'vertexai-claude' // For Google VertexAI Claude API
 }
 
