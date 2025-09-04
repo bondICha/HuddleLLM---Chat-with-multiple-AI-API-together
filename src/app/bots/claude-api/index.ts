@@ -234,6 +234,7 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       thinkingBudget?: number;
       isHostFullPath?: boolean; // Add isHostFullPath to the config type
       webAccess?: boolean;
+      advancedConfig?: any;
     },
     thinkingMode: boolean = false,
     private useCustomAuthorizationHeader: boolean = false
@@ -285,6 +286,16 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       headers['Authorization'] = this.config.apiKey; // Use config.apiKey
     } else {
       headers['x-api-key'] = this.config.apiKey; // Use config.apiKey
+    }
+
+    if (this.config.advancedConfig?.anthropicBetaHeaders) {
+      const betaHeaders = this.config.advancedConfig.anthropicBetaHeaders.split(';').map((h: string) => h.trim()).filter((h: string) => h);
+      for (const header of betaHeaders) {
+        const parts = header.split(':').map((p: string) => p.trim());
+        if (parts.length === 2) {
+          headers[parts[0]] = parts[1];
+        }
+      }
     }
 
     const { host: configHost, isHostFullPath: configIsHostFullPath } = this.config;

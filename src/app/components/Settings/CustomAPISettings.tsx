@@ -20,10 +20,12 @@ import Range from '../Range'
 import Switch from '~app/components/Switch'
 import AvatarSelect from './AvatarSelect'
 import BotIcon from '../BotIcon'
-import { BiPlus, BiTrash, BiHide, BiShow, BiInfoCircle, BiPencil, BiChevronDown } from 'react-icons/bi'
+import { BiPlus, BiTrash, BiHide, BiShow, BiInfoCircle, BiPencil, BiChevronDown, BiExpand } from 'react-icons/bi'
 import Button from '../Button'
 import { revalidateEnabledBots } from '~app/hooks/use-enabled-bots'
 import { getTemplateOptions, getActivePresets, getPresetMapping } from '~services/preset-loader'
+import SystemPromptEditorModal from './SystemPromptEditorModal'
+import DeveloperOptionsPanel from './DeveloperOptionsPanel'
 
 
 interface Props {
@@ -37,6 +39,7 @@ const MAX_CUSTOM_MODELS = 50;
 const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     const { t } = useTranslation()
     const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
+    const [editingPrompt, setEditingPrompt] = useState<{ index: number; text: string; isCommon: boolean } | null>(null);
     // 選択されたモデルのプロバイダーを保持するステートを追加
     const [selectedProviderForModel, setSelectedProviderForModel] = useState<Record<number, string | null>>({});
     // デフォルトに戻す確認ダイアログのstate
@@ -314,7 +317,16 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         <Blockquote className="mt-1 ml-[25%]">{t('Your keys are stored locally')}</Blockquote>
 
                         <div className={formRowClass}>
-                            <p className={labelClass}>{t('Common System Message')}</p>
+                            <div className="flex items-center justify-between">
+                                <p className={labelClass}>{t('Common System Message')}</p>
+                                <button
+                                    onClick={() => setEditingPrompt({ index: -1, text: userConfig.commonSystemMessage, isCommon: true })}
+                                    className="p-1 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                                    title={t('Edit in full screen')}
+                                >
+                                    <BiExpand size={16} />
+                                </button>
+                            </div>
                             <div className="w-full">
                                 <button
                                     onClick={() => setShowVariables(!showVariables)}
@@ -656,7 +668,17 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
                                         {/* System Prompt */}
                                         <div className={formRowClass}>
-                                            <p className={labelClass}>{t('System Prompt')}</p>
+                                            <div className="flex items-center justify-between">
+                                               <p className={labelClass}>{t('System Prompt')}</p>
+                                               <button
+                                                   onClick={() => setEditingPrompt({ index: index, text: config.systemMessage, isCommon: false })}
+                                                   className="p-1 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                   title={t('Edit in full screen')}
+                                                   disabled={config.systemPromptMode === SystemPromptMode.COMMON}
+                                               >
+                                                   <BiExpand size={16} />
+                                               </button>
+                                           </div>
                                             <div className={inputContainerClass}>
                                                 <div className="space-y-2">
                                                     <div className="flex items-center gap-3">
@@ -674,9 +696,9 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                             {config.systemPromptMode === SystemPromptMode.OVERRIDE && "Uses custom prompt only"}
                                                         </div>
                                                     </div>
-                                                    <div className="relative">
+                                                    <div>
                                                         <Textarea
-                                                            className={`w-full ${config.systemPromptMode === SystemPromptMode.COMMON ? 'opacity-50 cursor-not-allowed' : ''} ${expandedSections[index + 2000] ? '' : 'max-h-[4.5rem]'}`}
+                                                            className={`w-full rounded-b-none ${config.systemPromptMode === SystemPromptMode.COMMON ? 'opacity-50 cursor-not-allowed' : ''} ${expandedSections[index + 2000] ? '' : 'max-h-[4.5rem]'}`}
                                                             maxRows={expandedSections[index + 2000] ? undefined : 3}
                                                             value={config.systemMessage}
                                                             onChange={(e) => {
@@ -688,16 +710,16 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                             }}
                                                             disabled={config.systemPromptMode === SystemPromptMode.COMMON}
                                                             placeholder={
-                                                                config.systemPromptMode === SystemPromptMode.COMMON 
-                                                                    ? t('Disabled when using Common system message') 
-                                                                    : config.systemPromptMode === SystemPromptMode.APPEND 
+                                                                config.systemPromptMode === SystemPromptMode.COMMON
+                                                                    ? t('Disabled when using Common system message')
+                                                                    : config.systemPromptMode === SystemPromptMode.APPEND
                                                                         ? t('This text will be appended to the common system message')
                                                                         : t('This text will override the common system message')
                                                             }
                                                         />
                                                         {/* Expand/Collapse bar at bottom */}
-                                                        <div 
-                                                            className="absolute bottom-0 left-0 right-0 h-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center justify-center rounded-b-md"
+                                                        <div
+                                                            className="h-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center justify-center rounded-b-md"
                                                             onClick={() => {
                                                                 setExpandedSections(prev => ({
                                                                     ...prev,
@@ -706,7 +728,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                             }}
                                                             title={expandedSections[index + 2000] ? t('Collapse') : t('Expand')}
                                                         >
-                                                            <BiChevronDown 
+                                                            <BiChevronDown
                                                                 size={16}
                                                                 className={`text-gray-600 dark:text-gray-300 transition-transform ${expandedSections[index + 2000] ? 'rotate-180' : ''}`}
                                                             />
@@ -1018,6 +1040,23 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                         </div>
                                                     </div>
 
+                                                    {(config.provider === CustomApiProvider.OpenAI || 
+                                                      config.provider === CustomApiProvider.Anthropic || 
+                                                      config.provider === CustomApiProvider.VertexAI_Claude) && (
+                                                        <DeveloperOptionsPanel
+                                                            config={config}
+                                                            index={index}
+                                                            expandedSections={expandedSections}
+                                                            toggleSection={toggleSection}
+                                                            updateConfig={(updatedConfig: CustomApiConfig) => {
+                                                                const updatedConfigs = [...userConfig.customApiConfigs];
+                                                                updatedConfigs[index] = updatedConfig;
+                                                                updateCustomApiConfigs(updatedConfigs);
+                                                            }}
+                                                        />
+                                                    )}
+
+
 
                                                 </div>
                                             ) : (
@@ -1068,6 +1107,24 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 </div>
             </div>
         </Dialog>
+
+        {editingPrompt && (
+            <SystemPromptEditorModal
+                open={editingPrompt !== null}
+                onClose={() => setEditingPrompt(null)}
+                value={editingPrompt.text}
+                onSave={(newValue) => {
+                    if (editingPrompt.isCommon) {
+                        updateConfigValue({ commonSystemMessage: newValue });
+                    } else {
+                        const updatedConfigs = [...userConfig.customApiConfigs];
+                        updatedConfigs[editingPrompt.index].systemMessage = newValue;
+                        updateCustomApiConfigs(updatedConfigs);
+                    }
+                    toast.success(t('System prompt updated'));
+                }}
+            />
+        )}
         </>
     );
 };

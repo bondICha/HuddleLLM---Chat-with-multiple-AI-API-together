@@ -11,10 +11,14 @@ import { pendingSearchQueryAtom, sessionRestoreModalAtom } from './state'
 import { markOmniboxSearchAsUsed } from '../services/storage/open-times'
 import { quickCheckAnySession } from '../services/chat-history'
 import CompanyProfileModal from './components/Modals/CompanyProfileModal'
+import { useFontType } from './hooks/use-font-type'
 
 function App() {
   const setPendingSearchQuery = useSetAtom(pendingSearchQueryAtom)
   const setSessionRestoreModal = useSetAtom(sessionRestoreModalAtom)
+  
+  // フォント設定を適用
+  useFontType()
 
   useEffect(() => {
     const loadPendingSearch = async () => {

@@ -184,7 +184,7 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
     }
 
     try {
-      const resp = await this.fetchCompletionApi(this.buildMessages(params.prompt, images_for_api), params.signal)
+      const resp = await this.fetchCompletionApi(this.buildMessages(params.prompt, images_for_api), params.signal);
 
       this.conversationContext.messages.push(this.buildUserMessage(params.rawUserInput || params.prompt, images_for_api))
   
@@ -330,6 +330,7 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
       thinkingBudget?: number;
       isHostFullPath?: boolean;
       webAccess?: boolean;
+      advancedConfig?: any;
     },
   ) {
     super()
@@ -374,12 +375,24 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
       requestBody.temperature = this.config.temperature;
     }
 
+    const headers: Record<string, string> = {
+      'Authorization': this.config.apiKey,
+      'Content-Type': 'application/json'
+    };
+
+    if (this.config.advancedConfig?.anthropicBetaHeaders) {
+      const betaHeaders = this.config.advancedConfig.anthropicBetaHeaders.split(';').map((h: string) => h.trim()).filter((h: string) => h);
+      for (const header of betaHeaders) {
+        const parts = header.split(':').map((p: string) => p.trim());
+        if (parts.length === 2) {
+          headers[parts[0]] = parts[1];
+        }
+      }
+    }
+
     const resp = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Authorization': this.config.apiKey,
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify(requestBody),
       signal
     });

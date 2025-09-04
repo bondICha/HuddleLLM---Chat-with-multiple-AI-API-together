@@ -10,6 +10,9 @@ import { applyThemeMode } from '~app/utils/color-scheme'
 import { isArcBrowser } from '~app/utils/env'
 import { getLanguage, setLanguage } from '~services/storage/language'
 import { ThemeMode, getUserThemeMode, setUserThemeMode } from '~services/theme'
+import { FontType } from '~services/user-config'
+import { useUserConfig } from '~app/hooks/use-user-config'
+import { updateUserConfig } from '~services/user-config'
 import { languageCodes } from '../../i18n'
 import Dialog from '../Dialog'
 import Select from '../Select'
@@ -54,6 +57,8 @@ const ThemeSettingModal: FC<Props> = (props) => {
   const [sidebarDisplayMode, setSidebarDisplayMode] = useAtom(sidebarDisplayModeAtom)
   const [zoomLevel, setZoomLevel] = useState<number | null>(null)
   const [lang, setLang] = useState(() => getLanguage() || 'auto')
+  const userConfig = useUserConfig()
+  const [fontType, setFontType] = useState<FontType>(userConfig?.fontType || FontType.SERIF)
 
   const languageOptions = useMemo(() => {
     const nameGenerator = new Intl.DisplayNames('en', { type: 'language' })
@@ -111,6 +116,14 @@ const ThemeSettingModal: FC<Props> = (props) => {
       i18n.changeLanguage(lang === 'auto' ? undefined : lang)
     },
     [i18n],
+  )
+
+  const onFontTypeChange = useCallback(
+    (fontType: FontType) => {
+      setFontType(fontType)
+      updateUserConfig({ fontType })
+    },
+    [],
   )
 
   return (
@@ -190,6 +203,18 @@ const ThemeSettingModal: FC<Props> = (props) => {
             ]}
             value={sidebarDisplayMode}
             onChange={(mode: 'auto' | 'hamburger' | 'fixed') => setSidebarDisplayMode(mode)}
+            position="top"
+          />
+        </div>
+        <div className="w-[300px]">
+          <p className="font-bold text-lg mb-3">{t('Font Type')}</p>
+          <Select
+            options={[
+              { name: t('Sans-serif (Gothic)'), value: FontType.SANS },
+              { name: t('Serif (Mincho)'), value: FontType.SERIF },
+            ]}
+            value={fontType}
+            onChange={onFontTypeChange}
             position="top"
           />
         </div>

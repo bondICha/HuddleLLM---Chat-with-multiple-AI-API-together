@@ -227,6 +227,7 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       botIndex?: number; // CustomBotからのインデックス
       reasoningMode?: boolean; // OpenAI reasoning mode
       reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
+      advancedConfig?: any; // To pass OpenRouter provider options
     },
   ) {
     super()
@@ -294,7 +295,13 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
         // Include temperature only if reasoning mode is disabled
         ...((!this.config.reasoningMode) && {
           temperature: this.config.temperature
-        })
+        }),
+        // Add OpenRouter specific provider options
+        ...(this.config.host?.includes('openrouter.ai') && this.config.advancedConfig?.openrouterProviderOnly && {
+          provider: {
+            only: this.config.advancedConfig.openrouterProviderOnly.split(',').map((p: string) => p.trim()).filter((p: string) => p)
+          }
+        }),
       }),
     })
     if (!resp.ok) {

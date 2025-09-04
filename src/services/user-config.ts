@@ -20,6 +20,12 @@ export enum SystemPromptMode {
   OVERRIDE = 'override'  // 個別promptで上書き
 }
 
+// Font type enum
+export enum FontType {
+  SANS = 'sans',       // Sans-serif (ゴシック体)
+  SERIF = 'serif',     // Serif (明朝体)
+}
+
 
 // モデル情報の型定義
 export interface ModelInfo {
@@ -113,6 +119,11 @@ export enum CustomApiProvider {
   VertexAI_Claude = 'vertexai-claude' // For Google VertexAI Claude API
 }
 
+export interface AdvancedConfig {
+  openrouterProviderOnly?: string; // Comma-separated list of providers for OpenRouter
+  anthropicBetaHeaders?: string; // Semicolon-separated "key:value" pairs for Anthropic beta headers
+}
+
 /**
  * カスタムAPIの設定インターフェース
  * カスタムAPIの設定情報を保持する型定義
@@ -137,6 +148,7 @@ export interface CustomApiConfig {
   isAnthropicUsingAuthorizationHeader?: boolean, // Anthropicの認証ヘッダータイプを指定するフラグ
   enabled?: boolean, // 各チャットボットの有効/無効状態
   isHostFullPath?: boolean; // hostが完全なパスかどうかを示すフラグ (デフォルト: false)
+  advancedConfig?: AdvancedConfig;
 }
 
 /**
@@ -173,6 +185,7 @@ const userConfigWithDefaultValue = {
   commonSystemMessage: DEFAULT_SYSTEM_MESSAGE,
   isCustomApiHostFullPath: false, // デフォルト値を設定
   savedChatPairs: [] as ChatPair[], // 保存されたチャットペア
+  fontType: FontType.SERIF, // フォントタイプ（デフォルト: Sans-serif）
 }
 
 export type UserConfig = typeof userConfigWithDefaultValue
