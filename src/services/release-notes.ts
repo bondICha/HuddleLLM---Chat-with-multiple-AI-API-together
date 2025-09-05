@@ -6,6 +6,14 @@ import { getVersion } from '~utils'
 
 const RELEASE_NOTES = [
   {
+    version: '2.10.5',
+    notes: [
+      'releasenote_v2105_code_expansion_modal_enhancement',
+      'releasenote_v2105_font_type_setting',
+      'releasenote_v2105_this_release_note_is_made_by_grok_code',
+    ],
+  },
+  {
     version: '2.9.0',
     notes: [
       'releasenote_v290_session_restore',

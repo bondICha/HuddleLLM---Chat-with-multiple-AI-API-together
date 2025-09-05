@@ -1,7 +1,6 @@
 import Browser from 'webextension-polyfill'
 import { ALL_IN_ONE_PAGE_ID } from '~app/consts'
 import { getUserConfig } from '~services/user-config'
-import { readTwitterCsrfToken } from './twitter-cookie'
 import { setupProxyExecutor } from '~services/proxy-fetch'
 import { isPDFBuffer } from '~utils/pdf-utils'
 
@@ -154,9 +153,6 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
   console.debug('onMessage', message, sender)
   if (message.target && message.target !== 'background') {
     return
-  }
-  if (message.type === 'read-twitter-csrf-token') {
-    return readTwitterCsrfToken(message.data)
   }
   if (message.type === 'FETCH_URL') {
     console.log('🚀 Background: Fetching URL:', message.url)
