@@ -127,6 +127,8 @@
   "Reject": "拒绝",
   "Reset Company Profile Settings": "重置公司配置文件设置",
   "apply_company_profile_description": "点击「确定」将跳转到设置导入页面。导入后，请设置您自己的API密钥（通常，通用API密钥就足够了）。",
+  "company_profile_version_update": "の新版本已可用",
+  "company_profile_version_info": "の更新已检测到",
   "Apply Template Settings": "聊天机器人预设",
   "Public Models": "公开模型",
   "System Message Mode": "系统消息模式",

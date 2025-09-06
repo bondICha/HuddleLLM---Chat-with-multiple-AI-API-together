@@ -126,6 +126,8 @@
   "Reject": "拒絕",
   "Reset Company Profile Settings": "重設公司設定",
   "apply_company_profile_description": "點擊「確定」將跳轉到設定導入頁面。導入後，請設定您自己のAPI金鑰（通常，通用API金鑰就足夠了）。",
+  "company_profile_version_update": "の新版本已可用",
+  "company_profile_version_info": "の更新已檢測到",
   "Apply Template Settings": "聊天機器人預設",
   "Public Models": "公開模型",
   "System Message Mode": "系統訊息模式",

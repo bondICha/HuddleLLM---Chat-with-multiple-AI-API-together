@@ -78,10 +78,10 @@ const CompanyProfileModal: FC = () => {
         {isVersionUpdate && currentVersion ? (
           <>
             <p className="text-base text-primary-text mb-3">
-              {t('company_profile_version_update', { companyName: detectedCompany.companyName })}
+              {detectedCompany.companyName}{t('company_profile_version_update')}
             </p>
             <p className="text-sm text-primary-text mb-4">
-              {t('company_profile_version_info', { currentVersion, newVersion: detectedCompany.version })}
+              v{currentVersion} → v{detectedCompany.version} {t('company_profile_version_info')}
             </p>
             <p className="text-sm text-primary-text mb-4">{t('apply_company_profile_description')}</p>
           </>
