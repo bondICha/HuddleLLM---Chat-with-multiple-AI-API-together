@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { PencilIcon, ArrowPathIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline'
 import allInOneIcon from '~/assets/all-in-one.svg'
 import collapseIcon from '~/assets/icons/collapse.svg'
-import hamburgerIcon from '~/assets/icons/hamburger.svg'
+import HamburgerIcon from '../icons/HamburgerIcon'
 import releaseNotesIcon from '~/assets/icons/release-notes.svg'
 import githubIcon from '~/assets/icons/github.svg'
 import settingIcon from '~/assets/icons/setting.svg'
@@ -505,9 +505,9 @@ useEffect(() => {
       <button
         id="hamburger-button"
         onClick={() => setIsMobileMenuOpen(true)}
-        className="fixed top-8 left-2 z-50 p-2 rounded-lg bg-primary-background bg-opacity-90 hover:bg-opacity-100 transition-all"
+        className="fixed top-8 left-2 z-50 p-2 rounded-lg bg-primary-background bg-opacity-90 hover:bg-opacity-100 transition-all text-primary-text"
       >
-        <img src={hamburgerIcon} className="w-6 h-6" />
+        <HamburgerIcon className="w-6 h-6" />
       </button>
     )
   }
