@@ -28,13 +28,14 @@ const CompanyProfileModal: FC = () => {
 
   const handleClose = async () => {
     setOpen(false)
-    // 「もう一度確認」を選択した場合は未確認状態のまま
+    // 「もう一度確認」: 既存のversionを維持（初回のみ検知版で初期化）
+    const prev = await getCompanyProfileState(detectedCompany.companyName)
     await setCompanyProfileState({
       companyName: detectedCompany.companyName,
-      version: detectedCompany.version,
+      version: prev?.version ?? detectedCompany.version,
       status: CompanyProfileStatus.UNCONFIRMED,
       lastChecked: Date.now(),
-      checkCount: 0
+      checkCount: prev?.checkCount ?? 0
     })
   }
 
@@ -50,13 +51,14 @@ const CompanyProfileModal: FC = () => {
 
   const handleReject = async () => {
     setOpen(false)
-    // 拒否した場合は拒否状態として保存
+    // 拒否: 既存のversionを維持（初回のみ検知版で初期化）
+    const prev = await getCompanyProfileState(detectedCompany.companyName)
     await setCompanyProfileState({
       companyName: detectedCompany.companyName,
-      version: detectedCompany.version,
+      version: prev?.version ?? detectedCompany.version,
       status: CompanyProfileStatus.REJECTED,
       lastChecked: Date.now(),
-      checkCount: 0
+      checkCount: prev?.checkCount ?? 0
     })
   }
 

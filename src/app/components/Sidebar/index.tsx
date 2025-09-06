@@ -8,7 +8,7 @@ import { PencilIcon, ArrowPathIcon, TrashIcon, PlusIcon } from '@heroicons/react
 import allInOneIcon from '~/assets/all-in-one.svg'
 import collapseIcon from '~/assets/icons/collapse.svg'
 import hamburgerIcon from '~/assets/icons/hamburger.svg'
-import feedbackIcon from '~/assets/icons/feedback.svg'
+import releaseNotesIcon from '~/assets/icons/release-notes.svg'
 import githubIcon from '~/assets/icons/github.svg'
 import settingIcon from '~/assets/icons/setting.svg'
 import themeIcon from '~/assets/icons/theme.svg'
@@ -18,7 +18,7 @@ import BotIcon from '../BotIcon'
 import { cx } from '~/utils'
 import { useEnabledBots } from '~app/hooks/use-enabled-bots'
 import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom } from '~app/state'
-import { checkReleaseNotes } from '~services/release-notes'
+import { checkReleaseNotes, getAllReleaseNotes } from '~services/release-notes'
 import * as api from '~services/server-api'
 import {
   getAppOpenTimes,
@@ -381,9 +381,11 @@ useEffect(() => {
           
           // Update check count regardless of result
           const currentState = await getCompanyProfileState(preset.companyName);
+          // Do not advance stored version on automatic checks.
+          // Keep the previously saved version so we can detect future upgrades correctly.
           const newState = {
             companyName: preset.companyName,
-            version: preset.version,
+            version: currentState?.version || preset.version, // initialize only on first run
             status: currentState?.status || CompanyProfileStatus.UNCONFIRMED,
             lastChecked: Date.now(),
             checkCount: (currentState?.checkCount || 0) + 1
@@ -445,6 +447,18 @@ useEffect(() => {
   // ボットアバターを取得する関数（インデックスベース）
   const getBotAvatar = (index: number) => {
     return botAvatars[index] ?? 'OpenAI.Black';
+  }
+
+  // リリースノートを表示する関数
+  const handleShowReleaseNotes = () => {
+    try {
+      const releaseNotes = getAllReleaseNotes();
+      if (releaseNotes && releaseNotes.length > 0) {
+        setReleaseNotes(releaseNotes);
+      }
+    } catch (error) {
+      console.error('Failed to load release notes:', error);
+    }
   }
 
   // Check if it's mobile mode
@@ -734,10 +748,10 @@ useEffect(() => {
             </Tooltip>
           )}
           {(shouldShowAsHamburger || !collapsed) && (
-            <Tooltip content={t('Feedback')}>
-              <a href="https://github.com/bondICha/HuddleLLM---Chat-with-multiple-AI-API-together/issues" target="_blank" rel="noreferrer">
-                <IconButton icon={feedbackIcon} />
-              </a>
+            <Tooltip content={t('Release Notes')}>
+              <div onClick={handleShowReleaseNotes}>
+                <IconButton icon={releaseNotesIcon} />
+              </div>
             </Tooltip>
           )}
           {(shouldShowAsHamburger || !collapsed) && (

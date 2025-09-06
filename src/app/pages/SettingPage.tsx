@@ -29,6 +29,7 @@ import {
 } from '~services/user-config'
 import { getVersion } from '~utils'
 import PagePanel from '../components/Page'
+import { getCompanyProfileConfigs, getCompanyProfileState, CompanyProfileStatus } from '~services/company-profile'
 
 
 const ChatBotSettingPanel: FC<PropsWithChildren<{ title: string }>> = (props) => {
@@ -44,6 +45,7 @@ function SettingPage() {
   const { t } = useTranslation()
   const [userConfig, setUserConfig] = useState<UserConfig | undefined>(undefined)
   const [dirty, setDirty] = useState(false)
+  const [companyInfo, setCompanyInfo] = useState<{ name: string; version: string } | null>(null)
   const themeColor = useAtomValue(themeColorAtom)
 
 
@@ -52,6 +54,25 @@ function SettingPage() {
       setUserConfig(config);
     });
 
+    // Check for active company profile from stored state
+    const checkActiveCompanyProfile = async () => {
+      try {
+        const configs = await getCompanyProfileConfigs();
+        for (const profile of configs) {
+          const state = await getCompanyProfileState(profile.companyName);
+          if (state && state.status === CompanyProfileStatus.IMPORTED) {
+            setCompanyInfo({ name: profile.companyName, version: profile.version });
+            return;
+          }
+        }
+        setCompanyInfo(null);
+      } catch (error) {
+        console.error('Failed to check company profile:', error);
+        setCompanyInfo(null);
+      }
+    };
+
+    checkActiveCompanyProfile();
   }, [])
 
   const updateConfigValue = useCallback(
@@ -94,6 +115,11 @@ function SettingPage() {
 
   return (
     <PagePanel title={`${t('Settings')} (v${getVersion()})`}>
+      {companyInfo && (
+        <div className="mx-10 mt-3">
+          {t('Company Profile Active')}: {companyInfo.name} (v{companyInfo.version})
+        </div>
+      )}
       <div className="flex flex-col gap-5 mt-3 mb-10 px-10" style={{ backgroundColor: themeColor ? `${themeColor}15` : 'rgba(17, 24, 39, 0.15)' }}>
         <ExportDataPanel userConfig={userConfig} updateConfigValue={updateConfigValue} />
         <div>

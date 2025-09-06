@@ -1,2 +1,3 @@
 - When a task is completed or changes of a certain unit are finished, please check if the build passes by running yarn build
 - This is Chrome Exntension, to output debug message, use alert instead of Console.log. Debug Alert message should start from DEBUG: to ease to find DEBUG alert.
+- Follow the app style standard as much as possible, refer src/app/base.scss and existing elements.

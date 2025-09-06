@@ -1,0 +1,19 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Origin",
+          "operation": "remove"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": ["api.ai.public.my-company.com"],
+      "resourceTypes": ["xmlhttprequest", "other"]
+    }
+  }
+]

@@ -6,7 +6,7 @@ export default defineManifest(async () => {
     name: '__MSG_appName__',
     description: '__MSG_appDesc__',
     default_locale: 'en',
-    version: '2.10.5',
+    version: '2.10.6',
     icons: {
       '16': 'src/assets/icon.png',
       '32': 'src/assets/icon.png',
@@ -24,10 +24,10 @@ export default defineManifest(async () => {
       "https://api.cohere.ai/*",
       "https://generativelanguage.googleapis.com/*",
       "https://global.rakuten.com/*",
-      "https://api.mistral.ai/*",
+      "https://api.mistral.ai/*"
     ],
     optional_host_permissions: ['https://*/*', 'http://*/*', 'wss://*/*'],
-    permissions: ['storage', 'unlimitedStorage', 'sidePanel', 'scripting', 'offscreen'],
+    permissions: ['storage', 'unlimitedStorage', 'sidePanel', 'scripting', 'offscreen', 'declarativeNetRequestWithHostAccess'],
     // content_scripts: [
     // ],
     commands: {
@@ -44,10 +44,17 @@ export default defineManifest(async () => {
     side_panel: {
       default_path: 'sidepanel.html',
     },
-    // declarative_net_request rules are no longer needed with custom models
-    // as web access is handled differently.
+    declarative_net_request: {
+      rule_resources: [
+        {
+          id: 'origin_removal',
+          enabled: true,
+          path: 'rules/remove-origin-header.json'
+        }
+      ]
+    },
     "omnibox": {
-      "keyword": "@hl"
+      "keyword": "hl"
     },
     web_accessible_resources: [
       {

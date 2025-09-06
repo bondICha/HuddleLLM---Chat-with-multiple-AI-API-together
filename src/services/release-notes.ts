@@ -4,7 +4,7 @@ import { getVersion } from '~utils'
 // translate
 
 
-const RELEASE_NOTES = [
+export const RELEASE_NOTES = [
   {
     version: '2.10.5',
     notes: [
@@ -158,7 +158,7 @@ export async function markCurrentVersionAsRead(): Promise<void> {
   await Browser.storage.sync.set({ lastCheckReleaseNotesVersion: version })
 }
 
-export async function checkReleaseNotes(): Promise<string[]> {
+export async function checkReleaseNotes(): Promise<{version: string, notes: string[]}[]> {
   const version = getVersion()
   const { lastCheckReleaseNotesVersion } = await Browser.storage.sync.get('lastCheckReleaseNotesVersion')
   // バージョン記録の更新は行わない（markCurrentVersionAsRead関数に移動）
@@ -167,6 +167,9 @@ export async function checkReleaseNotes(): Promise<string[]> {
   }
   return RELEASE_NOTES
     .filter(({ version: v }) => compareVersions(v, lastCheckReleaseNotesVersion) > 0)
-    .map(({ notes }) => notes)
-    .flat()
+}
+
+// 手動でリリースノートを表示するための関数（すべてのバージョンを返す）
+export function getAllReleaseNotes(): {version: string, notes: string[]}[] {
+  return RELEASE_NOTES.slice(0, 10) // 最新10バージョンのみ表示
 }

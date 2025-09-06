@@ -22,9 +22,11 @@ import falconLogo from '~/assets/logos/falcon.jpeg';
 import geminiLogo from '~/assets/logos/gemini.svg';
 import grokOldLogo from '~/assets/logos/grok.png';
 import grokLogo from '~/assets/logos/grok.svg';
+import gurokkuLogo from '~/assets/logos/gurokku.svg';
 import llamaLogo from '~/assets/logos/llama.png';
 import mistralLogo from '~/assets/logos/mistral.png';
 import piLogo from '~/assets/logos/pi.png';
+import pplxLogo from '~/assets/logos/pplx.jpg';
 import qianwenLogo from '~/assets/logos/qianwen.png';
 import rakutenLogo from '~/assets/logos/rakuten.svg';
 import vicunaLogo from '~/assets/logos/vicuna.jpg';
@@ -49,6 +51,8 @@ import tsuzumiLogo from '~/assets/logos/tsuzumi.png';
 import kimiLogo from '~/assets/logos/kimi.webp';
 import tongyiLogo from '~/assets/logos/tongyi.svg';
 import xaiLogo from '~/assets/logos/xai.svg';
+import bytedanceLogo from '~/assets/logos/bytedance.svg';
+import zhipuLogo from '~/assets/logos/zhipu.svg';
 
 // 特殊フォーマットのアイコンID用マッピング
 const specialFormatMap: Record<string, string> = {
@@ -78,10 +82,13 @@ const iconMap: Record<string, string> = {
   'gemini': geminiLogo,
   'gemini-png': geminiLogo,
   'grok': grokLogo,
+  'gurokku': gurokkuLogo,
   'llama': llamaLogo,
   'ollama': llamaLogo,
   'mistral': mistralLogo,
   'pi': piLogo,
+  'pplx': pplxLogo,
+  'perplexity': pplxLogo,
   'qianwen': qianwenLogo,
   'rakuten': rakutenLogo,
   'vicuna': vicunaLogo,
@@ -103,6 +110,8 @@ const iconMap: Record<string, string> = {
   'kimi': kimiLogo,
   'tongyi': tongyiLogo,
   'xai': xaiLogo,
+  'zhipu': zhipuLogo,
+  'bytedance': bytedanceLogo,
 };
 
 // 安全なアイコン表示のための検証関数
@@ -245,11 +254,10 @@ const BotIcon: React.FC<BotIconProps> = ({ iconName, size = 24, className = '' }
       const style = iconName.split('.')[1]?.toLowerCase();
       
       if (['sonar', 'color', 'mono', 'square'].includes(style)) {
-        // サーバーサイドレンダリングの場合など、PerplexityLogoが使えない環境ではfallback
         if (typeof window === 'undefined' || !PerplexityLogo) {
           return (
             <img
-              src={chatgptLogo}
+              src={pplxLogo}
               alt="Perplexity"
               style={{ width: size, height: size, objectFit: 'contain' }}
               className={className}

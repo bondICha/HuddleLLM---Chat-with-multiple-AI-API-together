@@ -23,15 +23,31 @@ const ReleaseNotesModal: FC = () => {
   return (
     <Dialog title={t('Recent Updates')} open={notes.length > 0} onClose={handleClose} className="w-[600px]">
       {/* max-heightとoverflow-y-autoを追加してスクロール可能に */}
-      <div className="flex flex-col gap-3 px-5 py-5 max-h-[60vh] overflow-y-auto">
-        {notes.map((note, i) => {
+      <div className="flex flex-col gap-4 px-5 py-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
+        {notes.map((versionData, versionIndex) => {
           return (
-            <div key={i} className="flex flex-row gap-2 items-center">
-              <div className="flex-none rounded-full p-1 text-green-400 bg-green-400/10">
-                <div className="h-2 w-2 rounded-full bg-current" />
+            <div key={versionIndex} className="bg-secondary bg-opacity-20 border border-primary-border rounded-xl p-4">
+              {/* バージョンヘッダー */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="text-sm font-semibold px-3 py-1 rounded-lg text-white" style={{backgroundColor: 'rgb(var(--color-primary-blue))'}}>
+                  v{versionData.version}
+                </div>
               </div>
-              <div className="text-primary-text font-medium">
-                <Markdown allowHtml={true}>{t(note)}</Markdown>
+              
+              {/* リリースノートリスト */}
+              <div className="flex flex-col gap-2">
+                {versionData.notes.map((note, noteIndex) => {
+                  return (
+                    <div key={noteIndex} className="flex flex-row gap-3 items-start">
+                      <div className="flex-none rounded-full p-1 text-green-400 bg-green-400/10 mt-1">
+                        <div className="h-2 w-2 rounded-full bg-current" />
+                      </div>
+                      <div className="text-primary-text text-sm leading-relaxed">
+                        <Markdown allowHtml={true}>{t(note)}</Markdown>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )

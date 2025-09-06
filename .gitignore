@@ -23,6 +23,8 @@ dist-ssr
 config/company-profiles.ts
 *.sln
 *.sw?
+rules/remove-origin-header.json
+
 
 .env
 

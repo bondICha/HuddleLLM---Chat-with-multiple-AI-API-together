@@ -21,6 +21,7 @@ import falconLogo from '~/assets/logos/falcon.jpeg';
 import geminiLogo from '~/assets/logos/gemini.svg';
 import geminiPngLogo from '~/assets/logos/gemini.png';
 import grokLogo from '~/assets/logos/grok.svg';
+import gurokkuLogo from '~/assets/logos/gurokku.svg';
 import llamaLogo from '~/assets/logos/llama.png';
 import mistralLogo from '~/assets/logos/mistral.png';
 import piLogo from '~/assets/logos/pi.png';
@@ -47,6 +48,8 @@ import tsuzumiLogo from '~/assets/logos/tsuzumi.png';
 import kimiLogo from '~/assets/logos/kimi.webp';
 import tongyiLogo from '~/assets/logos/tongyi.svg';
 import xaiLogo from '~/assets/logos/xai.svg';
+import bytedanceLogo from '~/assets/logos/bytedance.svg';
+import zhipuLogo from '~/assets/logos/zhipu.svg';
 
 // アイコンオプションの定義
 interface IconOption {
@@ -113,6 +116,7 @@ const otherIcons: IconOption[] = [
   { id: 'falcon', name: 'Falcon', src: falconLogo },
   { id: 'gemini-png', name: 'Gemini (PNG)', src: geminiPngLogo },
   { id: 'grok', name: 'Grok', src: grokLogo },
+  { id: 'gurokku', name: 'Gurokku', src: gurokkuLogo },
   { id: 'guanaco', name: 'Guanaco', src: guanacoLogo },
   { id: 'huddlellm', name: 'HuddleLLM', src: huddleLLMLogo },
   { id: 'hyperbolic', name: 'Hyperbolic', src: hyperbolicLogo },
@@ -130,8 +134,10 @@ const otherIcons: IconOption[] = [
   { id: 'vicuna', name: 'Vicuna', src: vicunaLogo },
   { id: 'wizardlm', name: 'WizardLM', src: wizardlmLogo },
   { id: 'xai', name: 'xAI', src: xaiLogo },
+  { id: 'bytedance', name: 'ByteDance', src: bytedanceLogo },
   { id: 'xunfei', name: 'XunFei', src: xunfeiLogo },
-  { id: 'yi', name: 'Yi', src: yiLogo }
+  { id: 'yi', name: 'Yi', src: yiLogo },
+  { id: 'zhipu', name: 'Zhipu AI', src: zhipuLogo }
 ];
 
 interface IconSelectProps {

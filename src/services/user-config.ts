@@ -67,18 +67,18 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
     "Grok": {
         "Grok 4": "grok-4",
         "Grok 3 Mini": "grok-3-mini",
-        "Grok 3 Mini Fast": "grok-3-mini-fast",
+        "Grok Code Fast": "grok-code-fast-1",
     },
     "Deepseek": {
         "Deepseek Chat": "deepseek-chat",
         "Deepseek Reasoner": "deepseek-reasoner",
     },
     "Perplexity": {
-        "Sonar Pro": "sonar-pro",
-        "Sonar": "sonar",
-        "Sonar Deep Research": "sonar-deep-research",
-        "Sonar Reasoning Pro": "sonar-reasoning-pro",
-        "Sonar Reasoning": "sonar-reasoning",
+        "Sonar Pro": { value: "sonar-pro", icon: "perplexity" },
+        "Sonar": { value: "sonar", icon: "perplexity" },
+        "Sonar Deep Research": { value: "sonar-deep-research", icon: "perplexity" },
+        "Sonar Reasoning Pro": { value: "sonar-reasoning-pro", icon: "perplexity" },
+        "Sonar Reasoning": { value: "sonar-reasoning", icon: "perplexity" },
     },
     "Rakuten": {
         "DeepSeek-R1": "DeepSeek-R1",
@@ -105,6 +105,9 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
         "DeepSeek/DeepSeek-V3.1": { value: "deepseek-ai/DeepSeek-V3.1", icon: "deepseek" },
         "DeepSeek/DeepSeek-R1": { value: "deepseek-ai/DeepSeek-R1", icon: "deepseek" },
         "moonshotai/Kimi-K2-Instruct": { value: "moonshotai/Kimi-K2-Instruct", icon: "kimi" },
+        // Zhipu AI (zai-org) models
+        "GLM-4.5": { value: "zai-org/glm-4.5", icon: "zhipu" },
+        "GLM-4.5V (Multimodal)": { value: "zai-org/glm-4.5v", icon: "zhipu" },
     },
 };
 // Note: Removed individual model enums (ClaudeAPIModel, GeminiAPIModel, etc.) and CustomAPIModel enum
