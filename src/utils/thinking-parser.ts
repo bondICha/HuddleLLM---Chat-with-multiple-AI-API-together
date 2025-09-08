@@ -10,8 +10,8 @@ export class ThinkingParser {
   private accumulatedText: string = '';      // 思考タグ除去後の累積テキスト
   
   // タグパターンの定義
-  private readonly THINKING_START_PATTERNS = [/<thinking>/i, /<think>/i];
-  private readonly THINKING_END_PATTERNS = [/<\/thinking>/i, /<\/think>/i];
+  private readonly THINKING_START_PATTERNS = [/<thinking>/i, /<think>/i, /<thought>/i];
+  private readonly THINKING_END_PATTERNS = [/<\/thinking>/i, /<\/think>/i, /<\/thought>/i];
 
   /**
    * テキスト断片を処理して思考内容とクリーンなテキストを抽出

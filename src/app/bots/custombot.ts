@@ -8,6 +8,7 @@ import { ChatError, ErrorCode } from '~utils/errors';
 import { BedrockApiBot } from './bedrock-api';
 import { GeminiApiBot } from './gemini-api';
 import { VertexClaudeBot } from './vertex-claude';
+import { GeminiOpenAICompatBot } from './gemini-openai';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
 export class CustomBot extends AsyncAbstractBot {
@@ -147,6 +148,18 @@ export class CustomBot extends AsyncAbstractBot {
                     geminiApiModel: config.model,
                     geminiApiSystemMessage: processedSystemMessage,
                     geminiApiTemperature: config.temperature,
+                    webAccess: config.webAccess,
+                });
+                break;
+            case CustomApiProvider.GeminiOpenAI:
+                botInstance = new GeminiOpenAICompatBot({
+                    apiKey: config.apiKey || customApiKey,
+                    host: config.host || customApiHost,
+                    model: config.model,
+                    temperature: config.temperature,
+                    systemMessage: processedSystemMessage,
+                    thinkingMode: config.thinkingMode,
+                    thinkingBudget: config.thinkingBudget,
                     webAccess: config.webAccess,
                 });
                 break;

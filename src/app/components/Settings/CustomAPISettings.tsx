@@ -744,12 +744,13 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                       config.provider === CustomApiProvider.Bedrock ||
                                                                       config.provider === CustomApiProvider.Anthropic_CustomAuth ||
                                                                       config.provider === CustomApiProvider.VertexAI_Claude;
+                                            const isGeminiOpenAIProvider = config.provider === CustomApiProvider.GeminiOpenAI;
                                             const isOpenAIProvider = config.provider === CustomApiProvider.OpenAI;
 
                                             return (
                                                 <>
                                                     {/* Anthropic Thinking Mode */}
-                                                    {isAnthropicProvider && (
+                                                    {(isAnthropicProvider || isGeminiOpenAIProvider) && (
                                                         <div className={formRowClass}>
                                                            <div className="flex items-center justify-between">
                                                                <p className={labelClass}>{config.thinkingMode ? t('Thinking Budget') : t('Temperature')}</p>
@@ -874,7 +875,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    ) : !isAnthropicProvider && (
+                                                    ) : !isAnthropicProvider && !isGeminiOpenAIProvider && (
                                                         <div className={formRowClass}>
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <p className={labelClass}>{t('Temperature')}</p>
@@ -939,7 +940,8 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                     { name: 'OpenAI Compatible', value: CustomApiProvider.OpenAI },
                                                                     { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
                                                                     { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock },
-                                                                    { name: 'Google Gemini API', value: CustomApiProvider.Google },
+                                                                    { name: 'Google Gemini API (Deprecated)', value: CustomApiProvider.Google },
+                                                                    { name: 'Google Gemini (OpenAI Format)', value: CustomApiProvider.GeminiOpenAI },
                                                                     { name: 'VertexAI (Claude)', value: CustomApiProvider.VertexAI_Claude }
                                                                 ]}
                                                                 value={config.provider || CustomApiProvider.OpenAI}
@@ -997,6 +999,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                 className='flex-1'
                                                                 placeholder={
                                                                     config.provider === CustomApiProvider.Google ? t("Not applicable for Google Gemini") :
+                                                                    config.provider === CustomApiProvider.GeminiOpenAI ? t("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions") :
                                                                     config.isHostFullPath ? t("https://api.example.com/v1/chat/completions") :
                                                                     t("Leave blank for Common Host, or e.g., https://api.openai.com")
                                                                 }
@@ -1008,7 +1011,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                 }}
                                                                 disabled={config.provider === CustomApiProvider.Google}
                                                             />
-                                                            {config.provider !== CustomApiProvider.VertexAI_Claude && (
+                                                            {config.provider !== CustomApiProvider.VertexAI_Claude && config.provider !== CustomApiProvider.GeminiOpenAI && (
                                                                 <Switch
                                                                     checked={config.isHostFullPath ?? false}
                                                                     onChange={(checked) => {
