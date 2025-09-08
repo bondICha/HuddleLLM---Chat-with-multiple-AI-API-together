@@ -292,16 +292,13 @@ const BotIcon: React.FC<BotIconProps> = ({ iconName, size = 24, className = '' }
       provider = iconName.split('.')[0].toLowerCase();
     }
     
-    // 対応するアイコンを検索
-    const icon = Object.entries(iconMap).find(
-      ([key]) => provider.toLowerCase().includes(key.toLowerCase())
-    );
-    
-    // アイコンが見つかった場合は表示、見つからなかった場合はデフォルトアイコン
-    if (icon) {
+    const lowerProvider = provider.toLowerCase();
+    const exactSrc = iconMap[lowerProvider];
+
+    if (exactSrc) {
       return (
         <img
-          src={icon[1]}
+          src={exactSrc}
           alt={provider}
           style={{ width: size, height: size, objectFit: 'contain' }}
           className={className}

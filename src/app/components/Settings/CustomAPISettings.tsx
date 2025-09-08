@@ -190,6 +190,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             updatedConfigs[index].systemMessage = preset.systemMessage;
             updatedConfigs[index].systemPromptMode = preset.systemPromptMode as SystemPromptMode;
             updatedConfigs[index].avatar = preset.avatar;
+            updatedConfigs[index].reasoningMode = preset.reasoningMode;
             updatedConfigs[index].thinkingMode = preset.thinkingMode;
             updatedConfigs[index].thinkingBudget = preset.thinkingBudget;
                 updatedConfigs[index].provider = preset.provider as CustomApiProvider;

@@ -1,5 +1,5 @@
-import presetConfig from '../../config/api-presets.json'
-import { MODEL_LIST, SystemPromptMode, CustomApiProvider } from './user-config'
+import presetConfig from '../../config/api-presets'
+import { MODEL_LIST, SystemPromptMode } from './user-config'
 import { getCompanyProfileConfigs, getCompanyProfileState, CompanyProfileStatus } from './company-profile'
 import { NestedDropdownOption } from '~/app/components/NestedDropdown'
 
@@ -61,15 +61,7 @@ export async function getActivePresets() {
         activePresets[presetName] = {
           name: presetName,
           shortName: apiConfig.shortName || apiConfig.name.substring(0, 4),
-          model: apiConfig.model || 'gpt-4',
-          host: apiConfig.host || '',
-          temperature: apiConfig.temperature || 1,
-          systemMessage: apiConfig.systemMessage || '',
-          systemPromptMode: apiConfig.systemPromptMode || 'common',
-          avatar: apiConfig.avatar || 'default',
-          thinkingMode: apiConfig.thinkingMode || false,
-          thinkingBudget: apiConfig.thinkingBudget || 2000,
-          provider: apiConfig.provider || 'openai'
+          ...apiConfig  // Company Profile設定をそのまま適用
         }
       })
     } else if (config.settings.enableCompanyPresets) {
@@ -102,29 +94,6 @@ export async function getActivePresets() {
         preset.systemPromptMode = SystemPromptMode.COMMON
     }
     
-    // providerを変換
-    switch (preset.provider) {
-      case 'openai':
-        preset.provider = CustomApiProvider.OpenAI
-        break
-      case 'anthropic':
-        preset.provider = CustomApiProvider.Anthropic
-        break
-      case 'google':
-        preset.provider = CustomApiProvider.Google
-        break
-      case 'bedrock':
-        preset.provider = CustomApiProvider.Bedrock
-        break
-      case 'vertexai-claude':
-        preset.provider = CustomApiProvider.VertexAI_Claude
-        break
-      case 'anthropic-customauth':
-        preset.provider = CustomApiProvider.Anthropic_CustomAuth
-        break
-      default:
-        preset.provider = CustomApiProvider.OpenAI
-    }
     
     // modelを実際のMODEL_LISTから取得
     const modelId = preset.model
