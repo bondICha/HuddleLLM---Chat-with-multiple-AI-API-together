@@ -16,9 +16,9 @@ const ChatMessageList: FC<Props> = (props) => {
   const { scrollRef, contentRef, isAtBottom, scrollToBottom } = useStickToBottom({
     resize: 'smooth',
     initial: {
-      mass: 1,
-      damping: 0.2,
-      stiffness: 500
+      mass: 0.8,
+      damping: 0.7,
+      stiffness: 0.1
     },
   })
 
