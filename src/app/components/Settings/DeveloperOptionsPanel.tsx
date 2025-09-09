@@ -30,7 +30,7 @@ const DeveloperOptionsPanel: FC<Props> = ({
     return (
         <div className="border-t pt-3 mt-4">
             <button
-                className="flex items-center gap-2 w-full text-left text-sm font-medium text-yellow-500 hover:opacity-100"
+                className="flex items-center gap-2 w-full text-left text-sm font-medium text-gray-500 dark:text-gray-400 hover:opacity-100"
                 onClick={() => toggleSection(sectionKey)}
             >
                 <ChevronRight 
@@ -40,8 +40,10 @@ const DeveloperOptionsPanel: FC<Props> = ({
             </button>
             {expandedSections[sectionKey] && (
                 <div className="mt-3 space-y-4 pl-5">
-                    {/* OpenAI Specific Options */}
-                    {config.provider === CustomApiProvider.OpenAI && (
+                    {/* OpenAI Compatible Options */}
+                    {(config.provider === CustomApiProvider.OpenAI ||
+                      config.provider === CustomApiProvider.QwenOpenAI ||
+                      config.provider === CustomApiProvider.GeminiOpenAI) && (
                         <div className={formRowClass}>
                             <p className={labelClass}>{t('Allow Only Specific Providers (OpenRouter)')}</p>
                             <div className={inputContainerClass}>

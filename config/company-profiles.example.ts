@@ -16,13 +16,14 @@ export const COMPANY_PROFILE_CONFIGS: CompanyProfilePreset[] = [
           "host": "https://mycompany.ai_api/openai/v1",
           "id": 1,
           "isHostFullPath": false,
-          "model": "gpt-4.1",
-          "name": "GPT-4.1",
+          "model": "gpt-5",
+          "name": "GPT-5",
           "provider": "openai",
           "shortName": "4.1",
           "systemMessage": "",
           "temperature": 1,
-          "apiKey": ""
+          "apiKey": "",
+          "thinkingMode": true
         },
         {
           "avatar": "OpenAI.Yellow",
@@ -30,13 +31,14 @@ export const COMPANY_PROFILE_CONFIGS: CompanyProfilePreset[] = [
           "host": "https://mycompany.ai_api/openai/v1",
           "id": 2,
           "isHostFullPath": false,
-          "model": "o4-mini",
-          "name": "o4-mini",
+          "model": "gpt-5",
+          "name": "GPT-5 chat",
           "provider": "openai",
           "shortName": "o4min",
           "systemMessage": "",
           "temperature": 1,
-          "apiKey": ""
+          "apiKey": "",
+          "thinkingMode": false
         },
         {
           "avatar": "Gemini.Color",

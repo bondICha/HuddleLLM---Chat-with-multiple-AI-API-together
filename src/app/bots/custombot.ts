@@ -8,7 +8,6 @@ import { ChatError, ErrorCode } from '~utils/errors';
 import { BedrockApiBot } from './bedrock-api';
 import { GeminiApiBot } from './gemini-api';
 import { VertexClaudeBot } from './vertex-claude';
-import { GeminiOpenAICompatBot } from './gemini-openai';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
 export class CustomBot extends AsyncAbstractBot {
@@ -138,7 +137,7 @@ export class CustomBot extends AsyncAbstractBot {
                     isHostFullPath: config.isHostFullPath,
                     webAccess: config.webAccess,
                     botIndex: this.customBotNumber - 1, // 0ベースのインデックス
-                    reasoningMode: config.reasoningMode,
+                    thinkingMode: config.thinkingMode,
                     reasoningEffort: config.reasoningEffort,
                 });
                 break;
@@ -152,15 +151,39 @@ export class CustomBot extends AsyncAbstractBot {
                 });
                 break;
             case CustomApiProvider.GeminiOpenAI:
-                botInstance = new GeminiOpenAICompatBot({
+                botInstance = new ChatGPTApiBot({
+                    apiKey: config.apiKey || customApiKey,
+                    host: config.host || customApiHost,
+                    model: config.model,
+                    temperature: config.temperature,
+                    systemMessage: processedSystemMessage,
+                    thinkingMode: false, // No compatibility with OpenAI Reasoning
+                    webAccess: config.webAccess,
+                    isHostFullPath: config.isHostFullPath,
+                    extraBody: config.thinkingMode ? {
+                        google: {
+                            thinking_config: {
+                                include_thoughts: true,
+                                thinking_budget: config.thinkingBudget || 2000
+                            }
+                        }
+                    } : undefined
+                });
+                break;
+            case CustomApiProvider.QwenOpenAI:
+                botInstance = new ChatGPTApiBot({
                     apiKey: config.apiKey || customApiKey,
                     host: config.host || customApiHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingMode: config.thinkingMode,
-                    thinkingBudget: config.thinkingBudget,
                     webAccess: config.webAccess,
+                    isHostFullPath: config.isHostFullPath,
+                    extraBody: config.thinkingMode ? {
+                        enable_thinking: true,
+                        thinking_budget: config.thinkingBudget || 2000
+                    } : undefined
                 });
                 break;
             case CustomApiProvider.VertexAI_Claude:

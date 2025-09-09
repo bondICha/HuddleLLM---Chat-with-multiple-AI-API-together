@@ -1,5 +1,6 @@
 import presetConfig from '../../config/api-presets'
-import { MODEL_LIST, SystemPromptMode } from './user-config'
+import { SystemPromptMode } from './user-config'
+import { MODEL_LIST } from '../../config/model-list'
 import { getCompanyProfileConfigs, getCompanyProfileState, CompanyProfileStatus } from './company-profile'
 import { NestedDropdownOption } from '~/app/components/NestedDropdown'
 

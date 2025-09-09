@@ -224,10 +224,11 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       systemMessage: string;
       isHostFullPath?: boolean;
       webAccess?: boolean;
+      thinkingMode?: boolean;
       botIndex?: number; // CustomBotからのインデックス
-      reasoningMode?: boolean; // OpenAI reasoning mode
       reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
       advancedConfig?: any; // To pass OpenRouter provider options
+      extraBody?: any; // Extra body parameters for compatible APIs
     },
   ) {
     super()
@@ -276,6 +277,23 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       (message) => isArray(message.content) && message.content.some((part) => part.type === 'image_url'),
     )
     
+    
+    const thinkingOn = this.config.thinkingMode;
+    
+    // Normalize extraBody to object (supports stringified JSON)
+    let extraBodyObj: any | undefined;
+    if (this.config.extraBody !== undefined) {
+      if (typeof this.config.extraBody === 'string') {
+        try {
+          extraBodyObj = JSON.parse(this.config.extraBody);
+        } catch (e) {
+          throw new ChatError('Invalid extraBody JSON', ErrorCode.UNKOWN_ERROR, e);
+        }
+      } else {
+        extraBodyObj = this.config.extraBody;
+      }
+    }
+    
     const resp = await fetch(fullUrlStr, {
       method: 'POST',
       signal,
@@ -288,20 +306,22 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
         messages,
         max_tokens: undefined,
         stream: true,
-        // Add reasoning parameters if reasoning mode is enabled
-        ...(this.config.reasoningMode && {
+        // Add reasoning parameters if Thinking is enabled (for OpenAI-compatible reasoning)
+        ...(thinkingOn && {
           reasoning_effort: this.config.reasoningEffort || 'medium'
         }),
-        // Include temperature only if reasoning mode is disabled
-        ...((!this.config.reasoningMode) && {
+        // Include temperature only if Thinking is disabled
+        ...((!thinkingOn) && {
           temperature: this.config.temperature
         }),
         // Add OpenRouter specific provider options
-        ...(this.config.host?.includes('openrouter.ai') && this.config.advancedConfig?.openrouterProviderOnly && {
+        ...(this.config.advancedConfig?.openrouterProviderOnly && {
           provider: {
             only: this.config.advancedConfig.openrouterProviderOnly.split(',').map((p: string) => p.trim()).filter((p: string) => p)
           }
         }),
+        // Add extra body parameters if provided
+        ...(extraBodyObj ? { extra_body: extraBodyObj } : {}),
       }),
     })
     if (!resp.ok) {

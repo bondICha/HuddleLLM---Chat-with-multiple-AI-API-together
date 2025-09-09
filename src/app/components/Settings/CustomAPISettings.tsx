@@ -118,6 +118,8 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 case 'grok': return 'grok';
                 case 'deepseek': return 'deepseek';
                 case 'rakuten': return 'rakuten';
+                case 'qwen': return 'qianwen'; // Qwen用のアイコン
+                case 'perplexity': return 'perplexity'; // Perplexity用のアイコン
                 case 'custom': return 'huddlellm'; // カスタムモデル用
                 default: return 'chatgpt'; // デフォルト
             }
@@ -190,7 +192,6 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             updatedConfigs[index].systemMessage = preset.systemMessage;
             updatedConfigs[index].systemPromptMode = preset.systemPromptMode as SystemPromptMode;
             updatedConfigs[index].avatar = preset.avatar;
-            updatedConfigs[index].reasoningMode = preset.reasoningMode;
             updatedConfigs[index].thinkingMode = preset.thinkingMode;
             updatedConfigs[index].thinkingBudget = preset.thinkingBudget;
                 updatedConfigs[index].provider = preset.provider as CustomApiProvider;
@@ -762,6 +763,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                        onChange={(checked) => {
                                                                            const updatedConfigs = [...userConfig.customApiConfigs];
                                                                            updatedConfigs[index].thinkingMode = checked;
+                                                                           updatedConfigs[index].reasoningEffort = undefined;
                                                                            updateCustomApiConfigs(updatedConfigs);
                                                                        }}
                                                                    />
@@ -812,20 +814,21 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                     {isOpenAIProvider ? (
                                                         <div className={formRowClass}>
                                                             <div className="flex items-center justify-between">
-                                                               <p className={labelClass}>{config.reasoningMode ? t('Reasoning Effort') : t('Temperature')}</p>
+                                                               <p className={labelClass}>{config.thinkingMode ? t('Reasoning Effort') : t('Temperature')}</p>
                                                                 <div className="flex items-center gap-1">
                                                                    <span className="text-sm">{t('Reasoning Mode')}</span>
                                                                    <Switch
-                                                                       checked={config.reasoningMode ?? false}
+                                                                       checked={config.thinkingMode ?? false}
                                                                        onChange={(checked) => {
                                                                            const updatedConfigs = [...userConfig.customApiConfigs];
-                                                                           updatedConfigs[index].reasoningMode = checked;
+                                                                           updatedConfigs[index].thinkingMode = checked;
+                                                                           updatedConfigs[index].thinkingBudget = undefined;
                                                                            updateCustomApiConfigs(updatedConfigs);
                                                                        }}
                                                                    />
                                                                     <span className="cursor-help group relative">ⓘ
                                                                         <div className="absolute top-full right-0 mt-2 w-72 hidden group-hover:block bg-gray-900 dark:bg-gray-800 text-white text-xs p-2 rounded shadow-lg z-50">
-                                                                            {config.reasoningMode
+                                                                            {config.thinkingMode
                                                                                 ? 'OpenAI Reasoning models (o1-mini, o1-preview) support reasoning mode for better problem-solving'
                                                                                 : 'Temperature controls randomness. Higher = more creative, lower = more focused'
                                                                             }
@@ -836,7 +839,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                             <div className={inputContainerClass}>
                                                                 <Range
                                                                     value={
-                                                                        config.reasoningMode
+                                                                        config.thinkingMode
                                                                             ? (config.reasoningEffort === 'minimal' ? 0 :
                                                                                config.reasoningEffort === 'low' ? 1 :
                                                                                config.reasoningEffort === 'medium' ? 2 :
@@ -845,7 +848,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                     }
                                                                     onChange={(value) => {
                                                                         const updatedConfigs = [...userConfig.customApiConfigs];
-                                                                        if (config.reasoningMode) {
+                                                                        if (config.thinkingMode) {
                                                                             const effortMap: Record<number, 'minimal' | 'low' | 'medium' | 'high'> = {
                                                                                 0: 'minimal',
                                                                                 1: 'low',
@@ -858,12 +861,12 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                         }
                                                                         updateCustomApiConfigs(updatedConfigs);
                                                                     }}
-                                                                    min={config.reasoningMode ? 0 : 0}
-                                                                    max={config.reasoningMode ? 3 : 2}
-                                                                    step={config.reasoningMode ? 1 : 0.1}
+                                                                    min={config.thinkingMode ? 0 : 0}
+                                                                    max={config.thinkingMode ? 3 : 2}
+                                                                    step={config.thinkingMode ? 1 : 0.1}
                                                                 />
                                                                 <div className="flex justify-between text-xs opacity-70 mt-1" style={{ minHeight: '16px' }}>
-                                                                    {config.reasoningMode ? (
+                                                                    {config.thinkingMode ? (
                                                                         <>
                                                                             <span>{t('Minimal')}</span>
                                                                             <span>{t('Low')}</span>
@@ -941,9 +944,11 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                     { name: 'OpenAI Compatible', value: CustomApiProvider.OpenAI },
                                                                     { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
                                                                     { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock },
-                                                                    { name: 'Google Gemini API (Deprecated)', value: CustomApiProvider.Google },
                                                                     { name: 'Google Gemini (OpenAI Format)', value: CustomApiProvider.GeminiOpenAI },
-                                                                    { name: 'VertexAI (Claude)', value: CustomApiProvider.VertexAI_Claude }
+                                                                    { name: 'Qwen (OpenAI Format)', value: CustomApiProvider.QwenOpenAI },
+                                                                    { name: 'VertexAI (Claude)', value: CustomApiProvider.VertexAI_Claude },
+                                                                    { name: 'Google Gemini API (Deprecated)', value: CustomApiProvider.Google },
+
                                                                 ]}
                                                                 value={config.provider || CustomApiProvider.OpenAI}
                                                                 onChange={(v) => {
@@ -1001,6 +1006,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                 placeholder={
                                                                     config.provider === CustomApiProvider.Google ? t("Not applicable for Google Gemini") :
                                                                     config.provider === CustomApiProvider.GeminiOpenAI ? t("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions") :
+                                                                    config.provider === CustomApiProvider.QwenOpenAI ? t("https://dashscope.aliyuncs.com/compatible-mode/v1") :
                                                                     config.isHostFullPath ? t("https://api.example.com/v1/chat/completions") :
                                                                     t("Leave blank for Common Host, or e.g., https://api.openai.com")
                                                                 }
