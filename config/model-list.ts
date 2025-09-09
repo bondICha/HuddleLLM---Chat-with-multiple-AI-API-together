@@ -43,6 +43,10 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
     },
     "Qwen": {
         // 商用モデル - Tongyiロゴ
+        "Qwen-Max": { value: "qwen-max", icon: "tongyi" },
+        "Qwen-Plus": { value: "qwen-plus", icon: "tongyi" },
+        "Qwen-Flash": { value: "qwen-flash", icon: "tongyi" },
+        "Qwen-Turbo": { value: "qwen-turbo", icon: "tongyi" },
         "Qwen-VL-Max": { value: "qwen-vl-max", icon: "tongyi" },
         "Qwen-VL-Max-Latest": { value: "qwen-vl-max-latest", icon: "tongyi" },
         "Qwen-OCR": { value: "qwen-vl-ocr", icon: "tongyi" },
@@ -51,11 +55,11 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
         "Qwen-Deep-Research": { value: "qwen-deep-research", icon: "tongyi" },
 
         // オープンソースモデル - Qianwenロゴ
-        "Qwen3-235B-A22B-Thinking-2507": { value: "Qwen/Qwen3-235B-A22B-Thinking-2507", icon: "qianwen" },
-        "Qwen3-235B-A22B-Instruct-2507": { value: "Qwen/Qwen3-235B-A22B-Instruct-2507", icon: "qianwen" },
+        "Qwen3-235B-A22B-Thinking-2507": { value: "qwen3-235b-a22b-thinking-2507", icon: "qianwen" },
+        "Qwen3-235B-A22B-Instruct-2507": { value: "qwen3-235b-a22b-instruct-2507", icon: "qianwen" },
 
-        "Qwen-VL-72B-Instruct": { value: "Qwen/Qwen2.5-VL-72B-Instruct", icon: "qianwen" },
-        "Qwen-Coder-480B-A35B-Instruct": { value: "Qwen/Qwen3-Coder-480B-A35B-Instruct", icon: "qianwen" },
+        "Qwen-VL-72B-Instruct": { value: "qwen2.5-vl-72b-instruct", icon: "qianwen" },
+        "Qwen-Coder-480B-A35B-Instruct": { value: "qwen3-coder-480b-a35b-instruct", icon: "qianwen" },
     },
     // ベンダー特有のモデルIDを「Custom」カテゴリとして追加
     "Custom": {

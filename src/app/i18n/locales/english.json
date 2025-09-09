@@ -251,5 +251,7 @@
   "agent_continue_search_instruction": "Based on the search results so far, if you need more information to provide a complete answer, you can search again with different keywords. Otherwise, provide your final answer based on the available context.",
   "releasenote_v2105_code_expansion_modal_enhancement": "## Code Expansion Modal Enhancement\n\n![Code Expansion Modal](/release_note_assets/code_expansion_modal_enhancement.png)\n\nEnhanced the code block expansion modal with better usability and visual improvements.",
   "releasenote_v2105_font_type_setting": "## Font Type Setting\n\n![Font Type Setting](/release_note_assets/font_type_setting.png)\n\nAdded a new font type setting allowing you to choose between Sans-serif (Gothic) and Serif (Mincho) fonts for better readability.",
-  "releasenote_v2105_this_release_note_is_made_by_grok_code": "This version of release note was authored by Grok Code. Generated from git diff."
+  "releasenote_v2105_this_release_note_is_made_by_grok_code": "This version of release note was authored by Grok Code. Generated from git diff.",
+  "For optimal font display experience": "For optimal font display experience",
+  "This application uses Noto CJK fonts. Please download and install them for the best experience:": "This application uses Noto CJK fonts. Please download and install them for the best experience:"
 }

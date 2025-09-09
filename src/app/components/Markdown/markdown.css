@@ -88,17 +88,17 @@
 /* Font type settings for AI messages */
 /* When serif font is selected for AI messages */
 .markdown-body.markdown-custom-styles {
-  font-family: 'Noto Sans CJK JP', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'system-ui';
+  font-family: 'Noto Sans CJK JP', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans CJK KR', 'system-ui';
 }
 
 /* Font type settings for AI messages */
 /* When serif font is selected for AI messages */
 :root[data-font-type="serif"] .bg-secondary .markdown-body.markdown-custom-styles {
-  font-family: 'Noto Serif JP', 'Noto Serif SC', 'Noto Serif TC', serif;
+  font-family: 'Noto Serif JP', 'Noto Serif SC', 'Noto Serif TC', 'Noto Serif CJK KR', serif;
 }
 
 /* When sans font is selected for AI messages (default) */
 :root[data-font-type="sans"] .bg-secondary .markdown-body.markdown-custom-styles {
-  font-family: 'Noto Sans CJK JP', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'system-ui';
+  font-family: 'Noto Sans CJK JP', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans CJK KR', 'system-ui';
 }
 

@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import OpenAILogo from './logos/OpenAILogos';
 import ClaudeLogo from './logos/ClaudeLogos';
 import PerplexityLogo from './logos/PerplexityLogos';
+import { FiCode } from 'react-icons/fi';
 
 // =====================================================================================
 // IMPORTANT: アイコン追加・変更時の注意
@@ -305,6 +306,11 @@ const BotIcon: React.FC<BotIconProps> = ({ iconName, size = 24, className = '' }
           title={iconName}
         />
       );
+    }
+
+    // FiCodeアイコン
+    if (iconName === 'FiCode') {
+      return <FiCode size={size} className={className} />;
     }
 
     // どのアイコンにも一致しない場合はデフォルトアイコンを表示

@@ -11,7 +11,7 @@ import {
 import { Input, Textarea } from '../Input'
 import Dialog from '../Dialog'
 import { SystemPromptMode } from '~services/user-config'
-import { CHATGPT_API_MODELS, DEFAULT_SYSTEM_MESSAGE } from '~app/consts'
+import { DEFAULT_SYSTEM_MESSAGE } from '~app/consts'
 import TripleStateToggle from '../TripleStateToggle';
 import Select from '../Select' 
 import NestedDropdown, { NestedDropdownOption } from '../NestedDropdown'; 
@@ -19,13 +19,14 @@ import Blockquote from './Blockquote'
 import Range from '../Range'
 import Switch from '~app/components/Switch'
 import AvatarSelect from './AvatarSelect'
-import BotIcon from '../BotIcon'
 import { BiPlus, BiTrash, BiHide, BiShow, BiInfoCircle, BiPencil, BiChevronDown, BiExpand } from 'react-icons/bi'
 import Button from '../Button'
 import { revalidateEnabledBots } from '~app/hooks/use-enabled-bots'
 import { getTemplateOptions, getActivePresets, getPresetMapping } from '~services/preset-loader'
 import SystemPromptEditorModal from './SystemPromptEditorModal'
 import DeveloperOptionsPanel from './DeveloperOptionsPanel'
+import ModelSearchInput from '../ModelSearchInput'
+import { useApiModels } from '~hooks/use-api-models'
 
 
 interface Props {
@@ -40,16 +41,14 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     const { t } = useTranslation()
     const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
     const [editingPrompt, setEditingPrompt] = useState<{ index: number; text: string; isCommon: boolean } | null>(null);
-    // 選択されたモデルのプロバイダーを保持するステートを追加
-    const [selectedProviderForModel, setSelectedProviderForModel] = useState<Record<number, string | null>>({});
     // デフォルトに戻す確認ダイアログのstate
     const [showResetDialog, setShowResetDialog] = useState(false);
     // 変数一覧の表示状態
     const [showVariables, setShowVariables] = useState(false);
     const [editingNameIndex, setEditingNameIndex] = useState<number | null>(null);
-    const [editingShortNameIndex, setEditingShortNameIndex] = useState<number | null>(null);
-    // Temperature/Reasoning mode toggle state for each config
-    const [temperatureMode, setTemperatureMode] = useState<Record<number, 'temperature' | 'reasoning'>>({});
+    
+    // API models hook
+    const { loading: modelsLoading, fetchAllModels, modelsPerConfig, errorsPerConfig, isProviderSupported } = useApiModels();
 
     // クリックアウトサイド処理
     useEffect(() => {
@@ -68,9 +67,6 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     }, [editingNameIndex]);
 
     // テンプレートオプションの状態
-    const [templateOptions, setTemplateOptions] = useState([
-        { name: t('Apply Template Settings'), value: 'none' }
-    ]);
     const [nestedTemplateOptions, setNestedTemplateOptions] = useState<NestedDropdownOption[]>([]);
 
     // コンポーネント初期化時にテンプレートオプションを読み込み
@@ -78,7 +74,6 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         const loadTemplateOptions = async () => {
             try {
                 const templateData = await getTemplateOptions();
-                setTemplateOptions(templateData.flatOptions);
                 setNestedTemplateOptions(templateData.nestedOptions || []);
             } catch (error) {
                 console.warn('Failed to load template options:', error);
@@ -105,9 +100,39 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     const labelClass = "font-medium text-sm"
     const inputContainerClass = "flex-1"
 
+    // Function to fetch models for ALL chatbots
+    const handleFetchAllModels = async () => {
+        const configs = customApiConfigs.map(config => ({
+            provider: config.provider || CustomApiProvider.OpenAI,
+            apiKey: config.apiKey || userConfig.customApiKey,
+            host: config.host || userConfig.customApiHost,
+            isHostFullPath: config.isHostFullPath || userConfig.isCustomApiHostFullPath
+        }));
+        
+        await fetchAllModels(configs);
+    };
+
+
     // モデル選択用のオプションを作成する関数（NestedDropdown用）
-    const createModelOptions = (): NestedDropdownOption[] => {
+    const createModelOptions = (configIndex?: number): NestedDropdownOption[] => {
         const options: NestedDropdownOption[] = [];
+
+        // Add API models section if available for this specific chatbot (all providers)
+        if (configIndex !== undefined && modelsPerConfig[configIndex]?.length > 0) {
+            const config = customApiConfigs[configIndex];
+            if (config) {
+                const apiModelsOption: NestedDropdownOption = {
+                    label: 'Fetched API Models',
+                    children: modelsPerConfig[configIndex].map((model: any) => ({
+                        label: model.id,
+                        value: model.id,
+                        icon: 'FiCode'
+                    })),
+                    icon: 'FiCode'
+                };
+                options.push(apiModelsOption);
+            }
+        }
 
         // プロバイダー名からより適切なアイコン名へのマッピング
         const getProviderIcon = (provider: string): string => {
@@ -611,11 +636,28 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
                                         {/* Model Selection */}
                                         <div className={formRowClass}>
-                                            <p className={labelClass}>{t('AI Model')}</p>
+                                            <div className="flex items-center justify-between">
+                                                <p className={labelClass}>{t('AI Model')}</p>
+                                                {isProviderSupported(config.provider) && (
+                                                    <button
+                                                        onClick={handleFetchAllModels}
+                                                        disabled={modelsLoading}
+                                                        className={`px-3 py-1 text-xs rounded transition-colors ${
+                                                            errorsPerConfig[index] 
+                                                                ? 'bg-gray-400 text-gray-600 hover:bg-gray-500 disabled:bg-gray-300' 
+                                                                : 'bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white'
+                                                        }`}
+                                                        title={errorsPerConfig[index] || t('Fetch models from API for all chatbots')}
+                                                    >
+                                                        {modelsLoading ? t('Loading...') : t('Fetch Models')}
+                                                    </button>
+                                                )}
+                                            </div>
                                             <div className="flex flex-col gap-3">
+                                                
                                                 {/* Dropdown for preset models */}
                                                 <NestedDropdown
-                                                    options={createModelOptions()}
+                                                    options={createModelOptions(index)}
                                                     value={config.model}
                                                     onChange={(v) => {
                                                         if (!v || v.startsWith('header-')) {
@@ -629,41 +671,18 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                     showModelId={true}
                                                 />
                                                 
-                                                {/* Editable model name display */}
-                                                <div className="relative group">
-                                                    {editingNameIndex === index + 1000 ? (
-                                                        <Input
-                                                            value={config.model}
-                                                            onChange={(e) => {
-                                                                const updatedConfigs = [...userConfig.customApiConfigs];
-                                                                updatedConfigs[index].model = e.currentTarget.value;
-                                                                updateCustomApiConfigs(updatedConfigs);
-                                                            }}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter' || e.key === 'Escape') {
-                                                                    setEditingNameIndex(null);
-                                                                }
-                                                            }}
-                                                            onBlur={() => setEditingNameIndex(null)}
-                                                            autoFocus
-                                                            className="w-full font-mono text-sm"
-                                                            placeholder={t('Enter model name')}
-                                                        />
-                                                    ) : (
-                                                        <div className="flex items-center gap-2 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
-                                                            <span className="flex-1 font-mono text-sm">
-                                                                {config.model || t('No model selected')}
-                                                            </span>
-                                                            <button
-                                                                className="p-1 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-                                                                onClick={() => setEditingNameIndex(index + 1000)}
-                                                                title={t('Edit model name')}
-                                                            >
-                                                                <BiPencil size={14} />
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                {/* Model search input */}
+                                                <ModelSearchInput
+                                                    value={config.model}
+                                                    onChange={(model) => {
+                                                        const updatedConfigs = [...userConfig.customApiConfigs];
+                                                        updatedConfigs[index].model = model;
+                                                        updateCustomApiConfigs(updatedConfigs);
+                                                    }}
+                                                    apiModels={modelsPerConfig[index]}
+                                                    provider={config.provider}
+                                                    placeholder={t('Search models...')}
+                                                />
                                             </div>
                                         </div>
 
@@ -747,12 +766,13 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                       config.provider === CustomApiProvider.Anthropic_CustomAuth ||
                                                                       config.provider === CustomApiProvider.VertexAI_Claude;
                                             const isGeminiOpenAIProvider = config.provider === CustomApiProvider.GeminiOpenAI;
+                                            const isQwenOpenAIProvider = config.provider === CustomApiProvider.QwenOpenAI;
                                             const isOpenAIProvider = config.provider === CustomApiProvider.OpenAI;
 
                                             return (
                                                 <>
                                                     {/* Anthropic Thinking Mode */}
-                                                    {(isAnthropicProvider || isGeminiOpenAIProvider) && (
+                                                    {(isAnthropicProvider || isGeminiOpenAIProvider || isQwenOpenAIProvider) && (
                                                         <div className={formRowClass}>
                                                            <div className="flex items-center justify-between">
                                                                <p className={labelClass}>{config.thinkingMode ? t('Thinking Budget') : t('Temperature')}</p>
@@ -879,7 +899,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    ) : !isAnthropicProvider && !isGeminiOpenAIProvider && (
+                                                    ) : !isAnthropicProvider && !isGeminiOpenAIProvider && !isQwenOpenAIProvider && (
                                                         <div className={formRowClass}>
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <p className={labelClass}>{t('Temperature')}</p>

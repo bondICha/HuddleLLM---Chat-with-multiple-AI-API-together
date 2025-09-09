@@ -255,5 +255,7 @@
   "Reject": "拒否",
   "releasenote_v2105_code_expansion_modal_enhancement": "## コード拡大モーダルの改善\n\n![コード拡大モーダル](/release_note_assets/code_expansion_modal_enhancement.png)\n\nコードブロック拡大モーダルの操作性と視覚的な改善を行いました。",
   "releasenote_v2105_font_type_setting": "## フォントタイプ設定\n\n![フォントタイプ設定](/release_note_assets/font_type_setting.png)\n\nゴシック体（Sans-serif）と明朝体（Serif）から選択できる新しいフォントタイプ設定を追加しました。",
-  "releasenote_v2105_this_release_note_is_made_by_grok_code": "このバージョンのリリースノートはGrok Codeが担当しました。git diffから作成しています。"
+  "releasenote_v2105_this_release_note_is_made_by_grok_code": "このバージョンのリリースノートはGrok Codeが担当しました。git diffから作成しています。",
+  "For optimal font display experience": "最適なフォント表示体験のために",
+  "This application uses Noto CJK fonts. Please download and install them for the best experience:": "このアプリケーションはNoto CJKフォントを使用しています。最良の体験のためにダウンロード・インストールをお願いします："
 }

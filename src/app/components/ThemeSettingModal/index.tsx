@@ -193,7 +193,7 @@ const ThemeSettingModal: FC<Props> = (props) => {
             position="top"
           />
         </div>
-        <div className="w-[300px]">
+        <div className="">
           <p className="font-bold text-lg mb-3">{t('Sidebar Display Mode')}</p>
           <Select
             options={[
@@ -206,7 +206,7 @@ const ThemeSettingModal: FC<Props> = (props) => {
             position="top"
           />
         </div>
-        <div className="w-[300px]">
+        <div className="">
           <p className="font-bold text-lg mb-3">{t('Font Type')}</p>
           <Select
             options={[
@@ -217,6 +217,32 @@ const ThemeSettingModal: FC<Props> = (props) => {
             onChange={onFontTypeChange}
             position="top"
           />
+          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-2">
+              {t('For optimal font display experience')}
+            </p>
+            <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+              {t('This application uses Noto CJK fonts. Please download and install them for the best experience:')}
+            </p>
+            <div className="space-y-1">
+              <a 
+                href="https://github.com/googlefonts/noto-cjk/raw/main/Sans/Variable/OTC/NotoSansCJK-VF.otf.ttc"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline block"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                • {t('Sans-serif')}: NotoSansCJK-VF.otf.ttc (Direct Download Link)
+              </a>
+              <a 
+                href="https://github.com/googlefonts/noto-cjk/raw/main/Serif/Variable/OTC/NotoSerifCJK-VF.otf.ttc"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline block"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                • {t('Serif')}: NotoSerifCJK-VF.otf.ttc (Direct Download Link)
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </Dialog>
