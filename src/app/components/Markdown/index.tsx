@@ -94,7 +94,7 @@ export const code: React.ElementType = memo(({ className, children }: TCodeProps
       ? children 
       : reactNodeToString(children);
     
-    return <CodeBlock language={lang ?? 'text'} code={codeString} />;
+    return <CodeBlock language={lang ?? ''} code={codeString} />;
   }
 });
 
@@ -180,8 +180,8 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
         remarkPlugins
       }
       rehypePlugins={allowHtml
-        ? [rehypeRaw, [rehypeHighlight, { detect: true, ignoreMissing: true }]]
-        : [[rehypeHighlight, { detect: true, ignoreMissing: true }]]
+        ? [rehypeRaw, [rehypeHighlight, { detect: false, ignoreMissing: true }]]
+        : [[rehypeHighlight, { detect: false, ignoreMissing: true }]]
       }
       className={`markdown-body markdown-custom-styles code-block-no-margin !text-base font-normal`}
       // linkTarget="_blank" // Deprecated at markdown 9.0.0

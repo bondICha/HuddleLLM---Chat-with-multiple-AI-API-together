@@ -236,6 +236,14 @@
   "releasenote_v2105_code_expansion_modal_enhancement": "## 代码扩展模态框改进\n\n![代码扩展模态框](/release_note_assets/code_expansion_modal_enhancement.png)\n\n改进了代码块扩展模态框的操作性和视觉效果。",
   "releasenote_v2105_font_type_setting": "## 字体类型设置\n\n![字体类型设置](/release_note_assets/font_type_setting.png)\n\n添加了新的字体类型设置，允许您选择黑体（Sans-serif）和明朝体（Serif）以提高可读性。",
   "releasenote_v2105_this_release_note_is_made_by_grok_code": "此版本的发布说明由Grok Code负责撰写。从git diff创建。",
-  "For optimal font display experience": "为了获得最佳字体显示体验",
-  "This application uses Noto CJK fonts. Please download and install them for the best experience:": "本应用使用Noto CJK字体。为获得最佳体验，请下载并安装："
+  "releasenote_v2110_gemini_openai_format_and_thinking_support": "## Gemini Thinking 输出支持\n\n- 已通过 OpenAI 兼容端点支持 Google Gemini Thinking 输出。\n- API 详细信息请参阅此文档: [OpenAI compatibility | Gemini API | Google AI for Developers](https://ai.google.dev/gemini-api/docs/openai)",
+  "releasenote_v2110_model_list_api_support": "## Models List API 支持\n\n![Model List API Support](/release_note_assets/model_list_api_support.gif)\n\n- 直接从各服务的 API 端点获取可用模型\n- 通过可搜索的下拉菜单选择模型\n- 必须按“获取模型”按钮才能获取模型。",
+  "Optimal font display experience for CJK (Chinese, Japanese, Korean)": "为中日韩（CJK）提供最佳字体显示体验",
+  "This application uses Noto CJK fonts. Please download and install them for the best experience:": "本应用使用 Noto CJK 字体。若尚未安装，可从以下链接下载：",
+  "Downloading Noto Sans CJK": "Noto Sans CJK 下载页面（GitHub）",
+  "Downloading Noto Serif CJK": "Noto Serif CJK 下载页面（GitHub）",
+  "Direct download links": "直接下载链接",
+  "Noto Sans CJK Variable OTC": "Noto Sans CJK Variable OTC",
+  "Noto Sans Mono CJK Variable OTC": "Noto Sans Mono CJK Variable OTC",
+  "Noto Serif CJK Variable OTC": "Noto Serif CJK Variable OTC"
 }

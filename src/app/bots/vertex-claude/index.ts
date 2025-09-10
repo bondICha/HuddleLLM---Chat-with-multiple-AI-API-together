@@ -365,11 +365,13 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
     };
 
     if (this.thinkingMode) {
+      const budgetTokens = Math.max(this.config.thinkingBudget || 2000, 1024);
       requestBody.thinking = {
         type: "enabled",
-        budget_tokens: Math.max(this.config.thinkingBudget || 2000, 1024)
+        budget_tokens: budgetTokens
       };
-      requestBody.max_tokens = 64000;
+      // Set max_tokens to budget_tokens + 8000 to avoid 400 Bad Request
+      requestBody.max_tokens = Math.min(budgetTokens + 8000, 64000);
     } else {
       requestBody.max_tokens = 16384;
       requestBody.temperature = this.config.temperature;

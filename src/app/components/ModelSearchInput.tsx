@@ -118,7 +118,7 @@ const ModelSearchInput: FC<ModelSearchInputProps> = ({
             onKeyDown={handleKeyDown}
             onBlur={handleSearchEnd}
             autoFocus
-            className="w-full font-mono text-sm"
+            className="w-full text-sm"
             placeholder={placeholder || t('Search models...')}
           />
           {/* Search results dropdown */}
@@ -131,7 +131,7 @@ const ModelSearchInput: FC<ModelSearchInputProps> = ({
                   className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-sm truncate">{item.model}</span>
+                    <span className="text-sm truncate">{item.model}</span>
                     <span className={`text-xs px-2 py-1 rounded ml-2 flex-shrink-0 ${
                       item.isApi 
                         ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
@@ -150,7 +150,7 @@ const ModelSearchInput: FC<ModelSearchInputProps> = ({
           className="flex items-center gap-2 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           onClick={handleSearchStart}
         >
-          <span className="flex-1 font-mono text-sm truncate">
+          <span className="flex-1 text-sm truncate">
             {value || t('No model selected')}
           </span>
           <BiPencil size={14} className="opacity-50 flex-shrink-0" />

@@ -484,15 +484,17 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
   
       // Add reasoning configuration or temperature based on thinkingMode flag
       if (this.config.thinkingMode) {
+        const budgetTokens = Math.max(this.config.thinkingBudget || 2000, 1024);
         const reasoningConfig = {
           thinking: {
             type: "enabled",
-            budget_tokens: this.config.thinkingBudget || 2000
+            budget_tokens: budgetTokens
           }
         };
         converceCommandObject.additionalModelRequestFields = reasoningConfig;
+        // Set maxTokens to budget_tokens + some to avoid 400 Bad Request
         converceCommandObject.inferenceConfig = {
-          maxTokens: 64000,
+          maxTokens: Math.min(budgetTokens + 12000, 64000),
         };
       } else {
         converceCommandObject.inferenceConfig = {

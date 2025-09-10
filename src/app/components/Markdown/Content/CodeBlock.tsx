@@ -8,6 +8,7 @@ const SyntaxHighlighter = (Prism as any) as React.FC<SyntaxHighlighterProps>;
 import { CopyToClipboard } from 'react-copy-to-clipboard-ts';
 import { FiCopy, FiCheck, FiMaximize2 } from 'react-icons/fi';
 import CodeBlockModal from './CodeBlockModal';
+import { syntaxHighlighterStyle, codeFontFamily } from './styles';
 
 interface Props {
   code: string;
@@ -42,7 +43,7 @@ const CodeBlock: React.FC<Props> = ({ code, language }) => {
         <SyntaxHighlighter
           language={language}
           style={vscDarkPlus}
-          customStyle={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}
+          customStyle={syntaxHighlighterStyle}
           wrapLines={true}
           lineProps={{ style: { whiteSpace: 'pre-wrap', wordBreak: 'break-all' } }}
         >
@@ -76,8 +77,9 @@ const CodeBar = styled.div`
 `;
 
 const Language = styled.span`
-  color: #fff;
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9em;
+  font-family: ${codeFontFamily};
 `;
 
 const ButtonGroup = styled.div`

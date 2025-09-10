@@ -259,20 +259,22 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
     const body: any = {
       model: this.getModelName(),
       messages,
-      max_tokens: hasImageInput ? 4096 : 8192,
       stream: true,
       system: this.getSystemMessage(),
     }
 
     // Add Extended Thinking configuration or temperature based on thinkingMode flag
     if (this.thinkingMode) {
+      const budgetTokens = Math.max(this.config.thinkingBudget || 2000, 1024); // Minimum 1024 tokens as per Extended Thinking spec
       body.thinking = {
         type: "enabled",
-        budget_tokens: Math.max(this.config.thinkingBudget || 2000, 1024) // Minimum 1024 tokens as per Extended Thinking spec
+        budget_tokens: budgetTokens
       };
+      body.max_tokens = Math.min(budgetTokens + 12000, 64000);
       // Temperature is not compatible with Extended Thinking mode
       // Do not set temperature when thinking mode is enabled
     } else {
+      body.max_tokens = hasImageInput ? 4096 : 8192;
       body.temperature = this.config.temperature; // Use config.temperature
     }
 

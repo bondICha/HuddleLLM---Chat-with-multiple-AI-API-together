@@ -252,6 +252,14 @@
   "releasenote_v2105_code_expansion_modal_enhancement": "## Code Expansion Modal Enhancement\n\n![Code Expansion Modal](/release_note_assets/code_expansion_modal_enhancement.png)\n\nEnhanced the code block expansion modal with better usability and visual improvements.",
   "releasenote_v2105_font_type_setting": "## Font Type Setting\n\n![Font Type Setting](/release_note_assets/font_type_setting.png)\n\nAdded a new font type setting allowing you to choose between Sans-serif (Gothic) and Serif (Mincho) fonts for better readability.",
   "releasenote_v2105_this_release_note_is_made_by_grok_code": "This version of release note was authored by Grok Code. Generated from git diff.",
-  "For optimal font display experience": "For optimal font display experience",
-  "This application uses Noto CJK fonts. Please download and install them for the best experience:": "This application uses Noto CJK fonts. Please download and install them for the best experience:"
+  "releasenote_v2110_gemini_openai_format_and_thinking_support": "## Gemini Thinking Support and Migration to OpenAI Compatible API\n\n- Added support for Google Gemini Thinking visualization via OpenAI-compatible endpoints. \n- Please refer following docs for API detail: [OpenAI compatibility  |  Gemini API  |  Google AI for Developers](https://ai.google.dev/gemini-api/docs/openai)",
+  "releasenote_v2110_model_list_api_support": "## Model List API Support\n\n![Model List API Support](/release_note_assets/model_list_api_support.gif)\n\n- Fetches available models directly from API endpoints\n- Provides a searchable dropdown for model selection\n- Press \"Fetch Models\" button to fetch available models from API",
+  "Optimal font display experience for CJK (Chinese, Japanese, Korean)": "Optimal font display experience for CJK (Chinese, Japanese, Korean)",
+  "This application uses Noto CJK fonts. Please download and install them for the best experience:": "This application uses Noto CJK fonts. Please download and install them for the best experience:",
+  "Downloading Noto Sans CJK": "Downloading Noto Sans CJK",
+  "Downloading Noto Serif CJK": "Downloading Noto Serif CJK",
+  "Direct download links": "Direct download links",
+  "Noto Sans CJK Variable OTC": "Noto Sans CJK Variable OTC",
+  "Noto Sans Mono CJK Variable OTC": "Noto Sans Mono CJK Variable OTC",
+  "Noto Serif CJK Variable OTC": "Noto Serif CJK Variable OTC"
 }

@@ -208,7 +208,11 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
             </div>
           )}
           {message.text ? (
-            <Markdown>{message.text}</Markdown>
+            message.author === 'user' ? (
+              <div style={{ whiteSpace: 'pre-line' }}>{message.text}</div>
+            ) : (
+              <Markdown>{message.text}</Markdown>
+            )
           ) : (
             !message.error && (
               <BeatLoader size={10} className="leading-tight" color="rgb(var(--primary-text))" />

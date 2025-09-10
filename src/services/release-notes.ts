@@ -6,6 +6,13 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.10.8',
+    notes: [
+      'releasenote_v2110_gemini_openai_format_and_thinking_support',
+      'releasenote_v2110_model_list_api_support',
+    ],
+  },
+  {
     version: '2.10.5',
     notes: [
       'releasenote_v2105_code_expansion_modal_enhancement',

@@ -6,6 +6,7 @@ import { FiCopy, FiCheck, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import { BiCollapse, BiExpand } from 'react-icons/bi';
 import Dialog from '~/app/components/Dialog';
 import { cx } from '~/utils';
+import { syntaxHighlighterStyle } from './styles';
 
 const SyntaxHighlighter = (Prism as any) as React.FC<SyntaxHighlighterProps>;
 
@@ -69,7 +70,11 @@ const CodeBlockModal: React.FC<Props> = ({ code, language, open, onClose }) => {
         <SyntaxHighlighter
           language={language}
           style={vscDarkPlus}
-          customStyle={{ margin: 0, height: '100%', width: '100%', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}
+          customStyle={{
+            ...syntaxHighlighterStyle,
+            height: '100%',
+            width: '100%',
+          }}
           wrapLines={true}
           lineProps={{ style: { whiteSpace: 'pre-wrap', wordBreak: 'break-all' } }}
         >
