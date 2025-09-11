@@ -112,11 +112,9 @@ export class PerplexityApiBot extends AbstractBot {
   }
 
   private async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal) {
-    const userConfig = await getUserConfig();
-
-    // Determine host and full path flag, prioritizing individual bot config
-    const hostValue = this.config.host || userConfig.customApiHost || 'https://api.perplexity.ai'; // Default to official if all blank
-    const isFullPath = this.config.isHostFullPath ?? userConfig.isCustomApiHostFullPath ?? false;
+    // Use values passed from CustomBot; do not read global config here
+    const hostValue = this.config.host || 'https://api.perplexity.ai'; // Default to official if blank
+    const isFullPath = this.config.isHostFullPath ?? false;
 
     let endpointUrl: string;
 

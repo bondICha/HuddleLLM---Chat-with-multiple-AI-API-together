@@ -1,5 +1,4 @@
 import { isArray } from 'lodash-es'
-import { UserConfig, getUserConfig } from '~services/user-config'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { parseSSEResponse } from '~utils/sse'
 import { AsyncAbstractBot, AbstractBot, SendMessageParams, MessageParams, ConversationHistory } from '../abstract-bot'
@@ -249,11 +248,11 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
     const model = this.getModelName()
 
     const { apiKey: openaiApiKey, host: configHost, isHostFullPath: configIsHostFullPath } = this.config;
-    const userConfig = await getUserConfig(); // Get common user config
-
-    const hostValue = configHost || userConfig.customApiHost;
-    // Prioritize individual bot's isHostFullPath, then common setting, then default to false.
-    const isFullPath = configIsHostFullPath ?? userConfig.isCustomApiHostFullPath ?? false;
+    
+    // Use the values passed from CustomBot (already resolved with common settings)
+    const hostValue = configHost;
+    const isFullPath = configIsHostFullPath ?? false;
+    const apiKeyValue = openaiApiKey;
 
     let fullUrlStr: string;
 
@@ -299,7 +298,7 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       signal,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${openaiApiKey}`,
+        Authorization: `Bearer ${apiKeyValue}`,
       },
       body: JSON.stringify({
         model,

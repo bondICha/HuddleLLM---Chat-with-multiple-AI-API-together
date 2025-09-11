@@ -87,7 +87,7 @@ export class CustomBot extends AsyncAbstractBot {
     // setConversationHistoryはAsyncAbstractBotが処理する
 
     private async createBotInstance() {
-        const { customApiKey, customApiHost, customApiConfigs, commonSystemMessage } = await getUserConfig();
+        const { customApiKey, customApiHost, customApiConfigs, commonSystemMessage, isCustomApiHostFullPath } = await getUserConfig();
         const config = customApiConfigs[this.customBotNumber - 1];
 
         if (!config) {
@@ -101,40 +101,49 @@ export class CustomBot extends AsyncAbstractBot {
         const provider = config.provider || (
             config.model.includes('anthropic.claude') ? CustomApiProvider.Bedrock : CustomApiProvider.OpenAI
         );
+
+        // Hostの最終決定とFullPathの優先度は「どのHostを使うか」に従わせる
+        // - 個別Hostが非空なら個別Hostを採用し、FullPathは個別設定（未設定なら false）
+        // - 個別Hostが空/未設定なら共通Hostを採用し、FullPathは共通設定
+        const useIndividualHost = !!(config.host && config.host.trim().length > 0);
+        const resolvedHost = useIndividualHost ? config.host : customApiHost;
+        const resolvedIsHostFullPath = useIndividualHost ? (config.isHostFullPath ?? false) : isCustomApiHostFullPath;
+
         let botInstance;
         switch (provider) {
             case CustomApiProvider.Bedrock:
                 botInstance = new BedrockApiBot({
                     apiKey: config.apiKey || customApiKey,
-                    host: config.host || customApiHost,
+                    host: resolvedHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingMode: config.thinkingMode,
                     thinkingBudget: config.thinkingBudget,
                     webAccess: config.webAccess,
+                    isHostFullPath: resolvedIsHostFullPath,
                 });
                 break;
             case CustomApiProvider.Anthropic:
                 botInstance = new ClaudeApiBot({
                     apiKey: config.apiKey || customApiKey,
-                    host: config.host || customApiHost,
+                    host: resolvedHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingBudget: config.thinkingBudget,
-                    isHostFullPath: config.isHostFullPath,
+                    isHostFullPath: resolvedIsHostFullPath,
                     webAccess: config.webAccess,
                 }, config.thinkingMode, config.isAnthropicUsingAuthorizationHeader || false);
                 break;
             case CustomApiProvider.OpenAI:
                 botInstance = new ChatGPTApiBot({
                     apiKey: config.apiKey || customApiKey,
-                    host: config.host || customApiHost,
+                    host: resolvedHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
-                    isHostFullPath: config.isHostFullPath,
+                    isHostFullPath: resolvedIsHostFullPath,
                     webAccess: config.webAccess,
                     botIndex: this.customBotNumber - 1, // 0ベースのインデックス
                     thinkingMode: config.thinkingMode,
@@ -153,13 +162,13 @@ export class CustomBot extends AsyncAbstractBot {
             case CustomApiProvider.GeminiOpenAI:
                 botInstance = new ChatGPTApiBot({
                     apiKey: config.apiKey || customApiKey,
-                    host: config.host || customApiHost,
+                    host: resolvedHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingMode: false, // No compatibility with OpenAI Reasoning
                     webAccess: config.webAccess,
-                    isHostFullPath: true, // GeminiOpenAI is always full path
+                    isHostFullPath: true, // GeminiOpenAI は常に Full Path
                     extraBody: config.thinkingMode ? {
                         google: {
                             thinking_config: {
@@ -173,13 +182,13 @@ export class CustomBot extends AsyncAbstractBot {
             case CustomApiProvider.QwenOpenAI:
                 botInstance = new ChatGPTApiBot({
                     apiKey: config.apiKey || customApiKey,
-                    host: config.host || customApiHost,
+                    host: resolvedHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingMode: config.thinkingMode,
                     webAccess: config.webAccess,
-                    isHostFullPath: config.isHostFullPath,
+                    isHostFullPath: resolvedIsHostFullPath,
                     extraBody: config.thinkingMode ? {
                         enable_thinking: true,
                         thinking_budget: config.thinkingBudget || 2000
@@ -189,13 +198,13 @@ export class CustomBot extends AsyncAbstractBot {
             case CustomApiProvider.VertexAI_Claude:
                 botInstance = new VertexClaudeBot({
                     apiKey: config.apiKey || customApiKey,
-                    host: config.host || customApiHost,
+                    host: resolvedHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingMode: config.thinkingMode, // Now properly supported with correct max_tokens
                     thinkingBudget: config.thinkingBudget,
-                    isHostFullPath: config.isHostFullPath,
+                    isHostFullPath: resolvedIsHostFullPath,
                     webAccess: config.webAccess,
                 });
                 break;

@@ -1,6 +1,5 @@
 import { isArray } from 'lodash-es'
 import { requestHostPermission } from '~app/utils/permissions'
-import { UserConfig, getUserConfig } from '~services/user-config' // Import getUserConfig
 import { ChatError, ErrorCode } from '~utils/errors'
 import { parseSSEResponse } from '~utils/sse'
 import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract-bot'
@@ -300,12 +299,9 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       }
     }
 
-    const { host: configHost, isHostFullPath: configIsHostFullPath } = this.config;
-    const userConfig = await getUserConfig(); // Get common user config
-
-    const hostValue = configHost || userConfig.customApiHost;
-    // Prioritize individual bot's isHostFullPath, then common setting, then default to false.
-    const isFullPath = configIsHostFullPath ?? userConfig.isCustomApiHostFullPath ?? false;
+    // Use values passed from CustomBot; do not read global config here
+    const { host: hostValue, isHostFullPath: configIsHostFullPath } = this.config;
+    const isFullPath = configIsHostFullPath ?? false;
 
     let fullUrlStr: string;
 

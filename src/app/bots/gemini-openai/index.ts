@@ -1,4 +1,3 @@
-import { UserConfig, getUserConfig } from '~services/user-config'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { parseSSEResponse } from '~utils/sse'
 import { AbstractChatGPTApiBot } from '../chatgpt-api'
