@@ -972,12 +972,17 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                                                 ]}
                                                                 value={config.provider || CustomApiProvider.OpenAI}
                                                                 onChange={(v) => {
-                                                                    console.log(`Provider changed for index ${index}: Selected value (v) = ${v}`); // Debug log
-                                                                    const updatedConfigs = [...userConfig.customApiConfigs]
-                                                                    updatedConfigs[index].provider = v as CustomApiProvider;
-                                                                    console.log(`Provider changed for index ${index}: updatedConfigs[${index}].provider = ${updatedConfigs[index].provider}`); // Debug log remains
-                                                                    updateCustomApiConfigs(updatedConfigs); // ヘルパー関数を使用
-                                                                }}
+                                                                const updatedConfigs = [...userConfig.customApiConfigs]
+                                                                updatedConfigs[index].provider = v as CustomApiProvider;
+                                                                
+                                                                // Gemini OpenAIとVertexAI_Claudeプロバイダーが選択された場合、自動的にFull Pathを有効にする
+                                                                if (v === CustomApiProvider.GeminiOpenAI || v === CustomApiProvider.VertexAI_Claude) {
+                                                                    updatedConfigs[index].isHostFullPath = true;
+                                                                }
+                                                                
+                                                                console.log(`Provider changed for index ${index}: updatedConfigs[${index}].provider = ${updatedConfigs[index].provider}`); // Debug log remains
+                                                                updateCustomApiConfigs(updatedConfigs); // ヘルパー関数を使用
+                                                            }}
                                                             />
                                                         </div>
                                                     </div>

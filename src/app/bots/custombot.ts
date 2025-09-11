@@ -159,7 +159,7 @@ export class CustomBot extends AsyncAbstractBot {
                     systemMessage: processedSystemMessage,
                     thinkingMode: false, // No compatibility with OpenAI Reasoning
                     webAccess: config.webAccess,
-                    isHostFullPath: config.isHostFullPath,
+                    isHostFullPath: true, // GeminiOpenAI is always full path
                     extraBody: config.thinkingMode ? {
                         google: {
                             thinking_config: {

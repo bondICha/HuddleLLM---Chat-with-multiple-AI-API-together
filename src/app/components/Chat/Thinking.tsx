@@ -21,7 +21,7 @@ export const ThinkingContent: FC<{ children: React.ReactNode; isPart?: boolean }
   ({ isPart, children }) => (
       <div className={CONTENT_STYLES.wrapper}>
         <div className={isPart === true ? CONTENT_STYLES.partBorder : CONTENT_STYLES.border} />
-      <p className={CONTENT_STYLES.text}>{children}</p>
+      <div className={CONTENT_STYLES.text}>{children}</div>
       </div>
   ),
 );

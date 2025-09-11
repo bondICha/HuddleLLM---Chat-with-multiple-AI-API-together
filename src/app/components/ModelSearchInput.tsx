@@ -115,7 +115,14 @@ const ModelSearchInput: FC<ModelSearchInputProps> = ({
           <Input
             value={searchTerm}
             onChange={(e) => handleSearchChange(e.currentTarget.value)}
-            onKeyDown={handleKeyDown}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                // Enterキーで現在の入力値をモデルとして選択
+                handleModelSelect(searchTerm)
+              } else if (e.key === 'Escape') {
+                handleSearchEnd()
+              }
+            }}
             onBlur={handleSearchEnd}
             autoFocus
             className="w-full text-sm"
