@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { releaseNotesAtom } from '~app/state'
 import { markCurrentVersionAsRead } from '~services/release-notes'
 import Button from '../Button'
-import Dialog from '../Dialog'
+import ExpandableDialog from '../ExpandableDialog'
 import Markdown from '../Markdown'
 
 const ReleaseNotesModal: FC = () => {
@@ -21,9 +21,14 @@ const ReleaseNotesModal: FC = () => {
   }
 
   return (
-    <Dialog title={t('Recent Updates')} open={notes.length > 0} onClose={handleClose} className="w-[600px]">
-      {/* max-heightとoverflow-y-autoを追加してスクロール可能に */}
-      <div className="flex flex-col gap-4 px-5 py-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
+    <ExpandableDialog
+      title={t('Recent Updates')}
+      open={notes.length > 0}
+      onClose={handleClose}
+      size="md"
+    >
+      {/* コンテンツ領域 */}
+      <div className="flex flex-col gap-4 px-5 py-5 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
         {notes.map((versionData, versionIndex) => {
           return (
             <div key={versionIndex} className="bg-secondary bg-opacity-20 border border-primary-border rounded-xl p-4">
@@ -71,7 +76,7 @@ const ReleaseNotesModal: FC = () => {
           </button>
         </div>
       </div>
-    </Dialog>
+    </ExpandableDialog>
   )
 }
 

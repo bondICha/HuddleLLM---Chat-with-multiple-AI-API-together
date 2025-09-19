@@ -1,5 +1,5 @@
 import PromptLibrary from './Library'
-import Dialog from '../Dialog'
+import ExpandableDialog from '../ExpandableDialog'
 
 interface Props {
   isOpen: boolean
@@ -9,11 +9,13 @@ interface Props {
 
 const PromptLibraryDialog = (props: Props) => {
   return (
-    <Dialog title="Prompt Library" open={props.isOpen} onClose={props.onClose} className="w-[800px] min-h-[400px]">
-      <div className="p-5 overflow-auto">
-        <PromptLibrary insertPrompt={props.insertPrompt} />
+    <ExpandableDialog title="Prompt Library" open={props.isOpen} onClose={props.onClose} size="lg">
+      <div className="flex-1 min-h-0 overflow-auto p-5">
+        <div className="min-h-[400px]">
+          <PromptLibrary insertPrompt={props.insertPrompt} />
+        </div>
       </div>
-    </Dialog>
+    </ExpandableDialog>
   )
 }
 

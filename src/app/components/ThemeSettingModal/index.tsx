@@ -15,6 +15,7 @@ import { updateUserConfig } from '~services/user-config'
 import { languageCodes } from '../../i18n'
 import Dialog from '../Dialog'
 import Select from '../Select'
+import Expandable from '../common/Expandable'
 
 const Button: FC<ComponentPropsWithoutRef<'button'>> = (props) => {
   const { className, ...extraProps } = props
@@ -216,71 +217,77 @@ const ThemeSettingModal: FC<Props> = (props) => {
             onChange={onFontTypeChange}
             position="top"
           />
-          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-2">
-              {t('Optimal font display experience for CJK (Chinese, Japanese, Korean)')}
-            </p>
-            <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
-              {t('This application uses Noto CJK fonts. Please download and install them for the best experience:')}
-            </p>
-
-            <div className="space-y-1">
-              <a
-                href="https://github.com/notofonts/noto-cjk/tree/main/Sans#downloading-noto-sans-cjk"
-                className="text-xs text-blue-600 dark:text-blue-400 hover:underline block"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {t('Downloading Noto Sans CJK')}
-              </a>
-              <a
-                href="https://github.com/notofonts/noto-cjk/tree/main/Serif#downloading-noto-serif-cjk"
-                className="text-xs text-blue-600 dark:text-blue-400 hover:underline block"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {t('Downloading Noto Serif CJK')}
-              </a>
-            </div>
-
-            <div className="mt-2">
-              <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">
-                {t('Direct download links')}
+          <Expandable
+            initiallyExpanded={false}
+            header={
+              <span className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                {t('Optimal font display experience for CJK (Chinese, Japanese, Korean)')}
+              </span>
+            }
+          >
+            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                {t('This application uses Noto CJK fonts. Please download and install them for the best experience:')}
               </p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>
-                  <a
-                    href="https://github.com/googlefonts/noto-cjk/raw/main/Sans/Variable/OTC/NotoSansCJK-VF.otf.ttc"
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {t('Noto Sans CJK Variable OTC')}
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://github.com/googlefonts/noto-cjk/raw/main/Sans/Variable/OTC/NotoSansMonoCJK-VF.otf.ttc"
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {t('Noto Sans Mono CJK Variable OTC')}
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://github.com/googlefonts/noto-cjk/raw/main/Serif/Variable/OTC/NotoSerifCJK-VF.otf.ttc"
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {t('Noto Serif CJK Variable OTC')}
-                  </a>
-                </li>
-              </ul>
+
+              <div className="space-y-1">
+                <a
+                  href="https://github.com/notofonts/noto-cjk/tree/main/Sans#downloading-noto-sans-cjk"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline block"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('Downloading Noto Sans CJK')}
+                </a>
+                <a
+                  href="https://github.com/notofonts/noto-cjk/tree/main/Serif#downloading-noto-serif-cjk"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline block"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('Downloading Noto Serif CJK')}
+                </a>
+              </div>
+
+              <div className="mt-2">
+                <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">
+                  {t('Direct download links')}
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>
+                    <a
+                      href="https://github.com/googlefonts/noto-cjk/raw/main/Sans/Variable/OTC/NotoSansCJK-VF.otf.ttc"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t('Noto Sans CJK Variable OTC')}
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://github.com/googlefonts/noto-cjk/raw/main/Sans/Variable/OTC/NotoSansMonoCJK-VF.otf.ttc"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t('Noto Sans Mono CJK Variable OTC')}
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://github.com/googlefonts/noto-cjk/raw/main/Serif/Variable/OTC/NotoSerifCJK-VF.otf.ttc"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t('Noto Serif CJK Variable OTC')}
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </div>
-          </div>
+          </Expandable>
         </div>
       </div>
     </Dialog>

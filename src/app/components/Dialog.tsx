@@ -27,7 +27,7 @@ const Dialog: FC<PropsWithChildren<Props>> = (props) => {
         >
           <div className="fixed inset-0 bg-black/30 bg-opacity-75 transition-opacity" />
         </Transition.Child>
-        <div className="fixed inset-0 flex items-center justify-center max-h-screen m-5">
+        <div className="fixed inset-0 flex items-center justify-center m-5 overflow-y-auto">
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -39,7 +39,7 @@ const Dialog: FC<PropsWithChildren<Props>> = (props) => {
           >
             <HeadlessDialog.Panel
               className={cx(
-                'mx-auto rounded-2xl bg-primary-background shadow-2xl max-h-full overflow-hidden flex flex-col transition-all duration-300 ease-in-out',
+                'mx-auto rounded-2xl bg-primary-background shadow-2xl max-h-[85vh] overflow-auto flex flex-col transition-all duration-300 ease-in-out',
                 props.className,
               )}
             >
