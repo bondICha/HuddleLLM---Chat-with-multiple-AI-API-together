@@ -7,6 +7,7 @@ import { file2base64 } from '~app/utils/file-utils';
 import { ChatMessageModel } from '~types';
 import { uuid } from '~utils';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
+import { sanitizeMessagesForClaude, ensureNonEmptyText } from '../claude-message-sanitizer';
 
 const CONTEXT_SIZE = 120;
 
@@ -88,7 +89,7 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
     const content: ContentPart[] = [];
 
     // Add text content first
-    content.push({ type: 'text', text: prompt });
+    content.push({ type: 'text', text: ensureNonEmptyText(prompt) });
 
     // Then add images if any
     if (images && images.length > 0) {
@@ -342,7 +343,7 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
     
     const requestBody: any = {
       anthropic_version: "vertex-2023-10-16",
-      messages: messages.map(msg => ({
+      messages: sanitizeMessagesForClaude(messages).map(msg => ({
         role: msg.role,
         content: msg.content.map(part => {
           if (part.type === 'text') {

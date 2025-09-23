@@ -7,6 +7,7 @@ import { file2base64 } from '~app/utils/file-utils'
 import { ChatMessageModel } from '~types'
 import { uuid } from '~utils'
 import { getUserLocaleInfo } from '~utils/system-prompt-variables'
+import { sanitizeMessagesForClaude, ensureNonEmptyText } from '../claude-message-sanitizer'
 
 interface ChatMessage {
   role: string
@@ -78,7 +79,7 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
 
   private async buildUserMessage(prompt: string, images?: File[]): Promise<ChatMessage> {
     if (!images || images.length === 0) {
-      return { role: 'user', content: prompt }
+      return { role: 'user', content: ensureNonEmptyText(prompt) }
     }
 
     const imageContents = await Promise.all(images.map(async (image) => {
@@ -103,7 +104,7 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
     return {
       role: 'user',
       content: [
-        { type: 'text', text: prompt },
+        { type: 'text', text: ensureNonEmptyText(prompt) },
         ...validImageContents
       ],
     }
@@ -257,7 +258,7 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
 
     const body: any = {
       model: this.getModelName(),
-      messages,
+      messages: sanitizeMessagesForClaude(messages),
       stream: true,
       system: this.getSystemMessage(),
     }

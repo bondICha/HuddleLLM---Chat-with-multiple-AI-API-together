@@ -8,6 +8,7 @@ import { file2base64 } from '~app/utils/file-utils';
 import { ChatMessageModel } from '~types';
 import { uuid } from '~utils';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
+import { sanitizeMessagesForClaude, ensureNonEmptyText } from '../claude-message-sanitizer';
 import {
   BedrockRuntimeClient,
   ConverseCommand,
@@ -99,7 +100,7 @@ export abstract class AbstractBedrockApiBot extends AbstractBot {
     const content: ContentPart[] = [];
 
     // Add text content first
-    content.push({ text: prompt });
+    content.push({ text: ensureNonEmptyText(prompt) });
 
     // Then add images if any
     if (images && images.length > 0) {
@@ -478,7 +479,7 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
       // Create the base command object
       const converceCommandObject: any = {
         modelId: this.getModelName(),
-        messages: messages,
+        messages: sanitizeMessagesForClaude(messages),
         system: [{ text: this.getSystemMessage() }]
       };
   
