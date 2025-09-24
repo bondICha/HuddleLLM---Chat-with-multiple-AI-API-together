@@ -134,6 +134,7 @@ export class CustomBot extends AsyncAbstractBot {
                     thinkingBudget: config.thinkingBudget,
                     isHostFullPath: resolvedIsHostFullPath,
                     webAccess: config.webAccess,
+                    advancedConfig: config.advancedConfig,
                 }, config.thinkingMode, config.isAnthropicUsingAuthorizationHeader || false);
                 break;
             case CustomApiProvider.OpenAI:
@@ -148,6 +149,7 @@ export class CustomBot extends AsyncAbstractBot {
                     botIndex: this.customBotNumber - 1, // 0ベースのインデックス
                     thinkingMode: config.thinkingMode,
                     reasoningEffort: config.reasoningEffort,
+                    advancedConfig: config.advancedConfig,
                 });
                 break;
             case CustomApiProvider.Google:
@@ -206,6 +208,7 @@ export class CustomBot extends AsyncAbstractBot {
                     thinkingBudget: config.thinkingBudget,
                     isHostFullPath: resolvedIsHostFullPath,
                     webAccess: config.webAccess,
+                    advancedConfig: config.advancedConfig,
                 });
                 break;
             default:

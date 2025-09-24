@@ -291,12 +291,9 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
     }
 
     if (this.config.advancedConfig?.anthropicBetaHeaders) {
-      const betaHeaders = this.config.advancedConfig.anthropicBetaHeaders.split(';').map((h: string) => h.trim()).filter((h: string) => h);
-      for (const header of betaHeaders) {
-        const parts = header.split(':').map((p: string) => p.trim());
-        if (parts.length === 2) {
-          headers[parts[0]] = parts[1];
-        }
+      const betaValues = this.config.advancedConfig.anthropicBetaHeaders.split(',').map((v: string) => v.trim()).filter((v: string) => v);
+      if (betaValues.length > 0) {
+        headers['anthropic-beta'] = betaValues.join(', ');
       }
     }
 
@@ -368,3 +365,4 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
     return true
   }
 }
+

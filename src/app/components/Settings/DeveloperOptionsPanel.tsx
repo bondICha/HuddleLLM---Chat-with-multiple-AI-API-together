@@ -68,14 +68,14 @@ const DeveloperOptionsPanel: FC<Props> = ({
                     )}
 
                     {/* Anthropic Specific Options */}
-                    {(config.provider === CustomApiProvider.Anthropic || 
+                    {(config.provider === CustomApiProvider.Anthropic ||
                       config.provider === CustomApiProvider.VertexAI_Claude) && (
                         <div className={formRowClass}>
                             <p className={labelClass}>{t('Anthropic Beta Headers')}</p>
                             <div className={inputContainerClass}>
                                 <Textarea
                                     className='w-full font-mono text-sm'
-                                    placeholder="context-1m-2025-08-07,context-1m-2025-08-07"
+                                    placeholder="context-1m-2025-08-07,tool-use-2024-07-16"
                                     value={config.advancedConfig?.anthropicBetaHeaders || ''}
                                     onChange={(e) => {
                                         const updatedConfig = {
