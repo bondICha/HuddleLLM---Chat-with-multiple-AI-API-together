@@ -37,8 +37,8 @@ const ExpandableDialog: FC<PropsWithChildren<Props>> = (props) => {
       return 'w-screen h-screen max-w-full max-h-full rounded-none flex flex-col'
     }
     if (isWide) {
-      // 横幅拡大は w-full + max-w を 90vw に、かつ上限 1600px に
-      return 'w-full h-[90vh] max-w-[min(90vw,1600px)] flex flex-col'
+      // 横幅拡大は w-full + max-w を 93vw に、かつ上限 1024px に
+      return 'w-full h-[95vh] max-w-[min(93vw,1024px)] flex flex-col'
     }
     // 通常状態でも height を数値指定にしてアニメーションを滑らかにする
     const hasExplicitHeight = props.className?.match(/\bh-(?:\[.*?\]|screen|full|\d)/)

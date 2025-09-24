@@ -6,6 +6,14 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.10.11',
+    notes: [
+      'releasenote_v21011_fix_claude_empty_message_error',
+      'releasenote_v21011_remove_image_on_history_restore',
+      'releasenote_v21011_expandable_chat_input_field',
+    ],
+  },
+  {
     version: '2.10.8',
     notes: [
       'releasenote_v2110_gemini_openai_format_and_thinking_support',
