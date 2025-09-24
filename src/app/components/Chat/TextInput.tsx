@@ -67,6 +67,7 @@ const TextInput = React.forwardRef<HTMLTextAreaElement, Props>((props, ref) => {
         ref={inputRef}
         className={cx(
           'resize-none overflow-x-hidden overflow-y-auto w-full h-full outline-none text-sm text-primary-text bg-transparent scrollbar-thin',
+          'placeholder:text-xs placeholder:text-light-text placeholder:font-medium',
           disabled && 'cursor-wait',
           className,
         )}
@@ -85,6 +86,7 @@ const TextInput = React.forwardRef<HTMLTextAreaElement, Props>((props, ref) => {
       ref={inputRef}
       className={cx(
         'resize-none overflow-x-hidden overflow-y-auto w-full max-h-full outline-none text-sm text-primary-text bg-transparent scrollbar-thin',
+        'placeholder:text-xs placeholder:text-light-text placeholder:font-medium',
         disabled && 'cursor-wait',
         className,
       )}

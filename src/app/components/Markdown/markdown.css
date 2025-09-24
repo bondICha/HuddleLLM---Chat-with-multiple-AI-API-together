@@ -94,13 +94,13 @@
 /* Reset font family for code blocks to use monospace only */
 .markdown-body.markdown-custom-styles pre code,
 .markdown-body.markdown-custom-styles code {
-  font-family: '"IBM Plex Mono", Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", "Noto Sans Mono CJK JP", "Noto Sans Mono CJK SC", "Noto Sans Mono CJK TC", "Noto Sans Mono CJK KR", ui-monospace, monospace' !important;
+  font-family: 'IBM Plex Mono', Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", "Noto Sans Mono CJK JP", "Noto Sans Mono CJK SC", "Noto Sans Mono CJK TC", "Noto Sans Mono CJK KR", ui-monospace, monospace !important;
 }
 
 /* Override inline styles from react-syntax-highlighter */
 .markdown-body.markdown-custom-styles pre code[style*="font-family"],
 .markdown-body.markdown-custom-styles code[style*="font-family"] {
-  font-family: '"IBM Plex Mono", Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", "Noto Sans Mono CJK JP", "Noto Sans Mono CJK SC", "Noto Sans Mono CJK TC", "Noto Sans Mono CJK KR", ui-monospace, monospace' !important;
+  font-family: 'IBM Plex Mono', Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", "Noto Sans Mono CJK JP", "Noto Sans Mono CJK SC", "Noto Sans Mono CJK TC", "Noto Sans Mono CJK KR", ui-monospace, monospace !important;
 }
 
 /* Font type settings for AI messages */

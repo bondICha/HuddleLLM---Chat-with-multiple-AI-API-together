@@ -13,7 +13,7 @@ import {
 } from '@floating-ui/react'
 import { fileOpen } from 'browser-fs-access'
 import { cx } from '~/utils'
-import { ClipboardEventHandler, FC, ReactNode, memo, useCallback, useMemo, useRef, useState } from 'react'
+import { ClipboardEventHandler, FC, ReactNode, memo, useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GoBook, GoImage } from 'react-icons/go'
 import { BiExpand } from 'react-icons/bi'
@@ -37,6 +37,7 @@ interface Props {
   maxRows?: number
   fullHeight?: boolean
   onHeightChange?: (height: number) => void
+  onVisibilityChange?: (visible: boolean) => void
 }
 
 const ChatMessageInput: FC<Props> = (props) => {
@@ -45,6 +46,7 @@ const ChatMessageInput: FC<Props> = (props) => {
     placeholder = t('Use / to select prompts, @URL to fetch content, Shift+Enter to add new line'),
     fullHeight = false,
     onHeightChange,
+    onVisibilityChange,
     ...restProps
   } = props
 
@@ -54,6 +56,7 @@ const ChatMessageInput: FC<Props> = (props) => {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [isPromptLibraryDialogOpen, setIsPromptLibraryDialogOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
 
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [isComboboxOpen, setIsComboboxOpen] = useState(false)
@@ -190,9 +193,39 @@ const ChatMessageInput: FC<Props> = (props) => {
     }
   }, [])
 
+  const handleBlur = useCallback(() => {
+    setTimeout(() => {
+      if (!formRef.current?.contains(document.activeElement)) {
+        setIsFocused(false)
+      }
+    }, 100)
+  }, [])
+
+  const isCompactMode = props.mode === 'compact'
+  const hasContent = value.length > 0 || images.length > 0
+  const shouldShowInput = !isCompactMode || (isCompactMode && (isFocused || hasContent))
+
+  useEffect(() => {
+    if (isCompactMode) {
+      onVisibilityChange?.(shouldShowInput)
+    }
+  }, [isCompactMode, shouldShowInput, onVisibilityChange])
+
   return (
-    <form className={cx('flex flex-row items-center gap-3', fullHeight && 'h-full', props.className)} onSubmit={onFormSubmit} ref={formRef}>
-      <div className="flex items-center gap-3">
+    <form
+      className={cx(
+        'flex flex-row items-center',
+        fullHeight && 'h-full',
+        props.className,
+        !isCompactMode && 'gap-3',
+        isCompactMode && (shouldShowInput ? 'gap-3' : 'gap-0'),
+      )}
+      onSubmit={onFormSubmit}
+      ref={formRef}
+      onFocus={() => setIsFocused(true)}
+      onBlur={handleBlur}
+    >
+      <div className={cx('flex items-center gap-3', isCompactMode && !shouldShowInput && 'hidden')}>
         {props.mode === 'full' && (
           <>
             <GoBook
@@ -220,7 +253,12 @@ const ChatMessageInput: FC<Props> = (props) => {
               )}
             </ComboboxContext.Provider>
             {props.supportImageInput && (
-              <GoImage size={22} className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200" onClick={selectImage} title="Image input" />
+              <GoImage
+                size={22}
+                className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200"
+                onClick={selectImage}
+                title="Image input"
+              />
             )}
           </>
         )}
@@ -236,17 +274,30 @@ const ChatMessageInput: FC<Props> = (props) => {
           title={t('Expand')}
         />
       </div>
-      <div className={cx("w-full flex flex-col justify-start", fullHeight && "h-full")} ref={refs.setReference} {...getReferenceProps()}>
-        {images.length > 0 && (
+      <div
+        className={cx('w-full flex flex-col justify-start', fullHeight && 'h-full')}
+        ref={refs.setReference}
+        {...getReferenceProps()}
+      >
+        {isCompactMode && !shouldShowInput ? null : images.length > 0 ? (
           <div className="flex flex-row items-center flex-wrap w-full mb-1 gap-2">
             {images.map((img, index) => (
-              <div key={index} className="flex items-center gap-1 bg-primary-border dark:bg-secondary rounded-full px-2 py-1 border border-primary-border">
-                <span className="text-xs text-primary-text font-semibold cursor-default truncate max-w-[100px]">{img.name}</span>
-                <RiDeleteBackLine size={12} className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200 hover:scale-110" onClick={() => removeImage(index)} />
+              <div
+                key={index}
+                className="flex items-center gap-1 bg-primary-border dark:bg-secondary rounded-full px-2 py-1 border border-primary-border"
+              >
+                <span className="text-xs text-primary-text font-semibold cursor-default truncate max-w-[100px]">
+                  {img.name}
+                </span>
+                <RiDeleteBackLine
+                  size={12}
+                  className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200 hover:scale-110"
+                  onClick={() => removeImage(index)}
+                />
               </div>
             ))}
           </div>
-        )}
+        ) : null}
         <TextInput
           ref={inputRef}
           formref={formRef}
@@ -260,9 +311,12 @@ const ChatMessageInput: FC<Props> = (props) => {
           maxRows={props.maxRows}
           fullHeight={fullHeight}
           onHeightChange={onHeightChange}
+          className={cx(isCompactMode && !shouldShowInput && 'text-center')}
         />
       </div>
-      {props.actionButton || <Button text="-" className="invisible" size={props.mode === 'full' ? 'normal' : 'tiny'} />}
+      {isCompactMode && !shouldShowInput
+        ? null
+        : props.actionButton || <Button text="-" className="invisible" size={props.mode === 'full' ? 'normal' : 'tiny'} />}
 
       {isExpanded && (
         <ExpandableDialog

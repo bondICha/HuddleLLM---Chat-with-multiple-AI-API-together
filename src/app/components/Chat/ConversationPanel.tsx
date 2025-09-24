@@ -43,6 +43,7 @@ const ConversationPanel: FC<Props> = (props) => {
   const [botName, setBotName] = useState<string>('Custom Bot')
   const [botAvatar, setBotAvatar] = useState<string>('OpenAI.Black')
   const [botConfig, setBotConfig] = useState<any>(null)
+  const [isInputVisible, setIsInputVisible] = useState(mode !== 'compact')
 
   // コンポーネントマウント時に設定を取得
   useEffect(() => {
@@ -171,8 +172,21 @@ const ConversationPanel: FC<Props> = (props) => {
           className={cx(marginClass)}
           onPropaganda={props.onPropaganda}
         />
-        <div className={cx('mt-3 flex flex-col ', marginClass, mode === 'full' ? 'mb-3' : 'mb-[5px]')}>
-          <div className={cx('flex flex-row items-center gap-[5px]', mode === 'full' ? 'mb-3' : 'mb-0')}>
+        <div
+          className={cx(
+            'flex flex-col transition-all duration-300 ease-in-out',
+            marginClass,
+            mode === 'full' && 'mt-3 mb-3',
+            mode === 'compact' && (isInputVisible ? 'mt-3 mb-[5px]' : 'mb-[5px]'),
+          )}
+        >
+          <div
+            className={cx(
+              'flex flex-row items-center gap-[5px]',
+              mode === 'full' ? 'mb-3' : 'mb-0',
+              mode === 'compact' && !isInputVisible && 'hidden',
+            )}
+          >
             {mode === 'compact' && (
               <span className="font-medium text-xs text-light-text cursor-default">Send to {botName}</span>
             )}
@@ -181,11 +195,17 @@ const ConversationPanel: FC<Props> = (props) => {
           <ChatMessageInput
             mode={mode}
             disabled={props.generating}
-            placeholder={mode === 'compact' ? '' : undefined}
+            placeholder={
+              mode === 'compact' && !isInputVisible ? `Send a message to ${botName}...` : mode === 'compact' ? '' : undefined
+            }
             onSubmit={onSubmit}
             autoFocus={mode === 'full'}
             supportImageInput={mode === 'full' && props.bot.supportsImageInput}
             actionButton={inputActionButton}
+            onVisibilityChange={mode === 'compact' ? setIsInputVisible : undefined}
+            className={cx(
+              mode === 'compact' && !isInputVisible && 'bg-transparent border-b border-primary-border rounded-none',
+            )}
           />
         </div>
       </div>
