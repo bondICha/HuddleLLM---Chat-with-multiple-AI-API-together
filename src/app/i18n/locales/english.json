@@ -143,6 +143,7 @@
   "Data includes all your settings, chat histories, and local prompts": "Data includes all your settings, chat histories, and local prompts",
   "Export": "Export",
   "Import": "Import",
+  "Expand": "Expand",
   "Custom API Template": "Custom API Template",
   "Import Custom API Template": "Import Custom API Template",
   "Edit": "Edit",
@@ -262,5 +263,6 @@
   "Noto Sans CJK Variable OTC": "Noto Sans CJK Variable OTC",
   "Noto Sans Mono CJK Variable OTC": "Noto Sans Mono CJK Variable OTC",
   "Noto Serif CJK Variable OTC": "Noto Serif CJK Variable OTC",
-  "Images in chat history will not be restored.": "Images in chat history will not be restored."
+  "Images in chat history will not be restored.": "Images in chat history will not be restored.",
+  "Enter to add a new line, Shift+Enter to send.": "Enter to add a new line, Shift+Enter to send."
 }

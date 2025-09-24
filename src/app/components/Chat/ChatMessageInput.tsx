@@ -16,11 +16,13 @@ import { cx } from '~/utils'
 import { ClipboardEventHandler, FC, ReactNode, memo, useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GoBook, GoImage } from 'react-icons/go'
+import { BiExpand } from 'react-icons/bi'
 import { RiDeleteBackLine } from 'react-icons/ri'
 import { Prompt } from '~services/prompts'
 import Button from '../Button'
 import PromptCombobox, { ComboboxContext } from '../PromptCombobox'
 import PromptLibraryDialog from '../PromptLibrary/Dialog'
+import ExpandableDialog from '../ExpandableDialog'
 import TextInput from './TextInput'
 
 interface Props {
@@ -51,6 +53,7 @@ const ChatMessageInput: FC<Props> = (props) => {
   const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [isPromptLibraryDialogOpen, setIsPromptLibraryDialogOpen] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [isComboboxOpen, setIsComboboxOpen] = useState(false)
@@ -124,6 +127,15 @@ const ChatMessageInput: FC<Props> = (props) => {
     setIsComboboxOpen(v === '/')
   }, [])
 
+  const modalSubmit = useCallback(() => {
+    if (value.trim() || images.length > 0) {
+      props.onSubmit(value, images)
+      setValue('')
+      setImages([])
+    }
+    setIsExpanded(false)
+  }, [value, images, props.onSubmit])
+
   const insertTextAtCursor = useCallback(
     (text: string) => {
       const cursorPosition = inputRef.current?.selectionStart || 0
@@ -180,37 +192,50 @@ const ChatMessageInput: FC<Props> = (props) => {
 
   return (
     <form className={cx('flex flex-row items-center gap-3', fullHeight && 'h-full', props.className)} onSubmit={onFormSubmit} ref={formRef}>
-      {props.mode === 'full' && (
-        <>
-          <GoBook
-            size={22}
-            className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200"
-            onClick={openPromptLibrary}
-            title="Prompt library"
-          />
-          {isPromptLibraryDialogOpen && (
-            <PromptLibraryDialog
-              isOpen={true}
-              onClose={() => setIsPromptLibraryDialogOpen(false)}
-              insertPrompt={insertTextAtCursor}
+      <div className="flex items-center gap-3">
+        {props.mode === 'full' && (
+          <>
+            <GoBook
+              size={22}
+              className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200"
+              onClick={openPromptLibrary}
+              title="Prompt library"
             />
-          )}
-          <ComboboxContext.Provider value={comboboxContext}>
-            {isComboboxOpen && (
-              <FloatingFocusManager context={context} modal={false} initialFocus={-1}>
-                <div ref={refs.setFloating} style={{ ...floatingStyles }} {...getFloatingProps()}>
-                  <FloatingList elementsRef={floatingListRef}>
-                    <PromptCombobox />
-                  </FloatingList>
-                </div>
-              </FloatingFocusManager>
+            {isPromptLibraryDialogOpen && (
+              <PromptLibraryDialog
+                isOpen={true}
+                onClose={() => setIsPromptLibraryDialogOpen(false)}
+                insertPrompt={insertTextAtCursor}
+              />
             )}
-          </ComboboxContext.Provider>
-          {props.supportImageInput && (
-            <GoImage size={22} className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200" onClick={selectImage} title="Image input" />
+            <ComboboxContext.Provider value={comboboxContext}>
+              {isComboboxOpen && (
+                <FloatingFocusManager context={context} modal={false} initialFocus={-1}>
+                  <div ref={refs.setFloating} style={{ ...floatingStyles }} {...getFloatingProps()}>
+                    <FloatingList elementsRef={floatingListRef}>
+                      <PromptCombobox />
+                    </FloatingList>
+                  </div>
+                </FloatingFocusManager>
+              )}
+            </ComboboxContext.Provider>
+            {props.supportImageInput && (
+              <GoImage size={22} className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200" onClick={selectImage} title="Image input" />
+            )}
+          </>
+        )}
+        <BiExpand
+          size={props.mode === 'compact' ? 16 : 22}
+          className={cx(
+            'cursor-pointer transition-colors duration-200',
+            props.mode === 'compact'
+              ? 'text-light-text hover:text-primary-text'
+              : 'text-secondary-text hover:text-primary-text',
           )}
-        </>
-      )}
+          onClick={() => setIsExpanded(true)}
+          title={t('Expand')}
+        />
+      </div>
       <div className={cx("w-full flex flex-col justify-start", fullHeight && "h-full")} ref={refs.setReference} {...getReferenceProps()}>
         {images.length > 0 && (
           <div className="flex flex-row items-center flex-wrap w-full mb-1 gap-2">
@@ -238,6 +263,35 @@ const ChatMessageInput: FC<Props> = (props) => {
         />
       </div>
       {props.actionButton || <Button text="-" className="invisible" size={props.mode === 'full' ? 'normal' : 'tiny'} />}
+
+      {isExpanded && (
+        <ExpandableDialog
+          open={isExpanded}
+          onClose={() => setIsExpanded(false)}
+          title={t('Expand')}
+          size="2xl"
+          className="flex flex-col"
+        >
+          <div className="flex-grow p-4">
+            <TextInput
+              value={value}
+              onValueChange={setValue}
+              placeholder={t('Enter to add a new line, Shift+Enter to send.')}
+              className="w-full h-full resize-none outline-none bg-transparent text-base"
+              autoFocus
+              fullHeight
+              onSubmit={modalSubmit}
+            />
+          </div>
+          <div className="flex justify-end p-4 border-t border-primary-border">
+            <Button
+              text={t('Send')}
+              color="primary"
+              onClick={modalSubmit}
+            />
+          </div>
+        </ExpandableDialog>
+      )}
     </form>
   )
 }

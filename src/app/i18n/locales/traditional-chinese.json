@@ -136,6 +136,7 @@
   "Data includes all your settings, chat histories, and local prompts": "數據包括所有設置、聊天記錄和本地prompts",
   "Export": "導出",
   "Import": "導入",
+  "Expand": "擴大",
   "Custom API Template": "自定義API模板",
   "Import Custom API Template": "導入自定義API模板",
   "Edit": "編輯",
@@ -245,5 +246,6 @@
   "Noto Sans CJK Variable OTC": "Noto Sans CJK Variable OTC",
   "Noto Sans Mono CJK Variable OTC": "Noto Sans Mono CJK Variable OTC",
   "Noto Serif CJK Variable OTC": "Noto Serif CJK Variable OTC",
-  "Images in chat history will not be restored.": "聊天記錄中的圖片不會被恢復。"
+  "Images in chat history will not be restored.": "聊天記錄中的圖片不會被恢復。",
+  "Enter to add a new line, Shift+Enter to send.": "輸入 Enter 換行，Shift+Enter 發送。"
 }

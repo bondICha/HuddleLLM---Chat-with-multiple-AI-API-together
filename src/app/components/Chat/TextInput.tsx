@@ -5,6 +5,7 @@ import TextareaAutosize, { TextareaAutosizeProps } from 'react-textarea-autosize
 type Props = TextareaAutosizeProps & {
   onValueChange: (value: string) => void
   formref?: React.RefObject<HTMLFormElement>
+  onSubmit?: () => void
   fullHeight?: boolean // 親要素の高さに合わせるかどうか
   onHeightChange?: (height: number) => void // 高さ変化のコールバック
 }
@@ -29,20 +30,35 @@ const TextInput = React.forwardRef<HTMLTextAreaElement, Props>((props, ref) => {
 
   const onKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = useCallback(
     (e) => {
-      if (e.keyCode === 13) {
-        e.preventDefault()
-        if (e.shiftKey) {
-          const pos = inputRef.current?.selectionStart || 0
-          onValueChange(`${value.slice(0, pos)}\n${value.slice(pos)}`)
-          setTimeout(() => {
-            inputRef.current!.setSelectionRange(pos + 1, pos + 1)
-          }, 0)
-        } else if (!disabled) {
-          formref?.current?.requestSubmit()
+      if (e.keyCode === 13) { // Enter key
+        if (fullHeight) { // Expanded Modal
+          if (e.shiftKey) {
+            // Shift + Enter sends
+            e.preventDefault();
+            if (!disabled) {
+              props.onSubmit ? props.onSubmit() : formref?.current?.requestSubmit();
+            }
+          }
+          // Just Enter does nothing, allowing the default newline behavior
+        } else { // Normal Input
+          e.preventDefault();
+          if (e.shiftKey) {
+            // Shift + Enter adds a newline
+            const pos = inputRef.current?.selectionStart || 0;
+            onValueChange(`${value.slice(0, pos)}\n${value.slice(pos)}`);
+            setTimeout(() => {
+              inputRef.current!.setSelectionRange(pos + 1, pos + 1);
+            }, 0);
+          } else {
+            // Just Enter sends
+            if (!disabled) {
+              props.onSubmit ? props.onSubmit() : formref?.current?.requestSubmit();
+            }
+          }
         }
       }
     },
-    [disabled, formref, onValueChange, value],
+    [disabled, formref, onValueChange, value, fullHeight, props.onSubmit],
   )
 
   if (fullHeight) {
