@@ -271,7 +271,7 @@ const ChatMessageInput: FC<Props> = (props) => {
               : 'text-secondary-text hover:text-primary-text',
           )}
           onClick={() => setIsExpanded(true)}
-          title={t('Expand')}
+          title={t('Compose Message')}
         />
       </div>
       <div
@@ -322,7 +322,7 @@ const ChatMessageInput: FC<Props> = (props) => {
         <ExpandableDialog
           open={isExpanded}
           onClose={() => setIsExpanded(false)}
-          title={t('Expand')}
+          title={t('Compose Message')}
           size="2xl"
           className="flex flex-col"
         >
