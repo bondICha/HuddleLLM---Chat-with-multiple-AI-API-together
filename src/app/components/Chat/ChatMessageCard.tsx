@@ -211,7 +211,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
           )}
           {message.text ? (
             message.author === 'user' ? (
-              <div style={{ whiteSpace: 'pre-line' }}>{message.text}</div>
+              <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{message.text}</div>
             ) : (
               <Markdown>{message.text}</Markdown>
             )
