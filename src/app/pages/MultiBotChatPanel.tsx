@@ -172,11 +172,11 @@ const GeneralChatPanel: FC<{
   )
 
   const sendAllMessage = useCallback(
-    (input: string, images?: File[]) => {
-      if (!input?.trim() && !images?.length) return;
+    (input: string, images?: File[], attachments?: { name: string; content: string }[]) => {
+      if (!input?.trim() && !images?.length && !attachments?.length) return;
 
       // まずメッセージを送信
-      uniqBy(chats, (c) => c.index).forEach((c) => c.sendMessage(input, images));
+      uniqBy(chats, (c) => c.index).forEach((c) => c.sendMessage(input, images, attachments));
     },
     [chats],
   )

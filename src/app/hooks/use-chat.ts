@@ -32,7 +32,7 @@ export function useChat(index: number) {
   )
 
   const sendMessage = useCallback(
-    async (input: string, images?: File[]) => {
+    async (input: string, images?: File[], attachments?: { name: string; content: string }[]) => {
       // URL処理
       const urlPattern = /@(https?:\/\/[^\s]+)/g
       const matches = [...input.matchAll(urlPattern)]
@@ -136,21 +136,30 @@ export function useChat(index: number) {
         }
       }
 
-      const finalMessage = cleanInput.trim() + (fetchedContent ? '\n\n' + fetchedContent : '')
-
+      // 添付は履歴に残さない。UI用の attachments は message に保持しつつ、保存時に除去する（既存仕様・下部で処理）
       const botMessageId = uuid()
       setChatState((draft) => {
         draft.messages.push(
           {
             id: uuid(),
-            text: input, // 元のメッセージを保持（@URL含む）
+            text: input, // 画面表示用にそのまま保持（ただし履歴保存時にattachmentsは落とす）
             images,
+            attachments: attachments && attachments.length ? attachments : undefined,
             author: 'user',
             fetchedUrls: fetchedUrls.length > 0 ? fetchedUrls : undefined
           },
           { id: botMessageId, text: '', author: index }, // Use index as author
         )
       })
+      
+      // API へ渡す最終メッセージは、ユーザ本文 + 取得URL + 添付を末尾に付加
+      let finalMessage = cleanInput.trim() + (fetchedContent ? '\n\n' + fetchedContent : '')
+      if (attachments && attachments.length) {
+        const attachmentSection = attachments
+          .map(att => `<${att.name}>\n${att.content}\n</${att.name}>`)
+          .join('\n\n')
+        finalMessage = `${finalMessage}\n\n---\n\n<Attachment>\n\n${attachmentSection}\n\n</Attachment>`
+      }
 
       const abortController = new AbortController()
       setChatState((draft) => {
@@ -329,7 +338,9 @@ export function useChat(index: number) {
 
   useEffect(() => {
     if (chatState.messages.length) {
-      setConversationMessages(index, chatState.conversationId, chatState.messages)
+      // 履歴保存時に添付を除去（画像同様、添付テキストは残さない）
+      const sanitized = chatState.messages.map(({ attachments, ...rest }) => rest)
+      setConversationMessages(index, chatState.conversationId, sanitized as ChatMessageModel[])
     }
   }, [index, chatState.conversationId, chatState.messages])
 

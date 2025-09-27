@@ -179,7 +179,7 @@ Browser.runtime.onMessage.addListener(async (message, sender) => {
         }
       }
     } catch (error) {
-      console.log('💥 Background: Fetch error:', error)
+      console.log('Background: Fetch error:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

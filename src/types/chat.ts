@@ -6,11 +6,17 @@ export interface FetchedUrlContent {
   content: string
 }
 
+export interface TextAttachment {
+  name: string;
+  content: string;
+}
+
 export interface ChatMessageModel {
   id: string
   author: number | 'user'
   text: string
   images?: File[]
+  attachments?: TextAttachment[]  // UI表示用のテキスト添付（履歴には保存しない）
   error?: ChatError
   thinking?: string
   fetchedUrls?: FetchedUrlContent[];

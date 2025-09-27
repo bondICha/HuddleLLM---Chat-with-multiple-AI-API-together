@@ -272,5 +272,11 @@
   "Noto Sans Mono CJK Variable OTC": "Noto Sans Mono CJK Variable OTC",
   "Noto Serif CJK Variable OTC": "Noto Serif CJK Variable OTC",
   "Images in chat history will not be restored.": "チャット履歴内の画像は復元されません。",
-  "Enter to add a new line, Shift+Enter to send.": "Enterで改行、Shift+Enterで送信します。"
+  "Enter to add a new line, Shift+Enter to send.": "Enterで改行、Shift+Enterで送信します。",
+  "Image input": "画像入力",
+  "Attach file (Non-binary-text)": "ファイルを添付 (バイナリではないText)",
+  "Edit file content...": "ファイル内容を編集...",
+  "Close": "閉じる",
+  "chars": "字",
+  "Character count": "文字数"
 }

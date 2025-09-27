@@ -24,7 +24,7 @@ interface Props {
   index: number
   bot: BotInstance
   messages: ChatMessageModel[]
-  onUserSendMessage: (input: string, images?: File[]) => void
+  onUserSendMessage: (input: string, images?: File[], attachments?: { name: string; content: string }[]) => void
   resetConversation: () => void
   generating: boolean
   stopGenerating: () => void
@@ -73,8 +73,8 @@ const ConversationPanel: FC<Props> = (props) => {
   }, [props.resetConversation])
 
   const onSubmit = useCallback(
-    async (input: string, images?: File[]) => {
-      props.onUserSendMessage(input, images)
+    async (input: string, images?: File[], attachments?: { name: string; content: string }[]) => {
+      props.onUserSendMessage(input, images, attachments)
     },
     [props],
   )

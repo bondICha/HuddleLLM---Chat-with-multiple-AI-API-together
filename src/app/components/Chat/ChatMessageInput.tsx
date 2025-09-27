@@ -15,7 +15,7 @@ import { fileOpen } from 'browser-fs-access'
 import { cx } from '~/utils'
 import { ClipboardEventHandler, FC, ReactNode, memo, useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GoBook, GoImage } from 'react-icons/go'
+import { GoBook, GoImage, GoPaperclip, GoFile } from 'react-icons/go'
 import { BiExpand } from 'react-icons/bi'
 import { RiDeleteBackLine } from 'react-icons/ri'
 import { Prompt } from '~services/prompts'
@@ -23,11 +23,19 @@ import Button from '../Button'
 import PromptCombobox, { ComboboxContext } from '../PromptCombobox'
 import PromptLibraryDialog from '../PromptLibrary/Dialog'
 import ExpandableDialog from '../ExpandableDialog'
-import TextInput from './TextInput'
+import TextInput from './TextInput';
+import { processFile } from '~app/utils/file-processor';
+
+interface Attachment {
+  id: string;
+  file: File;
+  type: 'image' | 'text';
+  content?: string;
+}
 
 interface Props {
   mode: 'full' | 'compact'
-  onSubmit: (value: string, images?: File[]) => void
+  onSubmit: (value: string, images?: File[], attachments?: { name: string; content: string }[]) => void
   className?: string
   disabled?: boolean
   placeholder?: string
@@ -51,7 +59,8 @@ const ChatMessageInput: FC<Props> = (props) => {
   } = props
 
   const [value, setValue] = useState('')
-  const [images, setImages] = useState<File[]>([])
+  const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [editingAttachment, setEditingAttachment] = useState<Attachment | null>(null);
   const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [isPromptLibraryDialogOpen, setIsPromptLibraryDialogOpen] = useState(false)
@@ -115,15 +124,20 @@ const ChatMessageInput: FC<Props> = (props) => {
 
   const onFormSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault()
-      if (value.trim() || images.length > 0) {
-        props.onSubmit(value, images)
-        setValue('')
-        setImages([])
+      e.preventDefault();
+      const textAttachments = attachments
+        .filter(a => a.type === 'text')
+        .map(a => ({ name: a.file.name, content: a.content || '' }));
+      const images = attachments.filter(a => a.type === 'image').map(a => a.file);
+
+      if (value.trim() || images.length > 0 || textAttachments.length > 0) {
+        props.onSubmit(value, images, textAttachments);
+        setValue('');
+        setAttachments([]);
       }
     },
-    [images, props, value],
-  )
+    [attachments, props, value],
+  );
 
   const onValueChange = useCallback((v: string) => {
     setValue(v)
@@ -131,13 +145,18 @@ const ChatMessageInput: FC<Props> = (props) => {
   }, [])
 
   const modalSubmit = useCallback(() => {
-    if (value.trim() || images.length > 0) {
-      props.onSubmit(value, images)
-      setValue('')
-      setImages([])
+    const textAttachments = attachments
+      .filter(a => a.type === 'text')
+      .map(a => ({ name: a.file.name, content: a.content || '' }));
+    const images = attachments.filter(a => a.type === 'image').map(a => a.file);
+
+    if (value.trim() || images.length > 0 || textAttachments.length > 0) {
+      props.onSubmit(value, images, textAttachments);
+      setValue('');
+      setAttachments([]);
     }
     setIsExpanded(false)
-  }, [value, images, props.onSubmit])
+  }, [value, attachments, props.onSubmit])
 
   const insertTextAtCursor = useCallback(
     (text: string) => {
@@ -155,43 +174,58 @@ const ChatMessageInput: FC<Props> = (props) => {
     setIsPromptLibraryDialogOpen(true)
   }, [])
 
+  const handleFileSelect = useCallback(async (files: File[]) => {
+    for (const file of files) {
+      const result = await processFile(file);
+      const id = `${file.name}-${file.lastModified}-${Math.random()}`;
+
+      switch (result.type) {
+        case 'image':
+          setAttachments(prev => [...prev, { id, file, type: 'image' }]);
+          break;
+        case 'text':
+          setAttachments(prev => [...prev, { id, file, type: result.type, content: result.content }]);
+          break;
+        case 'unsupported':
+          alert(`DEBUG: Unsupported file: ${result.error}`);
+          break; // Don't add unsupported files
+      }
+    }
+    inputRef.current?.focus();
+  }, []);
+
   const selectImage = useCallback(async () => {
     const files = await fileOpen({
       mimeTypes: ['image/jpg', 'image/jpeg', 'image/png', 'image/gif'],
       extensions: ['.jpg', '.jpeg', '.png', '.gif'],
       multiple: true,
-    })
-    console.debug('📁 Selected files:', files.map(f => ({ name: f.name, size: f.size, lastModified: f.lastModified })))
-    setImages(prev => {
-      const newImages = [...prev, ...files]
-      console.debug('🖼️ All images after selection:', newImages.map((f, i) => ({ 
-        index: i, 
-        name: f.name, 
-        size: f.size, 
-        lastModified: f.lastModified,
-        sameAsFirst: i > 0 ? f === newImages[0] : false
-      })))
-      return newImages
-    })
-    inputRef.current?.focus()
-  }, [])
+    });
+    handleFileSelect(files);
+  }, [handleFileSelect]);
 
-  const removeImage = useCallback((index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index))
-  }, [])
+  const selectAttachments = useCallback(async () => {
+    const files = await fileOpen({
+      multiple: true,
+    });
+    handleFileSelect(files);
+  }, [handleFileSelect]);
 
-  const onPaste: ClipboardEventHandler<HTMLTextAreaElement> = useCallback((event) => {
-    const pastedFiles = event.clipboardData.files
-    if (!pastedFiles.length) {
-      return
-    }
-    const imageFiles = Array.from(pastedFiles).filter((file) => file.type.startsWith('image/'))
-    if (imageFiles.length > 0) {
-      event.preventDefault()
-      setImages(prev => [...prev, ...imageFiles])
-      inputRef.current?.focus()
-    }
-  }, [])
+  const removeAttachment = useCallback((id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+  }, []);
+
+  const onPaste: ClipboardEventHandler<HTMLTextAreaElement> = useCallback(
+    (event) => {
+      const items = Array.from(event.clipboardData.items);
+      const files = items.map(item => item.getAsFile()).filter((f): f is File => !!f);
+      
+      if (files.length > 0) {
+        event.preventDefault();
+        handleFileSelect(files);
+      }
+    },
+    [handleFileSelect],
+  );
 
   const handleBlur = useCallback(() => {
     setTimeout(() => {
@@ -202,7 +236,7 @@ const ChatMessageInput: FC<Props> = (props) => {
   }, [])
 
   const isCompactMode = props.mode === 'compact'
-  const hasContent = value.length > 0 || images.length > 0
+  const hasContent = value.length > 0 || attachments.length > 0
   const shouldShowInput = !isCompactMode || (isCompactMode && (isFocused || hasContent))
 
   useEffect(() => {
@@ -253,12 +287,20 @@ const ChatMessageInput: FC<Props> = (props) => {
               )}
             </ComboboxContext.Provider>
             {props.supportImageInput && (
-              <GoImage
-                size={22}
-                className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200"
-                onClick={selectImage}
-                title="Image input"
-              />
+              <>
+                <GoImage
+                  size={22}
+                  className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200"
+                  onClick={selectImage}
+                  title={t('Image input')}
+                />
+                <GoPaperclip
+                  size={22}
+                  className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200"
+                  onClick={selectAttachments}
+                  title={t('Attach file (Non-binary-text)')}
+                />
+              </>
             )}
           </>
         )}
@@ -279,20 +321,31 @@ const ChatMessageInput: FC<Props> = (props) => {
         ref={refs.setReference}
         {...getReferenceProps()}
       >
-        {isCompactMode && !shouldShowInput ? null : images.length > 0 ? (
+        {isCompactMode && !shouldShowInput ? null : attachments.length > 0 ? (
           <div className="flex flex-row items-center flex-wrap w-full mb-1 gap-2">
-            {images.map((img, index) => (
+            {attachments.map((att) => (
               <div
-                key={index}
-                className="flex items-center gap-1 bg-primary-border dark:bg-secondary rounded-full px-2 py-1 border border-primary-border"
+                key={att.id}
+                className="flex items-center gap-1 bg-primary-border dark:bg-secondary rounded-full px-2 py-1 border border-primary-border cursor-pointer"
+                onClick={() => att.type === 'text' && setEditingAttachment(att)}
               >
-                <span className="text-xs text-primary-text font-semibold cursor-default truncate max-w-[100px]">
-                  {img.name}
+                {att.type === 'image' && <GoImage size={12} className="text-secondary-text" />}
+                {att.type === 'text' && <GoFile size={12} className="text-secondary-text" />}
+                <span className="text-xs text-primary-text font-semibold cursor-default truncate max-w-[100px] ml-1">
+                  {att.file.name}
                 </span>
+                {att.type === 'text' && att.content && (
+                  <span className="text-xs text-secondary-text ml-1">
+                    ({att.content.length} {t('chars')})
+                  </span>
+                )}
                 <RiDeleteBackLine
                   size={12}
-                  className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200 hover:scale-110"
-                  onClick={() => removeImage(index)}
+                  className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200 hover:scale-110 ml-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeAttachment(att.id);
+                  }}
                 />
               </div>
             ))}
@@ -307,7 +360,7 @@ const ChatMessageInput: FC<Props> = (props) => {
           value={value}
           onValueChange={onValueChange}
           autoFocus={props.autoFocus}
-          onPaste={props.supportImageInput ? onPaste : undefined}
+          onPaste={onPaste}
           maxRows={props.maxRows}
           fullHeight={fullHeight}
           onHeightChange={onHeightChange}
@@ -342,6 +395,43 @@ const ChatMessageInput: FC<Props> = (props) => {
               text={t('Send')}
               color="primary"
               onClick={modalSubmit}
+            />
+          </div>
+        </ExpandableDialog>
+      )}
+      {editingAttachment && (
+        <ExpandableDialog
+          open={!!editingAttachment}
+          onClose={() => setEditingAttachment(null)}
+          title={editingAttachment.file.name}
+          size="2xl"
+          className="flex flex-col"
+        >
+          <div className="flex-grow p-4">
+            <TextInput
+              value={editingAttachment.content || ''}
+              onValueChange={(newContent) => {
+                setEditingAttachment(prev => prev ? { ...prev, content: newContent } : null);
+              }}
+              placeholder={t('Edit file content...')}
+              className="w-full h-full resize-none outline-none bg-transparent text-base"
+              autoFocus
+              fullHeight
+            />
+          </div>
+          <div className="flex justify-between items-center p-4 border-t border-primary-border">
+            <span className="text-sm text-secondary-text">
+              {t('Character count')}: {editingAttachment.content?.length || 0}
+            </span>
+            <Button
+              text={t('Save')}
+              color="primary"
+              onClick={() => {
+                if (editingAttachment) {
+                  setAttachments(prev => prev.map(a => a.id === editingAttachment.id ? editingAttachment : a));
+                }
+                setEditingAttachment(null);
+              }}
             />
           </div>
         </ExpandableDialog>
