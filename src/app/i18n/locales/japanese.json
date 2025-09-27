@@ -278,5 +278,7 @@
   "Edit file content...": "ファイル内容を編集...",
   "Close": "閉じる",
   "chars": "字",
-  "Character count": "文字数"
+  "Character count": "文字数",
+  "Drop files to attach": "ここにドロップして添付",
+  "Images and text files are supported": "画像とテキストファイルに対応"
 }

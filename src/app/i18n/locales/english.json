@@ -274,5 +274,7 @@
   "Edit file content...": "Edit file content...",
   "Close": "Close",
   "chars": "chars",
-  "Character count": "CC (Character Count)"
+  "Character count": "CC (Character Count)",
+  "Drop files to attach": "Drop files to attach",
+  "Images and text files are supported": "Images and text files are supported"
 }

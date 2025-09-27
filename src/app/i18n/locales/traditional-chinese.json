@@ -257,5 +257,7 @@
   "Edit file content...": "編輯檔案內容...",
   "Close": "關閉",
   "chars": "字",
-  "Character count": "字數"
+  "Character count": "字數",
+  "Drop files to attach": "將檔案拖放到此處以附加",
+  "Images and text files are supported": "支援圖片與文字檔案"
 }

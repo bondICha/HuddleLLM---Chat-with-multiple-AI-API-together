@@ -66,9 +66,10 @@ const ChatMessageInput: FC<Props> = (props) => {
   const [isPromptLibraryDialogOpen, setIsPromptLibraryDialogOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
-
-  const [activeIndex, setActiveIndex] = useState<number | null>(null)
-  const [isComboboxOpen, setIsComboboxOpen] = useState(false)
+  const [isDragging, setIsDragging] = useState(false);
+ 
+   const [activeIndex, setActiveIndex] = useState<number | null>(null)
+   const [isComboboxOpen, setIsComboboxOpen] = useState(false)
 
   const { refs, floatingStyles, context } = useFloating({
     whileElementsMounted: autoUpdate,
@@ -79,6 +80,8 @@ const ChatMessageInput: FC<Props> = (props) => {
   })
 
   const floatingListRef = useRef([])
+  const dragCounterRef = useRef(0)
+  const dragOverTimerRef = useRef<number | null>(null)
 
   const handleSelect = useCallback((p: Prompt) => {
     if (p.id === 'PROMPT_LIBRARY') {
@@ -226,10 +229,59 @@ const ChatMessageInput: FC<Props> = (props) => {
     },
     [handleFileSelect],
   );
-
-  const handleBlur = useCallback(() => {
-    setTimeout(() => {
-      if (!formRef.current?.contains(document.activeElement)) {
+  
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current += 1;
+    setIsDragging(true);
+  }, []);
+ 
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  }, []);
+ 
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+    if (dragOverTimerRef.current) {
+      clearTimeout(dragOverTimerRef.current);
+    }
+    dragOverTimerRef.current = window.setTimeout(() => {
+      dragCounterRef.current = 0;
+      setIsDragging(false);
+      dragOverTimerRef.current = null;
+    }, 200);
+  }, [isDragging]);
+ 
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (dragOverTimerRef.current) {
+        clearTimeout(dragOverTimerRef.current);
+        dragOverTimerRef.current = null;
+      }
+      setIsDragging(false);
+      dragCounterRef.current = 0;
+ 
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        handleFileSelect(files);
+      }
+    },
+    [handleFileSelect],
+  );
+ 
+   const handleBlur = useCallback(() => {
+     setTimeout(() => {
+       if (!formRef.current?.contains(document.activeElement)) {
         setIsFocused(false)
       }
     }, 100)
@@ -245,10 +297,19 @@ const ChatMessageInput: FC<Props> = (props) => {
     }
   }, [isCompactMode, shouldShowInput, onVisibilityChange])
 
+  // Cleanup drag-over debounce timer on unmount to avoid leaks
+  useEffect(() => {
+    return () => {
+      if (dragOverTimerRef.current) {
+        clearTimeout(dragOverTimerRef.current)
+      }
+    }
+  }, [])
+
   return (
     <form
       className={cx(
-        'flex flex-row items-center',
+        'relative flex flex-row items-center',
         fullHeight && 'h-full',
         props.className,
         !isCompactMode && 'gap-3',
@@ -258,7 +319,23 @@ const ChatMessageInput: FC<Props> = (props) => {
       ref={formRef}
       onFocus={() => setIsFocused(true)}
       onBlur={handleBlur}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
+      {isDragging && (
+        <div className="pointer-events-none absolute inset-0 z-10 rounded-xl bg-black/10 dark:bg-white/5 flex items-center justify-center">
+          <div className="flex flex-row items-center justify-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed border-blue-500 bg-white/70 dark:bg-black/40">
+            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+              <GoImage size={18} />
+              <GoPaperclip size={18} />
+            </div>
+            <span className="text-sm font-semibold text-primary-text">{t('Drop files to attach')}</span>
+            <span className="text-xs text-secondary-text">({t('Images and text files are supported')})</span>
+          </div>
+        </div>
+      )}
       <div className={cx('flex items-center gap-3', isCompactMode && !shouldShowInput && 'hidden')}>
         {props.mode === 'full' && (
           <>
