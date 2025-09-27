@@ -200,7 +200,7 @@ const ConversationPanel: FC<Props> = (props) => {
             }
             onSubmit={onSubmit}
             autoFocus={mode === 'full'}
-            supportImageInput={mode === 'full' && props.bot.supportsImageInput}
+            supportImageInput={true || props.bot.supportsImageInput}  // 現在画像サポート有無を設定画面で確認していないため、暫定的に常にtrue
             actionButton={inputActionButton}
             onVisibilityChange={mode === 'compact' ? setIsInputVisible : undefined}
             className={cx(

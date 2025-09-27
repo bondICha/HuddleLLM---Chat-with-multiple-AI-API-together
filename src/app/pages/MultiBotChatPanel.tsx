@@ -164,12 +164,14 @@ const GeneralChatPanel: FC<{
   }, [chats.length, supportImageInput])
 
   const sendSingleMessage = useCallback(
-    (input: string, index: number) => {
-      const chat = chats.find((c) => c.index === index)
-      chat?.sendMessage(input)
-    },
-    [chats],
-  )
+   (input: string, index: number, images?: File[], attachments?: { name: string; content: string }[]) => {
+     const chat = chats.find((c) => c.index === index);
+     if (chat) {
+       chat.sendMessage(input, images, attachments);
+     }
+   },
+   [chats],
+ );
 
   const sendAllMessage = useCallback(
     (input: string, images?: File[], attachments?: { name: string; content: string }[]) => {
@@ -288,7 +290,7 @@ const GeneralChatPanel: FC<{
             index={chat.index}
             bot={chat.bot}
             messages={chat.messages}
-            onUserSendMessage={(input) => sendSingleMessage(input, chat.index)}
+            onUserSendMessage={(input, images, attachments) => sendSingleMessage(input, chat.index, images, attachments)}
             generating={chat.generating}
             stopGenerating={chat.stopGenerating}
             mode="compact"
