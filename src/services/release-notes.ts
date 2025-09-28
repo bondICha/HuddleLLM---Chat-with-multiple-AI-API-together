@@ -6,6 +6,14 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.11.0',
+    notes: [
+      'releasenote_v2110_file_attachment_support',
+      'releasenote_v2110_drag_and_drop_support',
+      'releasenote_v2110_pdf_support_removed',
+    ],
+  },
+  {
     version: '2.10.11',
     notes: [
       'releasenote_v21011_fix_claude_empty_message_error',
