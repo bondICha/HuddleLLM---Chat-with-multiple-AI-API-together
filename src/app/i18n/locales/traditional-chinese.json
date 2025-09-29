@@ -262,5 +262,9 @@
   "chars": "字",
   "Character count": "字數",
   "Drop files to attach": "將檔案拖放到此處以附加",
-  "Images and text files are supported": "支援圖片與文字檔案"
+  "Images and text files are supported": "支援圖片與文字檔案",
+  "API Scheme": "API方案",
+  "Edit Provider": "編輯提供商",
+  "Provider updated successfully": "提供商更新成功",
+  "Not set": "未設定"
 }

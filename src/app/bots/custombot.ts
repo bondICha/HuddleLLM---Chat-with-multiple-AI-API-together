@@ -87,7 +87,7 @@ export class CustomBot extends AsyncAbstractBot {
     // setConversationHistoryはAsyncAbstractBotが処理する
 
     private async createBotInstance() {
-        const { customApiKey, customApiHost, customApiConfigs, commonSystemMessage, isCustomApiHostFullPath } = await getUserConfig();
+        const { customApiKey, customApiHost, customApiConfigs, commonSystemMessage, isCustomApiHostFullPath, providerConfigs } = await getUserConfig();
         const config = customApiConfigs[this.customBotNumber - 1];
 
         if (!config) {
@@ -98,63 +98,78 @@ export class CustomBot extends AsyncAbstractBot {
         // 共通ロジックを使用
         const processedSystemMessage = this.buildSystemPrompt(config, commonSystemMessage);
 
-        const provider = config.provider || (
-            config.model.includes('anthropic.claude') ? CustomApiProvider.Bedrock : CustomApiProvider.OpenAI
-        );
+        // Resolve effective Provider/API settings based on providerRefId only
+        const providerRef = (config.providerRefId)
+            ? (providerConfigs || []).find((p) => p.id === config.providerRefId)
+            : undefined;
 
-        // Hostの最終決定とFullPathの優先度は「どのHostを使うか」に従わせる
-        // - 個別Hostが非空なら個別Hostを採用し、FullPathは個別設定（未設定なら false）
-        // - 個別Hostが空/未設定なら共通Hostを採用し、FullPathは共通設定
-        const useIndividualHost = !!(config.host && config.host.trim().length > 0);
-        const resolvedHost = useIndividualHost ? config.host : customApiHost;
-        const resolvedIsHostFullPath = useIndividualHost ? (config.isHostFullPath ?? false) : isCustomApiHostFullPath;
+        const effectiveProvider = providerRef?.provider ?? (config.provider || (config.model.includes('anthropic.claude') ? CustomApiProvider.Bedrock : CustomApiProvider.OpenAI));
+
+        const effectiveHost = (providerRef?.host && providerRef.host.trim().length > 0)
+            ? providerRef.host
+            : (config.host && config.host.trim().length > 0)
+                ? config.host
+                : customApiHost;
+
+        const effectiveIsHostFullPath = providerRef
+            ? (providerRef.isHostFullPath ?? false)
+            : (config.host && config.host.trim().length > 0)
+                ? (config.isHostFullPath ?? false)
+                : isCustomApiHostFullPath;
+
+        const effectiveApiKey = (providerRef?.apiKey && providerRef.apiKey.trim().length > 0)
+            ? providerRef.apiKey
+            : (config.apiKey || customApiKey);
+
+        const anthHeader = providerRef?.isAnthropicUsingAuthorizationHeader ?? (config.isAnthropicUsingAuthorizationHeader || false);
+        const effectiveAdvanced = providerRef?.advancedConfig ?? config.advancedConfig;
 
         let botInstance;
-        switch (provider) {
+        switch (effectiveProvider) {
             case CustomApiProvider.Bedrock:
                 botInstance = new BedrockApiBot({
-                    apiKey: config.apiKey || customApiKey,
-                    host: resolvedHost,
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingMode: config.thinkingMode,
                     thinkingBudget: config.thinkingBudget,
                     webAccess: config.webAccess,
-                    isHostFullPath: resolvedIsHostFullPath,
+                    isHostFullPath: effectiveIsHostFullPath,
                 });
                 break;
             case CustomApiProvider.Anthropic:
                 botInstance = new ClaudeApiBot({
-                    apiKey: config.apiKey || customApiKey,
-                    host: resolvedHost,
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingBudget: config.thinkingBudget,
-                    isHostFullPath: resolvedIsHostFullPath,
+                    isHostFullPath: effectiveIsHostFullPath,
                     webAccess: config.webAccess,
-                    advancedConfig: config.advancedConfig,
-                }, config.thinkingMode, config.isAnthropicUsingAuthorizationHeader || false);
+                    advancedConfig: effectiveAdvanced,
+                }, config.thinkingMode, anthHeader);
                 break;
             case CustomApiProvider.OpenAI:
                 botInstance = new ChatGPTApiBot({
-                    apiKey: config.apiKey || customApiKey,
-                    host: resolvedHost,
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
-                    isHostFullPath: resolvedIsHostFullPath,
+                    isHostFullPath: effectiveIsHostFullPath,
                     webAccess: config.webAccess,
                     botIndex: this.customBotNumber - 1, // 0ベースのインデックス
                     thinkingMode: config.thinkingMode,
                     reasoningEffort: config.reasoningEffort,
-                    advancedConfig: config.advancedConfig,
+                    advancedConfig: effectiveAdvanced,
                 });
                 break;
             case CustomApiProvider.Google:
                 botInstance = new GeminiApiBot({
-                    geminiApiKey: config.apiKey || customApiKey,
+                    geminiApiKey: effectiveApiKey,
                     geminiApiModel: config.model,
                     geminiApiSystemMessage: processedSystemMessage,
                     geminiApiTemperature: config.temperature,
@@ -163,8 +178,8 @@ export class CustomBot extends AsyncAbstractBot {
                 break;
             case CustomApiProvider.GeminiOpenAI:
                 botInstance = new ChatGPTApiBot({
-                    apiKey: config.apiKey || customApiKey,
-                    host: resolvedHost,
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
@@ -183,14 +198,14 @@ export class CustomBot extends AsyncAbstractBot {
                 break;
             case CustomApiProvider.QwenOpenAI:
                 botInstance = new ChatGPTApiBot({
-                    apiKey: config.apiKey || customApiKey,
-                    host: resolvedHost,
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingMode: config.thinkingMode,
                     webAccess: config.webAccess,
-                    isHostFullPath: resolvedIsHostFullPath,
+                    isHostFullPath: effectiveIsHostFullPath,
                     extraBody: config.thinkingMode ? {
                         enable_thinking: true,
                         thinking_budget: config.thinkingBudget || 2000
@@ -199,21 +214,21 @@ export class CustomBot extends AsyncAbstractBot {
                 break;
             case CustomApiProvider.VertexAI_Claude:
                 botInstance = new VertexClaudeBot({
-                    apiKey: config.apiKey || customApiKey,
-                    host: resolvedHost,
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingMode: config.thinkingMode, // Now properly supported with correct max_tokens
                     thinkingBudget: config.thinkingBudget,
-                    isHostFullPath: resolvedIsHostFullPath,
+                    isHostFullPath: effectiveIsHostFullPath,
                     webAccess: config.webAccess,
-                    advancedConfig: config.advancedConfig,
+                    advancedConfig: effectiveAdvanced,
                 });
                 break;
             default:
-                console.error(`Unsupported provider detected: ${provider}`);
-                throw new ChatError(`Unsupported provider: ${provider}`, ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);
+                console.error(`Unsupported provider detected: ${effectiveProvider}`);
+                throw new ChatError(`Unsupported provider: ${effectiveProvider}`, ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);
         }
 
 

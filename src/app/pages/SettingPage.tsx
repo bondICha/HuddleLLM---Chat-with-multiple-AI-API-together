@@ -14,7 +14,7 @@ import { useAtomValue } from 'jotai'
 import { themeColorAtom } from '~app/state'
 
 
-import CustomAPISettings from '~app/components/Settings/CustomAPISettings'
+import CustomAPISettings from '~app/components/Settings/CustomApiSettings'
 import ExportDataPanel from '~app/components/Settings/ExportDataPanel'
 import ShortcutPanel from '~app/components/Settings/ShortcutPanel'
 import AllHostsPermissionPanel from '~app/components/Settings/AllHostsPermissionPanel'
@@ -96,7 +96,7 @@ function SettingPage() {
 
     try {
       // Request host permissions for all custom API hosts to prevent CORS issues
-      await requestHostPermissions(userConfig.customApiConfigs || [], userConfig.customApiHost);
+      await requestHostPermissions(userConfig.customApiConfigs || [], userConfig.providerConfigs || []);
 
       // userConfigのディープコピーを渡すことで副作用を防ぐ
       await updateUserConfig(cloneDeep(userConfig));

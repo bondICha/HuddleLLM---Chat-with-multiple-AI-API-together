@@ -44,23 +44,36 @@ const AllHostsPermissionPanel: FC = () => {
         
         // Get user config to find enabled chatbots
         const config = await getUserConfig()
-        const enabledBotHosts: string[] = []
-        
+        const origins = new Set<string>();
+
         if (config.customApiConfigs) {
           config.customApiConfigs.forEach(botConfig => {
-            if (botConfig.enabled && botConfig.host) {
+            // 個別設定の場合（providerRefId 未設定）かつ host がある場合に権限再付与対象とする
+            if (botConfig.enabled && !botConfig.providerRefId && botConfig.host) {
               try {
-                const url = new URL(botConfig.host.startsWith('http') ? botConfig.host : `https://${botConfig.host}`)
-                const origin = `${url.protocol}//${url.hostname}/`
-                if (!enabledBotHosts.includes(origin)) {
-                  enabledBotHosts.push(origin)
-                }
+                const url = new URL(botConfig.host.startsWith('http') ? botConfig.host : `https://${botConfig.host}`);
+                origins.add(`${url.protocol}//${url.hostname}/`);
               } catch (error) {
-                console.warn('Invalid API host:', botConfig.host)
+                console.warn('Invalid API host:', botConfig.host);
               }
             }
-          })
+          });
         }
+
+        if (config.providerConfigs) {
+          config.providerConfigs.forEach(provider => {
+            if (provider.host) {
+              try {
+                const url = new URL(provider.host.startsWith('http') ? provider.host : `https://${provider.host}`);
+                origins.add(`${url.protocol}//${url.hostname}/`);
+              } catch (error) {
+                console.warn('Invalid provider host:', provider.host);
+              }
+            }
+          });
+        }
+        
+        const enabledBotHosts = Array.from(origins);
         
         // Re-grant permissions for enabled chatbots
         if (enabledBotHosts.length > 0) {

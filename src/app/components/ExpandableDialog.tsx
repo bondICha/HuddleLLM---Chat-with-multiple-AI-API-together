@@ -12,6 +12,7 @@ interface Props {
   className?: string
   borderless?: boolean
   titleBarAddon?: React.ReactNode
+  footer?: React.ReactNode
   // 幅プリセット
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl'
 }
@@ -109,7 +110,10 @@ const ExpandableDialog: FC<PropsWithChildren<Props>> = (props) => {
               ) : (
                 <HeadlessDialog.Title></HeadlessDialog.Title>
               )}
-              {props.children}
+              <div className="flex-1 overflow-y-auto custom-scrollbar">{props.children}</div>
+              {props.footer && (
+                <div className="flex-shrink-0 border-t border-primary-border p-4">{props.footer}</div>
+              )}
             </HeadlessDialog.Panel>
           </Transition.Child>
         </div>

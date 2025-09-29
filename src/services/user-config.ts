@@ -13,6 +13,31 @@ const MAX_CUSTOM_MODELS = 50;
 // カスタムAPIの設定キーのプレフィックス
 const CUSTOM_API_CONFIG_PREFIX = 'customApiConfig_';
 
+/**
+ * API Providerの設定インターフェース
+ * 複数のProvider設定を管理する型定義
+ */
+export interface ProviderConfig {
+  /** 安定したID（UUID形式など） */
+  id: string;
+  /** 表示名 */
+  name: string;
+  /** プロバイダ種別 */
+  provider: CustomApiProvider;
+  /** APIホスト */
+  host: string;
+  /** ホストが完全なパスかどうか */
+  isHostFullPath: boolean;
+  /** APIキー（空文字の場合は共通利用） */
+  apiKey: string;
+  /** アイコン識別子 */
+  icon: string;
+  /** Anthropic認証ヘッダタイプ */
+  isAnthropicUsingAuthorizationHeader?: boolean;
+  /** 高度な設定 */
+  advancedConfig?: AdvancedConfig;
+  // UI関連の項目は必要に応じて追加
+}
 
 // System prompt mode enum
 export enum SystemPromptMode {
@@ -88,6 +113,8 @@ export interface CustomApiConfig {
   enabled?: boolean, // 各チャットボットの有効/無効状態
   isHostFullPath?: boolean; // hostが完全なパスかどうかを示すフラグ (デフォルト: false)
   advancedConfig?: AdvancedConfig;
+  /** Provider参照ID */
+  providerRefId?: string;
 }
 
 /**
@@ -119,6 +146,7 @@ const userConfigWithDefaultValue = {
   chatgptWebAccess: false,
   claudeWebAccess: false,
   customApiConfigs: defaultCustomApiConfigs,
+  providerConfigs: [] as ProviderConfig[], // API Provider設定
   customApiKey: '',
   customApiHost: '',
   commonSystemMessage: DEFAULT_SYSTEM_MESSAGE,
@@ -195,6 +223,7 @@ export async function getUserConfig(): Promise<UserConfig> {
     }
 
     finalConfig.customApiConfigs = customConfigsInLocal || [...defaultCustomApiConfigs];
+    finalConfig.providerConfigs = syncData.providerConfigs || [];
     
     if (finalConfig.customApiConfigs) {
       finalConfig.customApiConfigs.forEach((config: CustomApiConfig) => {
@@ -218,6 +247,37 @@ export async function getUserConfig(): Promise<UserConfig> {
       });
       await Browser.storage.sync.remove('enabledBots');
     }
+
+    // Migration for providerConfigs
+    if ((!finalConfig.providerConfigs || finalConfig.providerConfigs.length === 0) && finalConfig.customApiKey) {
+      const defaultProvider: ProviderConfig = {
+        id: 'default-provider',
+        name: 'Default Provider',
+        provider: CustomApiProvider.OpenAI,
+        host: finalConfig.customApiHost || 'https://api.openai.com',
+        isHostFullPath: finalConfig.isCustomApiHostFullPath || false,
+        apiKey: finalConfig.customApiKey,
+        icon: 'openai',
+      };
+      finalConfig.providerConfigs = [defaultProvider];
+      finalConfig.customApiConfigs.forEach(config => {
+        if (!config.host && !config.apiKey) {
+          config.providerRefId = defaultProvider.id;
+        }
+      });
+      // Clean up old common settings
+      finalConfig.customApiKey = '';
+      finalConfig.customApiHost = '';
+      finalConfig.isCustomApiHostFullPath = false;
+      
+      await updateUserConfig({
+        providerConfigs: finalConfig.providerConfigs,
+        customApiConfigs: finalConfig.customApiConfigs,
+        customApiKey: finalConfig.customApiKey,
+        customApiHost: finalConfig.customApiHost,
+        isCustomApiHostFullPath: finalConfig.isCustomApiHostFullPath,
+      });
+    }
     
     if (finalConfig.hasOwnProperty('useCustomChatbotOnly')) {
         delete (finalConfig as any).useCustomChatbotOnly;
@@ -238,7 +298,7 @@ export async function getUserConfig(): Promise<UserConfig> {
  */
 export async function updateUserConfig(updates: Partial<UserConfig>) {
   try {
-    const { customApiConfigs, ...otherUpdates } = updates;
+    const { customApiConfigs, providerConfigs, ...otherUpdates } = updates;
 
     // 1. customApiConfigs を local に保存 (存在する場合)
     if (customApiConfigs !== undefined) { // null や空配列も保存対象とするため、undefined のみチェック
@@ -251,7 +311,16 @@ export async function updateUserConfig(updates: Partial<UserConfig>) {
       }
     }
 
-    // 2. その他の設定を sync に保存 (存在する場合)
+    // 2. providerConfigs を sync に保存 (存在する場合)
+    if (providerConfigs !== undefined) {
+      if (Array.isArray(providerConfigs)) {
+        await Browser.storage.sync.set({ providerConfigs });
+      } else {
+        await Browser.storage.sync.set({ providerConfigs: [] });
+      }
+    }
+
+    // 3. その他の設定を sync に保存 (存在する場合)
     if (Object.keys(otherUpdates).length > 0) {
       const updatesForSync: Record<string, any> = {};
       const keysToRemoveFromSync: string[] = [];
