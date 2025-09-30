@@ -27,6 +27,10 @@ export class CustomBot extends AsyncAbstractBot {
         return this.config?.name
     }
 
+    get modelName() {
+        return this.config?.model
+    }
+
     get avatar() {
         return this.config?.avatar
     }
