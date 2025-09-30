@@ -29,7 +29,7 @@ const apiPresets = {
     Anthropic: {
       name: 'Anthropic',
       shortName: 'Claud',
-      model: 'claude-sonnet-4-0',
+      model: 'claude-sonnet-4-5',
       host: 'https://api.anthropic.com/',
       isHostFullPath: false,
       temperature: 1,

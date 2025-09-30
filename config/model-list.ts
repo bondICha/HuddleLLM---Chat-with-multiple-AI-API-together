@@ -9,7 +9,7 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
         "GPT-4.1 mini": "gpt-4.1-mini",
     },
     "Anthropic": {
-        "Claude Sonnet 4": "claude-sonnet-4-0",
+        "Claude Sonnet 4.5": "claude-sonnet-4-5",
         "Claude Opus 4.1": "claude-opus-4-1",
         "Claude Haiku 3.5": "claude-3-5-haiku-latest",
     },
@@ -67,8 +67,8 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
         "Google Gemini 2.5 Flash": { value: "google/gemini-2.5-flash", icon: "gemini" },
         "Google Gemini 2.5 Pro": { value: "google/gemini-2.5-pro", icon: "gemini" },
         // Bedrock用のClaudeモデル
-        "Claude Sonnet 4 (Bedrock, US)": { value: "us.anthropic.claude-sonnet-4-20250514-v1:0", icon: "anthropic" },
-        "Claude Sonnet 4 (Bedrock)": { value: "anthropic.claude-sonnet-4-20250514-v1:0", icon: "anthropic" },
+        "Claude Sonnet 4.5 (Bedrock, US)": { value: "us.anthropic.claude-sonnet-4-5-20250929-v1:0", icon: "anthropic" },
+        "Claude Sonnet 4.5 (Bedrock)": { value: "anthropic.claude-sonnet-4-5-20250929-v1:0", icon: "anthropic" },
         "Claude 3.5 Haiku (Bedrock)": { value: "anthropic.claude-3-5-haiku-20241022-v1:0", icon: "anthropic" },
         "OpenAI/GPT-OSS-120b": { value: "openai/gpt-oss-120b", icon: "openai" },
         "OpenAI/GPT-OSS-20b": { value: "openai/gpt-oss-20b", icon: "openai" },
