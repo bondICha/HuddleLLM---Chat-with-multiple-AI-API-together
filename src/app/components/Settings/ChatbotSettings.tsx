@@ -433,13 +433,18 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     </div>
                   </div>
                   {(() => {
-                    const isAnthropicProvider = config.provider === CustomApiProvider.Anthropic || config.provider === CustomApiProvider.Bedrock || config.provider === CustomApiProvider.Anthropic_CustomAuth || config.provider === CustomApiProvider.VertexAI_Claude;
-                    const isGeminiOpenAIProvider = config.provider === CustomApiProvider.GeminiOpenAI;
-                    const isQwenOpenAIProvider = config.provider === CustomApiProvider.QwenOpenAI;
-                    const isOpenAIProvider = config.provider === CustomApiProvider.OpenAI;
+                    const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
+                    const effectiveProvider = providerRef?.provider ?? config.provider;
+                    
+                    const isProviderIn = (providers: CustomApiProvider[]) => providers.includes(effectiveProvider);
+
+                    const showThinkingBudget = isProviderIn([CustomApiProvider.Anthropic, CustomApiProvider.Bedrock, CustomApiProvider.Anthropic_CustomAuth, CustomApiProvider.VertexAI_Claude, CustomApiProvider.GeminiOpenAI, CustomApiProvider.QwenOpenAI]);
+                    const showReasoningEffort = isProviderIn([CustomApiProvider.OpenAI]);
+                    const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort;
+
                     return (
                       <>
-                        {(isAnthropicProvider || isGeminiOpenAIProvider || isQwenOpenAIProvider) && (
+                        {showThinkingBudget && (
                           <div className={formRowClass}>
                             <div className="flex items-center justify-between">
                               <p className={labelClass}>{config.thinkingMode ? t('Thinking Budget') : t('Temperature')}</p>
@@ -471,7 +476,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                           </div>
                         )}
-                        {isOpenAIProvider ? (
+                        {showReasoningEffort && (
                           <div className={formRowClass}>
                             <div className="flex items-center justify-between">
                               <p className={labelClass}>{config.thinkingMode ? t('Reasoning Effort') : t('Temperature')}</p>
@@ -524,7 +529,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               </div>
                             </div>
                           </div>
-                        ) : !isAnthropicProvider && !isGeminiOpenAIProvider && !isQwenOpenAIProvider && (
+                        )}
+                        {showOnlyTemperature && (
                           <div className={formRowClass}>
                             <div className="flex items-center gap-2 mb-2">
                               <p className={labelClass}>{t('Temperature')}</p>
@@ -663,19 +669,26 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                           </div>
                         )}
-                        {!config.providerRefId && (config.provider === CustomApiProvider.OpenAI || config.provider === CustomApiProvider.Anthropic || config.provider === CustomApiProvider.VertexAI_Claude) && (
-                          <DeveloperOptionsPanel
-                            config={config}
-                            index={index}
-                            expandedSections={expandedSections}
-                            toggleSection={toggleSection}
-                            updateConfig={(updatedConfig: CustomApiConfig) => {
-                              const updatedConfigs = [...customApiConfigs];
-                              updatedConfigs[index] = updatedConfig;
-                              updateCustomApiConfigs(updatedConfigs);
-                            }}
-                          />
-                        )}
+                        {(() => {
+                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
+                          const effectiveProvider = providerRef?.provider ?? config.provider;
+                          const showDeveloperOptions = [CustomApiProvider.OpenAI, CustomApiProvider.Anthropic, CustomApiProvider.VertexAI_Claude].includes(effectiveProvider);
+
+                          return showDeveloperOptions && (
+                            <DeveloperOptionsPanel
+                              config={config}
+                              index={index}
+                              expandedSections={expandedSections}
+                              toggleSection={toggleSection}
+                              updateConfig={(updatedConfig: CustomApiConfig) => {
+                                const updatedConfigs = [...customApiConfigs];
+                                updatedConfigs[index] = updatedConfig;
+                                updateCustomApiConfigs(updatedConfigs);
+                              }}
+                              effectiveProvider={effectiveProvider}
+                            />
+                          );
+                        })()}
                       </div>
                     ) : null}
                   </div>

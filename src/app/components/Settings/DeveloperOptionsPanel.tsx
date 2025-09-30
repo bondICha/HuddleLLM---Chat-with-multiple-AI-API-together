@@ -11,14 +11,16 @@ interface Props {
     expandedSections: Record<number, boolean>
     toggleSection: (index: number) => void
     updateConfig: (updatedConfig: CustomApiConfig) => void
+    effectiveProvider?: CustomApiProvider
 }
 
-const DeveloperOptionsPanel: FC<Props> = ({ 
-    config, 
-    index, 
-    expandedSections, 
-    toggleSection, 
-    updateConfig 
+const DeveloperOptionsPanel: FC<Props> = ({
+    config,
+    index,
+    expandedSections,
+    toggleSection,
+    updateConfig,
+    effectiveProvider
 }) => {
     const { t } = useTranslation()
     const formRowClass = "flex flex-col gap-2"
@@ -26,6 +28,7 @@ const DeveloperOptionsPanel: FC<Props> = ({
     const inputContainerClass = "flex-1"
 
     const sectionKey = index + 3000
+    const providerToUse = effectiveProvider ?? config.provider
 
     return (
         <div className="border-t pt-3 mt-4">
@@ -40,10 +43,10 @@ const DeveloperOptionsPanel: FC<Props> = ({
             </button>
             {expandedSections[sectionKey] && (
                 <div className="mt-3 space-y-4 pl-5">
-                    {/* OpenAI Compatible Options */}
-                    {(config.provider === CustomApiProvider.OpenAI ||
-                      config.provider === CustomApiProvider.QwenOpenAI ||
-                      config.provider === CustomApiProvider.GeminiOpenAI) && (
+                    {/* OpenRouter Provider Filter - for OpenAI Compatible APIs */}
+                    {(providerToUse === CustomApiProvider.OpenAI ||
+                      providerToUse === CustomApiProvider.QwenOpenAI ||
+                      providerToUse === CustomApiProvider.GeminiOpenAI) && (
                         <div className={formRowClass}>
                             <p className={labelClass}>{t('Allow Only Specific Providers (OpenRouter)')}</p>
                             <div className={inputContainerClass}>
@@ -67,31 +70,28 @@ const DeveloperOptionsPanel: FC<Props> = ({
                         </div>
                     )}
 
-                    {/* Anthropic Specific Options */}
-                    {(config.provider === CustomApiProvider.Anthropic ||
-                      config.provider === CustomApiProvider.VertexAI_Claude) && (
-                        <div className={formRowClass}>
-                            <p className={labelClass}>{t('Anthropic Beta Headers')}</p>
-                            <div className={inputContainerClass}>
-                                <Textarea
-                                    className='w-full font-mono text-sm'
-                                    placeholder="context-1m-2025-08-07,tool-use-2024-07-16"
-                                    value={config.advancedConfig?.anthropicBetaHeaders || ''}
-                                    onChange={(e) => {
-                                        const updatedConfig = {
-                                            ...config,
-                                            advancedConfig: {
-                                                ...config.advancedConfig,
-                                                anthropicBetaHeaders: e.currentTarget.value,
-                                            }
-                                        };
-                                        updateConfig(updatedConfig);
-                                    }}
-                                />
-                                <Blockquote>{t('Comma-separated beta feature names (e.g., context-1m-2025-08-07,context-1m-2025-08-07)')}</Blockquote>
-                            </div>
+                    {/* Anthropic Beta Headers */}
+                    <div className={formRowClass}>
+                        <p className={labelClass}>{t('Anthropic Beta Headers')}</p>
+                        <div className={inputContainerClass}>
+                            <Textarea
+                                className='w-full font-mono text-sm'
+                                placeholder="context-1m-2025-08-07,tool-use-2024-07-16"
+                                value={config.advancedConfig?.anthropicBetaHeaders || ''}
+                                onChange={(e) => {
+                                    const updatedConfig = {
+                                        ...config,
+                                        advancedConfig: {
+                                            ...config.advancedConfig,
+                                            anthropicBetaHeaders: e.currentTarget.value,
+                                        }
+                                    };
+                                    updateConfig(updatedConfig);
+                                }}
+                            />
+                            <Blockquote>{t('Comma-separated beta feature names (e.g., context-1m-2025-08-07,context-1m-2025-08-07)')}</Blockquote>
                         </div>
-                    )}
+                    </div>
                 </div>
             )}
         </div>

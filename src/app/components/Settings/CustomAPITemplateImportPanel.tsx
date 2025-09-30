@@ -41,6 +41,9 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
   // Common要素のインポート選択状態（デフォルトはON）
   const [importProviderConfigs, setImportProviderConfigs] = useState(true);
   const [importCommonSystemMessage, setImportCommonSystemMessage] = useState(true);
+  // 個別Provider選択状態
+  const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
+  const [expandProviders, setExpandProviders] = useState(false);
 
   // 自動テンプレートインポート処理
   const handleAutoImport = async (companyName: string) => {
@@ -60,6 +63,9 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
       // チェックボックスの状態をリセット（デフォルトはON）
       setImportProviderConfigs(true);
       setImportCommonSystemMessage(true);
+      // 全Providerを選択状態にリセット
+      setSelectedProviders(parsedProviderConfigs?.map(p => p.id) || []);
+      setExpandProviders(false);
  
       // デフォルト値上書きロジック：既存Bot数以下は上書き、超過時は「Add as new」
       const defaultMappings = parsedConfigs.map((_, index) => {
@@ -106,6 +112,9 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
       // チェックボックスの状態をリセット（デフォルトはON）
       setImportProviderConfigs(true);
       setImportCommonSystemMessage(true);
+      // 全Providerを選択状態にリセット
+      setSelectedProviders(parsedProviderConfigs?.map(p => p.id) || []);
+      setExpandProviders(false);
  
       // 既存Bot数以下は上書き、超過時は「Add as new」
       const defaultMappings = parsedConfigs.map((_, index) => {
@@ -161,8 +170,10 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
       const updatedConfigs = [...newConfigs, ...configsToAdd];
       const updatePayload: Partial<UserConfig> = { customApiConfigs: updatedConfigs };
 
-      if (importedData.providerConfigs && importProviderConfigs) {
-        updatePayload.providerConfigs = importedData.providerConfigs;
+      if (importedData.providerConfigs && importProviderConfigs && selectedProviders.length > 0) {
+        // 選択されたProviderのみをインポート
+        const filteredProviders = importedData.providerConfigs.filter(p => selectedProviders.includes(p.id));
+        updatePayload.providerConfigs = filteredProviders;
       }
  
       if (importedData.commonSystemMessage !== undefined && importCommonSystemMessage) {
@@ -239,11 +250,50 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
                   <h4 className="text-sm font-medium mb-2 text-primary-text">{t('Common Settings')}</h4>
                   <div className="space-y-2">
                     {importedData.providerConfigs && (
-                      <Checkbox
-                        label={t('Import API Providers') + ` (${importedData.providerConfigs.length})`}
-                        checked={importProviderConfigs}
-                        onChange={setImportProviderConfigs}
-                      />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            label={t('Import API Providers') + ` (${selectedProviders.length}/${importedData.providerConfigs.length})`}
+                            checked={importProviderConfigs}
+                            onChange={(checked) => {
+                              setImportProviderConfigs(checked);
+                              if (checked) {
+                                // 全選択
+                                setSelectedProviders(importedData.providerConfigs?.map(p => p.id) || []);
+                              } else {
+                                // 全解除
+                                setSelectedProviders([]);
+                              }
+                            }}
+                          />
+                          {importProviderConfigs && (
+                            <button
+                              onClick={() => setExpandProviders(!expandProviders)}
+                              className="text-xs text-blue-600 hover:text-blue-800 underline"
+                            >
+                              {expandProviders ? t('Hide details') : t('Show details')}
+                            </button>
+                          )}
+                        </div>
+                        {importProviderConfigs && expandProviders && (
+                          <div className="ml-6 space-y-1 max-h-32 overflow-y-auto border-l-2 border-gray-200 pl-3">
+                            {importedData.providerConfigs.map((provider) => (
+                              <Checkbox
+                                key={provider.id}
+                                label={provider.name}
+                                checked={selectedProviders.includes(provider.id)}
+                                onChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedProviders([...selectedProviders, provider.id]);
+                                  } else {
+                                    setSelectedProviders(selectedProviders.filter(id => id !== provider.id));
+                                  }
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     )}
                     {importedData.commonSystemMessage !== undefined && (
                       <Checkbox

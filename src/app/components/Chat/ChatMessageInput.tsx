@@ -455,8 +455,18 @@ const ChatMessageInput: FC<Props> = (props) => {
           title={t('Compose Message')}
           size="2xl"
           className="flex flex-col"
+          footer={
+            <div className="flex justify-end">
+              <Button
+                text={t('Send')}
+                color="primary"
+                onClick={modalSubmit}
+                disabled={!value.trim()}
+              />
+            </div>
+          }
         >
-          <div className="flex-grow p-4">
+          <div className="p-4 h-full">
             <TextInput
               value={value}
               onValueChange={setValue}
@@ -465,13 +475,6 @@ const ChatMessageInput: FC<Props> = (props) => {
               autoFocus
               fullHeight
               onSubmit={modalSubmit}
-            />
-          </div>
-          <div className="flex justify-end p-4 border-t border-primary-border">
-            <Button
-              text={t('Send')}
-              color="primary"
-              onClick={modalSubmit}
             />
           </div>
         </ExpandableDialog>
