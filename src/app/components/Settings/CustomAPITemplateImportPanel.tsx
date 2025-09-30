@@ -171,9 +171,27 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
       const updatePayload: Partial<UserConfig> = { customApiConfigs: updatedConfigs };
 
       if (importedData.providerConfigs && importProviderConfigs && selectedProviders.length > 0) {
+        // 既存のProviderConfigsを取得（存在しない場合は空配列）
+        const existingProviders = userConfig.providerConfigs || [];
+        
         // 選択されたProviderのみをインポート
         const filteredProviders = importedData.providerConfigs.filter(p => selectedProviders.includes(p.id));
-        updatePayload.providerConfigs = filteredProviders;
+        
+        // マージロジック: 同じIDがあれば上書き、なければ追加
+        const mergedProviders = [...existingProviders];
+        
+        filteredProviders.forEach(newProvider => {
+          const existingIndex = mergedProviders.findIndex(p => p.id === newProvider.id);
+          if (existingIndex >= 0) {
+            // 同じIDが存在する場合は上書き
+            mergedProviders[existingIndex] = newProvider;
+          } else {
+            // 新しいProviderとして追加
+            mergedProviders.push(newProvider);
+          }
+        });
+        
+        updatePayload.providerConfigs = mergedProviders;
       }
  
       if (importedData.commonSystemMessage !== undefined && importCommonSystemMessage) {
