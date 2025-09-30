@@ -6,6 +6,14 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.12.0',
+    notes: [
+      'releasenote_v2120_provider_feature',
+      'releasenote_v2120_claude_sonnet_45',
+      'releasenote_v2120_release_note_by_claude_sonnet_45',
+    ],
+  },
+  {
     version: '2.11.0',
     notes: [
       'releasenote_v2110_file_attachment_support',
