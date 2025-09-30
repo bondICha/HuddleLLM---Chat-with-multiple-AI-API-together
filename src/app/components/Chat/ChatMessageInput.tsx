@@ -158,7 +158,12 @@ const ChatMessageInput: FC<Props> = (props) => {
       setValue('');
       setAttachments([]);
     }
+    // Close modal first, then focus on main input after a delay
     setIsExpanded(false)
+    // Delay focus to ensure modal is fully closed and events are cleared
+    setTimeout(() => {
+      inputRef.current?.focus()
+    }, 100)
   }, [value, attachments, props.onSubmit])
 
   const insertTextAtCursor = useCallback(
@@ -451,7 +456,13 @@ const ChatMessageInput: FC<Props> = (props) => {
       {isExpanded && (
         <ExpandableDialog
           open={isExpanded}
-          onClose={() => setIsExpanded(false)}
+          onClose={() => {
+            setIsExpanded(false)
+            // Delay focus to ensure modal is fully closed and events are cleared
+            setTimeout(() => {
+              inputRef.current?.focus()
+            }, 100)
+          }}
           title={t('Compose Message')}
           size="2xl"
           className="flex flex-col"
@@ -470,7 +481,7 @@ const ChatMessageInput: FC<Props> = (props) => {
             <TextInput
               value={value}
               onValueChange={setValue}
-              placeholder={t('Enter to add a new line, Shift+Enter to send.')}
+              placeholder={t('Enter to add a new line')}
               className="w-full h-full resize-none outline-none bg-transparent text-base"
               autoFocus
               fullHeight

@@ -32,14 +32,9 @@ const TextInput = React.forwardRef<HTMLTextAreaElement, Props>((props, ref) => {
     (e) => {
       if (e.keyCode === 13) { // Enter key
         if (fullHeight) { // Expanded Modal
-          if (e.shiftKey) {
-            // Shift + Enter sends
-            e.preventDefault();
-            if (!disabled) {
-              props.onSubmit ? props.onSubmit() : formref?.current?.requestSubmit();
-            }
-          }
-          // Just Enter does nothing, allowing the default newline behavior
+          // In modal, both Enter and Shift+Enter just add newlines
+          // Submission is only via the Send button
+          // No preventDefault needed - let default newline behavior work
         } else { // Normal Input
           e.preventDefault();
           if (e.shiftKey) {
