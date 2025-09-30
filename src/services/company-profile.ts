@@ -81,18 +81,10 @@ export async function setCompanyProfileState(state: CompanyProfileState): Promis
 }
 
 export function compareVersions(version1: string, version2: string): number {
-  const v1Parts = version1.split('.').map(Number)
-  const v2Parts = version2.split('.').map(Number)
-  
-  for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
-    const v1Part = v1Parts[i] || 0
-    const v2Part = v2Parts[i] || 0
-    
-    if (v1Part > v2Part) return 1
-    if (v1Part < v2Part) return -1
-  }
-  
-  return 0
+  // Simple string comparison for date-based versions (e.g., "2025.09.30-claude-4-5")
+  // This works because date format YYYY.MM.DD naturally sorts correctly
+  if (version1 === version2) return 0
+  return version1 > version2 ? 1 : -1
 }
 
 export async function shouldCheckCompanyProfile(preset: CompanyProfilePreset): Promise<boolean> {
