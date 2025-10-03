@@ -50,6 +50,9 @@ import tongyiLogo from '~/assets/logos/tongyi.svg';
 import xaiLogo from '~/assets/logos/xai.svg';
 import bytedanceLogo from '~/assets/logos/bytedance.svg';
 import zhipuLogo from '~/assets/logos/zhipu.svg';
+import chutesLogo from '~/assets/logos/chutes.svg';
+import novitaLogo from '~/assets/logos/novita.svg';
+import openrouterLogo from '~/assets/logos/openrouter.svg';
 
 // アイコンオプションの定義
 interface IconOption {
@@ -137,7 +140,10 @@ const otherIcons: IconOption[] = [
   { id: 'bytedance', name: 'ByteDance', src: bytedanceLogo },
   { id: 'xunfei', name: 'XunFei', src: xunfeiLogo },
   { id: 'yi', name: 'Yi', src: yiLogo },
-  { id: 'zhipu', name: 'Zhipu AI', src: zhipuLogo }
+  { id: 'zhipu', name: 'Zhipu AI', src: zhipuLogo },
+  { id: 'chutes', name: 'Chutes', src: chutesLogo },
+  { id: 'novita', name: 'Novita', src: novitaLogo },
+  { id: 'openrouter', name: 'OpenRouter', src: openrouterLogo }
 ];
 
 interface IconSelectProps {

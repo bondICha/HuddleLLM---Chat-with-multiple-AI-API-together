@@ -8,4 +8,9 @@ export const HOST_PRESETS = [
   'https://api.fireworks.ai',
   'https://dashscope.aliyuncs.com',
   'https://openrouter.ai/api',
+  'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+  'https://api.novita.ai/openai',
+  'https://api.chutes.ai',
+  'https://api.hyperbolic.xyz',
+  'https://api.studio.nebius.com'
 ];

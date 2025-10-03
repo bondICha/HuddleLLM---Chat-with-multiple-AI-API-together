@@ -54,6 +54,9 @@ import tongyiLogo from '~/assets/logos/tongyi.svg';
 import xaiLogo from '~/assets/logos/xai.svg';
 import bytedanceLogo from '~/assets/logos/bytedance.svg';
 import zhipuLogo from '~/assets/logos/zhipu.svg';
+import chutesLogo from '~/assets/logos/chutes.svg';
+import novitaLogo from '~/assets/logos/novita.svg';
+import openrouterLogo from '~/assets/logos/openrouter.svg';
 
 // 特殊フォーマットのアイコンID用マッピング
 const specialFormatMap: Record<string, string> = {
@@ -113,6 +116,9 @@ const iconMap: Record<string, string> = {
   'xai': xaiLogo,
   'zhipu': zhipuLogo,
   'bytedance': bytedanceLogo,
+  'chutes': chutesLogo,
+  'novita': novitaLogo,
+  'openrouter': openrouterLogo,
 };
 
 // 安全なアイコン表示のための検証関数
