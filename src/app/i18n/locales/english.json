@@ -306,5 +306,9 @@
   "API Scheme": "API Scheme",
   "Edit Provider": "Edit Provider",
   "Provider updated successfully": "Provider updated successfully",
-  "Not set": "Not set"
+  "Not set": "Not set",
+  "releasenote_v2122_model_preview_enhancement": "## Model Preview Feature Enhancement\n\n- Added ModelPreview component for individual provider model browsing",
+  "releasenote_v2122_session_restore_toggle": "## Session Restore Feature Improvement\n\n- Added startup restore toggle to session restore modal",
+  "releasenote_v2122_provider_icons": "## API Provider Icons Addition\n\n- Added icons for major API providers including OpenRouter, Novita, and Chutes\n- Icons can now be selected in the provider settings screen",
+  "releasenote_v2122_by_glm_46": "*Note*: This release note was written by GLM 4.6 based on git diff analysis."
 }

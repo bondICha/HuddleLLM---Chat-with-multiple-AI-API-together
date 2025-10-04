@@ -316,5 +316,9 @@
   "Search models...": "モデルを検索...",
   "Click \"Fetch Models\" to load available models": "「モデルを取得」をクリックして利用可能なモデルを読み込みます",
   "Please configure API Key and Host to fetch models": "APIキーとホストを設定してモデルを取得してください",
-  "Show session restore on startup": "起動時に履歴再開を表示"
+  "Show session restore on startup": "起動時に履歴再開を表示",
+  "releasenote_v2122_model_preview_enhancement": "## モデルプレビュー機能の強化\n\n- 個別のプロバイダーモデルブラウジング用のModelPreviewコンポーネントを追加",
+  "releasenote_v2122_session_restore_toggle": "## セッション復元機能の改善\n\n- セッション復元モーダルに起動時復元トグルを追加",
+  "releasenote_v2122_provider_icons": "## APIプロバイダーアイコンの追加\n\n- OpenRouter、Novita、Chutesなどの主要APIプロバイダーのアイコンを追加\n- プロバイダー設定画面でアイコンを選択できるようになりました",
+  "releasenote_v2122_by_glm_46": "*注記*：このリリースノートはGLM 4.6がgit diffの分析に基づいて作成しました。"
 }

@@ -6,6 +6,15 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.12.2',
+    notes: [
+      'releasenote_v2122_model_preview_enhancement',
+      'releasenote_v2122_session_restore_toggle',
+      'releasenote_v2122_provider_icons',
+      'releasenote_v2122_by_glm_46',
+    ],
+  },
+  {
     version: '2.12.0',
     notes: [
       'releasenote_v2120_provider_feature',

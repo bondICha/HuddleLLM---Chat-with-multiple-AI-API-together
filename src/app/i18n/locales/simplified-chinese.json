@@ -276,5 +276,9 @@
   "Loading...": "加载中...",
   "Search models...": "搜索模型...",
   "Click \"Fetch Models\" to load available models": "点击“获取模型”加载可用模型",
-  "Please configure API Key and Host to fetch models": "请配置API密钥和主机以获取模型"
+  "Please configure API Key and Host to fetch models": "请配置API密钥和主机以获取模型",
+  "releasenote_v2122_model_preview_enhancement": "## 模型预览功能增强\n\n- 为个别提供商模型浏览添加了ModelPreview组件",
+  "releasenote_v2122_session_restore_toggle": "## 会话恢复功能改进\n\n- 为会话恢复模态框添加了启动时恢复切换",
+  "releasenote_v2122_provider_icons": "## API提供商图标添加\n\n- 添加了OpenRouter、Novita和Chutes等主要API提供商的图标\n- 现在可以在提供商设置屏幕中选择图标",
+  "releasenote_v2122_by_glm_46": "*注*：此发布说明由GLM 4.6基于git diff分析编写。"
 }
