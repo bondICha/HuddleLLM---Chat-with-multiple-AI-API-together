@@ -9,6 +9,7 @@ import ExpandableDialog from '../ExpandableDialog';
 import HostSearchInput from './HostSearchInput';
 import BotIcon from '../BotIcon';
 import IconSelectModal from './IconSelectModal';
+import ModelPreview from './ModelPreview';
 
 interface Props {
   open: boolean;
@@ -189,6 +190,16 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
                 setEditingProvider({ ...editingProvider, apiKey: e.currentTarget.value });
               }}
               type="password"
+            />
+          </div>
+
+          {/* Model Preview */}
+          <div className="border-t pt-4">
+            <ModelPreview
+              provider={editingProvider.provider || CustomApiProvider.OpenAI}
+              apiKey={editingProvider.apiKey}
+              host={editingProvider.host}
+              isHostFullPath={editingProvider.isHostFullPath}
             />
           </div>
         </div>

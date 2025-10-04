@@ -1,13 +1,13 @@
 import { RouterProvider } from '@tanstack/react-router'
 import { createRoot } from 'react-dom/client'
-import { useSetAtom } from 'jotai'
+import { useSetAtom, useAtomValue } from 'jotai'
 import { useEffect, useState } from 'react'
 import Browser from 'webextension-polyfill'
 import '../services/sentry'
 import './base.scss'
 import './i18n'
 import { router } from './router'
-import { pendingSearchQueryAtom, sessionRestoreModalAtom } from './state'
+import { pendingSearchQueryAtom, sessionRestoreModalAtom, restoreOnStartupAtom } from './state'
 import { markOmniboxSearchAsUsed } from '../services/storage/open-times'
 import { quickCheckAnySession } from '../services/chat-history'
 import CompanyProfileModal from './components/Modals/CompanyProfileModal'
@@ -16,6 +16,7 @@ import { useFontType } from './hooks/use-font-type'
 function App() {
   const setPendingSearchQuery = useSetAtom(pendingSearchQueryAtom)
   const setSessionRestoreModal = useSetAtom(sessionRestoreModalAtom)
+  const restoreOnStartup = useAtomValue(restoreOnStartupAtom)
   
   // フォント設定を適用
   useFontType()
@@ -40,6 +41,10 @@ function App() {
 
     const checkSessionRestore = async () => {
       try {
+        // ユーザー設定でOFFの場合は即終了
+        if (!restoreOnStartup) {
+          return
+        }
         // 検索バーから呼び出された場合（pendingOmniboxSearchがある場合）はSession復旧画面を表示しない
         const result = await Browser.storage.local.get('pendingOmniboxSearch')
         const hasPendingSearch = result.pendingOmniboxSearch && typeof result.pendingOmniboxSearch === 'string' && result.pendingOmniboxSearch.trim() !== ''
@@ -64,7 +69,7 @@ function App() {
 
     loadPendingSearch()
     checkSessionRestore()
-  }, [setPendingSearchQuery, setSessionRestoreModal])
+  }, [setPendingSearchQuery, setSessionRestoreModal, restoreOnStartup])
 
 
   return (

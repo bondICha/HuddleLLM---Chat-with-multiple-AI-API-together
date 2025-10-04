@@ -17,7 +17,7 @@ import logo from '~/assets/logo.png'
 import BotIcon from '../BotIcon'
 import { cx } from '~/utils'
 import { useEnabledBots } from '~app/hooks/use-enabled-bots'
-import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom } from '~app/state'
+import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom, restoreOnStartupAtom } from '~app/state'
 import { checkReleaseNotes, getAllReleaseNotes } from '~services/release-notes'
 import * as api from '~services/server-api'
 import {
@@ -77,6 +77,8 @@ function Sidebar() {
   const [editingPairId, setEditingPairId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [hasInitialized, setHasInitialized] = useState(false)
+  // 起動時に履歴再開モーダルを表示する設定（デフォルトON）
+  const [restoreOnStartup, setRestoreOnStartup] = useAtom(restoreOnStartupAtom)
 
   // アクティブなAll-In-Oneを管理
   const [activeAllInOne, setActiveAllInOne] = useAtom(activeAllInOneAtom)
@@ -737,6 +739,23 @@ useEffect(() => {
           )
         })}
       </div>
+      {/* 起動時に履歴再開表示 トグル */}
+      {(shouldShowAsHamburger || !collapsed) && (
+        <div className="mt-3 mb-1 px-1 flex items-center justify-between">
+          <span className="text-xs text-primary-text opacity-80">{t('Show session restore on startup')}</span>
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={restoreOnStartup}
+              onChange={(e) => setRestoreOnStartup(e.target.checked)}
+            />
+            <div className="w-10 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:bg-blue-500 relative transition-colors">
+              <span className={cx('absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-all', restoreOnStartup ? 'translate-x-5' : 'translate-x-0')} />
+            </div>
+          </label>
+        </div>
+      )}
       <div className="mt-auto pt-2">
         {(shouldShowAsHamburger || !collapsed) && <hr className="border-[#ffffff4d]" />}
         <div className={cx('flex mt-5 gap-[10px] mb-4', (shouldShowAsHamburger || !collapsed) ? 'flex-row' : 'flex-col')}>

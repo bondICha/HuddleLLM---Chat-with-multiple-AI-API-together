@@ -37,7 +37,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
   const [nestedTemplateOptions, setNestedTemplateOptions] = useState<NestedDropdownOption[]>([]);
   const [chatbotIconEditIndex, setChatbotIconEditIndex] = useState<number | null>(null);
 
-  const { loading: modelsLoading, fetchAllModels, modelsPerConfig, errorsPerConfig, isProviderSupported } = useApiModels();
+  const { loading: modelsLoading, fetchAllModels, fetchSingleModel, modelsPerConfig, errorsPerConfig, isProviderSupported } = useApiModels();
 
   const customApiConfigs = userConfig.customApiConfigs || [];
 
@@ -82,6 +82,22 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
       };
     });
     await fetchAllModels(configs);
+  };
+
+  const handleFetchSingleModel = async (index: number) => {
+    const config = customApiConfigs[index];
+    const providerRef = config.providerRefId
+      ? (userConfig.providerConfigs || []).find((p) => p.id === config.providerRefId)
+      : undefined;
+
+    const fetchConfig = {
+      provider: providerRef?.provider ?? config.provider,
+      apiKey: providerRef?.apiKey ?? config.apiKey,
+      host: providerRef?.host ?? config.host,
+      isHostFullPath: providerRef?.isHostFullPath ?? config.isHostFullPath,
+    };
+
+    await fetchSingleModel(fetchConfig, index);
   };
 
   const createModelOptions = (configIndex?: number): NestedDropdownOption[] => {
@@ -348,11 +364,36 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                   <div className={formRowClass}>
                     <div className="flex items-center justify-between">
                       <p className={labelClass}>{t('AI Model')}</p>
-                      {isProviderSupported(config.provider) && (
-                        <button onClick={handleFetchAllModels} disabled={modelsLoading} className={`px-3 py-1 text-xs rounded transition-colors ${errorsPerConfig[index] ? 'bg-gray-400 text-gray-600 hover:bg-gray-500 disabled:bg-gray-300' : 'bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white'}`} title={errorsPerConfig[index] || t('Fetch models from API for all chatbots')}>
-                          {modelsLoading ? t('Loading...') : t('Fetch Models')}
-                        </button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {isProviderSupported(config.provider) && (
+                          <button
+                            onClick={() => handleFetchSingleModel(index)}
+                            disabled={modelsLoading}
+                            className={`px-2 py-1 text-xs rounded transition-colors ${
+                              errorsPerConfig[index]
+                                ? 'bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400'
+                                : 'bg-green-500 hover:bg-green-600 disabled:bg-gray-400'
+                            } text-white`}
+                            title={errorsPerConfig[index] || t('Fetch models for this chatbot only')}
+                          >
+                            {modelsLoading ? t('Loading...') : t('Fetch')}
+                          </button>
+                        )}
+                        {isProviderSupported(config.provider) && (
+                          <button
+                            onClick={handleFetchAllModels}
+                            disabled={modelsLoading}
+                            className={`px-2 py-1 text-xs rounded transition-colors ${
+                              Object.values(errorsPerConfig).some(error => error)
+                                ? 'bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400'
+                                : 'bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400'
+                            } text-white`}
+                            title={t('Fetch models from API for all chatbots')}
+                          >
+                            {modelsLoading ? t('Loading...') : t('Fetch All')}
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="flex flex-col gap-3">
                       <NestedDropdown
@@ -378,6 +419,18 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         provider={config.provider}
                         placeholder={t('Search models...')}
                       />
+                      {errorsPerConfig[index] && (
+                        <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                          <p className="text-xs text-red-600 dark:text-red-400">{errorsPerConfig[index]}</p>
+                        </div>
+                      )}
+                      {modelsPerConfig[index] && modelsPerConfig[index].length > 0 && (
+                        <div className="p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                          <p className="text-xs text-green-600 dark:text-green-400">
+                            {t('Found')} {modelsPerConfig[index].length} {t('models')}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className={formRowClass}>

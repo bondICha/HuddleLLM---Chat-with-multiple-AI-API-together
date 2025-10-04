@@ -309,5 +309,12 @@
   "API Scheme": "APIスキーム",
   "Edit Provider": "プロバイダーを編集",
   "Provider updated successfully": "プロバイダーが正常に更新されました",
-  "Not set": "未設定"
+  "Not set": "未設定",
+  "Available Models": "利用可能なモデル",
+  "Fetch Models": "モデルを取得",
+  "Loading...": "読み込み中...",
+  "Search models...": "モデルを検索...",
+  "Click \"Fetch Models\" to load available models": "「モデルを取得」をクリックして利用可能なモデルを読み込みます",
+  "Please configure API Key and Host to fetch models": "APIキーとホストを設定してモデルを取得してください",
+  "Show session restore on startup": "起動時に履歴再開を表示"
 }

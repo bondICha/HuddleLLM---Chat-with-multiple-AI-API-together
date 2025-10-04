@@ -270,5 +270,11 @@
   "API Scheme": "API方案",
   "Edit Provider": "编辑提供商",
   "Provider updated successfully": "提供商更新成功",
-  "Not set": "未设置"
+  "Not set": "未设置",
+  "Available Models": "可用模型",
+  "Fetch Models": "获取模型",
+  "Loading...": "加载中...",
+  "Search models...": "搜索模型...",
+  "Click \"Fetch Models\" to load available models": "点击“获取模型”加载可用模型",
+  "Please configure API Key and Host to fetch models": "请配置API密钥和主机以获取模型"
 }
