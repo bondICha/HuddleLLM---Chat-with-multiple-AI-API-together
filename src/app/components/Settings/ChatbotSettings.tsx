@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from 'react';
+import { FC, useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BiPlus, BiTrash, BiHide, BiShow, BiPencil, BiChevronDown, BiExpand } from 'react-icons/bi';
 import toast from 'react-hot-toast';
@@ -16,6 +16,7 @@ import ModelSearchInput from '../ModelSearchInput';
 import DeveloperOptionsPanel from './DeveloperOptionsPanel';
 import { getTemplateOptions, getActivePresets, getPresetMapping } from '~services/preset-loader';
 import { useApiModels } from '~hooks/use-api-models';
+import type { ApiModel } from '~utils/model-fetcher';
 import { revalidateEnabledBots } from '~app/hooks/use-enabled-bots';
 import SystemPromptEditorModal from './SystemPromptEditorModal';
 import HostSearchInput from './HostSearchInput';
@@ -38,6 +39,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
   const [chatbotIconEditIndex, setChatbotIconEditIndex] = useState<number | null>(null);
 
   const { loading: modelsLoading, fetchAllModels, fetchSingleModel, modelsPerConfig, errorsPerConfig, isProviderSupported } = useApiModels();
+  const prevModelsPerConfigRef = useRef<Record<number, ApiModel[]>>({});
+  const prevErrorsPerConfigRef = useRef<Record<number, string | null>>({});
 
   const customApiConfigs = userConfig.customApiConfigs || [];
 
@@ -68,21 +71,37 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     loadTemplateOptions();
   }, []);
 
-  const handleFetchAllModels = async () => {
-    const configs = customApiConfigs.map(config => {
-      const providerRef = (config.providerRefId)
-        ? (userConfig.providerConfigs || []).find((p) => p.id === config.providerRefId)
-        : undefined;
+  // Show toast notifications when models are fetched or errors occur
+  useEffect(() => {
+    if (!modelsLoading) {
+      // Check for new errors
+      Object.keys(errorsPerConfig).forEach(key => {
+        const index = parseInt(key);
+        const error = errorsPerConfig[index];
+        const prevError = prevErrorsPerConfigRef.current[index];
 
-      return {
-        provider: providerRef?.provider ?? config.provider,
-        apiKey: providerRef?.apiKey ?? config.apiKey,
-        host: providerRef?.host ?? config.host,
-        isHostFullPath: providerRef?.isHostFullPath ?? config.isHostFullPath,
-      };
-    });
-    await fetchAllModels(configs);
-  };
+        if (error && error !== prevError) {
+          toast.error(error);
+        }
+      });
+
+      // Check for new models
+      Object.keys(modelsPerConfig).forEach(key => {
+        const index = parseInt(key);
+        const models = modelsPerConfig[index];
+        const prevModels = prevModelsPerConfigRef.current[index];
+        const error = errorsPerConfig[index];
+
+        if (!error && models && models.length > 0 && (!prevModels || prevModels.length === 0)) {
+          toast.success(t('Found') + ` ${models.length} ` + t('models'));
+        }
+      });
+
+      // Update refs
+      prevModelsPerConfigRef.current = modelsPerConfig;
+      prevErrorsPerConfigRef.current = errorsPerConfig;
+    }
+  }, [modelsLoading, modelsPerConfig, errorsPerConfig, t]);
 
   const handleFetchSingleModel = async (index: number) => {
     const config = customApiConfigs[index];
@@ -90,11 +109,30 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
       ? (userConfig.providerConfigs || []).find((p) => p.id === config.providerRefId)
       : undefined;
 
+    // Resolve effective settings with fallback to common settings
+    const effectiveHost = (providerRef?.host && providerRef.host.trim().length > 0)
+      ? providerRef.host
+      : (config.host && config.host.trim().length > 0)
+        ? config.host
+        : userConfig.customApiHost;
+
+    const effectiveApiKey = (providerRef?.apiKey && providerRef.apiKey.trim().length > 0)
+      ? providerRef.apiKey
+      : (config.apiKey && config.apiKey.trim().length > 0)
+        ? config.apiKey
+        : userConfig.customApiKey;
+
+    const effectiveIsHostFullPath = providerRef
+      ? (providerRef.isHostFullPath ?? false)
+      : (config.host && config.host.trim().length > 0)
+        ? (config.isHostFullPath ?? false)
+        : (userConfig.isCustomApiHostFullPath ?? false);
+
     const fetchConfig = {
       provider: providerRef?.provider ?? config.provider,
-      apiKey: providerRef?.apiKey ?? config.apiKey,
-      host: providerRef?.host ?? config.host,
-      isHostFullPath: providerRef?.isHostFullPath ?? config.isHostFullPath,
+      apiKey: effectiveApiKey,
+      host: effectiveHost,
+      isHostFullPath: effectiveIsHostFullPath,
     };
 
     await fetchSingleModel(fetchConfig, index);
@@ -338,62 +376,42 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
               </div>
               <div className="p-4 space-y-6">
                 <div className="space-y-4">
-                  <div className="space-y-4">
                     <div className={formRowClass}>
                       <p className={labelClass}>{t('API Provider')}</p>
-                      <Select
-                        options={[
-                          // Individual Settings のときはアイコンを表示しない（undefined）
-                          { name: t('Individual Settings'), value: 'individual' },
-                          ...(userConfig.providerConfigs || []).map((p) => ({ name: p.name, value: p.id, icon: p.icon }))
-                        ]}
-                        value={config.providerRefId || 'individual'}
-                        onChange={(v) => {
-                          const updatedConfigs = [...customApiConfigs];
-                          if (v === 'individual') {
-                            updatedConfigs[index].providerRefId = undefined;
-                          } else {
-                            updatedConfigs[index].providerRefId = v;
-                          }
-                          updateCustomApiConfigs(updatedConfigs);
-                        }}
-                        showIcon={true}
-                      />
+                      <div className="relative">
+                        <Select
+                          options={[
+                            // Individual Settings のときはアイコンを表示しない（undefined）
+                            { name: t('Individual Settings'), value: 'individual' },
+                            ...(userConfig.providerConfigs || []).map((p) => ({ name: p.name, value: p.id, icon: p.icon }))
+                          ]}
+                          value={config.providerRefId || 'individual'}
+                          onChange={(v) => {
+                            const updatedConfigs = [...customApiConfigs];
+                            if (v === 'individual') {
+                              updatedConfigs[index].providerRefId = undefined;
+                            } else {
+                              updatedConfigs[index].providerRefId = v;
+                            }
+                            updateCustomApiConfigs(updatedConfigs);
+                          }}
+                          showIcon={true}
+                        />
+                      </div>
                     </div>
-                  </div>
                   <div className={formRowClass}>
                     <div className="flex items-center justify-between">
                       <p className={labelClass}>{t('AI Model')}</p>
-                      <div className="flex items-center gap-2">
-                        {isProviderSupported(config.provider) && (
-                          <button
-                            onClick={() => handleFetchSingleModel(index)}
-                            disabled={modelsLoading}
-                            className={`px-2 py-1 text-xs rounded transition-colors ${
-                              errorsPerConfig[index]
-                                ? 'bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400'
-                                : 'bg-green-500 hover:bg-green-600 disabled:bg-gray-400'
-                            } text-white`}
-                            title={errorsPerConfig[index] || t('Fetch models for this chatbot only')}
-                          >
-                            {modelsLoading ? t('Loading...') : t('Fetch')}
-                          </button>
-                        )}
-                        {isProviderSupported(config.provider) && (
-                          <button
-                            onClick={handleFetchAllModels}
-                            disabled={modelsLoading}
-                            className={`px-2 py-1 text-xs rounded transition-colors ${
-                              Object.values(errorsPerConfig).some(error => error)
-                                ? 'bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400'
-                                : 'bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400'
-                            } text-white`}
-                            title={t('Fetch models from API for all chatbots')}
-                          >
-                            {modelsLoading ? t('Loading...') : t('Fetch All')}
-                          </button>
-                        )}
-                      </div>
+                      {isProviderSupported(config.provider) && (
+                        <button
+                          onClick={() => handleFetchSingleModel(index)}
+                          disabled={modelsLoading}
+                          className="px-3 py-1 text-xs rounded transition-colors bg-white dark:bg-black border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={errorsPerConfig[index] || t('Fetch models from API')}
+                        >
+                          {modelsLoading ? t('Loading...') : t('Fetch Models')}
+                        </button>
+                      )}
                     </div>
                     <div className="flex flex-col gap-3">
                       <NestedDropdown
@@ -419,18 +437,6 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         provider={config.provider}
                         placeholder={t('Search models...')}
                       />
-                      {errorsPerConfig[index] && (
-                        <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                          <p className="text-xs text-red-600 dark:text-red-400">{errorsPerConfig[index]}</p>
-                        </div>
-                      )}
-                      {modelsPerConfig[index] && modelsPerConfig[index].length > 0 && (
-                        <div className="p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                          <p className="text-xs text-green-600 dark:text-green-400">
-                            {t('Found')} {modelsPerConfig[index].length} {t('models')}
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </div>
                   <div className={formRowClass}>

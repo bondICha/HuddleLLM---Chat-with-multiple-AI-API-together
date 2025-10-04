@@ -56,7 +56,7 @@ function Select<T extends string>(props: Props<T>) {
     <Listbox value={value} onChange={onChange} disabled={disabled}>
       {({ open }) => (
         <>
-          <div className="relative">
+          <div className={cx('relative', open && 'z-50')}>
             <Listbox.Button
               ref={buttonRef}
               className={cx(
@@ -89,7 +89,7 @@ function Select<T extends string>(props: Props<T>) {
             >
               <Listbox.Options
                 className={cx(
-                  'absolute z-10 mt-1 max-h-80	 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black dark:ring-gray-700 ring-opacity-5 focus:outline-none', // Dark mode styles for options panel
+                  'absolute z-50 mt-1 max-h-80	 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black dark:ring-gray-700 ring-opacity-5 focus:outline-none', // Dark mode styles for options panel
                   size === 'normal' ? 'text-sm' : 'text-xs',
                   dropPosition === 'top' && 'bottom-full mb-1',
                 )}

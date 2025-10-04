@@ -15,6 +15,7 @@ import themeIcon from '~/assets/icons/theme.svg'
 import minimalLogo from '~/assets/icon.png'
 import logo from '~/assets/logo.png'
 import BotIcon from '../BotIcon'
+import CollapsedMosaic from './CollapsedMosaic'
 import { cx } from '~/utils'
 import { useEnabledBots } from '~app/hooks/use-enabled-bots'
 import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom, restoreOnStartupAtom } from '~app/state'
@@ -55,6 +56,7 @@ function IconButton(props: { icon: string; onClick?: () => void }) {
     </div>
   )
 }
+
 
 function Sidebar() {
   const { t } = useTranslation()
@@ -574,10 +576,14 @@ useEffect(() => {
                 : 'bg-secondary bg-opacity-20 text-primary-text hover:opacity-100',
               (shouldShowAsHamburger || !collapsed)
                 ? 'flex-row gap-3 py-[11px]'
-                : 'flex-col justify-center items-center gap-1 px-1 py-[5px]'
+                : 'flex-col justify-center items-center gap-1 px-1 py-[8px] min-h-[56px]'
             )}
           >
-            <img src={allInOneIcon} className="w-5 h-5" />
+            <div className="flex -space-x-1">
+              <div className="rounded-full border border-white overflow-hidden w-6 h-6">
+                <img src={allInOneIcon} className="w-6 h-6" />
+              </div>
+            </div>
             <span className={cx(
               'font-medium text-sm',
               !shouldShowAsHamburger && collapsed && 'overflow-hidden text-ellipsis leading-tight text-center break-words w-full'
@@ -622,27 +628,31 @@ useEffect(() => {
                   : 'bg-secondary bg-opacity-20 text-primary-text hover:opacity-100',
                 (shouldShowAsHamburger || !collapsed)
                   ? 'flex-row gap-3 py-[11px]'
-                  : 'flex-col justify-center items-center gap-1 px-1 py-[5px]'
+                  : 'flex-col justify-center items-center gap-1 px-1 py-[8px] min-h-[56px]'
               )}
             >
-              <div className="flex -space-x-1">
-                {pair.botIndices.slice(0, Math.min(4, shouldShowAsHamburger || !collapsed ? 4 : 2)).map((botIndex, i) => (
-                  <div key={i} className={cx(
-                    "rounded-full border border-white overflow-hidden",
-                    collapsed ? "w-4 h-4" : "w-4 h-4"
-                  )}>
-                    <BotIcon iconName={getBotAvatar(botIndex)} size={16} />
-                  </div>
-                ))}
-                {pair.botIndices.length > (shouldShowAsHamburger || !collapsed ? 4 : 2) && (
-                  <div className={cx(
-                    "rounded-full bg-secondary text-xs flex items-center justify-center border border-white",
-                    collapsed ? "w-4 h-4" : "w-4 h-4"
-                  )}>
-                    +{pair.botIndices.length - (shouldShowAsHamburger || !collapsed ? 4 : 2)}
-                  </div>
-                )}
-              </div>
+              {(!shouldShowAsHamburger && collapsed) ? (
+                <CollapsedMosaic icons={pair.botIndices.map(getBotAvatar)} />
+              ) : (
+                <div className="flex -space-x-1">
+                  {pair.botIndices.slice(0, Math.min(4, shouldShowAsHamburger || !collapsed ? 4 : 2)).map((botIndex, i) => (
+                    <div key={i} className={cx(
+                      "rounded-full border border-white overflow-hidden",
+                      collapsed ? "w-4 h-4" : "w-5 h-5"
+                    )}>
+                      <BotIcon iconName={getBotAvatar(botIndex)} size={collapsed ? 16 : 20} />
+                    </div>
+                  ))}
+                  {pair.botIndices.length > (shouldShowAsHamburger || !collapsed ? 4 : 2) && (
+                    <div className={cx(
+                      "rounded-full bg-secondary flex items-center justify-center border border-white",
+                      collapsed ? "w-4 h-4 text-xs" : "w-5 h-5 text-[11px]"
+                    )}>
+                      +{pair.botIndices.length - (shouldShowAsHamburger || !collapsed ? 4 : 2)}
+                    </div>
+                  )}
+                </div>
+              )}
               {(shouldShowAsHamburger || !collapsed) && (
                 <div className="flex-1 min-w-0">
                   {editingPairId === pair.id ? (
