@@ -177,6 +177,19 @@
   "Use / to select prompts, @URL to fetch content, Shift+Enter to add new line": "使用 / 选择提示词，@URL获取内容，Shift+Enter添加换行",
   "Propaganda action is irreversible.\nClick again to confirm.": "宣传行为不可逆，再次点击确认",
   "Propaganda👊": "宣传👊",
+  "Image Size": "图片尺寸",
+  "portrait-suffix": "（竖版）",
+  "landscape-suffix": "（横版）",
+  "Image Quality": "图片质量",
+  "Background": "背景",
+  "transparent": "透明",
+  "Output Format": "输出格式",
+  "Compression (0-100)": "压缩率（0-100）",
+  "Only for jpeg/webp": "仅适用于 jpeg/webp",
+  "Moderation": "内容审核",
+  "default": "默认",
+  "low": "低",
+  "auto": "自动",
   "This usually mean you need to add a payment method to your OpenAI account, checkout: ": "这通常意味着您需要在OpenAI账户中添加付款方式，请查看：",
   "Please check your network connection": "请检查您的网络连接，中国用户可能需要科学上网",
   "Add New Model": "添加新模型",
@@ -280,5 +293,6 @@
   "releasenote_v2122_model_preview_enhancement": "## 模型预览功能增强\n\n- 为个别提供商模型浏览添加了ModelPreview组件",
   "releasenote_v2122_session_restore_toggle": "## 会话恢复功能改进\n\n- 为会话恢复模态框添加了启动时恢复切换",
   "releasenote_v2122_provider_icons": "## API提供商图标添加\n\n- 添加了OpenRouter、Novita和Chutes等主要API提供商的图标\n- 现在可以在提供商设置屏幕中选择图标",
-  "releasenote_v2122_by_glm_46": "*注*：此发布说明由GLM 4.6基于git diff分析编写。"
+  "releasenote_v2122_by_glm_46": "*注*：此发布说明由GLM 4.6基于git diff分析编写。",
+  "releasenote_openai_responses_image_beta": "## 通过 OpenAI Responses API 的图片支持（Beta）\n\n- 支持使用 Responses API 的 image_generation 工具进行图片生成。\n- 使用相同的 API 也可以进行图片编辑（image_edit）。\n- 目前为测试版，如遇问题欢迎反馈。"
 }

@@ -96,6 +96,8 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
             <Select
               options={[
                 { name: 'OpenAI Compatible', value: CustomApiProvider.OpenAI },
+                { name: 'OpenAI Responses API (Beta)', value: CustomApiProvider.OpenAI_Responses },
+                { name: 'OpenAI Image (gpt-image-1, Beta)', value: CustomApiProvider.OpenAI_Image },
                 { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
                 { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock },
                 { name: 'Google Gemini (OpenAI Format)', value: CustomApiProvider.GeminiOpenAI },
@@ -159,8 +161,12 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
                   editingProvider.provider === CustomApiProvider.Google ? t("Not applicable for Google Gemini") :
                   editingProvider.provider === CustomApiProvider.GeminiOpenAI ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" :
                   editingProvider.provider === CustomApiProvider.QwenOpenAI ? "https://dashscope.aliyuncs.com/compatible-mode/v1" :
-                  editingProvider.isHostFullPath ? "https://api.example.com/v1/chat/completions" :
-                  "https://api.openai.com"
+                  editingProvider.isHostFullPath ? (
+                    editingProvider.provider === CustomApiProvider.OpenAI_Responses ? "https://api.example.com/v1/responses" :
+                    editingProvider.provider === CustomApiProvider.OpenAI_Image ? "https://api.example.com/v1/responses" :
+                    "https://api.example.com/v1/chat/completions"
+                  ) :
+                  "https://api.example.com"
                 }
                 value={editingProvider.host}
                 onChange={(value) => {

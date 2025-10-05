@@ -182,7 +182,7 @@ export function useChat(index: number) {
         for await (const answer of resp) {
           updateMessage(botMessageId, (message) => {
             message.text = answer.text;
-                        if (answer.thinking) {
+            if (answer.thinking) {
               message.thinking = answer.thinking;
             }
             if (answer.searchResults) {
@@ -208,6 +208,7 @@ export function useChat(index: number) {
       setChatState((draft) => {
         draft.abortController = undefined
         draft.generatingMessageId = ''
+        // no-op
       })
     },
     [index, chatState.bot, setChatState, updateMessage],

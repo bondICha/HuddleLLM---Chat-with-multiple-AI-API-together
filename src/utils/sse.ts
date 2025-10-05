@@ -10,7 +10,10 @@ const statusTextMap = new Map([
   [429, 'Too Many Requests'],
 ])
 
-export async function parseSSEResponse(resp: Response, onMessage: (message: string) => void) {
+export async function parseSSEResponse(
+  resp: Response,
+  onMessage: (message: string, eventName?: string) => void,
+) {
   if (!resp.ok) {
     const error = await resp.json().catch(() => ({}))
     if (!isEmpty(error)) {
@@ -21,7 +24,8 @@ export async function parseSSEResponse(resp: Response, onMessage: (message: stri
   }
   const parser = createParser((event) => {
     if (event.type === 'event') {
-      onMessage(event.data)
+      // Pass both data payload and SSE event name to consumers
+      onMessage(event.data, (event as any).event ?? undefined)
     }
   })
   const decoder = new TextDecoder()

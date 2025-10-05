@@ -626,6 +626,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               <Select
                                 options={[
                                   { name: 'OpenAI Compatible', value: CustomApiProvider.OpenAI },
+                                  { name: 'OpenAI Responses API (Beta)', value: CustomApiProvider.OpenAI_Responses },
+                                  { name: 'OpenAI Image (gpt-image-1, Beta)', value: CustomApiProvider.OpenAI_Image },
                                   { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
                                   { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock },
                                   { name: 'Google Gemini (OpenAI Format)', value: CustomApiProvider.GeminiOpenAI },
@@ -686,8 +688,12 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                   config.provider === CustomApiProvider.Google ? t("Not applicable for Google Gemini") :
                                   config.provider === CustomApiProvider.GeminiOpenAI ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" :
                                   config.provider === CustomApiProvider.QwenOpenAI ? "https://dashscope.aliyuncs.com/compatible-mode/v1" :
-                                  config.isHostFullPath ? "https://api.example.com/v1/chat/completions" :
-                                  "https://api.openai.com"
+                                  config.isHostFullPath ? (
+                                    config.provider === CustomApiProvider.OpenAI_Responses ? "https://api.example.com/v1/responses" :
+                                    config.provider === CustomApiProvider.OpenAI_Image ? "https://api.example.com/v1/responses" :
+                                    "https://api.example.com/v1/chat/completions"
+                                  ) :
+                                  "https://api.example.com"
                                 }
                                 value={config.host}
                                 onChange={(value) => {
@@ -747,6 +753,139 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               effectiveProvider={effectiveProvider}
                             />
                           );
+                        })()}
+                        {(() => {
+                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
+                          const effectiveProvider = providerRef?.provider ?? config.provider;
+                          if (effectiveProvider !== CustomApiProvider.OpenAI_Responses) return null;
+                          return (
+                            <div className="space-y-4">
+                              <div className={formRowClass}>
+                                <div className="flex items-center gap-2">
+                                  <p className={labelClass}>Web Search</p>
+                                </div>
+                                <div className={inputContainerClass}>
+                                  <Switch
+                                    checked={!!config.responsesWebSearch}
+                                    onChange={(checked) => {
+                                      const u = [...customApiConfigs];
+                                      u[index].responsesWebSearch = checked;
+                                      updateCustomApiConfigs(u);
+                                    }}
+                                  />
+                                  <p className="text-xs opacity-70 mt-1">Use web_search_preview tool with Responses API.</p>
+                                </div>
+                              </div>
+                              <div className={formRowClass}>
+                                <p className={labelClass}>Function Call Tools (JSON)</p>
+                                <Textarea
+                                  className='w-full font-mono text-xs'
+                                  placeholder='[ { "type": "function", "function": { "name": "search", "parameters": {"type":"object","properties":{...}} } } ]'
+                                  value={config.responsesFunctionTools || ''}
+                                  onChange={(e) => {
+                                    const u = [...customApiConfigs];
+                                    u[index].responsesFunctionTools = e.currentTarget.value;
+                                    updateCustomApiConfigs(u);
+                                  }}
+                                  rows={4}
+                                />
+                                <p className="text-xs opacity-70 mt-1">Optional. Raw JSON array for Responses API tools. If set, overrides the simple Web Search toggle.</p>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        {(() => {
+                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
+                          const effectiveProvider = providerRef?.provider ?? config.provider;
+                          return effectiveProvider === CustomApiProvider.OpenAI_Image && (
+                           <div className="space-y-4">
+                            <div className={formRowClass}>
+                              <p className={labelClass}>{t('Image Size')}</p>
+                              <Select
+                                options={[
+                                  { name: t('auto'), value: 'auto' },
+                                  { name: '1024x1024', value: '1024x1024' },
+                                  { name: `1024x1536 ${t('portrait-suffix')}`, value: '1024x1536' },
+                                  { name: `1536x1024 ${t('landscape-suffix')}`, value: '1536x1024' },
+                                ]}
+                                value={config.imageSize || 'auto'}
+                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageSize = v as any; updateCustomApiConfigs(u); }}
+                              />
+                            </div>
+
+                            <div className={formRowClass}>
+                              <p className={labelClass}>{t('Image Quality')}</p>
+                              <Select
+                                options={[
+                                  { name: t('auto'), value: 'auto' },
+                                  { name: t('low'), value: 'low' },
+                                  { name: t('medium'), value: 'medium' },
+                                  { name: t('high'), value: 'high' },
+                                ]}
+                                value={config.imageQuality || 'auto'}
+                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageQuality = v as any; updateCustomApiConfigs(u); }}
+                              />
+                            </div>
+
+                            <div className={formRowClass}>
+                              <p className={labelClass}>{t('Background')}</p>
+                              <Select
+                                options={[
+                                  { name: t('auto'), value: 'auto' },
+                                  { name: t('transparent'), value: 'transparent' },
+                                ]}
+                                value={config.imageBackground || 'auto'}
+                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageBackground = v as any; updateCustomApiConfigs(u); }}
+                              />
+                            </div>
+
+                            <div className={formRowClass}>
+                              <p className={labelClass}>{t('Output Format')}</p>
+                              <Select
+                                options={[
+                                  { name: 'none (default)', value: 'none' },
+                                  { name: 'png', value: 'png' },
+                                  { name: 'jpeg', value: 'jpeg' },
+                                  { name: 'webp', value: 'webp' },
+                                ]}
+                                value={config.imageFormat || 'none'}
+                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageFormat = v as any; updateCustomApiConfigs(u); }}
+                              />
+                            </div>
+
+                            <div className={formRowClass}>
+                              <p className={labelClass}>{t('Compression (0-100)')}</p>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={typeof config.imageCompression === 'number' ? String(config.imageCompression) : ''}
+                                placeholder={t('Only for jpeg/webp')}
+                                onChange={(e) => {
+                                  const val = e.currentTarget.value
+                                  const num = val === '' ? undefined : Math.max(0, Math.min(100, parseInt(val)))
+                                  const u = [...customApiConfigs]
+                                  // @ts-ignore
+                                  u[index].imageCompression = typeof num === 'number' && !isNaN(num) ? num : undefined
+                                  updateCustomApiConfigs(u)
+                                }}
+                              />
+                            </div>
+
+                            <div className={formRowClass}>
+                              <p className={labelClass}>{t('Moderation')}</p>
+                              <Select
+                                options={[
+                                  { name: t('default'), value: 'default' },
+                                  { name: t('low'), value: 'low' },
+                                  { name: t('auto'), value: 'auto' },
+                                ]}
+                                value={config.imageModeration || 'default'}
+                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageModeration = v as any; updateCustomApiConfigs(u); }}
+                              />
+                            </div>
+                          </div>
+                        )
                         })()}
                       </div>
                     ) : null}

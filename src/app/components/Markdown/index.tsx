@@ -183,6 +183,7 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
         ? [rehypeRaw, [rehypeHighlight, { detect: false, ignoreMissing: true }]]
         : [[rehypeHighlight, { detect: false, ignoreMissing: true }]]
       }
+      {...({ urlTransform: (url: string) => url } as any)}
       className={`markdown-body markdown-custom-styles code-block-no-margin !text-base font-normal`}
       // linkTarget="_blank" // Deprecated at markdown 9.0.0
       components={{

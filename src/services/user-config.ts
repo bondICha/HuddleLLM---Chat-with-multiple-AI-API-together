@@ -81,7 +81,9 @@ export enum CustomApiProvider {
   Google = 'google', // For Gemini API
   GeminiOpenAI = 'openai-gemini', // For Gemini OpenAI Compatible API
   QwenOpenAI = 'openai-qwen', // For Qwen OpenAI Compatible API
-  VertexAI_Claude = 'vertexai-claude' // For Google VertexAI Claude API
+  VertexAI_Claude = 'vertexai-claude', // For Google VertexAI Claude API
+  OpenAI_Image = 'openai-image', // For OpenAI Image Generation (gpt-image-1)
+  OpenAI_Responses = 'openai-responses' // For OpenAI Responses API
 }
 
 export interface AdvancedConfig {
@@ -115,6 +117,21 @@ export interface CustomApiConfig {
   advancedConfig?: AdvancedConfig;
   /** Provider参照ID */
   providerRefId?: string;
+  // Image generation options (for OpenAI Image via Responses API)
+  // Partial images feature disabled
+  // imagePartialImages?: number | null; // 0-3, null to omit parameter
+  imageSize?: '1024x1024' | '1024x1536' | '1536x1024' | 'auto';
+  imageQuality?: 'low' | 'medium' | 'high' | 'auto';
+  imageBackground?: 'transparent' | 'auto';
+  // Output format (default png); if jpeg/webp, compression may be set (0-100)
+  imageFormat?: 'png' | 'jpeg' | 'webp' | 'none';
+  imageCompression?: number; // 0-100 for jpeg/webp
+  // Moderation strictness for gpt-image-1 tool: default (mapped to low), low, auto
+  imageModeration?: 'default' | 'low' | 'auto';
+  // OpenAI Responses API specific toggles
+  responsesWebSearch?: boolean; // Enable web_search_preview tool
+  /** JSON string for Responses API tools (function calling, web_search_preview, etc.) */
+  responsesFunctionTools?: string;
 }
 
 /**
@@ -423,4 +440,3 @@ export async function getSavedChatPairs(): Promise<ChatPair[]> {
   const config = await getUserConfig();
   return config.savedChatPairs || [];
 }
-

@@ -186,6 +186,19 @@
   "Fetched Content": "Fetched Content",
   "Propaganda action is irreversible.\nClick again to confirm.": "Propaganda action is irreversible.\nClick again to confirm.",
   "Propaganda👊": "Propaganda👊",
+  "Image Size": "Image Size",
+  "portrait-suffix": "(portrait)",
+  "landscape-suffix": "(landscape)",
+  "Image Quality": "Image Quality",
+  "Background": "Background",
+  "transparent": "transparent",
+  "Output Format": "Output Format",
+  "Compression (0-100)": "Compression (0-100)",
+  "Only for jpeg/webp": "Only for jpeg/webp",
+  "Moderation": "Moderation",
+  "default": "default",
+  "low": "low",
+  "auto": "auto",
   "Login to Bard": "Login to Bard",
   "This usually mean you need to add a payment method to your OpenAI account, checkout: ": "This usually means you need to add a payment method to your OpenAI account, checkout: ",
   "Please check your network connection": "Please check your network connection",
@@ -310,5 +323,6 @@
   "releasenote_v2122_model_preview_enhancement": "## Model Preview Feature Enhancement\n\n- Added ModelPreview component for individual provider model browsing",
   "releasenote_v2122_session_restore_toggle": "## Session Restore Feature Improvement\n\n- Added startup restore toggle to session restore modal",
   "releasenote_v2122_provider_icons": "## API Provider Icons Addition\n\n- Added icons for major API providers including OpenRouter, Novita, and Chutes\n- Icons can now be selected in the provider settings screen",
-  "releasenote_v2122_by_glm_46": "*Note*: This release note was written by GLM 4.6 based on git diff analysis."
+  "releasenote_v2122_by_glm_46": "*Note*: This release note was written by GLM 4.6 based on git diff analysis.",
+  "releasenote_openai_responses_image_beta": "## Image support via OpenAI Responses API (Beta)\n\n- Added image generation using the Responses API image_generation tool.\n- The same API also enables Image Edit (image_edit).\n- This feature is in beta. Please share feedback if you encounter any issues."
 }

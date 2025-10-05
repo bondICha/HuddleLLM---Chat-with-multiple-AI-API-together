@@ -279,5 +279,22 @@
   "releasenote_v2122_model_preview_enhancement": "## 模型預覽功能增強\n\n- 為個別提供商模型瀏覽添加了ModelPreview組件",
   "releasenote_v2122_session_restore_toggle": "## 會話恢復功能改進\n\n- 為會話恢復模態框添加了啟動時恢復切換",
   "releasenote_v2122_provider_icons": "## API提供商圖標添加\n\n- 添加了OpenRouter、Novita和Chutes等主要API提供商的圖標\n- 現在可以在提供商設置屏幕中選擇圖標",
-  "releasenote_v2122_by_glm_46": "*註*：此發行說明由GLM 4.6基於git diff分析編寫。"
+  "releasenote_v2122_by_glm_46": "*註*：此發行說明由GLM 4.6基於git diff分析編寫。",
+  "releasenote_openai_responses_image_beta": "## 透過 OpenAI Responses API 的圖片支援（Beta）\n\n- 支援使用 Responses API 的 image_generation 工具進行圖片生成。\n- 使用相同的 API 也可進行圖片編輯（image_edit）。\n- 目前為測試版，如有問題歡迎回饋。",
+  "Image Size": "圖片尺寸",
+  "portrait-suffix": "（直向）",
+  "landscape-suffix": "（橫向）",
+  "Image Quality": "圖片品質",
+  "Background": "背景",
+  "transparent": "透明",
+  "Output Format": "輸出格式",
+  "Compression (0-100)": "壓縮率（0-100）",
+  "Only for jpeg/webp": "僅適用於 jpeg/webp",
+  "Moderation": "內容審查",
+  "default": "預設",
+  "low": "低",
+  "medium": "中",
+  "high": "高",
+  "auto": "自動"
 }
+  

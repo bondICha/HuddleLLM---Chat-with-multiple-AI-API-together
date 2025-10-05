@@ -6,6 +6,12 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.12.3',
+    notes: [
+      'releasenote_openai_responses_image_beta',
+    ],
+  },
+  {
     version: '2.12.2',
     notes: [
       'releasenote_v2122_model_preview_enhancement',

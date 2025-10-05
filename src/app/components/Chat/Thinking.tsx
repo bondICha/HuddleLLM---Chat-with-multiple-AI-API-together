@@ -1,6 +1,7 @@
-import { useState, memo, useCallback } from 'react';
+import { useState, memo, useCallback, useMemo } from 'react';
 import { Atom, ChevronDown } from 'lucide-react';
 import type { MouseEvent, FC } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SearchResultItem } from '~services/agent/web-search/base';
 
 const BUTTON_STYLES = {
@@ -45,6 +46,7 @@ export const ThinkingButton = memo(
 );
 
 const Thinking: React.ElementType = memo(({ children, searchResults }: { children: React.ReactNode, searchResults?: SearchResultItem[] }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
 
   const handleClick = useCallback((e: MouseEvent<HTMLButtonElement>) => {
@@ -52,14 +54,27 @@ const Thinking: React.ElementType = memo(({ children, searchResults }: { childre
     setIsExpanded((prev: boolean) => !prev);
   }, []);
 
-  if (children == null) {
+  if (children == null && !searchResults?.length) {
     return null;
   }
+
+  const label = useMemo(() => {
+    if (typeof children === 'string' && children.trim().length > 0) {
+      const lines = children.trim().split('\n');
+      if (lines.length > 0 && lines[0].trim().length > 0) {
+        return lines[0].trim();
+      }
+    }
+    if (searchResults?.length) {
+      return t('Searching the web...');
+    }
+    return t('Thinking...');
+  }, [children, searchResults, t]);
 
   return (
     <>
       <div className="mb-3">
-        <ThinkingButton isExpanded={isExpanded} onClick={handleClick} label={children as string} />
+        <ThinkingButton isExpanded={isExpanded} onClick={handleClick} label={label} />
       </div>
       <div
         className="transition-all duration-300 ease-out"
@@ -70,35 +85,40 @@ const Thinking: React.ElementType = memo(({ children, searchResults }: { childre
           overflowX: 'hidden',
         }}
       >
-          {searchResults && (
-            <ThinkingContent isPart={true}>
-              {(() => {
-                // Group results by provider
-                const groupedResults = searchResults.reduce((acc, result) => {
-                  const provider = result.provider || 'Unknown';
-                  if (!acc[provider]) {
-                    acc[provider] = [];
-                  }
-                  acc[provider].push(result);
-                  return acc;
-                }, {} as Record<string, typeof searchResults>);
+        {children && (
+          <ThinkingContent isPart={!searchResults?.length}>
+            {children}
+          </ThinkingContent>
+        )}
+        {searchResults && (
+          <ThinkingContent isPart={true}>
+            {(() => {
+              // Group results by provider
+              const groupedResults = searchResults.reduce((acc, result) => {
+                const provider = result.provider || 'Unknown';
+                if (!acc[provider]) {
+                  acc[provider] = [];
+                }
+                acc[provider].push(result);
+                return acc;
+              }, {} as Record<string, typeof searchResults>);
 
-                return Object.entries(groupedResults).map(([provider, results]) => (
-                  <div key={provider} className="mb-4">
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{provider}</h4>
-                    <ul className="space-y-2 pl-4">
-                      {results.map((result, index) => (
-                        <li key={index}>
-                          <a href={result.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{result.title}</a>
-                          {result.abstract && <p className="text-sm text-gray-500">{result.abstract}</p>}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ));
-              })()}
-            </ThinkingContent>
-          )}
+              return Object.entries(groupedResults).map(([provider, results]) => (
+                <div key={provider} className="mb-4">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{provider}</h4>
+                  <ul className="space-y-2 pl-4">
+                    {results.map((result, index) => (
+                      <li key={index}>
+                        <a href={result.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{result.title}</a>
+                        {result.abstract && <p className="text-sm text-gray-500">{result.abstract}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ));
+            })()}
+          </ThinkingContent>
+        )}
       </div>
     </>
   );

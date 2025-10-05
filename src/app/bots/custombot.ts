@@ -8,6 +8,8 @@ import { ChatError, ErrorCode } from '~utils/errors';
 import { BedrockApiBot } from './bedrock-api';
 import { GeminiApiBot } from './gemini-api';
 import { VertexClaudeBot } from './vertex-claude';
+// import { OpenAIImageBot } from './openai-image';
+import { OpenAIResponsesBot } from './openai-responses';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
 export class CustomBot extends AsyncAbstractBot {
@@ -171,6 +173,34 @@ export class CustomBot extends AsyncAbstractBot {
                     advancedConfig: effectiveAdvanced,
                 });
                 break;
+            case CustomApiProvider.OpenAI_Image: {
+                const imageTool: any = { type: 'image_generation' }
+                if (config.imageSize) imageTool.size = config.imageSize
+                if (config.imageQuality) imageTool.quality = config.imageQuality
+                if (config.imageBackground) imageTool.background = config.imageBackground
+                if (config.imageModeration) imageTool.moderation = (config.imageModeration === 'default') ? 'low' : config.imageModeration
+                if (config.imageFormat && config.imageFormat !== 'none') {
+                    imageTool.format = config.imageFormat
+                    if (typeof config.imageCompression === 'number' && (config.imageFormat === 'jpeg' || config.imageFormat === 'webp')) {
+                        const clamped = Math.max(0, Math.min(100, Math.round(config.imageCompression)))
+                        imageTool.output_compression = clamped
+                    }
+                }
+                botInstance = new OpenAIResponsesBot({
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
+                    model: config.model || 'gpt-4o',
+                    temperature: config.temperature,
+                    systemMessage: processedSystemMessage,
+                    isHostFullPath: effectiveIsHostFullPath,
+                    webAccess: false,
+                    thinkingMode: config.thinkingMode,
+                    reasoningEffort: config.reasoningEffort,
+                    functionTools: [imageTool],
+                    extraBody: undefined,
+                })
+                break;
+            }
             case CustomApiProvider.Google:
                 botInstance = new GeminiApiBot({
                     geminiApiKey: effectiveApiKey,
@@ -178,6 +208,31 @@ export class CustomBot extends AsyncAbstractBot {
                     geminiApiSystemMessage: processedSystemMessage,
                     geminiApiTemperature: config.temperature,
                     webAccess: config.webAccess,
+                });
+                break;
+            case CustomApiProvider.OpenAI_Responses:
+                botInstance = new OpenAIResponsesBot({
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
+                    model: config.model,
+                    temperature: config.temperature,
+                    systemMessage: processedSystemMessage,
+                    isHostFullPath: effectiveIsHostFullPath,
+                    webAccess: !!config.responsesWebSearch,
+                    thinkingMode: config.thinkingMode,
+                    reasoningEffort: config.reasoningEffort,
+                    functionTools: (() => {
+                      if (config.responsesFunctionTools && config.responsesFunctionTools.trim().length > 0) {
+                        try {
+                          const parsed = JSON.parse(config.responsesFunctionTools);
+                          return Array.isArray(parsed) ? parsed : undefined;
+                        } catch {
+                          return undefined;
+                        }
+                      }
+                      return undefined;
+                    })(),
+                    extraBody: undefined,
                 });
                 break;
             case CustomApiProvider.GeminiOpenAI:
@@ -236,6 +291,10 @@ export class CustomBot extends AsyncAbstractBot {
         }
 
 
+        // Ensure initial system message is applied on the created bot (for bots that support it)
+        if (botInstance && typeof (botInstance as any).setSystemMessage === 'function') {
+            (botInstance as any).setSystemMessage(processedSystemMessage);
+        }
         return botInstance;
     }
 }

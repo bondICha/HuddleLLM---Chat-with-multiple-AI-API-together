@@ -186,6 +186,19 @@
   "Use / to select prompts, @URL to fetch content, Shift+Enter to add new line": "プロンプトを選択するには/を使用し、@URLでコンテンツを取得し、Shift+Enterで新しい行を追加します",
   "Propaganda action is irreversible.\nClick again to confirm.": "一度実行したプロパガンダは取り消しできません。\nもう一度クリックして確認してください。",
   "Propaganda👊": "プロパガンダ👊",
+  "Image Size": "画像サイズ",
+  "portrait-suffix": "（縦長）",
+  "landscape-suffix": "（横長）",
+  "Image Quality": "画像品質",
+  "Background": "背景",
+  "transparent": "透過",
+  "Output Format": "出力フォーマット",
+  "Compression (0-100)": "圧縮率（0〜100）",
+  "Only for jpeg/webp": "jpeg/webpのみ",
+  "Moderation": "モデレーション",
+  "default": "デフォルト",
+  "low": "低",
+  "auto": "自動",
   "This usually mean you need to add a payment method to your OpenAI account, checkout: ": "これは通常、OpenAIアカウントに支払い方法を追加する必要があることを意味します。ご確認ください！",
   "Please check your network connection": "ネットワーク接続を確認してください",
   "Add New Model": "新しいモデルを追加",
@@ -320,5 +333,6 @@
   "releasenote_v2122_model_preview_enhancement": "## モデルプレビュー機能の強化\n\n- 個別のプロバイダーモデルブラウジング用のModelPreviewコンポーネントを追加",
   "releasenote_v2122_session_restore_toggle": "## セッション復元機能の改善\n\n- セッション復元モーダルに起動時復元トグルを追加",
   "releasenote_v2122_provider_icons": "## APIプロバイダーアイコンの追加\n\n- OpenRouter、Novita、Chutesなどの主要APIプロバイダーのアイコンを追加\n- プロバイダー設定画面でアイコンを選択できるようになりました",
-  "releasenote_v2122_by_glm_46": "*注記*：このリリースノートはGLM 4.6がgit diffの分析に基づいて作成しました。"
+  "releasenote_v2122_by_glm_46": "*注記*：このリリースノートはGLM 4.6がgit diffの分析に基づいて作成しました。",
+  "releasenote_openai_responses_image_beta": "## OpenAI Responses APIによる画像サポート（ベータ）\n\n- Responses API の image_generation ツールで画像生成に対応しました。\n- 同じ API で Image Edit（image_edit）も可能です。\n- 現在ベータ版です。問題があればフィードバックをお願いします。"
 }
