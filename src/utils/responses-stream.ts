@@ -6,7 +6,9 @@ export type ResponsesStreamCallbacks = {
   onImagePartial?: (b64: string) => void
   onImageDone?: (b64: string) => void
   onCompleted?: () => void
+  onCompletedResponse?: (response: any) => void
   onIncomplete?: () => void
+  onIncompleteResponse?: (response: any) => void
   onError?: (message: string, raw?: any) => void
 }
 
@@ -25,10 +27,12 @@ export function handleResponsesEvent(data: any, eventName: string | undefined, c
       return
     }
     case 'response.incomplete': {
+      if (data.response) cb.onIncompleteResponse?.(data.response)
       cb.onIncomplete?.()
       return
     }
     case 'response.completed': {
+      if (data.response) cb.onCompletedResponse?.(data.response)
       cb.onCompleted?.()
       return
     }

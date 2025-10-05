@@ -202,6 +202,27 @@ export class OpenAIImageBot extends AbstractBot {
             finalImageDataUrl = `data:image/png;base64,${b64}`
             params.onEvent({ type: 'UPDATE_ANSWER', data: { text: textSoFar + `\n\n${latestImageMarkdown}` } })
           },
+          onCompletedResponse: (response) => {
+            // Fallback: if we didn't receive image partial/done events, try to pick from completed response
+            const imgItem = (response?.output || []).find((it: any) => it?.type === 'image_generation_call')
+            // Normalize possible shapes
+            let raw: any = imgItem?.result ?? imgItem?.image_b64 ?? imgItem?.image_base64 ?? imgItem?.b64_json
+            if (Array.isArray(raw)) raw = raw[0]
+            const b64 = typeof raw === 'string' ? raw : (raw?.b64_json || raw?.base64 || '')
+            const fmt = (imgItem?.output_format || imgItem?.format || this.config.format || 'png') as 'png' | 'jpeg' | 'webp'
+            const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png'
+            if (b64) {
+              latestImageMarkdown = `![image](data:${mime};base64,${b64})`
+              finalImageDataUrl = `data:${mime};base64,${b64}`
+              params.onEvent({ type: 'UPDATE_ANSWER', data: { text: textSoFar + `\n\n${latestImageMarkdown}` } })
+            }
+            // Show revised_prompt if present for user clarity
+            const revised = imgItem?.revised_prompt
+            if (revised) {
+              const tip = `\n\n_Revised prompt:_\n${revised}`
+              params.onEvent({ type: 'UPDATE_ANSWER', data: { text: (textSoFar + (latestImageMarkdown ? `\n\n${latestImageMarkdown}` : '') + tip).trim() } })
+            }
+          },
           onCompleted: () => finish(),
           onIncomplete: () => finish(),
           onError: (msg, raw) => {

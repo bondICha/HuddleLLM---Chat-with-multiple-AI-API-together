@@ -142,6 +142,26 @@ export class OpenAIResponsesBot extends AbstractBot {
           reasoningSummary = text || reasoningSummary
           this.emitUpdateAnswer(params, { text: resultText, thinking: reasoningSummary })
         },
+        onCompletedResponse: (response) => {
+          // If an image tool was used but streaming events weren't emitted, append the final image from response
+          const imgItem = (response?.output || []).find((it: any) => it?.type === 'image_generation_call')
+          let raw: any = imgItem?.result ?? imgItem?.image_b64 ?? imgItem?.image_base64 ?? imgItem?.b64_json
+          if (Array.isArray(raw)) raw = raw[0]
+          const b64 = typeof raw === 'string' ? raw : (raw?.b64_json || raw?.base64 || '')
+          const fmt = (imgItem?.output_format || imgItem?.format || 'png') as 'png' | 'jpeg' | 'webp'
+          const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png'
+          if (b64) {
+            const md = `\n\n![image](data:${mime};base64,${b64})`
+            resultText = (resultText + md).trim()
+            this.emitUpdateAnswer(params, { text: resultText, thinking: reasoningSummary })
+          }
+          const revised = imgItem?.revised_prompt
+          if (revised) {
+            const tip = `\n\n_Revised prompt:_\n${revised}`
+            resultText = (resultText + tip).trim()
+            this.emitUpdateAnswer(params, { text: resultText, thinking: reasoningSummary })
+          }
+        },
         onCompleted: () => finish(),
         onIncomplete: () => finish(),
         onError: (msg, raw) => {
