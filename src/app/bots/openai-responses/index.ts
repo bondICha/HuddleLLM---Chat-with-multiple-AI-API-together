@@ -24,7 +24,6 @@ export class OpenAIResponsesBot extends AbstractBot {
       apiKey: string
       host: string
       model: string
-      temperature: number
       systemMessage: string
       isHostFullPath?: boolean
       webAccess?: boolean
@@ -196,7 +195,7 @@ export class OpenAIResponsesBot extends AbstractBot {
       input,
       stream: true,
       ...(system ? { instructions: system } : {}),
-      ...(this.config.thinkingMode ? { reasoning: { effort: this.config.reasoningEffort || 'medium' } } : { temperature: this.config.temperature }),
+      ...(this.config.thinkingMode ? { reasoning: { effort: this.config.reasoningEffort || 'medium' } } : {}),
       ...(extraBodyObj ? { extra_body: extraBodyObj } : {}),
     }
 

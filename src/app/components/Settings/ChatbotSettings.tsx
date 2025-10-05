@@ -499,7 +499,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
                     const showThinkingBudget = isProviderIn([CustomApiProvider.Anthropic, CustomApiProvider.Bedrock, CustomApiProvider.Anthropic_CustomAuth, CustomApiProvider.VertexAI_Claude, CustomApiProvider.GeminiOpenAI, CustomApiProvider.QwenOpenAI]);
                     const showReasoningEffort = isProviderIn([CustomApiProvider.OpenAI]);
-                    const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort;
+                    const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort && !isProviderIn([CustomApiProvider.OpenAI_Image]);
 
                     return (
                       <>

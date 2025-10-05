@@ -189,8 +189,7 @@ export class CustomBot extends AsyncAbstractBot {
                 botInstance = new OpenAIResponsesBot({
                     apiKey: effectiveApiKey,
                     host: effectiveHost,
-                    model: config.model || 'gpt-4o',
-                    temperature: config.temperature,
+                    model: config.model || 'gpt-5',
                     systemMessage: processedSystemMessage,
                     isHostFullPath: effectiveIsHostFullPath,
                     webAccess: false,
@@ -215,7 +214,6 @@ export class CustomBot extends AsyncAbstractBot {
                     apiKey: effectiveApiKey,
                     host: effectiveHost,
                     model: config.model,
-                    temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     isHostFullPath: effectiveIsHostFullPath,
                     webAccess: !!config.responsesWebSearch,
