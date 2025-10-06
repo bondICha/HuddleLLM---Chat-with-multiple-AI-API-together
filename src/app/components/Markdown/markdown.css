@@ -120,9 +120,9 @@
 }
 
 /* AI-generated images in chat and history */
-.bg-secondary .markdown-body img,
-.bg-primary-background .markdown-body img {
-    max-width: 600px !important;
-    max-height: 600px !important;
+div.group.flex-row div.bg-secondary div.markdown-body img,
+div.group.bg-primary-background div.markdown-body img {
+    max-width: min(100%, 600px);
+    max-height: min(100%, 600px);
 }
 
