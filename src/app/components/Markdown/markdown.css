@@ -61,6 +61,7 @@
     max-width: min(80%, 300px);
     margin-top: 5px;
   }
+  
   & a:not(:has(sup)) {
     color: inherit;
     text-decoration: underline;
@@ -116,5 +117,12 @@
 /* When sans font is selected for AI messages (default) */
 :root[data-font-type="sans"] .bg-secondary .markdown-body.markdown-custom-styles {
   font-family: 'Noto Sans CJK JP', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans CJK KR', 'system-ui';
+}
+
+/* AI-generated images in chat and history */
+.bg-secondary .markdown-body img,
+.bg-primary-background .markdown-body img {
+    max-width: 600px !important;
+    max-height: 600px !important;
 }
 
