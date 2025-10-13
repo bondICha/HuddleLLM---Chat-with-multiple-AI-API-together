@@ -1,7 +1,7 @@
 import { fileOpen, fileSave } from 'browser-fs-access'
 import Browser from 'webextension-polyfill'
 import { requestHostPermissions } from '~services/host-permissions'
-import { CustomApiConfig, ProviderConfig } from '~services/user-config'
+import { CustomApiConfig, ProviderConfig, CustomApiProvider } from '~services/user-config'
 
 export async function exportData() {
   const [syncData, localData] = await Promise.all([Browser.storage.sync.get(null), Browser.storage.local.get(null)])
@@ -92,17 +92,21 @@ export async function exportCustomAPITemplate() {
   // providerConfigsを含める（API Keyは除外）
   if (syncData.providerConfigs) {
     const providerConfigsArray = syncData.providerConfigs as ProviderConfig[];
-    templateExportData.providerConfigs = providerConfigsArray.map((p) => ({
-      id: p.id,
-      name: p.name,
-      provider: p.provider,
-      host: p.host,
-      isHostFullPath: p.isHostFullPath,
-      apiKey: '', // redact api key for template export
-      icon: p.icon,
-      isAnthropicUsingAuthorizationHeader: p.isAnthropicUsingAuthorizationHeader,
-      advancedConfig: p.advancedConfig,
-    }));
+    templateExportData.providerConfigs = providerConfigsArray.map((p) => {
+      const isAnthropic = p.provider === CustomApiProvider.Anthropic || p.provider === CustomApiProvider.Anthropic_CustomAuth
+      return {
+        id: p.id,
+        name: p.name,
+        provider: p.provider,
+        host: p.host,
+        isHostFullPath: p.isHostFullPath,
+        apiKey: '', // redact api key for template export
+        icon: p.icon,
+        ...(isAnthropic ? { isAnthropicUsingAuthorizationHeader: p.isAnthropicUsingAuthorizationHeader } : {}),
+        ...(p.AuthMode ? { AuthMode: p.AuthMode } : {}),
+        advancedConfig: p.advancedConfig,
+      } as Partial<ProviderConfig>
+    });
   }
   
   // Common System Message を含める

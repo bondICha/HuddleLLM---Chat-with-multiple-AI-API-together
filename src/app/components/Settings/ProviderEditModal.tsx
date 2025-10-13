@@ -143,7 +143,6 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
                 ]}
                 value={editingProvider.AuthMode || 'header'}
                 onChange={(v) => setEditingProvider({ ...editingProvider, AuthMode: v as any })}
-                size="small"
               />
             </div>
           )}
