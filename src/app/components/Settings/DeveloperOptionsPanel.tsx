@@ -44,9 +44,7 @@ const DeveloperOptionsPanel: FC<Props> = ({
             {expandedSections[sectionKey] && (
                 <div className="mt-3 space-y-4 pl-5">
                     {/* OpenRouter Provider Filter - for OpenAI Compatible APIs */}
-                    {(providerToUse === CustomApiProvider.OpenAI ||
-                      providerToUse === CustomApiProvider.QwenOpenAI ||
-                      providerToUse === CustomApiProvider.GeminiOpenAI) && (
+                    {providerToUse === CustomApiProvider.OpenRouter && (
                         <div className={formRowClass}>
                             <p className={labelClass}>{t('Allow Only Specific Providers (OpenRouter)')}</p>
                             <div className={inputContainerClass}>
@@ -66,6 +64,31 @@ const DeveloperOptionsPanel: FC<Props> = ({
                                     }}
                                 />
                                 <Blockquote>{t('Comma-separated list of providers to allow. See OpenRouter docs.')}</Blockquote>
+                            </div>
+                        </div>
+                    )}
+
+                    {providerToUse === CustomApiProvider.OpenRouter && (
+                        <div className={formRowClass}>
+                            <p className={labelClass}>OpenRouter: Aspect Ratio</p>
+                            <div className={inputContainerClass}>
+                                <Input
+                                    className='w-full'
+                                    placeholder="auto | 1:1 | 2:3 | 3:2 | 3:4 | 4:3 | 4:5 | 5:4 | 9:16 | 16:9 | 21:9"
+                                    value={config.advancedConfig?.openrouterAspectRatio || 'auto'}
+                                    onChange={(e) => {
+                                        const v = e.currentTarget.value as any
+                                        const updatedConfig = {
+                                            ...config,
+                                            advancedConfig: {
+                                                ...config.advancedConfig,
+                                                openrouterAspectRatio: v,
+                                            }
+                                        }
+                                        updateConfig(updatedConfig)
+                                    }}
+                                />
+                                <Blockquote>Maps to image_config.aspect_ratio.</Blockquote>
                             </div>
                         </div>
                     )}

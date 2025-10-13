@@ -5,6 +5,7 @@ export type ApiSchemeOption = { name: string; value: CustomApiProvider }
 export function getApiSchemeOptions(): ApiSchemeOption[] {
   return [
     { name: 'OpenAI Compatible (Completion)', value: CustomApiProvider.OpenAI },
+    { name: 'OpenRouter (Chat / Image)', value: CustomApiProvider.OpenRouter },
     { name: 'OpenAI Responses API (Beta)', value: CustomApiProvider.OpenAI_Responses },
     { name: 'OpenAI Image (gpt-image-1, Beta)', value: CustomApiProvider.OpenAI_Image },
     { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
@@ -16,4 +17,3 @@ export function getApiSchemeOptions(): ApiSchemeOption[] {
     { name: 'Google Gemini API (Deprecated)', value: CustomApiProvider.Google },
   ]
 }
-

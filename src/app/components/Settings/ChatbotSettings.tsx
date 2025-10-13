@@ -772,7 +772,35 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         {(() => {
                           const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
                           const effectiveProvider = providerRef?.provider ?? config.provider;
-                          const showDeveloperOptions = [CustomApiProvider.OpenAI, CustomApiProvider.Anthropic, CustomApiProvider.VertexAI_Claude].includes(effectiveProvider);
+                          if (effectiveProvider !== CustomApiProvider.OpenRouter) return null;
+                          return (
+                            <div className="space-y-4">
+                              <div className={formRowClass}>
+                                <p className={labelClass}>{t('Mode')}</p>
+                                <Select
+                                  options={[
+                                    { name: 'Chat', value: 'chat' },
+                                    { name: 'Image', value: 'image' },
+                                  ]}
+                                  value={config.advancedConfig?.openrouterIsImageModel ? 'image' : 'chat'}
+                                  onChange={(v) => {
+                                    const u = [...customApiConfigs];
+                                    const updated = {
+                                      ...(u[index].advancedConfig || {}),
+                                      openrouterIsImageModel: v === 'image',
+                                    };
+                                    u[index].advancedConfig = updated as any;
+                                    updateCustomApiConfigs(u);
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )
+                        })()}
+                        {(() => {
+                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
+                          const effectiveProvider = providerRef?.provider ?? config.provider;
+                          const showDeveloperOptions = [CustomApiProvider.OpenAI, CustomApiProvider.Anthropic, CustomApiProvider.VertexAI_Claude, CustomApiProvider.OpenRouter].includes(effectiveProvider);
 
                           return showDeveloperOptions && (
                             <DeveloperOptionsPanel

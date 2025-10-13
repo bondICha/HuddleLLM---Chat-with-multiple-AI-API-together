@@ -166,9 +166,10 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
             </div>
             <div className="flex items-center gap-2">
               <div className="flex-1">
-                <HostSearchInput
+              <HostSearchInput
                   className='w-full'
                   placeholder={
+                  editingProvider.provider === CustomApiProvider.OpenRouter ? "https://openrouter.ai/api" :
                   editingProvider.provider === CustomApiProvider.Google ? t("Not applicable for Google Gemini") :
                   editingProvider.provider === CustomApiProvider.GeminiOpenAI ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" :
                   editingProvider.provider === CustomApiProvider.VertexAI_Gemini ? "https://api-provider.com/google-vertexai/v1/publishers/google/models/%model:generateContent" :

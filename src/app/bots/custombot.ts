@@ -11,6 +11,7 @@ import { VertexClaudeBot } from './vertex-claude';
 import { VertexGeminiBot } from './vertex-gemini';
 // import { OpenAIImageBot } from './openai-image';
 import { OpenAIResponsesBot } from './openai-responses';
+import { OpenRouterImageBot } from './openrouter-image';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
 export class CustomBot extends AsyncAbstractBot {
@@ -174,6 +175,39 @@ export class CustomBot extends AsyncAbstractBot {
                     advancedConfig: effectiveAdvanced,
                 });
                 break;
+            case CustomApiProvider.OpenRouter: {
+                const isImageModel = !!(config.advancedConfig?.openrouterIsImageModel)
+                const hostForOR = effectiveHost || 'https://openrouter.ai/api'
+                if (isImageModel) {
+                    // Route to OpenRouter image bot (chat/completions with modalities)
+                    botInstance = new OpenRouterImageBot({
+                        apiKey: effectiveApiKey,
+                        host: hostForOR,
+                        model: config.model,
+                        systemMessage: processedSystemMessage,
+                        isHostFullPath: false,
+                        // Prefer explicit AR in AdvancedConfig; fallback to Size mapping
+                        aspectRatio: (config.advancedConfig?.openrouterAspectRatio as any) || ((config.imageSize === '1024x1024') ? '1:1' : (config.imageSize === '1024x1536') ? '2:3' : (config.imageSize === '1536x1024') ? '3:2' : 'auto'),
+                        providerOnly: effectiveAdvanced?.openrouterProviderOnly,
+                    })
+                } else {
+                    // Route chat to OpenAI-compatible ChatGPTApiBot with OpenRouter headers via host
+                    botInstance = new ChatGPTApiBot({
+                        apiKey: effectiveApiKey,
+                        host: hostForOR,
+                        model: config.model,
+                        temperature: config.temperature,
+                        systemMessage: processedSystemMessage,
+                        isHostFullPath: false,
+                        webAccess: config.webAccess,
+                        botIndex: this.customBotNumber - 1,
+                        thinkingMode: config.thinkingMode,
+                        reasoningEffort: config.reasoningEffort,
+                        advancedConfig: effectiveAdvanced,
+                    })
+                }
+                break;
+            }
             case CustomApiProvider.OpenAI_Image: {
                 const imageTool: any = { type: 'image_generation' }
                 if (config.imageSize) imageTool.size = config.imageSize

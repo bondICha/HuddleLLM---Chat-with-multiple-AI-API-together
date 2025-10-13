@@ -69,6 +69,7 @@ export const PROVIDER_INFO: Record<string, { icon: string }> = {
     "Grok": { icon: "grok" },
     "Deepseek": { icon: "deepseek" },
     "Perplexity": { icon: "perplexity" },
+    "OpenRouter": { icon: "openrouter" },
     "Rakuten": { icon: "rakuten" },
     "Custom": { icon: "openai" },
 };
@@ -86,12 +87,16 @@ export enum CustomApiProvider {
   VertexAI_Claude = 'vertexai-claude', // For Google VertexAI Claude API
   VertexAI_Gemini = 'vertexai-gemini', // For Google VertexAI Gemini
   OpenAI_Image = 'openai-image', // For OpenAI Image Generation (gpt-image-1)
-  OpenAI_Responses = 'openai-responses' // For OpenAI Responses API
+  OpenAI_Responses = 'openai-responses', // For OpenAI Responses API
+  OpenRouter = 'openrouter', // Dedicated OpenRouter provider
 }
 
 export interface AdvancedConfig {
   openrouterProviderOnly?: string; // Comma-separated list of providers for OpenRouter
   anthropicBetaHeaders?: string; // Semicolon-separated "key:value" pairs for Anthropic beta headers
+  // OpenRouter specific
+  openrouterIsImageModel?: boolean; // Route via chat/completions with modalities
+  openrouterAspectRatio?: string;
 }
 
 /**
