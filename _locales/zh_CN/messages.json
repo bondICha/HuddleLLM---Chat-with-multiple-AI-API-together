@@ -4,5 +4,8 @@
   },
   "appDesc": {
     "message": "同时使用ChatGPT, Claude, Gemini和更多机器人"
+  },
+  "releasenote_v2126_openrouter_image_generation": {
+    "message": "已支持 OpenRouter 图片生成"
   }
 }

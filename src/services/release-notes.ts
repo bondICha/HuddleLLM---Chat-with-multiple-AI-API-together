@@ -6,6 +6,12 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.12.6',
+    notes: [
+      'releasenote_v2126_openrouter_image_generation',
+    ],
+  },
+  {
     version: '2.12.5',
     notes: [
       'releasenote_v2125_vertex_gemini_update',
