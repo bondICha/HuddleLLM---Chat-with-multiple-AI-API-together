@@ -1,6 +1,7 @@
 import { FC, useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UserConfig, CustomApiProvider, ProviderConfig } from '~services/user-config';
+import { getApiSchemeOptions } from './api-scheme-options';
 import { Input } from '../Input';
 import Select from '../Select';
 import Switch from '../Switch';
@@ -94,22 +95,16 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
           <div className={formRowClass}>
             <p className={labelClass}>{t('API Scheme')}</p>
             <Select
-              options={[
-                { name: 'OpenAI Compatible', value: CustomApiProvider.OpenAI },
-                { name: 'OpenAI Responses API (Beta)', value: CustomApiProvider.OpenAI_Responses },
-                { name: 'OpenAI Image (gpt-image-1, Beta)', value: CustomApiProvider.OpenAI_Image },
-                { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
-                { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock },
-                { name: 'Google Gemini (OpenAI Format)', value: CustomApiProvider.GeminiOpenAI },
-                { name: 'Qwen (OpenAI Format)', value: CustomApiProvider.QwenOpenAI },
-                { name: 'VertexAI (Claude)', value: CustomApiProvider.VertexAI_Claude },
-                { name: 'Google Gemini API (Deprecated)', value: CustomApiProvider.Google },
-              ]}
+              options={getApiSchemeOptions()}
               value={editingProvider.provider || CustomApiProvider.OpenAI}
               onChange={(v) => {
                 const next = { ...editingProvider, provider: v as CustomApiProvider };
-                if (v === CustomApiProvider.GeminiOpenAI || v === CustomApiProvider.VertexAI_Claude) {
+                if (v === CustomApiProvider.GeminiOpenAI || v === CustomApiProvider.VertexAI_Claude || v === CustomApiProvider.VertexAI_Gemini) {
                   next.isHostFullPath = true;
+                }
+                // Default Auth mode for Gemini-capable providers
+                if (v === CustomApiProvider.VertexAI_Gemini || v === CustomApiProvider.Google) {
+                  next.AuthMode = next.AuthMode || 'header';
                 }
                 setEditingProvider(next);
               }}
@@ -137,6 +132,22 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
             </div>
           )}
 
+          {/* Gemini Auth Mode */}
+          {(editingProvider.provider === CustomApiProvider.VertexAI_Gemini || editingProvider.provider === CustomApiProvider.Google) && (
+            <div className={formRowClass}>
+              <p className={labelClass}>{t('Gemini Auth Mode')}</p>
+              <Select
+                options={[
+                  { name: 'Header Auth (Authorization: <API Key>)', value: 'header' },
+                  { name: 'Default (Query Param ?key=API_KEY)', value: 'default' },
+                ]}
+                value={editingProvider.AuthMode || 'header'}
+                onChange={(v) => setEditingProvider({ ...editingProvider, AuthMode: v as any })}
+                size="small"
+              />
+            </div>
+          )}
+
           {/* API Host */}
           <div className={formRowClass}>
             <div className="flex items-center justify-between">
@@ -155,11 +166,13 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <HostSearchInput
-                className='flex-1'
-                placeholder={
+              <div className="flex-1">
+                <HostSearchInput
+                  className='w-full'
+                  placeholder={
                   editingProvider.provider === CustomApiProvider.Google ? t("Not applicable for Google Gemini") :
                   editingProvider.provider === CustomApiProvider.GeminiOpenAI ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" :
+                  editingProvider.provider === CustomApiProvider.VertexAI_Gemini ? "https://api-provider.com/google-vertexai/v1/publishers/google/models/%model:generateContent" :
                   editingProvider.provider === CustomApiProvider.QwenOpenAI ? "https://dashscope.aliyuncs.com/compatible-mode/v1" :
                   editingProvider.isHostFullPath ? (
                     editingProvider.provider === CustomApiProvider.OpenAI_Responses ? "https://api.example.com/v1/responses" :
@@ -167,13 +180,26 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
                     "https://api.example.com/v1/chat/completions"
                   ) :
                   "https://api.example.com"
-                }
-                value={editingProvider.host}
-                onChange={(value) => {
-                  setEditingProvider({ ...editingProvider, host: value });
-                }}
-                disabled={editingProvider.provider === CustomApiProvider.Google}
-              />
+                  }
+                  value={editingProvider.host}
+                  onChange={(value) => {
+                    setEditingProvider({ ...editingProvider, host: value });
+                  }}
+                  disabled={editingProvider.provider === CustomApiProvider.Google}
+                />
+                {(editingProvider.provider === CustomApiProvider.VertexAI_Gemini || editingProvider.provider === CustomApiProvider.VertexAI_Claude) && (
+                  <>
+                    <p className="text-xs opacity-70 mt-1 break-words">
+                      {t('vertex_path_model_hint')}
+                    </p>
+                    {editingProvider.provider === CustomApiProvider.VertexAI_Gemini && (
+                      <p className="text-xs opacity-70 mt-1 break-words">
+                        {t('vertex_gemini_nonstream_notice')}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
               {editingProvider.provider !== CustomApiProvider.VertexAI_Claude && editingProvider.provider !== CustomApiProvider.GeminiOpenAI && (
                 <Switch
                   checked={editingProvider.isHostFullPath ?? false}

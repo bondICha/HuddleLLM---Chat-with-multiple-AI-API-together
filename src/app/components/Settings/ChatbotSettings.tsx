@@ -15,6 +15,7 @@ import TripleStateToggle from '../TripleStateToggle';
 import ModelSearchInput from '../ModelSearchInput';
 import DeveloperOptionsPanel from './DeveloperOptionsPanel';
 import { getTemplateOptions, getActivePresets, getPresetMapping } from '~services/preset-loader';
+import { getApiSchemeOptions } from './api-scheme-options';
 import { useApiModels } from '~hooks/use-api-models';
 import type { ApiModel } from '~utils/model-fetcher';
 import { revalidateEnabledBots } from '~app/hooks/use-enabled-bots';
@@ -133,6 +134,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
       apiKey: effectiveApiKey,
       host: effectiveHost,
       isHostFullPath: effectiveIsHostFullPath,
+      geminiAuthMode: ((providerRef?.AuthMode || 'header') === 'default') ? 'query' : (config.geminiAuthMode || 'header'),
     };
 
     await fetchSingleModel(fetchConfig, index);
@@ -497,7 +499,15 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     
                     const isProviderIn = (providers: CustomApiProvider[]) => providers.includes(effectiveProvider);
 
-                    const showThinkingBudget = isProviderIn([CustomApiProvider.Anthropic, CustomApiProvider.Bedrock, CustomApiProvider.Anthropic_CustomAuth, CustomApiProvider.VertexAI_Claude, CustomApiProvider.GeminiOpenAI, CustomApiProvider.QwenOpenAI]);
+                    const showThinkingBudget = isProviderIn([
+                      CustomApiProvider.Anthropic,
+                      CustomApiProvider.Bedrock,
+                      CustomApiProvider.Anthropic_CustomAuth,
+                      CustomApiProvider.VertexAI_Claude,
+                      CustomApiProvider.VertexAI_Gemini,
+                      CustomApiProvider.GeminiOpenAI,
+                      CustomApiProvider.QwenOpenAI,
+                    ]);
                     const showReasoningEffort = isProviderIn([CustomApiProvider.OpenAI]);
                     const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort && !isProviderIn([CustomApiProvider.OpenAI_Image]);
 
@@ -624,23 +634,16 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             <p className={labelClass}>{t('API Scheme')}</p>
                             <div className="flex-1">
                               <Select
-                                options={[
-                                  { name: 'OpenAI Compatible', value: CustomApiProvider.OpenAI },
-                                  { name: 'OpenAI Responses API (Beta)', value: CustomApiProvider.OpenAI_Responses },
-                                  { name: 'OpenAI Image (gpt-image-1, Beta)', value: CustomApiProvider.OpenAI_Image },
-                                  { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
-                                  { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock },
-                                  { name: 'Google Gemini (OpenAI Format)', value: CustomApiProvider.GeminiOpenAI },
-                                  { name: 'Qwen (OpenAI Format)', value: CustomApiProvider.QwenOpenAI },
-                                  { name: 'VertexAI (Claude)', value: CustomApiProvider.VertexAI_Claude },
-                                  { name: 'Google Gemini API (Deprecated)', value: CustomApiProvider.Google },
-                                ]}
+                                options={getApiSchemeOptions()}
                                 value={config.provider || CustomApiProvider.OpenAI}
                                 onChange={(v) => {
                                   const updatedConfigs = [...customApiConfigs];
                                   updatedConfigs[index].provider = v as CustomApiProvider;
-                                  if (v === CustomApiProvider.GeminiOpenAI || v === CustomApiProvider.VertexAI_Claude) {
+                                  if (v === CustomApiProvider.GeminiOpenAI || v === CustomApiProvider.VertexAI_Claude || v === CustomApiProvider.VertexAI_Gemini) {
                                     updatedConfigs[index].isHostFullPath = true;
+                                  }
+                                  if (v === CustomApiProvider.VertexAI_Gemini || v === CustomApiProvider.Google) {
+                                    updatedConfigs[index].geminiAuthMode = updatedConfigs[index].geminiAuthMode || 'header';
                                   }
                                   updateCustomApiConfigs(updatedConfigs);
                                 }}
@@ -658,6 +661,22 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 onChange={(v) => {
                                   const updatedConfigs = [...customApiConfigs];
                                   updatedConfigs[index].isAnthropicUsingAuthorizationHeader = v === 'true';
+                                  updateCustomApiConfigs(updatedConfigs);
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                        {!config.providerRefId && (config.provider === CustomApiProvider.VertexAI_Gemini || config.provider === CustomApiProvider.Google) && (
+                          <div className={formRowClass}>
+                            <p className={labelClass}>{t('Gemini Auth Mode')}</p>
+                            <div className="flex-1">
+                              <Select
+                                options={[{ name: 'Header Auth (Authorization: <API Key>)', value: 'header' }, { name: 'Default (Query Param ?key=API_KEY)', value: 'default' }]}
+                                value={config.geminiAuthMode === 'query' ? 'default' : (config.geminiAuthMode || 'header')}
+                                onChange={(v) => {
+                                  const updatedConfigs = [...customApiConfigs];
+                                  updatedConfigs[index].geminiAuthMode = (v === 'default' ? 'query' : 'header') as any;
                                   updateCustomApiConfigs(updatedConfigs);
                                 }}
                               />
@@ -682,28 +701,43 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                              <HostSearchInput
-                                className='flex-1'
-                                placeholder={
-                                  config.provider === CustomApiProvider.Google ? t("Not applicable for Google Gemini") :
-                                  config.provider === CustomApiProvider.GeminiOpenAI ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" :
-                                  config.provider === CustomApiProvider.QwenOpenAI ? "https://dashscope.aliyuncs.com/compatible-mode/v1" :
-                                  config.isHostFullPath ? (
-                                    config.provider === CustomApiProvider.OpenAI_Responses ? "https://api.example.com/v1/responses" :
-                                    config.provider === CustomApiProvider.OpenAI_Image ? "https://api.example.com/v1/responses" :
-                                    "https://api.example.com/v1/chat/completions"
-                                  ) :
-                                  "https://api.example.com"
-                                }
-                                value={config.host}
-                                onChange={(value) => {
-                                  const updatedConfigs = [...customApiConfigs];
-                                  updatedConfigs[index].host = value;
-                                  updateCustomApiConfigs(updatedConfigs);
-                                }}
-                                disabled={config.provider === CustomApiProvider.Google}
-                              />
-                              {config.provider !== CustomApiProvider.VertexAI_Claude && config.provider !== CustomApiProvider.GeminiOpenAI && (
+                              <div className='flex-1'>
+                                <HostSearchInput
+                                  className='w-full'
+                                  placeholder={
+                                    config.provider === CustomApiProvider.Google ? t("Not applicable for Google Gemini") :
+                                    config.provider === CustomApiProvider.GeminiOpenAI ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" :
+                                    config.provider === CustomApiProvider.VertexAI_Gemini ? "https://generativelanguage.googleapis.com/v1beta/models/%model:generateContent" :
+                                    config.provider === CustomApiProvider.QwenOpenAI ? "https://dashscope.aliyuncs.com/compatible-mode/v1" :
+                                    config.isHostFullPath ? (
+                                      config.provider === CustomApiProvider.OpenAI_Responses ? "https://api.example.com/v1/responses" :
+                                      config.provider === CustomApiProvider.OpenAI_Image ? "https://api.example.com/v1/responses" :
+                                      "https://api.example.com/v1/chat/completions"
+                                    ) :
+                                    "https://api.example.com"
+                                  }
+                                  value={config.host}
+                                  onChange={(value) => {
+                                    const updatedConfigs = [...customApiConfigs];
+                                    updatedConfigs[index].host = value;
+                                    updateCustomApiConfigs(updatedConfigs);
+                                  }}
+                                  disabled={config.provider === CustomApiProvider.Google}
+                                />
+                                {(config.provider === CustomApiProvider.VertexAI_Gemini || config.provider === CustomApiProvider.VertexAI_Claude) && (
+                                  <>
+                                    <p className="text-xs opacity-70 mt-1 break-words">
+                                      {t('vertex_path_model_hint')}
+                                    </p>
+                                    {config.provider === CustomApiProvider.VertexAI_Gemini && (
+                                      <p className="text-xs opacity-70 mt-1 break-words">
+                                        {t('vertex_gemini_nonstream_notice')}
+                                      </p>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                              {config.provider !== CustomApiProvider.VertexAI_Claude && config.provider !== CustomApiProvider.GeminiOpenAI && config.provider !== CustomApiProvider.VertexAI_Gemini && (
                                 <Switch
                                   checked={config.isHostFullPath ?? false}
                                   onChange={(checked) => {
@@ -716,6 +750,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                           </div>
                         )}
+                        
                         {!config.providerRefId && (
                           <div className={formRowClass}>
                             <p className={labelClass}>API Key</p>

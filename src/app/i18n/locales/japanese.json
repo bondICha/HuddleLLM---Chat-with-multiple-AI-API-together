@@ -202,6 +202,8 @@
   "This usually mean you need to add a payment method to your OpenAI account, checkout: ": "これは通常、OpenAIアカウントに支払い方法を追加する必要があることを意味します。ご確認ください！",
   "Please check your network connection": "ネットワーク接続を確認してください",
   "Add New Model": "新しいモデルを追加",
+  "vertex_path_model_hint": "%model をエンドポイントのパスに使用できます。設定されたモデル名（URLエンコード済み）に置換されます。",
+  "vertex_gemini_nonstream_notice": "注意: このSchemeは generateContent のみサポートし、画像生成での利用を想定しています（:streamGenerateContent は対象外）。",
   "Common API Key": "共通のAPI Key",
   "Your keys are stored locally": "キーはローカルに保存されます",
   "Common API Host": "共通のAPI Host",

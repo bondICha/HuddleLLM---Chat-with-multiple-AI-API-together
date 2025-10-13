@@ -8,6 +8,7 @@ import { file2base64 } from '~app/utils/file-utils'
 type ContentPart =
   | { type: 'text'; text: string }
   | { type: 'image_url'; image_url: { url: string; detail?: 'low' | 'high' } }
+  | { type: 'image_file'; file_id: string }
 
 type ChatMessage =
   | { role: 'system' | 'assistant'; content: string }
@@ -69,10 +70,10 @@ export class OpenAIResponsesBot extends AbstractBot {
     return { messages }
   }
 
-  private buildUserMessage(prompt: string, imageUrls?: string[]): ChatMessage {
-    if (!imageUrls || imageUrls.length === 0) return { role: 'user', content: prompt }
-    const content: any[] = [{ type: 'text', text: prompt }]
-    imageUrls.forEach((url) => content.push({ type: 'image_url', image_url: { url, detail: 'low' } }))
+  private buildUserMessageWithPrevious(prompt: string, imageUrls?: string[]): ChatMessage {
+    const content: ContentPart[] = []
+    content.push({ type: 'text', text: prompt })
+    ;(imageUrls || []).forEach((url) => content.push({ type: 'image_url', image_url: { url, detail: 'low' } }))
     return { role: 'user', content }
   }
 
@@ -81,7 +82,7 @@ export class OpenAIResponsesBot extends AbstractBot {
     // not as a system role item in the input array.
     return [
       ...(this.conversationContext?.messages || []).slice(-(CONTEXT_SIZE + 1)),
-      this.buildUserMessage(prompt, imageUrls),
+      this.buildUserMessageWithPrevious(prompt, imageUrls),
     ]
   }
 
@@ -113,12 +114,18 @@ export class OpenAIResponsesBot extends AbstractBot {
     const messages = this.buildMessages(params.prompt, imageUrls)
     const resp = await this.fetchResponses(messages, params.signal)
 
-    this.conversationContext.messages.push(this.buildUserMessage(params.rawUserInput || params.prompt, imageUrls))
+    this.conversationContext.messages.push(this.buildUserMessageWithPrevious(params.rawUserInput || params.prompt, imageUrls))
 
     let done = false
     let resultText = ''
+    let imageMarkdown = ''
     let reasoningSummary = ''
-    const finish = () => { done = true; params.onEvent({ type: 'DONE' }); this.conversationContext!.messages.push({ role: 'assistant', content: resultText }) }
+    const finish = () => {
+      done = true
+      params.onEvent({ type: 'DONE' })
+      // Store only text in assistant history (no Markdown images)
+      this.conversationContext!.messages.push({ role: 'assistant', content: resultText })
+    }
 
     await parseSSEResponse(resp, (message, eventName) => {
       if (message === '[DONE]') { finish(); return }
@@ -128,19 +135,23 @@ export class OpenAIResponsesBot extends AbstractBot {
       handleResponsesEvent(data, eventName, {
         onTextDelta: (delta) => {
           resultText += delta
-          this.emitUpdateAnswer(params, { text: resultText, thinking: reasoningSummary })
+          const display = (resultText + imageMarkdown).trim()
+          this.emitUpdateAnswer(params, { text: display, thinking: reasoningSummary })
         },
         onTextFinal: (text) => {
           resultText = text || resultText
-          this.emitUpdateAnswer(params, { text: resultText, thinking: reasoningSummary })
+          const display = (resultText + imageMarkdown).trim()
+          this.emitUpdateAnswer(params, { text: display, thinking: reasoningSummary })
         },
         onReasoningDelta: (delta) => {
           reasoningSummary += delta
-          this.emitUpdateAnswer(params, { text: resultText, thinking: reasoningSummary })
+          const display = (resultText + imageMarkdown).trim()
+          this.emitUpdateAnswer(params, { text: display, thinking: reasoningSummary })
         },
         onReasoningFinal: (text) => {
           reasoningSummary = text || reasoningSummary
-          this.emitUpdateAnswer(params, { text: resultText, thinking: reasoningSummary })
+          const display = (resultText + imageMarkdown).trim()
+          this.emitUpdateAnswer(params, { text: display, thinking: reasoningSummary })
         },
         onCompletedResponse: (response) => {
           // If an image tool was used but streaming events weren't emitted, append the final image from response
@@ -151,15 +162,15 @@ export class OpenAIResponsesBot extends AbstractBot {
           const fmt = (imgItem?.output_format || imgItem?.format || 'png') as 'png' | 'jpeg' | 'webp'
           const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png'
           if (b64) {
-            const md = `\n\n![image](data:${mime};base64,${b64})`
-            resultText = (resultText + md).trim()
-            this.emitUpdateAnswer(params, { text: resultText, thinking: reasoningSummary })
+            imageMarkdown = `\n\n![image](data:${mime};base64,${b64})`
+            const display = (resultText + imageMarkdown).trim()
+            this.emitUpdateAnswer(params, { text: display, thinking: reasoningSummary })
           }
           const revised = imgItem?.revised_prompt
           if (revised) {
             const tip = `\n\n_Revised prompt:_\n${revised}`
-            resultText = (resultText + tip).trim()
-            this.emitUpdateAnswer(params, { text: resultText, thinking: reasoningSummary })
+            const display = (resultText + imageMarkdown + tip).trim()
+            this.emitUpdateAnswer(params, { text: display, thinking: reasoningSummary })
           }
         },
         onCompleted: () => finish(),
@@ -192,6 +203,7 @@ export class OpenAIResponsesBot extends AbstractBot {
           for (const p of m.content) {
             if (p.type === 'text') parts.push({ type: 'input_text', text: p.text })
             else if (p.type === 'image_url') parts.push({ type: 'input_image', image_url: p.image_url.url })
+            else if ((p as any).type === 'image_file') parts.push({ type: 'input_image', file_id: (p as any).file_id })
           }
           input.push({ role: 'user', content: parts })
         }

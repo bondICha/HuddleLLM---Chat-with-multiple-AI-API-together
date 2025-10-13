@@ -204,6 +204,8 @@
   "Please check your network connection": "Please check your network connection",
   "This is a limitation set by poe.com": "This is a limitation set by poe.com",
   "Add New Model": "Add New Model",
+  "vertex_path_model_hint": "You can use %model in the endpoint path. It will be replaced by the configured model (URL-encoded) at request time.",
+  "vertex_gemini_nonstream_notice": "Note: This scheme supports generateContent only and is intended for image generation use cases (:streamGenerateContent is not supported).",
   "Common API Key": "Common API Key",
   "Your keys are stored locally": "Your keys are stored locally",
   "Common API Host": "Common API Host",

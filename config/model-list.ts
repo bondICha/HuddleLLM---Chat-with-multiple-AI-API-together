@@ -16,6 +16,7 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
     "Google": {
         "Gemini 2.5 Pro": "gemini-2.5-pro",
         "Gemini 2.5 Flash": "gemini-2.5-flash",
+        "Nano Banana": "gemini-2.5-flash-image",
     },
     "Grok": {
         "Grok 4": "grok-4",

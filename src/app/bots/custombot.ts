@@ -8,6 +8,7 @@ import { ChatError, ErrorCode } from '~utils/errors';
 import { BedrockApiBot } from './bedrock-api';
 import { GeminiApiBot } from './gemini-api';
 import { VertexClaudeBot } from './vertex-claude';
+import { VertexGeminiBot } from './vertex-gemini';
 // import { OpenAIImageBot } from './openai-image';
 import { OpenAIResponsesBot } from './openai-responses';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
@@ -281,6 +282,20 @@ export class CustomBot extends AsyncAbstractBot {
                     isHostFullPath: effectiveIsHostFullPath,
                     webAccess: config.webAccess,
                     advancedConfig: effectiveAdvanced,
+                });
+                break;
+            case CustomApiProvider.VertexAI_Gemini:
+                botInstance = new VertexGeminiBot({
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
+                    model: config.model,
+                    systemMessage: processedSystemMessage,
+                    temperature: config.temperature,
+                    thinkingMode: config.thinkingMode,
+                    thinkingBudget: config.thinkingBudget,
+                    isHostFullPath: true,
+                    webAccess: config.webAccess,
+                    geminiAuthMode: ((providerRef?.AuthMode || 'header') === 'default') ? 'query' : (config.geminiAuthMode || 'header'),
                 });
                 break;
             default:

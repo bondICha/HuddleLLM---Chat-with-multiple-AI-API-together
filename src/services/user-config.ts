@@ -34,6 +34,8 @@ export interface ProviderConfig {
   icon: string;
   /** Anthropic認証ヘッダタイプ */
   isAnthropicUsingAuthorizationHeader?: boolean;
+  /** 認証方式: 'header' | 'query' (現在Gemini API用)*/
+  AuthMode?: 'header' | 'default';
   /** 高度な設定 */
   advancedConfig?: AdvancedConfig;
   // UI関連の項目は必要に応じて追加
@@ -82,6 +84,7 @@ export enum CustomApiProvider {
   GeminiOpenAI = 'openai-gemini', // For Gemini OpenAI Compatible API
   QwenOpenAI = 'openai-qwen', // For Qwen OpenAI Compatible API
   VertexAI_Claude = 'vertexai-claude', // For Google VertexAI Claude API
+  VertexAI_Gemini = 'vertexai-gemini', // For Google VertexAI Gemini
   OpenAI_Image = 'openai-image', // For OpenAI Image Generation (gpt-image-1)
   OpenAI_Responses = 'openai-responses' // For OpenAI Responses API
 }
@@ -112,6 +115,8 @@ export interface CustomApiConfig {
   provider: CustomApiProvider,
   webAccess?: boolean,
   isAnthropicUsingAuthorizationHeader?: boolean, // Anthropicの認証ヘッダータイプを指定するフラグ
+  /** Gemini認証方式: 'header' | 'query' (個別設定時) */
+  geminiAuthMode?: 'header' | 'query',
   enabled?: boolean, // 各チャットボットの有効/無効状態
   isHostFullPath?: boolean; // hostが完全なパスかどうかを示すフラグ (デフォルト: false)
   advancedConfig?: AdvancedConfig;

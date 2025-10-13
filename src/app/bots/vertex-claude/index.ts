@@ -339,7 +339,11 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
   }
 
   async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal): Promise<Response> {
-    const url = this.config.host;
+    // Full path endpoint; support optional %model placeholder replacement
+    let url = this.config.host || '';
+    if (url.includes('%model')) {
+      url = url.replace(/%model/g, encodeURIComponent(this.config.model));
+    }
     
     const requestBody: any = {
       anthropic_version: "vertex-2023-10-16",
