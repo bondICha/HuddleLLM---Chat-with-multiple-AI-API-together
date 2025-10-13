@@ -14,7 +14,7 @@ import ModelPreview from './ModelPreview';
 interface Props {
   open: boolean;
   onClose: () => void;
-  provider: ProviderConfig | null;
+  provider?: ProviderConfig;
   onSave: (provider: ProviderConfig) => void;
 }
 
@@ -28,6 +28,8 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
   useEffect(() => {
     if (provider) {
       setEditingProvider({ ...provider });
+    } else {
+      setEditingProvider(null);
     }
   }, [provider]);
 
@@ -55,177 +57,70 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
       <ExpandableDialog
         open={open}
         onClose={handleClose}
-        title={t('Edit Provider')}
-        size="lg"
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button
-              text={t('Cancel')}
-              color="flat"
-              onClick={handleClose}
-            />
-            <Button
-              text={t('Save')}
-              color="primary"
-              onClick={handleSave}
-            />
-          </div>
-        }
+        title={provider ? t('Edit Provider') : t('Add New Provider')}
       >
-        <div className="space-y-4">
-          {/* Provider Icon and Name */}
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 cursor-pointer" onClick={() => setIconModalOpen(true)}>
-              <BotIcon iconName={editingProvider.icon} size={64} />
-            </div>
-            <div className="flex-1">
-              <div className={formRowClass}>
-                <p className={labelClass}>{t('Provider name')}</p>
-                <Input
-                  value={editingProvider.name}
-                  onChange={(e) => setEditingProvider({ ...editingProvider, name: e.currentTarget.value })}
-                  placeholder={t('Provider name')}
-                />
-              </div>
+        <div className="p-4 space-y-4">
+          <div className={formRowClass}>
+            <label className={labelClass}>{t('Provider Name')}</label>
+            <Input
+              value={editingProvider.name}
+              onChange={(e) => setEditingProvider({ ...editingProvider, name: e.currentTarget.value })}
+            />
+          </div>
+          <div className={formRowClass}>
+            <label className={labelClass}>{t('Icon')}</label>
+            <div className="flex items-center gap-2">
+              <BotIcon iconName={editingProvider.icon} size={32} />
+              <Button text={t('Select Icon')} onClick={() => setIconModalOpen(true)} />
             </div>
           </div>
-
-          {/* API Scheme */}
           <div className={formRowClass}>
-            <p className={labelClass}>{t('API Scheme')}</p>
+            <label className={labelClass}>{t('API Scheme')}</label>
             <Select
               options={[
                 { name: 'OpenAI Compatible', value: CustomApiProvider.OpenAI },
-                { name: 'OpenAI Responses API (Beta)', value: CustomApiProvider.OpenAI_Responses },
-                { name: 'OpenAI Image (gpt-image-1, Beta)', value: CustomApiProvider.OpenAI_Image },
                 { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
                 { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock },
                 { name: 'Google Gemini (OpenAI Format)', value: CustomApiProvider.GeminiOpenAI },
                 { name: 'Qwen (OpenAI Format)', value: CustomApiProvider.QwenOpenAI },
                 { name: 'VertexAI (Claude)', value: CustomApiProvider.VertexAI_Claude },
-                { name: 'Google Gemini API (Deprecated)', value: CustomApiProvider.Google },
               ]}
-              value={editingProvider.provider || CustomApiProvider.OpenAI}
-              onChange={(v) => {
-                const next = { ...editingProvider, provider: v as CustomApiProvider };
-                if (v === CustomApiProvider.GeminiOpenAI || v === CustomApiProvider.VertexAI_Claude) {
-                  next.isHostFullPath = true;
-                }
-                setEditingProvider(next);
-              }}
+              value={editingProvider.provider}
+              onChange={(v) => setEditingProvider({ ...editingProvider, provider: v as CustomApiProvider })}
             />
           </div>
-
-          {/* Anthropic Auth Header */}
-          {editingProvider.provider === CustomApiProvider.Anthropic && (
-            <div className={formRowClass}>
-              <p className={labelClass}>{t('Anthropic Auth Header')}</p>
-              <Select
-                options={[
-                  { name: 'x-api-key (Default)', value: 'false' },
-                  { name: 'Authorization', value: 'true' }
-                ]}
-                value={editingProvider.isAnthropicUsingAuthorizationHeader ? 'true' : 'false'}
-                onChange={(v) => {
-                  setEditingProvider({ 
-                    ...editingProvider, 
-                    isAnthropicUsingAuthorizationHeader: v === 'true' 
-                  });
-                }}
-                size="small"
-              />
-            </div>
-          )}
-
-          {/* API Host */}
           <div className={formRowClass}>
-            <div className="flex items-center justify-between">
-              <p className={labelClass}>{t(editingProvider.isHostFullPath ? 'API Endpoint (Full Path)' : 'API Host')}</p>
-              {editingProvider.provider === CustomApiProvider.VertexAI_Claude ? (
-                <span className="text-sm">{t('Full Path')}</span>
-              ) : (
-                <div className="flex items-center gap-1">
-                  <span className="text-sm">{t('Full Path')}</span>
-                  <span className="cursor-help group relative">ⓘ
-                    <div className="absolute top-full right-0 mt-2 w-72 hidden group-hover:block bg-gray-900 dark:bg-gray-800 text-white text-xs p-2 rounded shadow-lg z-50">
-                      {t('If "Full Path" is ON, enter the complete API endpoint URL. Otherwise, enter only the base host.')}
-                    </div>
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <HostSearchInput
-                className='flex-1'
-                placeholder={
-                  editingProvider.provider === CustomApiProvider.Google ? t("Not applicable for Google Gemini") :
-                  editingProvider.provider === CustomApiProvider.GeminiOpenAI ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" :
-                  editingProvider.provider === CustomApiProvider.QwenOpenAI ? "https://dashscope.aliyuncs.com/compatible-mode/v1" :
-                  editingProvider.isHostFullPath ? (
-                    editingProvider.provider === CustomApiProvider.OpenAI_Responses ? "https://api.example.com/v1/responses" :
-                    editingProvider.provider === CustomApiProvider.OpenAI_Image ? "https://api.example.com/v1/responses" :
-                    "https://api.example.com/v1/chat/completions"
-                  ) :
-                  "https://api.example.com"
-                }
-                value={editingProvider.host}
-                onChange={(value) => {
-                  setEditingProvider({ ...editingProvider, host: value });
-                }}
-                disabled={editingProvider.provider === CustomApiProvider.Google}
-              />
-              {editingProvider.provider !== CustomApiProvider.VertexAI_Claude && editingProvider.provider !== CustomApiProvider.GeminiOpenAI && (
-                <Switch
-                  checked={editingProvider.isHostFullPath ?? false}
-                  onChange={(checked) => {
-                    setEditingProvider({ ...editingProvider, isHostFullPath: checked });
-                  }}
-                />
-              )}
-            </div>
+            <label className={labelClass}>{t('API Host')}</label>
+            <HostSearchInput
+              value={editingProvider.host}
+              onChange={(v) => setEditingProvider({ ...editingProvider, host: v })}
+            />
           </div>
-
-          {/* API Key */}
           <div className={formRowClass}>
-            <p className={labelClass}>API Key</p>
+            <label className={labelClass}>{t('API Key')}</label>
             <Input
-              className='w-full'
-              placeholder={t('Enter API Key for this provider')}
-              value={editingProvider.apiKey}
-              onChange={(e) => {
-                setEditingProvider({ ...editingProvider, apiKey: e.currentTarget.value });
-              }}
               type="password"
+              value={editingProvider.apiKey}
+              onChange={(e) => setEditingProvider({ ...editingProvider, apiKey: e.currentTarget.value })}
             />
           </div>
-
-          {/* Model Preview */}
-          <div className="border-t pt-4">
-            <ModelPreview
-              provider={editingProvider.provider || CustomApiProvider.OpenAI}
-              apiKey={editingProvider.apiKey}
-              host={editingProvider.host}
-              isHostFullPath={editingProvider.isHostFullPath}
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={editingProvider.isHostFullPath}
+              onChange={(v) => setEditingProvider({ ...editingProvider, isHostFullPath: v })}
             />
+            <span className="text-sm">{t('Use full path for API endpoint')}</span>
           </div>
         </div>
+        <div className="flex justify-end p-4 border-t border-primary-border">
+          <Button text={t('Save')} onClick={handleSave} color="primary" />
+        </div>
       </ExpandableDialog>
-
       <IconSelectModal
         open={iconModalOpen}
-        onClose={() => {
-          // Prevent parent modal from closing when child modal (icon selector) is closing
-          iconModalClosingRef.current = true;
-          setIconModalOpen(false);
-          // reset guard after the child modal fully unmounts/animations complete
-          setTimeout(() => {
-            iconModalClosingRef.current = false;
-          }, 300);
-        }}
-        value={editingProvider.icon || ''}
-        onChange={(val) => {
-          setEditingProvider({ ...editingProvider, icon: val });
-        }}
+        onClose={() => setIconModalOpen(false)}
+        value={editingProvider.icon}
+        onChange={(v) => setEditingProvider({ ...editingProvider, icon: v })}
       />
     </>
   );

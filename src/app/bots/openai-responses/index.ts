@@ -4,6 +4,7 @@ import { ChatError, ErrorCode } from '~utils/errors'
 import { parseSSEResponse } from '~utils/sse'
 import { handleResponsesEvent } from '~utils/responses-stream'
 import { file2base64 } from '~app/utils/file-utils'
+import { getOpenAIFunctionToolsFor } from '~services/image-tools'
 
 type ContentPart =
   | { type: 'text'; text: string }
@@ -30,6 +31,8 @@ export class OpenAIResponsesBot extends AbstractBot {
       thinkingMode?: boolean
       reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
       functionTools?: any[]
+      imageToolGeneratorId?: string
+      imageToolOverrides?: Record<string, any>
       extraBody?: any
     },
   ) {
@@ -231,9 +234,12 @@ export class OpenAIResponsesBot extends AbstractBot {
     })
     body.input = sanitize(body.input)
 
-    // Tools precedence: explicit functionTools param > extra_body.tools > web_search_preview toggle
+    // Tools precedence: explicit functionTools param > image tool function mapping > extra_body.tools > web_search_preview toggle
     if (this.config.functionTools && Array.isArray(this.config.functionTools)) {
       body.tools = this.config.functionTools
+    } else if (this.config.imageToolGeneratorId) {
+      const tools = await getOpenAIFunctionToolsFor(this.config.imageToolGeneratorId)
+      if (tools && tools.length > 0) body.tools = tools
     } else if (extraBodyObj && Array.isArray((extraBodyObj as any).tools)) {
       body.tools = (extraBodyObj as any).tools
     } else if (this.config.webAccess) {

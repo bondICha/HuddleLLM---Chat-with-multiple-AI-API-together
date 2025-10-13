@@ -1,5 +1,5 @@
 // CustomBot.ts file (you should create this file or add to an existing file where suitable)
-import { AsyncAbstractBot, MessageParams, AnwserPayload } from './abstract-bot';
+import { AsyncAbstractBot, MessageParams, AnwserPayload, AbstractBot } from './abstract-bot';
 import * as agent from '~services/agent';
 import { ChatGPTApiBot } from './chatgpt-api';
 import { ClaudeApiBot } from './claude-api';
@@ -10,6 +10,7 @@ import { GeminiApiBot } from './gemini-api';
 import { VertexClaudeBot } from './vertex-claude';
 // import { OpenAIImageBot } from './openai-image';
 import { OpenAIResponsesBot } from './openai-responses';
+import { ImageAgentWrapperBot } from './image-agent-wrapper';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
 export class CustomBot extends AsyncAbstractBot {
@@ -21,7 +22,7 @@ export class CustomBot extends AsyncAbstractBot {
         this.customBotNumber = params.customBotNumber;
     }
 
-    async initializeBot() {
+    async initializeBot(): Promise<AbstractBot> {
         return await this.createBotInstance();
     }
 
@@ -92,7 +93,7 @@ export class CustomBot extends AsyncAbstractBot {
 
     // setConversationHistoryはAsyncAbstractBotが処理する
 
-    private async createBotInstance() {
+    private async createBotInstance(): Promise<AbstractBot> {
         const { customApiKey, customApiHost, customApiConfigs, commonSystemMessage, isCustomApiHostFullPath, providerConfigs } = await getUserConfig();
         const config = customApiConfigs[this.customBotNumber - 1];
 
@@ -130,7 +131,7 @@ export class CustomBot extends AsyncAbstractBot {
         const anthHeader = providerRef?.isAnthropicUsingAuthorizationHeader ?? (config.isAnthropicUsingAuthorizationHeader || false);
         const effectiveAdvanced = providerRef?.advancedConfig ?? config.advancedConfig;
 
-        let botInstance;
+        let botInstance: AbstractBot;
         switch (effectiveProvider) {
             case CustomApiProvider.Bedrock:
                 botInstance = new BedrockApiBot({
@@ -141,7 +142,7 @@ export class CustomBot extends AsyncAbstractBot {
                     systemMessage: processedSystemMessage,
                     thinkingMode: config.thinkingMode,
                     thinkingBudget: config.thinkingBudget,
-                    webAccess: config.webAccess,
+                    webAccess: config.webAccess || false,
                     isHostFullPath: effectiveIsHostFullPath,
                 });
                 break;
@@ -154,8 +155,10 @@ export class CustomBot extends AsyncAbstractBot {
                     systemMessage: processedSystemMessage,
                     thinkingBudget: config.thinkingBudget,
                     isHostFullPath: effectiveIsHostFullPath,
-                    webAccess: config.webAccess,
+                    webAccess: config.webAccess || false,
                     advancedConfig: effectiveAdvanced,
+                    imageToolGeneratorId: config.imageToolBinding?.generatorId,
+                    imageToolOverrides: config.imageToolOverrides,
                 }, config.thinkingMode, anthHeader);
                 break;
             case CustomApiProvider.OpenAI:
@@ -166,26 +169,16 @@ export class CustomBot extends AsyncAbstractBot {
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     isHostFullPath: effectiveIsHostFullPath,
-                    webAccess: config.webAccess,
+                    webAccess: config.webAccess || false,
                     botIndex: this.customBotNumber - 1, // 0ベースのインデックス
                     thinkingMode: config.thinkingMode,
                     reasoningEffort: config.reasoningEffort,
                     advancedConfig: effectiveAdvanced,
+                    imageToolGeneratorId: config.imageToolBinding?.generatorId,
                 });
                 break;
             case CustomApiProvider.OpenAI_Image: {
                 const imageTool: any = { type: 'image_generation' }
-                if (config.imageSize) imageTool.size = config.imageSize
-                if (config.imageQuality) imageTool.quality = config.imageQuality
-                if (config.imageBackground) imageTool.background = config.imageBackground
-                if (config.imageModeration) imageTool.moderation = (config.imageModeration === 'default') ? 'low' : config.imageModeration
-                if (config.imageFormat && config.imageFormat !== 'none') {
-                    imageTool.format = config.imageFormat
-                    if (typeof config.imageCompression === 'number' && (config.imageFormat === 'jpeg' || config.imageFormat === 'webp')) {
-                        const clamped = Math.max(0, Math.min(100, Math.round(config.imageCompression)))
-                        imageTool.output_compression = clamped
-                    }
-                }
                 botInstance = new OpenAIResponsesBot({
                     apiKey: effectiveApiKey,
                     host: effectiveHost,
@@ -206,7 +199,7 @@ export class CustomBot extends AsyncAbstractBot {
                     geminiApiModel: config.model,
                     geminiApiSystemMessage: processedSystemMessage,
                     geminiApiTemperature: config.temperature,
-                    webAccess: config.webAccess,
+                    webAccess: config.webAccess || false,
                 });
                 break;
             case CustomApiProvider.OpenAI_Responses:
@@ -216,20 +209,10 @@ export class CustomBot extends AsyncAbstractBot {
                     model: config.model,
                     systemMessage: processedSystemMessage,
                     isHostFullPath: effectiveIsHostFullPath,
-                    webAccess: !!config.responsesWebSearch,
+                    webAccess: false,
                     thinkingMode: config.thinkingMode,
                     reasoningEffort: config.reasoningEffort,
-                    functionTools: (() => {
-                      if (config.responsesFunctionTools && config.responsesFunctionTools.trim().length > 0) {
-                        try {
-                          const parsed = JSON.parse(config.responsesFunctionTools);
-                          return Array.isArray(parsed) ? parsed : undefined;
-                        } catch {
-                          return undefined;
-                        }
-                      }
-                      return undefined;
-                    })(),
+                    functionTools: undefined,
                     extraBody: undefined,
                 });
                 break;
@@ -241,7 +224,7 @@ export class CustomBot extends AsyncAbstractBot {
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingMode: false, // No compatibility with OpenAI Reasoning
-                    webAccess: config.webAccess,
+                    webAccess: config.webAccess || false,
                     isHostFullPath: true, // GeminiOpenAI は常に Full Path
                     extraBody: config.thinkingMode ? {
                         google: {
@@ -261,7 +244,7 @@ export class CustomBot extends AsyncAbstractBot {
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingMode: config.thinkingMode,
-                    webAccess: config.webAccess,
+                    webAccess: config.webAccess || false,
                     isHostFullPath: effectiveIsHostFullPath,
                     extraBody: config.thinkingMode ? {
                         enable_thinking: true,
@@ -279,10 +262,34 @@ export class CustomBot extends AsyncAbstractBot {
                     thinkingMode: config.thinkingMode, // Now properly supported with correct max_tokens
                     thinkingBudget: config.thinkingBudget,
                     isHostFullPath: effectiveIsHostFullPath,
-                    webAccess: config.webAccess,
+                    webAccess: config.webAccess || false,
                     advancedConfig: effectiveAdvanced,
                 });
                 break;
+            case CustomApiProvider.Image_Agent: {
+                const refId = config.imageAgentChatbotRefId;
+                if (!refId) {
+                  throw new ChatError('Chatbot for prompting is not configured for this Image Agent.', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);
+                }
+              
+                const targetConfigIndex = customApiConfigs.findIndex((c) => c.id === refId);
+                if (targetConfigIndex === -1) {
+                  throw new ChatError(`Chatbot with ID ${refId} not found.`, ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);
+                }
+              
+                // Create an instance of the referenced bot
+                const referencedBot = new CustomBot({ customBotNumber: targetConfigIndex + 1 });
+                const engine = await referencedBot.initializeBot();
+              
+                botInstance = new ImageAgentWrapperBot({
+                  engine: engine,
+                  generatorId: config.imageToolBinding?.generatorId,
+                  overrides: config.imageToolOverrides,
+                  sourceBotId: config.id,
+                  model: config.model,
+                });
+                break;
+              }
             default:
                 console.error(`Unsupported provider detected: ${effectiveProvider}`);
                 throw new ChatError(`Unsupported provider: ${effectiveProvider}`, ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);

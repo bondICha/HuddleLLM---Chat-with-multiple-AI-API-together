@@ -1,5 +1,11 @@
 import { CustomBot } from './custombot'
 
+type CustomBotOverrides = {
+  jsonMode?: boolean
+  jsonSchema?: string
+  jsonSchemaName?: string
+}
+
 // CustomBotインスタンスのレジストリ
 const customBotRegistry = new Map<number, CustomBot>();
 
@@ -8,17 +14,16 @@ const customBotRegistry = new Map<number, CustomBot>();
  * @param index カスタムボットのインデックス（0ベース）
  * @returns CustomBotのインスタンス
  */
-export function createBotInstance(index: number) {
+export function createBotInstance(index: number, opts?: { overrides?: CustomBotOverrides; transient?: boolean }) {
   // インデックスが有効範囲内かチェック（数値で0以上であること）
   if (typeof index === 'number' && !isNaN(index) && index >= 0) {
-    // 既存のインスタンスがあれば再利用
-    if (customBotRegistry.has(index)) {
+    if (!opts?.transient && customBotRegistry.has(index)) {
       return customBotRegistry.get(index)!;
     }
     
     // CustomBotは1ベースのcustomBotNumberを期待するため、index + 1を渡す
     const bot = new CustomBot({ customBotNumber: index + 1 });
-    customBotRegistry.set(index, bot);
+    if (!opts?.transient) customBotRegistry.set(index, bot);
     return bot;
   }
 

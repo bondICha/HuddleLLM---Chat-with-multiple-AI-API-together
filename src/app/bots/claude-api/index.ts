@@ -1,190 +1,326 @@
-import { isArray } from 'lodash-es'
-import { requestHostPermission } from '~app/utils/permissions'
+import { AbstractBot, MessageParams, SendMessageParams } from '../abstract-bot'
+import { streamAsyncIterable } from '~utils/stream-async-iterable'
 import { ChatError, ErrorCode } from '~utils/errors'
-import { parseSSEResponse } from '~utils/sse'
-import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract-bot'
-import { file2base64 } from '~app/utils/file-utils'
-import { ChatMessageModel } from '~types'
-import { uuid } from '~utils'
-import { getUserLocaleInfo } from '~utils/system-prompt-variables'
-import { sanitizeMessagesForClaude, ensureNonEmptyText } from '../claude-message-sanitizer'
+import { generateImageViaToolFor, getClaudeClientToolsFor } from '~services/image'
+import { CustomApiConfig, AdvancedConfig } from '~services/user-config'
 
-interface ChatMessage {
-  role: string
-  content: string | { type: string; [key: string]: any }[]
+const API_HOST = 'https://api.anthropic.com'
+
+type ClaudeMessageContent =
+  | string
+  | (
+      | { type: 'text'; text: string }
+      | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } }
+      | { type: 'tool_use'; id: string; name: string; input: any }
+    )[]
+
+function parseMessage(content: ClaudeMessageContent) {
+  if (typeof content === 'string') {
+    return content
+  }
+  return content
+    .map((item) => {
+      if (item.type === 'text') {
+        return item.text
+      }
+      if (item.type === 'image') {
+        return `[Image: ${item.source.media_type}]`
+      }
+      if (item.type === 'tool_use') {
+        return `[Tool use: ${item.name}]`
+      }
+      return ''
+    })
+    .join(' ')
 }
 
-interface ConversationContext {
-  messages: ChatMessage[]
+class ClaudeMessage {
+  role: 'user' | 'assistant'
+  content: ClaudeMessageContent
+
+  constructor(message: {
+    role: 'user' | 'assistant'
+    content: ClaudeMessageContent
+  }) {
+    this.role = message.role
+    this.content = message.content
+  }
+
+  toString() {
+    return `${this.role}: ${parseMessage(this.content)}`
+  }
 }
 
-const CONTEXT_SIZE = 120
+export class ClaudeApiBot extends AbstractBot {
+  private conversationContext: { messages: ClaudeMessage[] } = { messages: [] }
+  private apiKey: string
+  private model: string
+  private temperature: number
+  private host: string
+  private thinkingMode: boolean
+  private isHostFullPath: boolean
+  private useAuthorizationHeader: boolean
+  private advancedConfig?: AdvancedConfig
+  private imageToolGeneratorId?: string
+  private imageToolOverrides?: Record<string, any>
 
-export abstract class AbstractClaudeApiBot extends AbstractBot {
-  private conversationContext?: ConversationContext
-
-  // ConversationHistoryインターフェースの実装
-  public setConversationHistory(history: ConversationHistory): void {
-    if (history.messages && Array.isArray(history.messages)) {
-      // ChatMessageModelからChatMessageへの変換
-      const messages: ChatMessage[] = history.messages.map(msg => {
-        if (msg.author === 'user') {
-          return {
-            role: 'user',
-            content: msg.text
-          };
-        } else {
-          return {
-            role: 'assistant',
-            content: msg.text
-          };
-        }
-      });
-      
-      this.conversationContext = {
-        messages: messages
-      };
+  constructor(
+    params: {
+      apiKey: string
+      model: string
+      temperature: number
+      host: string
+      isHostFullPath: boolean
+      webAccess: boolean
+      thinkingBudget?: number
+      advancedConfig?: AdvancedConfig
+      systemMessage?: string
+      imageToolGeneratorId?: string
+      imageToolOverrides?: Record<string, any>
+    },
+    thinkingMode: boolean = false,
+    useAuthorizationHeader: boolean = false,
+  ) {
+    super()
+    this.apiKey = params.apiKey
+    this.model = params.model
+    this.temperature = params.temperature
+    this.host = params.host
+    this.isHostFullPath = params.isHostFullPath
+    this.thinkingMode = thinkingMode
+    this.useAuthorizationHeader = useAuthorizationHeader
+    this.advancedConfig = params.advancedConfig
+    this.imageToolGeneratorId = params.imageToolGeneratorId
+    this.imageToolOverrides = params.imageToolOverrides
+    if (params.systemMessage) {
+      this.setSystemMessage(params.systemMessage)
     }
   }
 
-  public getConversationHistory(): ConversationHistory | undefined {
-    if (!this.conversationContext) {
-      return undefined;
-    }
-    
-    // ChatMessageからChatMessageModelへの変換
-    const messages = this.conversationContext.messages.map(msg => {
-      const role = msg.role === 'user' ? 'user' : 'assistant';
-      let content = '';
-      
-      if (typeof msg.content === 'string') {
-        content = msg.content;
-      } else if (Array.isArray(msg.content)) {
-        // contentが配列の場合、typeがtextの要素からテキストを抽出
-        const textContent = msg.content.find(part => part.type === 'text');
-        if (textContent && 'text' in textContent) {
-          content = textContent.text || '';
-        }
+  get name() {
+    return `Claude (API)`
+  }
+
+  get chatBotName() {
+    return `Claude (API)`
+  }
+
+  get modelName() {
+    return this.model
+  }
+
+  setSystemMessage(systemMessage: string) {
+    // The first message in the conversation is the system message
+    if (this.conversationContext.messages.length > 0 && this.conversationContext.messages[0].role === 'user') {
+      const firstMessageContent = this.conversationContext.messages[0].content
+      if (typeof firstMessageContent === 'string' && firstMessageContent.startsWith('System Prompt:')) {
+        this.conversationContext.messages.shift()
       }
-      
-      return {
-        id: uuid(),
-        author: role,
-        text: content
-      };
-    });
-    
-    return { messages };
-  }
-
-  private async buildUserMessage(prompt: string, images?: File[]): Promise<ChatMessage> {
-    if (!images || images.length === 0) {
-      return { role: 'user', content: ensureNonEmptyText(prompt) }
     }
-
-    const imageContents = await Promise.all(images.map(async (image) => {
-      const dataUrl = await file2base64(image, true) // keepHeader = true
-      const match = dataUrl.match(/^data:(.+);base64,(.+)$/)
-      if (match) {
-        return {
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: match[1],
-            data: match[2]
-          }
-        }
-      }
-      console.error('Could not parse data URL for image:', dataUrl)
-      return null
-    }))
-
-    const validImageContents = imageContents.filter(content => content !== null)
-
-    return {
-      role: 'user',
-      content: [
-        { type: 'text', text: ensureNonEmptyText(prompt) },
-        ...validImageContents
-      ],
+    if (systemMessage && systemMessage.trim().length > 0) {
+      this.conversationContext.messages.unshift(new ClaudeMessage({ role: 'user', content: [{ type: 'text', text: `System Prompt: ${systemMessage}` }] }))
     }
   }
 
-  private async buildMessages(prompt: string, images?: File[]): Promise<ChatMessage[]> {
-    const userMessage = await this.buildUserMessage(prompt, images);
-    return [
-      ...this.conversationContext!.messages.slice(-(CONTEXT_SIZE + 1)),
-      userMessage,
-    ]
+  resetConversation() {
+    this.conversationContext = { messages: [] }
   }
-
-  abstract getSystemMessage(): string
 
   async doSendMessage(params: SendMessageParams) {
-    if (!this.conversationContext) {
-      this.conversationContext = { messages: [] }
+    if (!this.apiKey) {
+      throw new ChatError('API key not set', ErrorCode.API_KEY_NOT_SET)
     }
 
-    const messages = await this.buildMessages(params.prompt, params.images);
-    const resp = await this.fetchCompletionApi(messages, params.signal)
-
-    // add user message to context only after fetch success
-    const userMessage = await this.buildUserMessage(params.rawUserInput || params.prompt, params.images);
-    this.conversationContext.messages.push(userMessage);
-
-    let done = false
-    const result: ChatMessage = { role: 'assistant', content: '' }
-    let thinkingContent = '';
-
-    const finish = () => {
-      done = true
-      params.onEvent({ type: 'DONE' })
-      const messages = this.conversationContext!.messages
-      messages.push(result)
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
+    }
+    if (this.useAuthorizationHeader) {
+      headers['Authorization'] = `Bearer ${this.apiKey}`
+    } else {
+      headers['x-api-key'] = this.apiKey
     }
 
-    await parseSSEResponse(resp, (message) => {
-      console.debug('claude sse message', message)
-      try {
-        const data = JSON.parse(message)
-        if (data.type === 'content_block_start' && data.content_block?.type === 'thinking') {
-          thinkingContent = ''; // Reset thinking content at the start of a new block
-        } else if (data.type === 'content_block_delta' && data.delta?.type === 'thinking_delta') {
-          // Thinking モードの出力の処理
-          thinkingContent += data.delta.thinking || '';
-          params.onEvent({
-            type: 'UPDATE_ANSWER',
-            data: {
-              text: typeof result.content === 'string' ? result.content : '',
-              thinking: thinkingContent,
-            },
-          });
-        } else if (data.type === 'content_block_start' || data.type === 'content_block_delta') {
-          if (data.delta?.text) {
-            if (typeof result.content === 'string') {
-              result.content += data.delta.text
-            } else {
-              result.content = data.delta.text
-            }
-            params.onEvent({
-              type: 'UPDATE_ANSWER',
-              data: {
-                text: typeof result.content === 'string' ? result.content : '',
-                thinking: thinkingContent || undefined,
-              },
-            });
-          }
-        } else if (data.type === 'message_stop') {
-          finish()
-        }
-      } catch (error) {
-        console.error('Error parsing SSE message:', error)
-      }
+    if (this.advancedConfig?.anthropicBetaHeaders) {
+      this.advancedConfig.anthropicBetaHeaders.split(';').forEach((h) => {
+        const [k, v] = h.split(':')
+        if (k && v) headers[k.trim()] = v.trim()
+      })
+    }
+
+    const userMessage = new ClaudeMessage({ role: 'user', content: [{ type: 'text', text: params.prompt }] })
+    this.conversationContext.messages.push(userMessage)
+
+    const apiHost = this.host || API_HOST
+    const endpoint = this.isHostFullPath ? apiHost : `${apiHost}/v1/messages`
+
+    const tools = await getClaudeClientToolsFor(this.imageToolGeneratorId)
+
+    const body = {
+      model: this.model,
+      messages: this.conversationContext.messages,
+      temperature: this.temperature,
+      stream: true,
+      max_tokens: 4096, // TODO: make this configurable
+      ...(tools && { tools }),
+    }
+
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      signal: params.signal,
     })
 
-    if (!done) {
-      finish()
+    if (!resp.ok) {
+      const errorData = await resp.json()
+      throw new ChatError(errorData.error.message, ErrorCode.UNKOWN_ERROR)
     }
+
+    const stream = resp.body!
+    const reader = stream.getReader()
+    const decoder = new TextDecoder('utf-8')
+
+    let result: { role: 'assistant'; content: ClaudeMessageContent } = { role: 'assistant', content: [] }
+    let done = false
+    let contentBlocks: any[] = []
+
+    while (!done) {
+      const { value, done: readerDone } = await reader.read()
+      if (value) {
+        const char = decoder.decode(value)
+        for (const line of char.split('\n')) {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6))
+            if (data.type === 'content_block_start') {
+              contentBlocks[data.index] = data.content_block
+              if (data.content_block.type === 'tool_use') {
+                contentBlocks[data.index].input = ''
+              }
+            } else if (data.type === 'content_block_delta') {
+              const block = contentBlocks[data.index]
+              if (block) {
+                if (data.delta.type === 'text_delta') {
+                  if (!block.text) {
+                    block.text = ''
+                  }
+                  block.text += data.delta.text
+                } else if (data.delta.type === 'input_json_delta') {
+                  if (!block.input) {
+                    block.input = ''
+                  }
+                  block.input += data.delta.partial_json
+                }
+              }
+            } else if (data.type === 'message_delta') {
+              if (data.delta.stop_reason) {
+                done = true
+              }
+            } else if (data.type === 'message_stop') {
+              done = true
+            }
+          }
+        }
+        result.content = contentBlocks.map(b => {
+          if (b.type === 'text') return { type: 'text', text: b.text }
+          if (b.type === 'tool_use') {
+            try {
+              return { type: 'tool_use', id: b.id, name: b.name, input: JSON.parse(b.input) }
+            } catch (e) {
+              console.error('Failed to parse tool_use input', e)
+              return { type: 'tool_use', id: b.id, name: b.name, input: {} }
+            }
+          }
+          return b
+        })
+        params.onEvent({ type: 'UPDATE_ANSWER', data: { text: parseMessage(result.content) } })
+      }
+      if (readerDone) {
+        done = true
+      }
+    }
+
+    this.conversationContext.messages.push(new ClaudeMessage(result))
+
+    const finish = async () => {
+      params.onEvent({ type: 'DONE' })
+    }
+
+    // Check for tool calls
+    const lastMessage = this.conversationContext.messages[this.conversationContext.messages.length - 1]
+    const pendingToolUse = (Array.isArray(lastMessage.content) ? lastMessage.content : []).find(
+      (c: any) => c.type === 'tool_use' && (c.name === 'chutes_generate_image' || c.name === 'seedream_generate_image'),
+    )
+    if (pendingToolUse && pendingToolUse.type === 'tool_use') {
+      try {
+        const toolInput = pendingToolUse.input || {}
+        // If model is fixed, inject it into the input
+        try {
+          const tools = await getClaudeClientToolsFor((this as any).imageToolGeneratorId)
+          const t = tools?.find((t: any) => t.name === pendingToolUse.name)
+          const gm = t?.input_schema?.properties?.model?.enum?.[0]
+          if (gm) {
+            if (gm) (toolInput as any).model = gm
+          }
+        } catch {}
+        // Render tool call JSON into the chat message for transparency
+        try {
+          const debugMd = ['\n\nTool Call', '```json', JSON.stringify({ name: pendingToolUse.name, input: toolInput }, null, 2), '```'].join('\n')
+          if (Array.isArray(result.content)) {
+            result.content.push({ type: 'text', text: debugMd })
+          }
+          params.onEvent({ type: 'UPDATE_ANSWER', data: { text: parseMessage(result.content) } })
+        } catch {}
+        const rawPrompt = (typeof toolInput.prompt === 'string' ? toolInput.prompt : '')
+        const fallbackPrompt = (params as any).rawUserInput || params.prompt || ''
+        const finalPrompt = (rawPrompt && rawPrompt.trim().length > 0) ? rawPrompt : fallbackPrompt
+        const usedFallback = ((!rawPrompt || rawPrompt.trim().length === 0) && (fallbackPrompt && fallbackPrompt.trim().length > 0))
+        if (usedFallback) {
+          try {
+            const note = '\n\n_Note_: Tool input had empty prompt; used user input as prompt.'
+            if (Array.isArray(result.content)) {
+              result.content.push({ type: 'text', text: note })
+            }
+            params.onEvent({ type: 'UPDATE_ANSWER', data: { text: parseMessage(result.content) } })
+          } catch {}
+        }
+        const md = await generateImageViaToolFor(
+          (this as any).imageToolGeneratorId,
+          pendingToolUse.name === 'chutes_generate_image'
+            ? {
+                prompt: finalPrompt,
+                negative_prompt: toolInput.negative_prompt,
+                width: toolInput.width,
+                height: toolInput.height,
+                num_inference_steps: toolInput.num_inference_steps,
+                guidance_scale: toolInput.guidance_scale,
+                // seed optional
+              }
+            : {
+                prompt: finalPrompt,
+                size: toolInput.size,
+                sequential_image_generation: toolInput.sequential_image_generation,
+                max_images: toolInput.max_images,
+                watermark: toolInput.watermark,
+              },
+          params.signal,
+          { overrides: (this as any).imageToolOverrides || undefined },
+        )
+        const appended = `\n\n${md}`
+        if (Array.isArray(result.content)) {
+          result.content.push({ type: 'text', text: appended })
+        }
+        params.onEvent({ type: 'UPDATE_ANSWER', data: { text: parseMessage(result.content) } })
+      } catch (err: any) {
+        const warn = `\n\n[Image tool failed: ${err?.message || 'unknown error'}]`
+        if (Array.isArray(result.content)) {
+          result.content.push({ type: 'text', text: warn })
+        }
+        params.onEvent({ type: 'UPDATE_ANSWER', data: { text: parseMessage(result.content) } })
+      }
+    }
+
+    if (!done) finish()
   }
 
     /**
@@ -203,166 +339,13 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
     if (typeof lastMessage.content === 'string') {
       lastMessage.content = message
     } else if (Array.isArray(lastMessage.content)) {
-      // parts 配列の場合、先頭要素の text を更新できるようにする
-      if (lastMessage.content.length > 0 && typeof lastMessage.content[0].text === 'string') {
-        lastMessage.content[0].text = message
+      const textPart = lastMessage.content.find(p => p.type === 'text')
+      if (textPart && textPart.type === 'text') {
+        textPart.text = message
       } else {
         lastMessage.content = [{ type: 'text', text: message }]
       }
     }
     console.log('Claude modifyLastMessage updated to:', message)
   }
-
-  resetConversation() {
-    this.conversationContext = undefined
-  }
-
-  abstract fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal): Promise<Response>
 }
-
-export class ClaudeApiBot extends AbstractClaudeApiBot {
-  private thinkingMode: boolean;
-
-  // Define a specific type for the config needed by ClaudeApiBot
-  constructor(
-    private config: {
-      apiKey: string;
-      host: string;
-      model: string;
-      systemMessage: string;
-      temperature: number;
-      thinkingBudget?: number;
-      isHostFullPath?: boolean; // Add isHostFullPath to the config type
-      webAccess?: boolean;
-      advancedConfig?: any;
-    },
-    thinkingMode: boolean = false,
-    private useCustomAuthorizationHeader: boolean = false
-  ) {
-    super()
-    this.thinkingMode = thinkingMode;
-  }
-
-  getSystemMessage() {
-    return this.config.systemMessage
-  }
-
-  setSystemMessage(systemMessage: string) {
-    this.config.systemMessage = systemMessage
-  }
-
-  async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal) {
-    const hasImageInput = messages.some(
-      (message) => isArray(message.content) && message.content.some((part) => part.type === 'image')
-    );
-
-    const body: any = {
-      model: this.getModelName(),
-      messages: sanitizeMessagesForClaude(messages),
-      stream: true,
-      system: this.getSystemMessage(),
-    }
-
-    // Add Extended Thinking configuration or temperature based on thinkingMode flag
-    if (this.thinkingMode) {
-      const budgetTokens = Math.max(this.config.thinkingBudget || 2000, 1024); // Minimum 1024 tokens as per Extended Thinking spec
-      body.thinking = {
-        type: "enabled",
-        budget_tokens: budgetTokens
-      };
-      body.max_tokens = Math.min(budgetTokens + 12000, 64000);
-      // Temperature is not compatible with Extended Thinking mode
-      // Do not set temperature when thinking mode is enabled
-    } else {
-      body.max_tokens = hasImageInput ? 4096 : 8192;
-      body.temperature = this.config.temperature; // Use config.temperature
-    }
-
-    const headers: Record<string, string> = {
-      'content-type': 'application/json',
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    };
-
-    if (this.useCustomAuthorizationHeader) {
-      headers['Authorization'] = this.config.apiKey; // Use config.apiKey
-    } else {
-      headers['x-api-key'] = this.config.apiKey; // Use config.apiKey
-    }
-
-    if (this.config.advancedConfig?.anthropicBetaHeaders) {
-      const betaValues = this.config.advancedConfig.anthropicBetaHeaders.split(',').map((v: string) => v.trim()).filter((v: string) => v);
-      if (betaValues.length > 0) {
-        headers['anthropic-beta'] = betaValues.join(', ');
-      }
-    }
-
-    // Use values passed from CustomBot; do not read global config here
-    const { host: hostValue, isHostFullPath: configIsHostFullPath } = this.config;
-    const isFullPath = configIsHostFullPath ?? false;
-
-    let fullUrlStr: string;
-
-    if (isFullPath) {
-      fullUrlStr = hostValue;
-    } else {
-      const api_path = 'v1/messages'; // Default path for Claude
-      const baseUrl = hostValue.endsWith('/') ? hostValue.slice(0, -1) : hostValue;
-      // Ensure v1 is not duplicated if already present in a non-full-path host
-      if (baseUrl.endsWith('/v1')) {
-        fullUrlStr = `${baseUrl.slice(0, -3)}/${api_path}`;
-      } else {
-        fullUrlStr = `${baseUrl}/${api_path}`;
-      }
-      // Clean up potential double slashes or v1/v1 issues more robustly
-      fullUrlStr = fullUrlStr.replace(/([^:]\/)\/+/g, "$1"); // Replace multiple slashes with single
-      fullUrlStr = fullUrlStr.replace(/\/v1\/v1\//g, "/v1/");
-    }
-    
-    const resp = await fetch(fullUrlStr, {
-      method: 'POST',
-      signal,
-      headers,
-      body: JSON.stringify(body),
-    })
-    if (!resp.ok) {
-      const statusLine = `${resp.status} ${resp.statusText || 'Error'}`;
-      const errorText = await resp.text();
-      let cause;
-      let apiMessage = '';
-      try {
-        cause = JSON.parse(errorText);
-        apiMessage = (cause as any)?.error?.message || (cause as any)?.error?.type || '';
-      } catch (e) {
-        cause = errorText;
-        apiMessage = errorText.substring(0, 300);
-      }
-      const combinedMessage = `${statusLine}; ${apiMessage}`;
-
-      if (apiMessage.includes('insufficient_quota')) {
-        throw new ChatError(combinedMessage, ErrorCode.CLAUDE_INSUFFICIENT_QUOTA, cause);
-      }
-      
-      throw new ChatError(combinedMessage, ErrorCode.UNKOWN_ERROR, cause);
-    }
-    return resp
-  }
-
-  public getModelName() {
-    const { model: claudeApiModel } = this.config // Use config.model
-    return claudeApiModel
-  }
-
-  get modelName(): string { // Add type annotation
-    return this.config.model // Use config.model
-  }
-
-  get name(): string { // Add type annotation
-    return this.thinkingMode ? `Claude (Thinking)` : `Claude` // Restore getter body
-  }
-
-  get supportsImageInput() {
-    return true
-  }
-}
-

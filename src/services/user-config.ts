@@ -83,7 +83,8 @@ export enum CustomApiProvider {
   QwenOpenAI = 'openai-qwen', // For Qwen OpenAI Compatible API
   VertexAI_Claude = 'vertexai-claude', // For Google VertexAI Claude API
   OpenAI_Image = 'openai-image', // For OpenAI Image Generation (gpt-image-1)
-  OpenAI_Responses = 'openai-responses' // For OpenAI Responses API
+  OpenAI_Responses = 'openai-responses', // For OpenAI Responses API
+  Image_Agent = 'image-agent' // Hybrid: Chatbot + Image Generator (tools)
 }
 
 export interface AdvancedConfig {
@@ -117,22 +118,35 @@ export interface CustomApiConfig {
   advancedConfig?: AdvancedConfig;
   /** Provider参照ID */
   providerRefId?: string;
-  // Image generation options (for OpenAI Image via Responses API)
-  // Partial images feature disabled
-  // imagePartialImages?: number | null; // 0-3, null to omit parameter
-  imageSize?: '1024x1024' | '1024x1536' | '1536x1024' | 'auto';
-  imageQuality?: 'low' | 'medium' | 'high' | 'auto';
-  imageBackground?: 'transparent' | 'auto';
-  // Output format (default png); if jpeg/webp, compression may be set (0-100)
-  imageFormat?: 'png' | 'jpeg' | 'webp' | 'none';
-  imageCompression?: number; // 0-100 for jpeg/webp
-  // Moderation strictness for gpt-image-1 tool: default (mapped to low), low, auto
-  imageModeration?: 'default' | 'low' | 'auto';
-  // OpenAI Responses API specific toggles
-  responsesWebSearch?: boolean; // Enable web_search_preview tool
-  /** JSON string for Responses API tools (function calling, web_search_preview, etc.) */
-  responsesFunctionTools?: string;
+
+  // Generic Image Tool binding (Chatbot x Image Generator)
+  imageToolBinding?: {
+    enabled: boolean;
+    generatorId?: string; // references ImageGenerator.id
+  };
+
+  /** Image Agent: reference an existing chatbot config by stable id */
+  imageAgentChatbotRefId?: number;
+  /** Image Agent: provider-specific overrides merged with generator defaults */
+  imageToolOverrides?: Record<string, any>;
 }
+
+export interface ImageGenerator {
+  id: string;
+  name: string;
+  type: 'chutes' | 'seedream';
+  host: string;
+  apiKey: string;
+  model: string;
+  // Provider-specific defaults
+  defaults?: Record<string, any>;
+}
+
+// Image API global settings
+export interface ImageApiSettings {
+  enabled: boolean;
+}
+
 
 /**
  * チャットペアの設定インターフェース
@@ -170,6 +184,10 @@ const userConfigWithDefaultValue = {
   isCustomApiHostFullPath: false, // デフォルト値を設定
   savedChatPairs: [] as ChatPair[], // 保存されたチャットペア
   fontType: FontType.SERIF, // フォントタイプ（デフォルト: Sans-serif）
+  imageGenerators: [] as ImageGenerator[],
+  imageApi: {
+    enabled: true,
+  } as ImageApiSettings,
 }
 
 export type UserConfig = typeof userConfigWithDefaultValue

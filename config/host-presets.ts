@@ -10,7 +10,9 @@ export const HOST_PRESETS = [
   'https://openrouter.ai/api',
   'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
   'https://api.novita.ai/openai',
+  'https://api.novita.ai/seedream',
   'https://api.chutes.ai',
+  'https://image.chutes.ai/generate',
   'https://api.hyperbolic.xyz',
   'https://api.studio.nebius.com'
 ];

@@ -1,4 +1,6 @@
 import { searchRelatedContext } from './web-search';
+import { createBotInstance } from '~app/bots';
+import { generateImageViaToolFor } from '~services/image-tools';
 import { AnwserPayload } from '~app/bots/abstract-bot';
 import Browser from 'webextension-polyfill';
 import { htmlToText } from '~app/utils/html-utils';
@@ -225,11 +227,20 @@ async function* execute(
         }
         return;
       }
-    } else {
-      // 検索以外のアクション、または未知のアクション
-      if (parsedJson.action !== 'web_search') {
-        throw new Error(`Unexpected agent action: ${parsedJson.action}`);
+    } else if (parsedJson.action === 'image_generation') {
+      // Execute image generation as a function/tool call to external providers
+      try {
+        const md = await generateImageViaToolFor(undefined, { prompt: parsedJson.action_input }, signal)
+        yield { text: md }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Image generation failed'
+        yield { text: `❌ ${msg}` }
       }
+      return;
+    } else {
+      // Unknown action: treat as final answer content or error
+      yield { text: llmOutputText };
+      return;
     }
   }
 

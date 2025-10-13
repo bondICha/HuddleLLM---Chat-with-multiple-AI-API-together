@@ -7,6 +7,7 @@ import { ChatMessage } from './types'
 import { ChatMessageModel } from '~types'
 import { uuid } from '~utils'
 import { getUserLocaleInfo } from '~utils/system-prompt-variables'
+import { getOpenAIFunctionToolsFor } from '~services/image'
 
 interface ConversationContext {
   messages: ChatMessage[]
@@ -228,6 +229,11 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
       advancedConfig?: any; // To pass OpenRouter provider options
       extraBody?: any; // Extra body parameters for compatible APIs
+      // Structured outputs (optional)
+      jsonMode?: boolean;
+      jsonSchema?: string;
+      jsonSchemaName?: string;
+      imageToolGeneratorId?: string;
     },
   ) {
     super()
@@ -240,7 +246,6 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
   setSystemMessage(systemMessage: string) {
     this.config.systemMessage = systemMessage
   }
-
   
 
   async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal) {
@@ -292,6 +297,8 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
         extraBodyObj = this.config.extraBody;
       }
     }
+
+    const tools = await getOpenAIFunctionToolsFor(this.config.imageToolGeneratorId)
     
     const resp = await fetch(fullUrlStr, {
       method: 'POST',
@@ -305,6 +312,21 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
         messages,
         max_tokens: undefined,
         stream: true,
+        // Structured outputs
+        ...(this.config.extraBody?.response_format ? {} : (() => {
+          const cfg: any = (this as any).config
+          if (cfg?.jsonSchema && typeof cfg.jsonSchema === 'string' && cfg.jsonSchema.trim().length > 0) {
+            try {
+              const schema = JSON.parse(cfg.jsonSchema)
+              const name = cfg.jsonSchemaName || 'schema'
+              return { response_format: { type: 'json_schema', json_schema: { name, schema } } }
+            } catch { /* ignore invalid schema */ }
+          }
+          if (cfg?.jsonMode) {
+            return { response_format: { type: 'json_object' } }
+          }
+          return {}
+        })()),
         // Add reasoning parameters if Thinking is enabled (for OpenAI-compatible reasoning)
         ...(thinkingOn && {
           reasoning_effort: this.config.reasoningEffort || 'medium'
@@ -321,6 +343,7 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
         }),
         // Add extra body parameters if provided
         ...(extraBodyObj ? { extra_body: extraBodyObj } : {}),
+        ...(tools && { tools }),
       }),
     })
     if (!resp.ok) {

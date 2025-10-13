@@ -352,7 +352,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       showModelId={false}
                       trigger={
                         <div className="p-2 rounded-lg hover:bg-white/20 flex flex-col items-center justify-center min-w-[60px] w-full">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" className="mb-1"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" /></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" className="mb-1"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c-1.4-.413-1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" /></svg>
                           <span className="text-xs font-medium">Preset</span>
                         </div>
                       }
@@ -381,17 +381,26 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       <div className="relative">
                         <Select
                           options={[
-                            // Individual Settings のときはアイコンを表示しない（undefined）
                             { name: t('Individual Settings'), value: 'individual' },
-                            ...(userConfig.providerConfigs || []).map((p) => ({ name: p.name, value: p.id, icon: p.icon }))
+                            { name: 'AI画像生成 (Chatbot × Image Generator)', value: '__image_agent__' },
+                            ...(userConfig.providerConfigs || []).map((p) => ({ name: p.name, value: p.id, icon: p.icon })),
                           ]}
-                          value={config.providerRefId || 'individual'}
+                          value={(config.provider === CustomApiProvider.Image_Agent && !config.providerRefId) ? '__image_agent__' : (config.providerRefId || 'individual')}
                           onChange={(v) => {
                             const updatedConfigs = [...customApiConfigs];
                             if (v === 'individual') {
                               updatedConfigs[index].providerRefId = undefined;
+                              if (updatedConfigs[index].provider === CustomApiProvider.Image_Agent) {
+                                updatedConfigs[index].provider = CustomApiProvider.OpenAI; // Or some default
+                              }
+                            } else if (v === '__image_agent__') {
+                              updatedConfigs[index].providerRefId = undefined;
+                              updatedConfigs[index].provider = CustomApiProvider.Image_Agent;
                             } else {
                               updatedConfigs[index].providerRefId = v;
+                              if (updatedConfigs[index].provider === CustomApiProvider.Image_Agent) {
+                                updatedConfigs[index].provider = CustomApiProvider.OpenAI; // Or some default
+                              }
                             }
                             updateCustomApiConfigs(updatedConfigs);
                           }}
@@ -399,98 +408,164 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         />
                       </div>
                     </div>
-                  <div className={formRowClass}>
-                    <div className="flex items-center justify-between">
-                      <p className={labelClass}>{t('AI Model')}</p>
-                      {isProviderSupported(config.provider) && (
-                        <button
-                          onClick={() => handleFetchSingleModel(index)}
-                          disabled={modelsLoading}
-                          className="px-3 py-1 text-xs rounded transition-colors bg-white dark:bg-black border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={errorsPerConfig[index] || t('Fetch models from API')}
-                        >
-                          {modelsLoading ? t('Loading...') : t('Fetch Models')}
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <NestedDropdown
-                        options={createModelOptions(index)}
-                        value={config.model}
-                        onChange={(v) => {
-                          if (!v || v.startsWith('header-')) return;
-                          const updatedConfigs = [...customApiConfigs];
-                          updatedConfigs[index].model = v;
-                          updateCustomApiConfigs(updatedConfigs);
-                        }}
-                        placeholder={config.model && config.model.trim() !== '' ? t('user-defined-model') : t('Choose model')}
-                        showModelId={true}
-                      />
-                      <ModelSearchInput
-                        value={config.model}
-                        onChange={(model) => {
-                          const updatedConfigs = [...customApiConfigs];
-                          updatedConfigs[index].model = model;
-                          updateCustomApiConfigs(updatedConfigs);
-                        }}
-                        apiModels={modelsPerConfig[index]}
-                        provider={config.provider}
-                        placeholder={t('Search models...')}
-                      />
-                    </div>
-                  </div>
-                  <div className={formRowClass}>
-                    <div className="flex items-center justify-between">
-                      <p className={labelClass}>{t('System Prompt')}</p>
-                      <button onClick={() => setEditingPrompt({ index: index, text: config.systemMessage, isCommon: false })} className="p-1 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t('Edit in full screen')} disabled={config.systemPromptMode === SystemPromptMode.COMMON}>
-                        <BiExpand size={16} />
-                      </button>
-                    </div>
-                    <div className={inputContainerClass}>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <TripleStateToggle
-                            value={config.systemPromptMode || SystemPromptMode.COMMON}
-                            onChange={(v: SystemPromptMode) => {
+                  {config.provider !== CustomApiProvider.Image_Agent && (
+                    <>
+                      <div className={formRowClass}>
+                        <div className="flex items-center justify-between">
+                          <p className={labelClass}>{t('AI Model')}</p>
+                          {isProviderSupported(config.provider) && (
+                            <button
+                              onClick={() => handleFetchSingleModel(index)}
+                              disabled={modelsLoading}
+                              className="px-3 py-1 text-xs rounded transition-colors bg-white dark:bg-black border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={errorsPerConfig[index] || t('Fetch models from API')}
+                            >
+                              {modelsLoading ? t('Loading...') : t('Fetch Models')}
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-3">
+                          <NestedDropdown
+                            options={createModelOptions(index)}
+                            value={config.model}
+                            onChange={(v) => {
+                              if (!v || v.startsWith('header-')) return;
                               const updatedConfigs = [...customApiConfigs];
-                              updatedConfigs[index].systemPromptMode = v;
+                              updatedConfigs[index].model = v;
                               updateCustomApiConfigs(updatedConfigs);
                             }}
+                            placeholder={config.model && config.model.trim() !== '' ? t('user-defined-model') : t('Choose model')}
+                            showModelId={true}
                           />
-                          <div className="text-xs opacity-70">
-                            {config.systemPromptMode === SystemPromptMode.COMMON && "Uses common system prompt only"}
-                            {config.systemPromptMode === SystemPromptMode.APPEND && "Adds custom text to common prompt"}
-                            {config.systemPromptMode === SystemPromptMode.OVERRIDE && "Uses custom prompt only"}
-                          </div>
-                        </div>
-                        <div>
-                          <Textarea
-                            className={`w-full rounded-b-none ${config.systemPromptMode === SystemPromptMode.COMMON ? 'opacity-50 cursor-not-allowed' : ''} ${expandedSections[index + 2000] ? '' : 'max-h-[4.5rem]'}`}
-                            maxRows={expandedSections[index + 2000] ? undefined : 3}
-                            value={config.systemMessage}
-                            onChange={(e) => {
-                              if (config.systemPromptMode !== SystemPromptMode.COMMON) {
-                                const updatedConfigs = [...customApiConfigs];
-                                updatedConfigs[index].systemMessage = e.currentTarget.value;
-                                updateCustomApiConfigs(updatedConfigs);
-                              }
+                          <ModelSearchInput
+                            value={config.model}
+                            onChange={(model) => {
+                              const updatedConfigs = [...customApiConfigs];
+                              updatedConfigs[index].model = model;
+                              updateCustomApiConfigs(updatedConfigs);
                             }}
-                            disabled={config.systemPromptMode === SystemPromptMode.COMMON}
-                            placeholder={
-                              config.systemPromptMode === SystemPromptMode.COMMON
-                                ? t('Disabled when using Common system message')
-                                : config.systemPromptMode === SystemPromptMode.APPEND
-                                  ? t('This text will be appended to the common system message')
-                                  : t('This text will override the common system message')
-                            }
+                            apiModels={modelsPerConfig[index]}
+                            provider={config.provider}
+                            placeholder={t('Search models...')}
                           />
-                          <div className="h-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center justify-center rounded-b-md" onClick={() => toggleSection(index + 2000)} title={expandedSections[index + 2000] ? t('Collapse') : t('Expand')}>
-                            <BiChevronDown size={16} className={`text-gray-600 dark:text-gray-300 transition-transform ${expandedSections[index + 2000] ? 'rotate-180' : ''}`} />
+                        </div>
+                      </div>
+                      <div className={formRowClass}>
+                        <div className="flex items-center justify-between">
+                          <p className={labelClass}>{t('System Prompt')}</p>
+                          <button onClick={() => setEditingPrompt({ index: index, text: config.systemMessage, isCommon: false })} className="p-1 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t('Edit in full screen')} disabled={config.systemPromptMode === SystemPromptMode.COMMON}>
+                            <BiExpand size={16} />
+                          </button>
+                        </div>
+                        <div className={inputContainerClass}>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-3">
+                              <TripleStateToggle
+                                value={config.systemPromptMode || SystemPromptMode.COMMON}
+                                onChange={(v: SystemPromptMode) => {
+                                  const updatedConfigs = [...customApiConfigs];
+                                  updatedConfigs[index].systemPromptMode = v;
+                                  updateCustomApiConfigs(updatedConfigs);
+                                }}
+                              />
+                              <div className="text-xs opacity-70">
+                                {config.systemPromptMode === SystemPromptMode.COMMON && "Uses common system prompt only"}
+                                {config.systemPromptMode === SystemPromptMode.APPEND && "Adds custom text to common prompt"}
+                                {config.systemPromptMode === SystemPromptMode.OVERRIDE && "Uses custom prompt only"}
+                              </div>
+                            </div>
+                            <div>
+                              <Textarea
+                                className={`w-full rounded-b-none ${config.systemPromptMode === SystemPromptMode.COMMON ? 'opacity-50 cursor-not-allowed' : ''} ${expandedSections[index + 2000] ? '' : 'max-h-[4.5rem]'}`}
+                                maxRows={expandedSections[index + 2000] ? undefined : 3}
+                                value={config.systemMessage}
+                                onChange={(e) => {
+                                  if (config.systemPromptMode !== SystemPromptMode.COMMON) {
+                                    const updatedConfigs = [...customApiConfigs];
+                                    updatedConfigs[index].systemMessage = e.currentTarget.value;
+                                    updateCustomApiConfigs(updatedConfigs);
+                                  }
+                                }}
+                                disabled={config.systemPromptMode === SystemPromptMode.COMMON}
+                                placeholder={
+                                  config.systemPromptMode === SystemPromptMode.COMMON
+                                    ? t('Disabled when using Common system message')
+                                    : config.systemPromptMode === SystemPromptMode.APPEND
+                                      ? t('This text will be appended to the common system message')
+                                      : t('This text will override the common system message')
+                                }
+                              />
+                              <div className="h-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center justify-center rounded-b-md" onClick={() => toggleSection(index + 2000)} title={expandedSections[index + 2000] ? t('Collapse') : t('Expand')}>
+                                <BiChevronDown size={16} className={`text-gray-600 dark:text-gray-300 transition-transform ${expandedSections[index + 2000] ? 'rotate-180' : ''}`} />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </>
+                  )}
+                  {config.provider === CustomApiProvider.Image_Agent && (() => {
+                    const otherBots = (userConfig.customApiConfigs || []).filter((b, i) => i !== index && b.provider !== CustomApiProvider.Image_Agent);
+                    return (
+                      <div className="space-y-4">
+                        <div className={formRowClass}>
+                          <p className={labelClass}>{t('Chatbot for Prompting')}</p>
+                          <Select
+                            options={otherBots.map((b) => ({ name: `#${b.id} – ${b.name}`, value: String(b.id) }))}
+                            value={String(config.imageAgentChatbotRefId || '')}
+                            onChange={(v) => {
+                              const updatedConfigs = [...customApiConfigs];
+                              updatedConfigs[index].imageAgentChatbotRefId = Number(v);
+                              updateCustomApiConfigs(updatedConfigs);
+                            }}
+                          />
+                          <p className="text-xs opacity-70 mt-1">{t('Select a chatbot to generate image prompts.')}</p>
+                        </div>
+                        <div className={formRowClass}>
+                          <p className={labelClass}>{t('Image Generator')}</p>
+                          <Select
+                            options={(userConfig.imageGenerators || []).map((g) => ({ name: g.name, value: g.id }))}
+                            value={config.imageToolBinding?.generatorId || ''}
+                            onChange={(v) => {
+                              const updatedConfigs = [...customApiConfigs];
+                              updatedConfigs[index].imageToolBinding = {
+                                ...(updatedConfigs[index].imageToolBinding || { enabled: true }),
+                                generatorId: v,
+                              };
+                              updateCustomApiConfigs(updatedConfigs);
+                            }}
+                          />
+                        </div>
+                        <div className={formRowClass}>
+                          <p className={labelClass}>{t('Image Model')}</p>
+                          <Input
+                            value={config.model}
+                            onChange={(e) => {
+                              const updatedConfigs = [...customApiConfigs];
+                              updatedConfigs[index].model = e.currentTarget.value;
+                              updateCustomApiConfigs(updatedConfigs);
+                            }}
+                            placeholder="e.g., realistic-vision-v5.1"
+                          />
+                        </div>
+                        <div className={formRowClass}>
+                          <p className={labelClass}>{t('Append to System Prompt')}</p>
+                          <Textarea
+                            value={config.systemMessage}
+                            onChange={(e) => {
+                              const updatedConfigs = [...customApiConfigs];
+                              updatedConfigs[index].systemMessage = e.currentTarget.value;
+                              updatedConfigs[index].systemPromptMode = SystemPromptMode.APPEND;
+                              updateCustomApiConfigs(updatedConfigs);
+                            }}
+                            rows={3}
+                            placeholder={t('This text will be appended to the common system message')}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {(() => {
                     const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
                     const effectiveProvider = providerRef?.provider ?? config.provider;
@@ -499,7 +574,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
                     const showThinkingBudget = isProviderIn([CustomApiProvider.Anthropic, CustomApiProvider.Bedrock, CustomApiProvider.Anthropic_CustomAuth, CustomApiProvider.VertexAI_Claude, CustomApiProvider.GeminiOpenAI, CustomApiProvider.QwenOpenAI]);
                     const showReasoningEffort = isProviderIn([CustomApiProvider.OpenAI]);
-                    const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort && !isProviderIn([CustomApiProvider.OpenAI_Image]);
+                    const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort && effectiveProvider !== CustomApiProvider.Image_Agent;
 
                     return (
                       <>
@@ -617,7 +692,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className={`transition-transform ${expandedSections[index] ? 'rotate-90' : ''}`}><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" /></svg>
                       {t('Advanced Settings')}
                     </button>
-                    {expandedSections[index] ? (
+                    {expandedSections[index] && config.provider !== CustomApiProvider.Image_Agent && (
                       <div className="mt-3 space-y-4">
                         {!config.providerRefId && (
                           <div className={formRowClass}>
@@ -627,7 +702,6 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 options={[
                                   { name: 'OpenAI Compatible', value: CustomApiProvider.OpenAI },
                                   { name: 'OpenAI Responses API (Beta)', value: CustomApiProvider.OpenAI_Responses },
-                                  { name: 'OpenAI Image (gpt-image-1, Beta)', value: CustomApiProvider.OpenAI_Image },
                                   { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
                                   { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock },
                                   { name: 'Google Gemini (OpenAI Format)', value: CustomApiProvider.GeminiOpenAI },
@@ -639,7 +713,10 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 onChange={(v) => {
                                   const updatedConfigs = [...customApiConfigs];
                                   updatedConfigs[index].provider = v as CustomApiProvider;
-                                  if (v === CustomApiProvider.GeminiOpenAI || v === CustomApiProvider.VertexAI_Claude) {
+                                  if (
+                                    v === CustomApiProvider.GeminiOpenAI ||
+                                    v === CustomApiProvider.VertexAI_Claude
+                                  ) {
                                     updatedConfigs[index].isHostFullPath = true;
                                   }
                                   updateCustomApiConfigs(updatedConfigs);
@@ -668,9 +745,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           <div className={formRowClass}>
                             <div className="flex items-center justify-between">
                               <p className={labelClass}>{t(config.isHostFullPath ? 'API Endpoint (Full Path)' : 'API Host')}</p>
-                              {config.provider === CustomApiProvider.VertexAI_Claude ? (
-                                <span className="text-sm">{t('Full Path')}</span>
-                              ) : (
+                              {config.provider !== CustomApiProvider.VertexAI_Claude && (
                                 <div className="flex items-center gap-1">
                                   <span className="text-sm">{t('Full Path')}</span>
                                   <span className="cursor-help group relative">ⓘ
@@ -690,10 +765,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                   config.provider === CustomApiProvider.QwenOpenAI ? "https://dashscope.aliyuncs.com/compatible-mode/v1" :
                                   config.isHostFullPath ? (
                                     config.provider === CustomApiProvider.OpenAI_Responses ? "https://api.example.com/v1/responses" :
-                                    config.provider === CustomApiProvider.OpenAI_Image ? "https://api.example.com/v1/responses" :
                                     "https://api.example.com/v1/chat/completions"
-                                  ) :
-                                  "https://api.example.com"
+                                  ) : "https://api.example.com"
                                 }
                                 value={config.host}
                                 onChange={(value) => {
@@ -754,141 +827,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             />
                           );
                         })()}
-                        {(() => {
-                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                          const effectiveProvider = providerRef?.provider ?? config.provider;
-                          if (effectiveProvider !== CustomApiProvider.OpenAI_Responses) return null;
-                          return (
-                            <div className="space-y-4">
-                              <div className={formRowClass}>
-                                <div className="flex items-center gap-2">
-                                  <p className={labelClass}>Web Search</p>
-                                </div>
-                                <div className={inputContainerClass}>
-                                  <Switch
-                                    checked={!!config.responsesWebSearch}
-                                    onChange={(checked) => {
-                                      const u = [...customApiConfigs];
-                                      u[index].responsesWebSearch = checked;
-                                      updateCustomApiConfigs(u);
-                                    }}
-                                  />
-                                  <p className="text-xs opacity-70 mt-1">Use web_search_preview tool with Responses API.</p>
-                                </div>
-                              </div>
-                              <div className={formRowClass}>
-                                <p className={labelClass}>Function Call Tools (JSON)</p>
-                                <Textarea
-                                  className='w-full font-mono text-xs'
-                                  placeholder='[ { "type": "function", "function": { "name": "search", "parameters": {"type":"object","properties":{...}} } } ]'
-                                  value={config.responsesFunctionTools || ''}
-                                  onChange={(e) => {
-                                    const u = [...customApiConfigs];
-                                    u[index].responsesFunctionTools = e.currentTarget.value;
-                                    updateCustomApiConfigs(u);
-                                  }}
-                                  rows={4}
-                                />
-                                <p className="text-xs opacity-70 mt-1">Optional. Raw JSON array for Responses API tools. If set, overrides the simple Web Search toggle.</p>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                        {(() => {
-                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                          const effectiveProvider = providerRef?.provider ?? config.provider;
-                          return effectiveProvider === CustomApiProvider.OpenAI_Image && (
-                           <div className="space-y-4">
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Image Size')}</p>
-                              <Select
-                                options={[
-                                  { name: t('auto'), value: 'auto' },
-                                  { name: '1024x1024', value: '1024x1024' },
-                                  { name: `1024x1536 ${t('portrait-suffix')}`, value: '1024x1536' },
-                                  { name: `1536x1024 ${t('landscape-suffix')}`, value: '1536x1024' },
-                                ]}
-                                value={config.imageSize || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageSize = v as any; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Image Quality')}</p>
-                              <Select
-                                options={[
-                                  { name: t('auto'), value: 'auto' },
-                                  { name: t('low'), value: 'low' },
-                                  { name: t('medium'), value: 'medium' },
-                                  { name: t('high'), value: 'high' },
-                                ]}
-                                value={config.imageQuality || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageQuality = v as any; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Background')}</p>
-                              <Select
-                                options={[
-                                  { name: t('auto'), value: 'auto' },
-                                  { name: t('transparent'), value: 'transparent' },
-                                ]}
-                                value={config.imageBackground || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageBackground = v as any; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Output Format')}</p>
-                              <Select
-                                options={[
-                                  { name: 'none (default)', value: 'none' },
-                                  { name: 'png', value: 'png' },
-                                  { name: 'jpeg', value: 'jpeg' },
-                                  { name: 'webp', value: 'webp' },
-                                ]}
-                                value={config.imageFormat || 'none'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageFormat = v as any; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Compression (0-100)')}</p>
-                              <Input
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={typeof config.imageCompression === 'number' ? String(config.imageCompression) : ''}
-                                placeholder={t('Only for jpeg/webp')}
-                                onChange={(e) => {
-                                  const val = e.currentTarget.value
-                                  const num = val === '' ? undefined : Math.max(0, Math.min(100, parseInt(val)))
-                                  const u = [...customApiConfigs]
-                                  // @ts-ignore
-                                  u[index].imageCompression = typeof num === 'number' && !isNaN(num) ? num : undefined
-                                  updateCustomApiConfigs(u)
-                                }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Moderation')}</p>
-                              <Select
-                                options={[
-                                  { name: t('default'), value: 'default' },
-                                  { name: t('low'), value: 'low' },
-                                  { name: t('auto'), value: 'auto' },
-                                ]}
-                                value={config.imageModeration || 'default'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageModeration = v as any; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-                          </div>
-                        )
-                        })()}
                       </div>
-                    ) : null}
+                    )}
                   </div>
                 </div>
               </div>
