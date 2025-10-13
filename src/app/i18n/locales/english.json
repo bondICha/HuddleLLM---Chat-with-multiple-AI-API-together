@@ -326,5 +326,6 @@
   "releasenote_v2122_session_restore_toggle": "## Session Restore Feature Improvement\n\n- Added startup restore toggle to session restore modal",
   "releasenote_v2122_provider_icons": "## API Provider Icons Addition\n\n- Added icons for major API providers including OpenRouter, Novita, and Chutes\n- Icons can now be selected in the provider settings screen",
   "releasenote_v2122_by_glm_46": "*Note*: This release note was written by GLM 4.6 based on git diff analysis.",
-  "releasenote_openai_responses_image_beta": "## Image support via OpenAI Responses API (Beta)\n\n- Added image generation using the Responses API image_generation tool.\n- The same API also enables Image Edit (image_edit).\n- This feature is in beta. Please share feedback if you encounter any issues."
+  "releasenote_openai_responses_image_beta": "## Image support via OpenAI Responses API (Beta)\n\n- Added image generation using the Responses API image_generation tool.\n- The same API also enables Image Edit (image_edit).\n- This feature is in beta. Please share feedback if you encounter any issues.",
+  "releasenote_v2125_vertex_gemini_update": "## Nano Banana\n\n![Image Generation Support](/release_note_assets/image_generation_support.png)\n\n- Support Google Gemini 2.5 Flash Image\n- To configure, select Google Gemini (Image, Beta) in Provider settings\n- Use `:generateContent` endpoint (streaming not supported)s"
 }

@@ -6,6 +6,12 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.12.5',
+    notes: [
+      'releasenote_v2125_vertex_gemini_update',
+    ],
+  },
+  {
     version: '2.12.3',
     notes: [
       'releasenote_openai_responses_image_beta',

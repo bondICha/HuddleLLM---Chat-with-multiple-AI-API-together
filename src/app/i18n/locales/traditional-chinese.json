@@ -295,6 +295,7 @@
   "low": "低",
   "medium": "中",
   "high": "高",
-  "auto": "自動"
+  "auto": "自動",
+  "releasenote_v2125_vertex_gemini_update": "## Nano Banana\n\n![Image Generation Support](/release_note_assets/image_generation_support.png)\n\n- 支援 Google Gemini 2.5 Flash Image\n- 請在 Provider 設定中選擇『Google Gemini (Image, Beta)』\n- 使用 `:generateContent` 端點（不支Streaming）\n- 可選擇 Gemini 驗證模式：header 或 default（?key=API_KEY）"
 }
   

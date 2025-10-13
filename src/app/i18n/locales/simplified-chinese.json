@@ -294,5 +294,6 @@
   "releasenote_v2122_session_restore_toggle": "## 会话恢复功能改进\n\n- 为会话恢复模态框添加了启动时恢复切换",
   "releasenote_v2122_provider_icons": "## API提供商图标添加\n\n- 添加了OpenRouter、Novita和Chutes等主要API提供商的图标\n- 现在可以在提供商设置屏幕中选择图标",
   "releasenote_v2122_by_glm_46": "*注*：此发布说明由GLM 4.6基于git diff分析编写。",
-  "releasenote_openai_responses_image_beta": "## 通过 OpenAI Responses API 的图片支持（Beta）\n\n- 支持使用 Responses API 的 image_generation 工具进行图片生成。\n- 使用相同的 API 也可以进行图片编辑（image_edit）。\n- 目前为测试版，如遇问题欢迎反馈。"
+  "releasenote_openai_responses_image_beta": "## 通过 OpenAI Responses API 的图片支持（Beta）\n\n- 支持使用 Responses API 的 image_generation 工具进行图片生成。\n- 使用相同的 API 也可以进行图片编辑（image_edit）。\n- 目前为测试版，如遇问题欢迎反馈。",
+  "releasenote_v2125_vertex_gemini_update": "## Nano Banana\n\n![Image Generation Support](/release_note_assets/image_generation_support.png)\n\n- 支持 Google Gemini 2.5 Flash Image\n- 在 Provider 设置中选择『Google Gemini (Image, Beta)』\n- 使用 `:generateContent` 端点（不支持Streaming）\n- 选择 Gemini 认证模式：header 或 default（?key=API_KEY）"
 }
