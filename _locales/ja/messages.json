@@ -4,8 +4,5 @@
   },
   "appDesc": {
     "message": "ChatGPT、Gemini、およびClaudeを一つのプラットフォームで使用します。OpenSourceアプリケーションです。"
-  },
-  "releasenote_v2126_openrouter_image_generation": {
-    "message": "OpenRouterでの画像生成に対応しました"
   }
 }

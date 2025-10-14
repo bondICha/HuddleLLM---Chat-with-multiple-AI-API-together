@@ -337,5 +337,6 @@
   "releasenote_v2122_provider_icons": "## APIプロバイダーアイコンの追加\n\n- OpenRouter、Novita、Chutesなどの主要APIプロバイダーのアイコンを追加\n- プロバイダー設定画面でアイコンを選択できるようになりました",
   "releasenote_v2122_by_glm_46": "*注記*：このリリースノートはGLM 4.6がgit diffの分析に基づいて作成しました。",
   "releasenote_openai_responses_image_beta": "## OpenAI Responses APIによる画像サポート（ベータ）\n\n- Responses API の image_generation ツールで画像生成に対応しました。\n- 同じ API で Image Edit（image_edit）も可能です。\n- 現在ベータ版です。問題があればフィードバックをお願いします。",
-  "releasenote_v2125_vertex_gemini_update": "## Nano Banana\n\n![Image Generation Support](/release_note_assets/image_generation_support.png)\n\n- Google Gemini 2.5 Flash Image をサポート\n- 設定の Provider で『Google Gemini (Image, Beta)』を選択してください\n- エンドポイントは`:generateContent` を使用（ストリーミング非対応）\n- Gemini 認証モードは header もしくは default（?key=API_KEY）を選択可能"
+  "releasenote_v2125_vertex_gemini_update": "## Nano Banana\n\n![Image Generation Support](/release_note_assets/image_generation_support.png)\n\n- Google Gemini 2.5 Flash Image をサポート\n- 設定の Provider で『Google Gemini (Image, Beta)』を選択してください\n- エンドポイントは`:generateContent` を使用（ストリーミング非対応）",
+  "releasenote_v2126_openrouter_image_generation": "OpenRouterでの画像生成に対応しました。[Gemini 2.5 Flash Image Preview](https://openrouter.ai/google/gemini-2.5-flash-image-preview)でお試しください"
 }

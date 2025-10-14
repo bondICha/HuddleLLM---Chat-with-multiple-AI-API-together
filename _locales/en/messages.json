@@ -4,8 +4,5 @@
   },
   "appDesc": {
     "message": "Use ChatGPT, Gemini, Claude and more chatbots simultaneously"
-  },
-  "releasenote_v2126_openrouter_image_generation": {
-    "message": "Added support for image generation with OpenRouter"
   }
 }
