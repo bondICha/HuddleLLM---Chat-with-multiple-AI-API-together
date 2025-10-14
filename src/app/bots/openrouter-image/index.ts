@@ -145,8 +145,6 @@ export class OpenRouterImageBot extends AbstractBot {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${this.config.apiKey}`,
     }
-    headers['HTTP-Referer'] = 'https://github.com/huddleeng/chathub'
-    headers['X-Title'] = 'HuddleLLM'
     return headers
   }
 
@@ -161,15 +159,27 @@ export class OpenRouterImageBot extends AbstractBot {
       chatMessages.push({ role: 'system', content: this.config.systemMessage })
     }
     for (const m of messages) {
-      let contentText = ''
       const c: any = (m as any).content
       if (typeof c === 'string') {
-        contentText = c
+        chatMessages.push({ role: m.role, content: c })
       } else if (Array.isArray(c)) {
-        const textPart = c.find((p: any) => p?.type === 'text' && typeof p.text === 'string')
-        if (textPart?.text) contentText = textPart.text
+        const parts = c
+          .map((p: any) => {
+            if (p?.type === 'text') {
+              return { type: 'text', text: p.text ?? '' }
+            }
+            if (p?.type === 'image_url') {
+              const url = p.image_url?.url || ''
+              if (!url) return null
+              return { type: 'image_url', image_url: { url } }
+            }
+            return null
+          })
+          .filter(Boolean)
+        chatMessages.push({ role: m.role, content: parts })
+      } else {
+        chatMessages.push({ role: m.role, content: '' })
       }
-      chatMessages.push({ role: m.role, content: contentText })
     }
 
     const body: any = {
