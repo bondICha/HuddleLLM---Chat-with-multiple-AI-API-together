@@ -18,11 +18,11 @@ const CUSTOM_API_CONFIG_PREFIX = 'customApiConfig_';
  * 複数のProvider設定を管理する型定義
  */
 export interface ProviderConfig {
-  /** 安定したID（UUID形式など） */
+  /** ID（UUID形式など） */
   id: string;
   /** 表示名 */
   name: string;
-  /** プロバイダ種別 */
+  /** プロバイダScheme */
   provider: CustomApiProvider;
   /** APIホスト */
   host: string;
@@ -38,7 +38,10 @@ export interface ProviderConfig {
   AuthMode?: 'header' | 'default';
   /** 高度な設定 */
   advancedConfig?: AdvancedConfig;
-  // UI関連の項目は必要に応じて追加
+  /** Providerの種別: 'chat' | 'image' | 'chat-image' | 'image-agent' */
+  providerType?: 'chat' | 'chat-image' | 'image-agent';
+  /** 画像APIのダイアレクト（Agent/Direct双方で使用可能） */
+  imageDialect?: 'sd' | 'novita' | 'openai_responses' | 'openrouter_image' | 'qwen_openai' | 'seedream_openai' | 'custom';
 }
 
 // System prompt mode enum
@@ -61,7 +64,7 @@ export interface ModelInfo {
     icon?: string; // 個別のアイコン（オプション）
 }
 
-// プロバイダー情報（デフォルトアイコン含む）
+// Preset用プロバイダー情報（デフォルトアイコン含む）
 export const PROVIDER_INFO: Record<string, { icon: string }> = {
     "OpenAI": { icon: "openai" },
     "Anthropic": { icon: "anthropic" },
@@ -73,8 +76,6 @@ export const PROVIDER_INFO: Record<string, { icon: string }> = {
     "Rakuten": { icon: "rakuten" },
     "Custom": { icon: "openai" },
 };
-
-
 
 export enum CustomApiProvider {
   OpenAI = 'openai',
@@ -89,6 +90,9 @@ export enum CustomApiProvider {
   OpenAI_Image = 'openai-image', // For OpenAI Image Generation (gpt-image-1)
   OpenAI_Responses = 'openai-responses', // For OpenAI Responses API
   OpenRouter = 'openrouter', // Dedicated OpenRouter provider
+  ChutesAI = 'chutes-ai', // Chutes AI (Image)
+  NovitaAI = 'novita-ai', // Novita AI (Image)
+  ImageAgent = 'image-agent', // Agentic Image wrapper
 }
 
 export interface AdvancedConfig {
@@ -97,6 +101,57 @@ export interface AdvancedConfig {
   // OpenRouter specific
   openrouterIsImageModel?: boolean; // Route via chat/completions with modalities
   openrouterAspectRatio?: string;
+}
+
+/**
+ * パターン1：直接画像生成ボット用の設定
+ * (例: Stable DiffusionやSeedreamなど)
+ */
+export interface DirectImageBotSettings {
+  /** プロバイダ固有のパラメータを任意JSONで保持 */
+  params?: Record<string, any>;
+}
+
+/**
+ * パターン2：Agentic画像生成ボット用の設定
+ * (チャットモデルがプロンプトを生成し、画像生成ツールを呼び出す)
+ */
+export interface AgenticImageBotSettings {
+  /** 画像生成ツールのProviderConfig ID */
+  imageGeneratorProviderId?: string;
+  /** プロンプト生成に使用するチャットボットのインデックス（nullの場合は生のプロンプトを使用） */
+  promptGeneratorBotIndex?: number | null;
+  /** ネガティブプロンプト */
+  negativePrompt?: string;
+  /** デフォルト画像幅 */
+  defaultWidth?: number;
+  /** デフォルト画像高さ */
+  defaultHeight?: number;
+  /** Guidance scale */
+  guidanceScale?: number;
+  /** Inference steps */
+  inferenceSteps?: number;
+  /** Seed値 */
+  seed?: number;
+  /** 自動でプロンプトを拡張するか */
+  autoEnhancePrompts?: boolean;
+  /** Revised prompt を出力に含めるか */
+  includeRevisedPrompt?: boolean;
+}
+
+/**
+ * 画像生成の設定
+ */
+export interface ImageGenerationConfig {
+  enabled?: boolean
+  negativePrompt?: string
+  defaultWidth?: number
+  defaultHeight?: number
+  guidanceScale?: number
+  inferenceSteps?: number
+  /** プロンプト生成に使用するチャットボットのインデックス（nullの場合は生のプロンプトを使用） */
+  promptGeneratorBotIndex?: number | null
+  seed?: number
 }
 
 /**
@@ -127,16 +182,20 @@ export interface CustomApiConfig {
   advancedConfig?: AdvancedConfig;
   /** Provider参照ID */
   providerRefId?: string;
-  // Image generation options (for OpenAI Image via Responses API)
-  // Partial images feature disabled
-  // imagePartialImages?: number | null; // 0-3, null to omit parameter
+  /** 画像生成設定（Chutes / Novita 等のプロバイダ向け） */
+  imageGeneration?: ImageGenerationConfig;
+  /** [パターン1] 直接画像生成ボット設定 */
+  directImageBotSettings?: DirectImageBotSettings;
+  /** [パターン2] Agentic画像生成ボット設定（雛形） */
+  agenticImageBotSettings?: AgenticImageBotSettings;
+  /** Image Agent 用のスキーム（Providerのdialectを上書き可能） */
+  imageScheme?: 'sd' | 'novita' | 'openai_responses' | 'openrouter_image' | 'qwen_openai' | 'seedream_openai' | 'custom';
+  // --- Legacy image fields (kept for UI/backward compatibility; migrated into directImageBotSettings.params) ---
   imageSize?: '1024x1024' | '1024x1536' | '1536x1024' | 'auto';
-  imageQuality?: 'low' | 'medium' | 'high' | 'auto';
+  imageQuality?: 'low' | 'medium' | 'high' | 'auto' | 'standard' | 'hd';
   imageBackground?: 'transparent' | 'auto';
-  // Output format (default png); if jpeg/webp, compression may be set (0-100)
   imageFormat?: 'png' | 'jpeg' | 'webp' | 'none';
-  imageCompression?: number; // 0-100 for jpeg/webp
-  // Moderation strictness for gpt-image-1 tool: default (mapped to low), low, auto
+  imageCompression?: number; // 0-100
   imageModeration?: 'default' | 'low' | 'auto';
   // OpenAI Responses API specific toggles
   responsesWebSearch?: boolean; // Enable web_search_preview tool
@@ -262,6 +321,81 @@ export async function getUserConfig(): Promise<UserConfig> {
         }
         if (config.systemPromptMode === undefined) {
           config.systemPromptMode = SystemPromptMode.OVERRIDE; // マイグレーション: 既存設定にデフォルト値を設定
+        }
+
+        // 画像設定のマイグレーション: 旧フィールド -> directImageBotSettings.params
+        const configAsAny = config as any;
+        const hasLegacyImage =
+          configAsAny.imageSize !== undefined ||
+          configAsAny.imageQuality !== undefined ||
+          configAsAny.imageBackground !== undefined ||
+          configAsAny.imageFormat !== undefined ||
+          configAsAny.imageCompression !== undefined ||
+          configAsAny.imageModeration !== undefined;
+
+        if (hasLegacyImage) {
+          const params: Record<string, any> = { ...(config.directImageBotSettings?.params || {}) }
+          if (configAsAny.imageSize !== undefined) params.size = configAsAny.imageSize
+          if (configAsAny.imageQuality !== undefined) params.quality = configAsAny.imageQuality
+          if (configAsAny.imageBackground !== undefined) params.background = configAsAny.imageBackground
+          if (configAsAny.imageFormat !== undefined) params.format = configAsAny.imageFormat
+          if (configAsAny.imageCompression !== undefined) params.output_compression = configAsAny.imageCompression
+          if (configAsAny.imageModeration !== undefined) params.moderation = configAsAny.imageModeration
+          config.directImageBotSettings = { ...(config.directImageBotSettings || {}), params }
+        }
+
+        // 移行後、古いキーを削除してデータをクリーンに保つ
+        if (hasLegacyImage) {
+          delete configAsAny.imageSize;
+          delete configAsAny.imageQuality;
+          delete configAsAny.imageBackground;
+          delete configAsAny.imageFormat;
+          delete configAsAny.imageCompression;
+          delete configAsAny.imageModeration;
+        }
+
+        // Image Agent用のマイグレーション: imageGeneration + providerRefId → agenticImageBotSettings
+        if (config.provider === CustomApiProvider.ImageAgent) {
+          // 既にagenticImageBotSettingsがある場合はスキップ
+          if (!config.agenticImageBotSettings && (config.imageGeneration || config.providerRefId)) {
+            const agentic: AgenticImageBotSettings = {};
+
+            // providerRefIdをimageGeneratorProviderIdに移行
+            if (config.providerRefId) {
+              agentic.imageGeneratorProviderId = config.providerRefId;
+            }
+
+            // imageGenerationの各フィールドを移行
+            if (config.imageGeneration) {
+              if (config.imageGeneration.promptGeneratorBotIndex !== undefined) {
+                agentic.promptGeneratorBotIndex = config.imageGeneration.promptGeneratorBotIndex;
+              }
+              if (config.imageGeneration.negativePrompt) {
+                agentic.negativePrompt = config.imageGeneration.negativePrompt;
+              }
+              if (config.imageGeneration.defaultWidth) {
+                agentic.defaultWidth = config.imageGeneration.defaultWidth;
+              }
+              if (config.imageGeneration.defaultHeight) {
+                agentic.defaultHeight = config.imageGeneration.defaultHeight;
+              }
+              if (config.imageGeneration.guidanceScale) {
+                agentic.guidanceScale = config.imageGeneration.guidanceScale;
+              }
+              if (config.imageGeneration.inferenceSteps) {
+                agentic.inferenceSteps = config.imageGeneration.inferenceSteps;
+              }
+              if (config.imageGeneration.seed !== undefined) {
+                agentic.seed = config.imageGeneration.seed;
+              }
+            }
+
+            config.agenticImageBotSettings = agentic;
+
+            // 古いフィールドを削除（Image Agentの場合のみ）
+            delete configAsAny.imageGeneration;
+            // providerRefIdは他のボットタイプでも使われる可能性があるため、削除しない
+          }
         }
       });
     }

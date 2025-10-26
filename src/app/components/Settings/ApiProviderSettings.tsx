@@ -77,6 +77,14 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       {prov.provider === CustomApiProvider.VertexAI_Claude && 'VertexAI (Claude)'}
                       {prov.provider === CustomApiProvider.Google && 'Google Gemini API (Deprecated)'}
                     </p>
+                    <p className="text-[10px] uppercase opacity-40">
+                      {(() => {
+                        const tpe = prov.providerType as ('chat'|'image'|'chat-image'|'image-agent'|undefined)
+                        if (tpe === 'image') return 'IMAGE GENERATION'
+                        if (tpe === 'chat-image') return 'CHAT+IMAGE'
+                        return 'CHAT'
+                      })()}
+                    </p>
                   </div>
                   <span className="text-xs font-mono opacity-40">#{pIndex + 1}</span>
                 </div>
@@ -84,6 +92,9 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 <div className="text-xs opacity-60 mb-3 space-y-1">
                   <div className="truncate">Host: {prov.host || t('Not set')}</div>
                   <div className="text-primary">API Key: {prov.apiKey ? '••••••••' : t('Not set')}</div>
+                  <div className="opacity-50">
+                    Type: {(() => { const tpe = prov.providerType as ('chat'|'image'|'chat-image'|'image-agent'|undefined); return tpe === 'image' ? 'Image Generation' : tpe === 'chat-image' ? 'Chat+Image' : 'Chat' })()}
+                  </div>
                 </div>
  
                 <div className="flex items-center justify-between">

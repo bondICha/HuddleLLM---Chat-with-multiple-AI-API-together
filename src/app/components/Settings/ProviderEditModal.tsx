@@ -111,6 +111,40 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
             />
           </div>
 
+          {/* Provider Type */}
+          <div className={formRowClass}>
+            <p className={labelClass}>{t('Provider Type')}</p>
+            <Select
+              options={[
+                { name: 'Chat', value: 'chat' },
+                { name: 'Image Generation', value: 'image' },
+                { name: 'Chat+Image (e.g. nanobanana, openai-image-response)', value: 'chat-image' },
+              ]}
+              value={editingProvider.providerType || 'chat'}
+              onChange={(v) => setEditingProvider({ ...editingProvider, providerType: v as any })}
+            />
+          </div>
+
+          {/* Image Scheme (for image/chat-image providers) */}
+          {(['image','chat-image'] as any[]).includes(editingProvider.providerType) && (
+            <div className={formRowClass}>
+              <p className={labelClass}>{t('Image Scheme')}</p>
+              <Select
+                options={[
+                  { name: 'Stable Diffusion / Chutes (sd)', value: 'sd' },
+                  { name: 'Novita (novita)', value: 'novita' },
+                  { name: 'OpenAI Responses (openai_responses)', value: 'openai_responses' },
+                  { name: 'OpenRouter Image (openrouter_image)', value: 'openrouter_image' },
+                  { name: 'Qwen (OpenAI compat) (qwen_openai)', value: 'qwen_openai' },
+                  { name: 'Seedream (OpenAI compat) (seedream_openai)', value: 'seedream_openai' },
+                  { name: 'Custom', value: 'custom' },
+                ]}
+                value={(editingProvider as any).imageDialect || 'sd'}
+                onChange={(v) => setEditingProvider({ ...(editingProvider as any), imageDialect: v as any })}
+              />
+            </div>
+          )}
+
           {/* Anthropic Auth Header */}
           {editingProvider.provider === CustomApiProvider.Anthropic && (
             <div className={formRowClass}>

@@ -25,6 +25,14 @@ export type Event =
       type: 'ERROR'
       error: ChatError
     }
+  | {
+      type: 'TOOL_CALL'
+      data: {
+        id: string
+        name: string
+        arguments: any
+      }
+    }
 
 export interface MessageParams {
   prompt: string
@@ -280,6 +288,12 @@ export abstract class AsyncAbstractBot extends AbstractBot {
   abstract initializeBot(): Promise<AbstractBot>
 
   async doSendMessage(params: SendMessageParams): Promise<void> {
+    // Wait for initialization to complete
+    while (this.#bot instanceof DummyBot && !this.#initializeError) {
+      console.log('[AsyncAbstractBot] Waiting for bot initialization...')
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
     if (this.#bot instanceof DummyBot && this.#initializeError) {
       throw this.#initializeError;
     }
@@ -331,6 +345,19 @@ export abstract class AsyncAbstractBot extends AbstractBot {
   setSystemMessage(systemMessage: string) {
     if (!(this.#bot instanceof DummyBot) && this.#bot.setSystemMessage) {
       this.#bot.setSystemMessage(systemMessage);
+    }
+  }
+
+  getSystemMessage() {
+    if (!(this.#bot instanceof DummyBot) && typeof (this.#bot as any).getSystemMessage === 'function') {
+      return (this.#bot as any).getSystemMessage()
+    }
+    return undefined
+  }
+
+  setTools(tools: any[]) {
+    if (!(this.#bot instanceof DummyBot) && typeof (this.#bot as any).setTools === 'function') {
+      (this.#bot as any).setTools(tools)
     }
   }
 }

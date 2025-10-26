@@ -31,6 +31,23 @@ interface Props {
 
 const MAX_CUSTOM_MODELS = 50;
 
+// Helper function to filter image providers
+const getImageProviders = (providerConfigs: any[]) => {
+  return providerConfigs.filter(p => {
+    const tpe = p.providerType as ('chat'|'image'|'chat-image'|'image-agent'|undefined);
+    return tpe === 'image' || tpe === 'chat-image' ||
+           [CustomApiProvider.ChutesAI, CustomApiProvider.NovitaAI, CustomApiProvider.OpenAI_Image].includes(p.provider);
+  });
+};
+
+// Helper function to filter chat providers
+const getChatProviders = (providerConfigs: any[]) => {
+  return providerConfigs.filter(p => {
+    const tpe = p.providerType as ('chat'|'image'|'chat-image'|'image-agent'|undefined);
+    return !tpe || tpe === 'chat' || tpe === 'chat-image';
+  });
+};
+
 const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
   const { t } = useTranslation();
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
@@ -378,32 +395,118 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
               </div>
               <div className="p-4 space-y-6">
                 <div className="space-y-4">
+                    {/* API Provider - with Image Agent option */}
                     <div className={formRowClass}>
                       <p className={labelClass}>{t('API Provider')}</p>
                       <div className="relative">
-                        <Select
-                          options={[
-                            // Individual Settings のときはアイコンを表示しない（undefined）
+                        {(() => {
+                          const providers = userConfig.providerConfigs || [];
+                          const options = [
                             { name: t('Individual Settings'), value: 'individual' },
-                            ...(userConfig.providerConfigs || []).map((p) => ({ name: p.name, value: p.id, icon: p.icon }))
-                          ]}
-                          value={config.providerRefId || 'individual'}
-                          onChange={(v) => {
-                            const updatedConfigs = [...customApiConfigs];
-                            if (v === 'individual') {
-                              updatedConfigs[index].providerRefId = undefined;
-                            } else {
-                              updatedConfigs[index].providerRefId = v;
-                            }
-                            updateCustomApiConfigs(updatedConfigs);
-                          }}
-                          showIcon={true}
-                        />
+                            { name: t('Image Generation (Agent)'), value: '__image_agent__' },
+                            ...providers.map((p) => ({ name: p.name, value: p.id, icon: p.icon }))
+                          ];
+
+                          let currentValue = 'individual';
+                          if (config.provider === CustomApiProvider.ImageAgent) {
+                            currentValue = '__image_agent__';
+                          } else if (config.providerRefId) {
+                            currentValue = config.providerRefId;
+                          }
+
+                          return (
+                            <Select
+                              options={options}
+                              value={currentValue}
+                              onChange={(v) => {
+                                const updatedConfigs = [...customApiConfigs];
+                                if (v === 'individual') {
+                                  updatedConfigs[index].providerRefId = undefined;
+                                  if (updatedConfigs[index].provider === CustomApiProvider.ImageAgent) {
+                                    updatedConfigs[index].provider = CustomApiProvider.OpenAI;
+                                  }
+                                } else if (v === '__image_agent__') {
+                                  updatedConfigs[index].provider = CustomApiProvider.ImageAgent;
+                                  updatedConfigs[index].providerRefId = undefined;
+                                  updatedConfigs[index].agenticImageBotSettings = updatedConfigs[index].agenticImageBotSettings || {};
+                                } else {
+                                  updatedConfigs[index].providerRefId = v;
+                                  if (updatedConfigs[index].provider === CustomApiProvider.ImageAgent) {
+                                    updatedConfigs[index].provider = CustomApiProvider.OpenAI;
+                                  }
+                                }
+                                updateCustomApiConfigs(updatedConfigs);
+                              }}
+                              showIcon={true}
+                            />
+                          );
+                        })()}
                       </div>
                     </div>
+
+                    {/* Image Agent Settings - Show when Image Agent is selected */}
+                    {config.provider === CustomApiProvider.ImageAgent && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/>
+                            <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd"/>
+                          </svg>
+                          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('Image Generation Settings')}</p>
+                        </div>
+
+                        <div className={formRowClass}>
+                          <p className={labelClass}>{t('Image Provider')}</p>
+                          <Select
+                            options={[
+                              { name: t('Select Image Provider'), value: '' },
+                              ...getImageProviders(userConfig.providerConfigs || []).map(p => ({ name: p.name, value: p.id, icon: p.icon }))
+                            ]}
+                            value={config.agenticImageBotSettings?.imageGeneratorProviderId || ''}
+                            onChange={(v) => {
+                              const u = [...customApiConfigs];
+                              u[index].agenticImageBotSettings = {
+                                ...(u[index].agenticImageBotSettings || {}),
+                                imageGeneratorProviderId: v || undefined
+                              };
+                              updateCustomApiConfigs(u);
+                            }}
+                            showIcon={true}
+                          />
+                          <span className="text-xs opacity-70">{t('Select which image generation API to use')}</span>
+                        </div>
+
+                        <div className={formRowClass}>
+                          <p className={labelClass}>{t('Prompt Generator Bot')}</p>
+                          <Select
+                            options={[
+                              { name: t('None (Use raw prompt)'), value: '-1' },
+                              ...customApiConfigs
+                                .map((c, i) => ({ name: `#${i + 1} ${c.name}`, value: String(i) }))
+                                .filter((_, optIndex) => optIndex !== index)
+                            ]}
+                            value={
+                              config.agenticImageBotSettings?.promptGeneratorBotIndex === null ||
+                              config.agenticImageBotSettings?.promptGeneratorBotIndex === undefined
+                                ? '-1'
+                                : String(config.agenticImageBotSettings.promptGeneratorBotIndex)
+                            }
+                            onChange={(v) => {
+                              const u = [...customApiConfigs];
+                              u[index].agenticImageBotSettings = {
+                                ...(u[index].agenticImageBotSettings || {}),
+                                promptGeneratorBotIndex: v === '-1' ? null : parseInt(v)
+                              };
+                              updateCustomApiConfigs(u);
+                            }}
+                          />
+                          <span className="text-xs opacity-70">{t('Chatbot to enhance/generate image prompts')}</span>
+                        </div>
+                      </div>
+                    )}
                   <div className={formRowClass}>
                     <div className="flex items-center justify-between">
-                      <p className={labelClass}>{t('AI Model')}</p>
+                      <p className={labelClass}>{config.provider === CustomApiProvider.ImageAgent ? t('Image Model') : t('AI Model')}</p>
                       {isProviderSupported(config.provider) && (
                         <button
                           onClick={() => handleFetchSingleModel(index)}
@@ -496,7 +599,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                   {(() => {
                     const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
                     const effectiveProvider = providerRef?.provider ?? config.provider;
-                    
+
                     const isProviderIn = (providers: CustomApiProvider[]) => providers.includes(effectiveProvider);
 
                     const showThinkingBudget = isProviderIn([
@@ -509,7 +612,11 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       CustomApiProvider.QwenOpenAI,
                     ]);
                     const showReasoningEffort = isProviderIn([CustomApiProvider.OpenAI]);
-                    const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort && !isProviderIn([CustomApiProvider.OpenAI_Image]);
+                    const isImageLikeProvider = (
+                      [CustomApiProvider.OpenAI_Image, CustomApiProvider.ChutesAI, CustomApiProvider.NovitaAI, CustomApiProvider.ImageAgent].includes(effectiveProvider) ||
+                      (effectiveProvider === CustomApiProvider.OpenRouter && !!config.advancedConfig?.openrouterIsImageModel)
+                    );
+                    const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort && !isImageLikeProvider;
 
                     return (
                       <>
@@ -629,28 +736,6 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     </button>
                     {expandedSections[index] ? (
                       <div className="mt-3 space-y-4">
-                        {!config.providerRefId && (
-                          <div className={formRowClass}>
-                            <p className={labelClass}>{t('API Scheme')}</p>
-                            <div className="flex-1">
-                              <Select
-                                options={getApiSchemeOptions()}
-                                value={config.provider || CustomApiProvider.OpenAI}
-                                onChange={(v) => {
-                                  const updatedConfigs = [...customApiConfigs];
-                                  updatedConfigs[index].provider = v as CustomApiProvider;
-                                  if (v === CustomApiProvider.GeminiOpenAI || v === CustomApiProvider.VertexAI_Claude || v === CustomApiProvider.VertexAI_Gemini) {
-                                    updatedConfigs[index].isHostFullPath = true;
-                                  }
-                                  if (v === CustomApiProvider.VertexAI_Gemini || v === CustomApiProvider.Google) {
-                                    updatedConfigs[index].geminiAuthMode = updatedConfigs[index].geminiAuthMode || 'header';
-                                  }
-                                  updateCustomApiConfigs(updatedConfigs);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
                         {!config.providerRefId && config.provider === CustomApiProvider.Anthropic && (
                           <div className={formRowClass}>
                             <p className={labelClass}>{t('Anthropic Auth Header')}</p>
@@ -683,7 +768,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                           </div>
                         )}
-                        {!config.providerRefId && (
+                        {!config.providerRefId && config.provider !== CustomApiProvider.ImageAgent && (
                           <div className={formRowClass}>
                             <div className="flex items-center justify-between">
                               <p className={labelClass}>{t(config.isHostFullPath ? 'API Endpoint (Full Path)' : 'API Host')}</p>
@@ -750,8 +835,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                           </div>
                         )}
-                        
-                        {!config.providerRefId && (
+
+                        {!config.providerRefId && config.provider !== CustomApiProvider.ImageAgent && (
                           <div className={formRowClass}>
                             <p className={labelClass}>API Key</p>
                             <div className={inputContainerClass}>
@@ -860,8 +945,48 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         {(() => {
                           const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
                           const effectiveProvider = providerRef?.provider ?? config.provider;
-                          return effectiveProvider === CustomApiProvider.OpenAI_Image && (
-                           <div className="space-y-4">
+                          const isImageProvider = [CustomApiProvider.OpenAI_Image, CustomApiProvider.ChutesAI, CustomApiProvider.NovitaAI, CustomApiProvider.ImageAgent].includes(effectiveProvider);
+                          const isImageAgent = effectiveProvider === CustomApiProvider.ImageAgent;
+                          return (isImageProvider || isImageAgent) && (
+                            <div className="space-y-4">
+                            {isImageAgent && (
+                              <>
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>{t('Negative Prompt')}</p>
+                                  <Textarea
+                                    value={config.agenticImageBotSettings?.negativePrompt || ''}
+                                    onChange={(e) => {
+                                      const u = [...customApiConfigs];
+                                      u[index].agenticImageBotSettings = {
+                                        ...(u[index].agenticImageBotSettings || {}),
+                                        negativePrompt: e.currentTarget.value
+                                      };
+                                      updateCustomApiConfigs(u);
+                                    }}
+                                    placeholder="blur, low quality, distortion"
+                                  />
+                                  <span className="text-xs opacity-70">{t('Describe what you don\'t want in the image')}</span>
+                                </div>
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>{t('Image Scheme (override)')}</p>
+                                  <Select
+                                    options={[
+                                      { name: t('Follow Provider'), value: 'provider' },
+                                      { name: 'Stable Diffusion / Chutes (sd)', value: 'sd' },
+                                      { name: 'Novita (novita)', value: 'novita' },
+                                      { name: 'OpenAI Responses (openai_responses)', value: 'openai_responses' },
+                                      { name: 'OpenRouter Image (openrouter_image)', value: 'openrouter_image' },
+                                      { name: 'Qwen (OpenAI compat) (qwen_openai)', value: 'qwen_openai' },
+                                      { name: 'Seedream (OpenAI compat) (seedream_openai)', value: 'seedream_openai' },
+                                      { name: 'Custom', value: 'custom' },
+                                    ]}
+                                    value={(config.imageScheme || 'provider') as any}
+                                    onChange={(v) => { const u = [...customApiConfigs]; u[index].imageScheme = (v === 'provider' ? undefined : (v as any)); updateCustomApiConfigs(u); }}
+                                  />
+                                  <span className="text-xs opacity-70">{t('Override the provider dialect if needed')}</span>
+                                </div>
+                              </>
+                            )}
                             <div className={formRowClass}>
                               <p className={labelClass}>{t('Image Size')}</p>
                               <Select
@@ -871,8 +996,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                   { name: `1024x1536 ${t('portrait-suffix')}`, value: '1024x1536' },
                                   { name: `1536x1024 ${t('landscape-suffix')}`, value: '1536x1024' },
                                 ]}
-                                value={config.imageSize || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageSize = v as any; updateCustomApiConfigs(u); }}
+                                value={(config.directImageBotSettings?.params as any)?.size || config.imageSize || 'auto'}
+                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].directImageBotSettings?.params as any) || {}), size: v as any }; u[index].directImageBotSettings = { ...(u[index].directImageBotSettings || {}), params }; u[index].imageSize = v as any; updateCustomApiConfigs(u); }}
                               />
                             </div>
 
@@ -884,9 +1009,11 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                   { name: t('low'), value: 'low' },
                                   { name: t('medium'), value: 'medium' },
                                   { name: t('high'), value: 'high' },
+                                  { name: 'standard', value: 'standard' },
+                                  { name: 'hd', value: 'hd' },
                                 ]}
-                                value={config.imageQuality || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageQuality = v as any; updateCustomApiConfigs(u); }}
+                                value={(config.directImageBotSettings?.params as any)?.quality || config.imageQuality || 'auto'}
+                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].directImageBotSettings?.params as any) || {}), quality: v as any }; u[index].directImageBotSettings = { ...(u[index].directImageBotSettings || {}), params }; u[index].imageQuality = v as any; updateCustomApiConfigs(u); }}
                               />
                             </div>
 
@@ -946,6 +1073,25 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 value={config.imageModeration || 'default'}
                                 onChange={(v) => { const u = [...customApiConfigs]; u[index].imageModeration = v as any; updateCustomApiConfigs(u); }}
                               />
+                            </div>
+
+                            <div className={formRowClass}>
+                              <p className={labelClass}>Provider Params (JSON)</p>
+                              <Textarea
+                                defaultValue={JSON.stringify(config.directImageBotSettings?.params || {}, null, 2)}
+                                onBlur={(e) => {
+                                  try {
+                                    const json = e.currentTarget.value.trim() ? JSON.parse(e.currentTarget.value) : {}
+                                    const u = [...customApiConfigs]
+                                    u[index].directImageBotSettings = { ...(u[index].directImageBotSettings || {}), params: json }
+                                    updateCustomApiConfigs(u)
+                                  } catch (err) {
+                                    toast.error('Invalid JSON')
+                                  }
+                                }}
+                                placeholder={`{\n  \"size\": \"1024x1024\",\n  \"quality\": \"high\"\n}`}
+                              />
+                              <span className="text-xs opacity-70">Use any provider-specific keys. See docs/image generation.</span>
                             </div>
                           </div>
                         )

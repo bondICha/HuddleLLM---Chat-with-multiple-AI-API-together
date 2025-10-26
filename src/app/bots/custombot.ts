@@ -12,6 +12,7 @@ import { VertexGeminiBot } from './vertex-gemini';
 // import { OpenAIImageBot } from './openai-image';
 import { OpenAIResponsesBot } from './openai-responses';
 import { OpenRouterImageBot } from './openrouter-image';
+import { ImageAgentBot } from './image-agent';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
 export class CustomBot extends AsyncAbstractBot {
@@ -210,8 +211,15 @@ export class CustomBot extends AsyncAbstractBot {
             }
             case CustomApiProvider.OpenAI_Image: {
                 const imageTool: any = { type: 'image_generation' }
-                if (config.imageSize) imageTool.size = config.imageSize
-                if (config.imageQuality) imageTool.quality = config.imageQuality
+                const direct = config.directImageBotSettings
+                if (direct?.params && typeof direct.params === 'object') {
+                    Object.assign(imageTool, direct.params)
+                } else {
+                    const size = (config as any).imageSize
+                    const quality = (config as any).imageQuality
+                    if (size) imageTool.size = size
+                    if (quality) imageTool.quality = quality
+                }
                 if (config.imageBackground) imageTool.background = config.imageBackground
                 if (config.imageModeration) imageTool.moderation = (config.imageModeration === 'default') ? 'low' : config.imageModeration
                 if (config.imageFormat && config.imageFormat !== 'none') {
@@ -233,6 +241,79 @@ export class CustomBot extends AsyncAbstractBot {
                     functionTools: [imageTool],
                     extraBody: undefined,
                 })
+                break;
+            }
+            case CustomApiProvider.ChutesAI: {
+                const imageTool: any = { type: 'image_generation' }
+                const direct = config.directImageBotSettings
+                if (direct?.params && typeof direct.params === 'object') {
+                    Object.assign(imageTool, direct.params)
+                } else {
+                    const size = (config as any).imageSize
+                    const quality = (config as any).imageQuality
+                    if (size) imageTool.size = size
+                    if (quality) imageTool.quality = quality
+                }
+                if (config.imageBackground) imageTool.background = config.imageBackground
+                if (config.imageModeration) imageTool.moderation = (config.imageModeration === 'default') ? 'low' : config.imageModeration
+                if (config.imageFormat && config.imageFormat !== 'none') {
+                    imageTool.format = config.imageFormat
+                    if (typeof config.imageCompression === 'number' && (config.imageFormat === 'jpeg' || config.imageFormat === 'webp')) {
+                        const clamped = Math.max(0, Math.min(100, Math.round(config.imageCompression)))
+                        imageTool.output_compression = clamped
+                    }
+                }
+                botInstance = new OpenAIResponsesBot({
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost || 'https://api.chutes.ai',
+                    model: config.model,
+                    systemMessage: processedSystemMessage,
+                    isHostFullPath: effectiveIsHostFullPath,
+                    webAccess: false,
+                    thinkingMode: false,
+                    reasoningEffort: undefined,
+                    functionTools: [imageTool],
+                    extraBody: undefined,
+                })
+                break;
+            }
+            case CustomApiProvider.NovitaAI: {
+                const imageTool: any = { type: 'image_generation' }
+                const direct = config.directImageBotSettings
+                if (direct?.params && typeof direct.params === 'object') {
+                    Object.assign(imageTool, direct.params)
+                } else {
+                    const size = (config as any).imageSize
+                    const quality = (config as any).imageQuality
+                    if (size) imageTool.size = size
+                    if (quality) imageTool.quality = quality
+                }
+                if (config.imageBackground) imageTool.background = config.imageBackground
+                if (config.imageModeration) imageTool.moderation = (config.imageModeration === 'default') ? 'low' : config.imageModeration
+                if (config.imageFormat && config.imageFormat !== 'none') {
+                    imageTool.format = config.imageFormat
+                    if (typeof config.imageCompression === 'number' && (config.imageFormat === 'jpeg' || config.imageFormat === 'webp')) {
+                        const clamped = Math.max(0, Math.min(100, Math.round(config.imageCompression)))
+                        imageTool.output_compression = clamped
+                    }
+                }
+                botInstance = new OpenAIResponsesBot({
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost || 'https://api.novita.ai/openai',
+                    model: config.model,
+                    systemMessage: processedSystemMessage,
+                    isHostFullPath: effectiveIsHostFullPath,
+                    webAccess: false,
+                    thinkingMode: false,
+                    reasoningEffort: undefined,
+                    functionTools: [imageTool],
+                    extraBody: undefined,
+                })
+                break;
+            }
+            case CustomApiProvider.ImageAgent: {
+                // Agentic wrapper: delegate to provider via image-tools
+                botInstance = new ImageAgentBot(this.customBotNumber - 1)
                 break;
             }
             case CustomApiProvider.Google:
