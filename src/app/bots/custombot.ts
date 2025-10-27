@@ -187,8 +187,8 @@ export class CustomBot extends AsyncAbstractBot {
                         model: config.model,
                         systemMessage: processedSystemMessage,
                         isHostFullPath: false,
-                        // Prefer explicit AR in AdvancedConfig; fallback to Size mapping
-                        aspectRatio: (config.advancedConfig?.openrouterAspectRatio as any) || ((config.imageSize === '1024x1024') ? '1:1' : (config.imageSize === '1024x1536') ? '2:3' : (config.imageSize === '1536x1024') ? '3:2' : 'auto'),
+                        // Use explicit AR from AdvancedConfig or default
+                        aspectRatio: (config.advancedConfig?.openrouterAspectRatio as any) || 'auto',
                         providerOnly: effectiveAdvanced?.openrouterProviderOnly,
                     })
                 } else {
@@ -210,25 +210,14 @@ export class CustomBot extends AsyncAbstractBot {
                 break;
             }
             case CustomApiProvider.OpenAI_Image: {
+                // OpenAI_Image: Chat Bot with image generation via function calling
                 const imageTool: any = { type: 'image_generation' }
-                const direct = config.directImageBotSettings
-                if (direct?.params && typeof direct.params === 'object') {
-                    Object.assign(imageTool, direct.params)
-                } else {
-                    const size = (config as any).imageSize
-                    const quality = (config as any).imageQuality
-                    if (size) imageTool.size = size
-                    if (quality) imageTool.quality = quality
+
+                // Apply user-defined parameters
+                if (config.imageFunctionToolSettings?.params) {
+                    Object.assign(imageTool, config.imageFunctionToolSettings.params)
                 }
-                if (config.imageBackground) imageTool.background = config.imageBackground
-                if (config.imageModeration) imageTool.moderation = (config.imageModeration === 'default') ? 'low' : config.imageModeration
-                if (config.imageFormat && config.imageFormat !== 'none') {
-                    imageTool.format = config.imageFormat
-                    if (typeof config.imageCompression === 'number' && (config.imageFormat === 'jpeg' || config.imageFormat === 'webp')) {
-                        const clamped = Math.max(0, Math.min(100, Math.round(config.imageCompression)))
-                        imageTool.output_compression = clamped
-                    }
-                }
+
                 botInstance = new OpenAIResponsesBot({
                     apiKey: effectiveApiKey,
                     host: effectiveHost,
@@ -243,74 +232,7 @@ export class CustomBot extends AsyncAbstractBot {
                 })
                 break;
             }
-            case CustomApiProvider.ChutesAI: {
-                const imageTool: any = { type: 'image_generation' }
-                const direct = config.directImageBotSettings
-                if (direct?.params && typeof direct.params === 'object') {
-                    Object.assign(imageTool, direct.params)
-                } else {
-                    const size = (config as any).imageSize
-                    const quality = (config as any).imageQuality
-                    if (size) imageTool.size = size
-                    if (quality) imageTool.quality = quality
-                }
-                if (config.imageBackground) imageTool.background = config.imageBackground
-                if (config.imageModeration) imageTool.moderation = (config.imageModeration === 'default') ? 'low' : config.imageModeration
-                if (config.imageFormat && config.imageFormat !== 'none') {
-                    imageTool.format = config.imageFormat
-                    if (typeof config.imageCompression === 'number' && (config.imageFormat === 'jpeg' || config.imageFormat === 'webp')) {
-                        const clamped = Math.max(0, Math.min(100, Math.round(config.imageCompression)))
-                        imageTool.output_compression = clamped
-                    }
-                }
-                botInstance = new OpenAIResponsesBot({
-                    apiKey: effectiveApiKey,
-                    host: effectiveHost || 'https://api.chutes.ai',
-                    model: config.model,
-                    systemMessage: processedSystemMessage,
-                    isHostFullPath: effectiveIsHostFullPath,
-                    webAccess: false,
-                    thinkingMode: false,
-                    reasoningEffort: undefined,
-                    functionTools: [imageTool],
-                    extraBody: undefined,
-                })
-                break;
-            }
-            case CustomApiProvider.NovitaAI: {
-                const imageTool: any = { type: 'image_generation' }
-                const direct = config.directImageBotSettings
-                if (direct?.params && typeof direct.params === 'object') {
-                    Object.assign(imageTool, direct.params)
-                } else {
-                    const size = (config as any).imageSize
-                    const quality = (config as any).imageQuality
-                    if (size) imageTool.size = size
-                    if (quality) imageTool.quality = quality
-                }
-                if (config.imageBackground) imageTool.background = config.imageBackground
-                if (config.imageModeration) imageTool.moderation = (config.imageModeration === 'default') ? 'low' : config.imageModeration
-                if (config.imageFormat && config.imageFormat !== 'none') {
-                    imageTool.format = config.imageFormat
-                    if (typeof config.imageCompression === 'number' && (config.imageFormat === 'jpeg' || config.imageFormat === 'webp')) {
-                        const clamped = Math.max(0, Math.min(100, Math.round(config.imageCompression)))
-                        imageTool.output_compression = clamped
-                    }
-                }
-                botInstance = new OpenAIResponsesBot({
-                    apiKey: effectiveApiKey,
-                    host: effectiveHost || 'https://api.novita.ai/openai',
-                    model: config.model,
-                    systemMessage: processedSystemMessage,
-                    isHostFullPath: effectiveIsHostFullPath,
-                    webAccess: false,
-                    thinkingMode: false,
-                    reasoningEffort: undefined,
-                    functionTools: [imageTool],
-                    extraBody: undefined,
-                })
-                break;
-            }
+            // ChutesAI and NovitaAI are now only used via Image Agent (not as direct chatbots)
             case CustomApiProvider.ImageAgent: {
                 // Agentic wrapper: delegate to provider via image-tools
                 botInstance = new ImageAgentBot(this.customBotNumber - 1)

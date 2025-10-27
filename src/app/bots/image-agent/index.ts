@@ -1,9 +1,10 @@
 import { AbstractBot, SendMessageParams, ConversationHistory, Event } from '../abstract-bot'
 import { ChatError, ErrorCode } from '~utils/errors'
-import { getUserConfig, CustomApiProvider } from '~services/user-config'
-import { getDefaultToolDefinition } from '~services/image-tool-definitions'
+import { getUserConfig, OPENAI_COMPATIBLE_PROVIDERS, CLAUDE_COMPATIBLE_PROVIDERS } from '~services/user-config'
+import { getDefaultToolDefinition, convertClaudeToolToOpenAI } from '~services/image-tool-definitions'
 import { generateImage } from '~services/image-api-client'
 import { createBotInstance } from '..'
+import { file2base64 } from '~app/utils/file-utils'
 
 /**
  * Agentic Image Bot (Tool-use based)
@@ -92,20 +93,29 @@ export class ImageAgentBot extends AbstractBot {
         throw new ChatError('Failed to create Prompt Generator Bot', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
       }
 
-      // Add tool definition to the bot (only Claude supported for now)
+      // Determine Prompt Bot provider
       const promptBotConfig = cfg.customApiConfigs[promptGenIndex]
       const providerRef = promptBotConfig.providerRefId
         ? (cfg.providerConfigs || []).find(p => p.id === promptBotConfig.providerRefId)
         : undefined
       const effectiveProvider = providerRef?.provider ?? promptBotConfig.provider
 
-      if (effectiveProvider !== CustomApiProvider.Anthropic && effectiveProvider !== CustomApiProvider.VertexAI_Claude) {
-        throw new ChatError('Image Agent currently only supports Claude as Prompt Generator Bot', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
+      // Check if provider is supported (using constants for maintainability)
+      const isClaudeProvider = CLAUDE_COMPATIBLE_PROVIDERS.includes(effectiveProvider as any)
+      const isOpenAIProvider = OPENAI_COMPATIBLE_PROVIDERS.includes(effectiveProvider as any)
+
+      if (!isClaudeProvider && !isOpenAIProvider) {
+        throw new ChatError('Image Agent currently only supports Claude or OpenAI-compatible providers as Prompt Generator Bot', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
       }
 
       // Inject tool definition into the bot (await for initialization to complete)
+      // Convert to OpenAI format if needed
       if (typeof (promptBot as any).setTools === 'function') {
-        await (promptBot as any).setTools([toolDefMeta.definition])
+        const toolToInject = isOpenAIProvider
+          ? convertClaudeToolToOpenAI(toolDefMeta.definition)
+          : toolDefMeta.definition
+
+        await (promptBot as any).setTools([toolToInject])
       }
 
       // Modify system prompt with tool usage instructions
@@ -115,9 +125,9 @@ export class ImageAgentBot extends AbstractBot {
       // Add image-specific instructions if user provided images
       if (userImages.length > 0) {
         if (toolDefMeta.supportsEdit) {
-          toolInstruction += `\n\nThe user has provided ${userImages.length} image(s). You can edit these images by including them in the 'images' parameter of the generate_image tool call. The images are available to you for analysis.`
+          toolInstruction += `\n\nThe user has provided ${userImages.length} image(s). They are automatically passed into the generate_image tool for editing or reference. Describe the desired changes clearly in your prompt and do not add a separate images parameter.`
         } else {
-          toolInstruction += `\n\n⚠️ IMPORTANT: The user has provided ${userImages.length} image(s), but this model (${imageModel}) does NOT support image editing. You CANNOT include images in the tool call parameters. Instead:
+          toolInstruction += `\n\nIMPORTANT: The user has provided ${userImages.length} image(s), but this model (${imageModel}) does NOT support image editing. You CANNOT include images in the tool call parameters. Instead:
 1. Carefully examine the provided images
 2. Describe key visual elements (objects, colors, composition, style) in your text prompt
 3. Use rich textual descriptions to approximate what the user wants`
@@ -156,6 +166,20 @@ export class ImageAgentBot extends AbstractBot {
             try {
               // Use tool call arguments directly (they match the API format)
               const apiBody: any = { ...args }
+
+              // Auto inject user images into the expected field when supported
+              if (toolDefMeta.imageInputField) {
+                if (userImages.length > 0) {
+                  apiBody[toolDefMeta.imageInputField] = await Promise.all(
+                    userImages.map((img) => file2base64(img))
+                  )
+                } else {
+                  delete apiBody[toolDefMeta.imageInputField]
+                }
+              } else if ('images' in apiBody) {
+                // Ensure we do not send stray images parameter when the tool does not accept it
+                delete apiBody.images
+              }
 
               // Add model field for Chutes API (they require it in the body)
               if (/chutes/i.test(imageHost || '')) {

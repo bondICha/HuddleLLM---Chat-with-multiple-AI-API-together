@@ -9,8 +9,7 @@ export function getApiSchemeOptions(): ApiSchemeOption[] {
     { name: 'OpenAI Responses API (Beta)', value: CustomApiProvider.OpenAI_Responses },
     { name: 'OpenAI Image (gpt-image-1, Beta)', value: CustomApiProvider.OpenAI_Image },
     { name: 'Image Agent (Generate + Agentic Chatbot)', value: CustomApiProvider.ImageAgent },
-    { name: 'Chutes AI (Image)', value: CustomApiProvider.ChutesAI },
-    { name: 'Novita AI (Image)', value: CustomApiProvider.NovitaAI },
+    // Note: ChutesAI and NovitaAI are only used via Image Agent (not as direct chatbots)
     { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
     { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock },
     { name: 'Google Gemini (OpenAI Format)', value: CustomApiProvider.GeminiOpenAI },

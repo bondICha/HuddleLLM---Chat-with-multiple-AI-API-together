@@ -320,9 +320,6 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
     // Add tools if provided
     if (this.config.tools && this.config.tools.length > 0) {
       body.tools = this.config.tools;
-      console.log('[ClaudeApiBot] Sending tools to API:', JSON.stringify(body.tools, null, 2))
-    } else {
-      console.log('[ClaudeApiBot] No tools to send')
     }
 
     // Add Extended Thinking configuration or temperature based on thinkingMode flag
@@ -380,8 +377,6 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       fullUrlStr = fullUrlStr.replace(/([^:]\/)\/+/g, "$1"); // Replace multiple slashes with single
       fullUrlStr = fullUrlStr.replace(/\/v1\/v1\//g, "/v1/");
     }
-    
-    console.log('[ClaudeApiBot] Full request body:', JSON.stringify(body, null, 2))
 
     const resp = await fetch(fullUrlStr, {
       method: 'POST',

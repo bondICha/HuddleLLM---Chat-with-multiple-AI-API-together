@@ -10,6 +10,37 @@ import { ToolDefinition } from './user-config'
  * 3. Implement endpointSelector if the model uses different endpoints for txt2img vs edit
  * 4. Add to TOOL_DEFINITION_REGISTRY with a unique key
  */
+
+/**
+ * Convert Claude Tool Use format to OpenAI Function Calling format
+ *
+ * Claude format:
+ * {
+ *   name: "...",
+ *   description: "...",
+ *   input_schema: { type: "object", properties: {...}, required: [...] }
+ * }
+ *
+ * OpenAI format:
+ * {
+ *   type: "function",
+ *   function: {
+ *     name: "...",
+ *     description: "...",
+ *     parameters: { type: "object", properties: {...}, required: [...] }
+ *   }
+ * }
+ */
+export function convertClaudeToolToOpenAI(claudeTool: ToolDefinition): any {
+  return {
+    type: 'function',
+    function: {
+      name: claudeTool.name,
+      description: claudeTool.description,
+      parameters: claudeTool.input_schema,
+    },
+  }
+}
 export interface ToolDefinitionWithMeta {
   /** Tool definition in Claude format */
   definition: ToolDefinition
@@ -17,6 +48,8 @@ export interface ToolDefinitionWithMeta {
   supportsEdit: boolean
   /** Function to select the correct endpoint based on whether images are provided */
   endpointSelector?: (hasImages: boolean, baseHost: string) => string
+  /** When set, user-provided images are automatically injected into this request field as base64 strings */
+  imageInputField?: string
 }
 
 /**
@@ -31,7 +64,7 @@ export interface ToolDefinitionWithMeta {
 export const TOOL_CHUTES_CHROMA: ToolDefinitionWithMeta = {
   definition: {
     name: 'generate_image',
-    description: 'Generate an image using Chroma model. Use this when the user asks to create, generate, or make an image.',
+    description: 'Generate an image using Chroma model. Images supplied by the user are not forwarded, so describe any visual references directly in the prompt.',
     input_schema: {
       type: 'object',
       properties: {
@@ -83,7 +116,7 @@ export const TOOL_CHUTES_CHROMA: ToolDefinitionWithMeta = {
 export const TOOL_NOVITA_QWEN: ToolDefinitionWithMeta = {
   definition: {
     name: 'generate_image',
-    description: 'Generate or edit an image using Qwen Image model. If images are provided, edit them based on the prompt. Otherwise, generate a new image from text.',
+    description: 'Generate or edit an image using Qwen Image model. User-supplied images are automatically included for editing; do not attempt to attach them manually.',
     input_schema: {
       type: 'object',
       properties: {
@@ -91,15 +124,10 @@ export const TOOL_NOVITA_QWEN: ToolDefinitionWithMeta = {
           type: 'string',
           description: 'Text description for image generation or editing instructions',
         },
-        images: {
-          type: 'array',
-          description: 'Optional: Images to edit (base64 encoded or URLs). Only include if user provided images and wants to edit them.',
-          items: { type: 'string' },
-        },
         size: {
           type: 'string',
-          description: 'Image size in format "WIDTH*HEIGHT" (e.g., "1024*1024", "1536*1024"). Use larger sizes for higher quality. Range: 256-1536 per dimension.',
-          default: '1024*1024',
+          description: 'Image resolution in format "WIDTH*HEIGHT". Must be between 256*256 and 1536*1536. Available: "1664*928" (16:9), "1472*1140" (4:3), "1328*1328" (1:1), "1140*1472" (3:4), "928*1664" (9:16).',
+          default: '1328*1328',
         },
         seed: {
           type: 'number',
@@ -117,6 +145,7 @@ export const TOOL_NOVITA_QWEN: ToolDefinitionWithMeta = {
     },
   },
   supportsEdit: true,
+  imageInputField: 'images',
   endpointSelector: (hasImages: boolean, baseHost: string) => {
     const cleanHost = baseHost.replace(/\/$/, '')
     return hasImages
@@ -133,7 +162,7 @@ export const TOOL_NOVITA_QWEN: ToolDefinitionWithMeta = {
 export const TOOL_NOVITA_HUNYUAN: ToolDefinitionWithMeta = {
   definition: {
     name: 'generate_image',
-    description: 'Generate an image using Hunyuan Image 3 model. Use this when the user asks to create, generate, or make an image.',
+    description: 'Generate an image using Hunyuan Image 3 model. Images provided by the user are not sent to the API, so incorporate any visual details into the prompt text.',
     input_schema: {
       type: 'object',
       properties: {
@@ -170,18 +199,13 @@ export const TOOL_NOVITA_HUNYUAN: ToolDefinitionWithMeta = {
 export const TOOL_NOVITA_SEEDREAM: ToolDefinitionWithMeta = {
   definition: {
     name: 'generate_image',
-    description: 'Generate or edit images using Seedream 4.0 model. Supports up to 10 input images for editing or reference.',
+    description: 'Generate or edit images using Seedream 4.0 model. Any images attached by the user are automatically forwarded for editing or reference.',
     input_schema: {
       type: 'object',
       properties: {
         prompt: {
           type: 'string',
           description: 'Detailed text description for image generation. Recommended: under 600 words in English.',
-        },
-        images: {
-          type: 'array',
-          description: 'Optional: Up to 10 images (base64 encoded or URLs) for editing or as reference. Max 10MB each, JPEG/PNG supported.',
-          items: { type: 'string' },
         },
         size: {
           type: 'string',
@@ -209,6 +233,7 @@ export const TOOL_NOVITA_SEEDREAM: ToolDefinitionWithMeta = {
     },
   },
   supportsEdit: true,
+  imageInputField: 'images',
   endpointSelector: (_hasImages: boolean, baseHost: string) => {
     const cleanHost = baseHost.replace(/\/$/, '')
     return `${cleanHost}/v3/async/seedream-4-0`

@@ -311,7 +311,56 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
           <Button size="small" text={t('Add New Model')} icon={<BiPlus />} onClick={addNewCustomModel} color="primary" />
         </div>
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))' }}>
-          {customApiConfigs.map((config, index) => (
+          {customApiConfigs.map((config, index) => {
+            // ========== Conditional Flags ==========
+            const providerRef = config.providerRefId
+              ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId)
+              : undefined;
+            const effectiveProvider = providerRef?.provider ?? config.provider;
+
+            const isImageAgent = effectiveProvider === CustomApiProvider.ImageAgent;
+            const isOpenAI = effectiveProvider === CustomApiProvider.OpenAI;
+            const isAnthropic = effectiveProvider === CustomApiProvider.Anthropic;
+            const isOpenRouter = effectiveProvider === CustomApiProvider.OpenRouter;
+            const isGemini = effectiveProvider === CustomApiProvider.VertexAI_Gemini || effectiveProvider === CustomApiProvider.Google;
+            const isVertexClaude = effectiveProvider === CustomApiProvider.VertexAI_Claude;
+            const isGeminiOpenAI = effectiveProvider === CustomApiProvider.GeminiOpenAI;
+            const isQwenOpenAI = effectiveProvider === CustomApiProvider.QwenOpenAI;
+            const isOpenAIResponses = effectiveProvider === CustomApiProvider.OpenAI_Responses;
+            const isOpenAIImage = effectiveProvider === CustomApiProvider.OpenAI_Image;
+            const isChutesAI = effectiveProvider === CustomApiProvider.ChutesAI;
+            const isNovitaAI = effectiveProvider === CustomApiProvider.NovitaAI;
+
+            // Show flags
+            const showImageAgentSettings = isImageAgent;
+            const showAIModelSelection = !isImageAgent;
+            const showThinkingBudget = [
+              CustomApiProvider.Anthropic,
+              CustomApiProvider.Bedrock,
+              CustomApiProvider.Anthropic_CustomAuth,
+              CustomApiProvider.VertexAI_Claude,
+              CustomApiProvider.VertexAI_Gemini,
+              CustomApiProvider.GeminiOpenAI,
+              CustomApiProvider.QwenOpenAI,
+            ].includes(effectiveProvider);
+            const showReasoningEffort = isOpenAI;
+            const isImageLikeProvider = (
+              [CustomApiProvider.OpenAI_Image, CustomApiProvider.ChutesAI, CustomApiProvider.NovitaAI, CustomApiProvider.ImageAgent].includes(effectiveProvider) ||
+              (isOpenRouter && !!config.advancedConfig?.openrouterIsImageModel)
+            );
+            const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort && !isImageLikeProvider;
+
+            const showAnthropicAuthHeader = !config.providerRefId && isAnthropic;
+            const showGeminiAuthMode = !config.providerRefId && isGemini;
+            const showApiHost = !config.providerRefId && !isImageAgent;
+            const showApiKey = !config.providerRefId && !isImageAgent;
+            const showOpenRouterMode = isOpenRouter;
+            const showDeveloperOptions = [CustomApiProvider.OpenAI, CustomApiProvider.Anthropic, CustomApiProvider.VertexAI_Claude, CustomApiProvider.OpenRouter].includes(effectiveProvider);
+            const showOpenAIResponsesOptions = isOpenAIResponses;
+            const showImageSettings = isImageLikeProvider || isImageAgent;
+            // ========== End Conditional Flags ==========
+
+            return (
             <div key={config.id || index} className={cx("bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(255,255,255,0.07),0_4px_6px_-2px_rgba(255,255,255,0.04)] transition-all hover:shadow-xl dark:hover:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1),0_10px_10px_-5px_rgba(255,255,255,0.04)]")}>
               <div className="grid grid-cols-[60px_1fr_140px] items-center p-4 border-b border-white/20 dark:border-white/10 gap-2">
                 <span className="font-bold text-lg text-primary text-center">#{index + 1}</span>
@@ -456,7 +505,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     </div>
 
                     {/* Image Agent Settings - Show when Image Agent is selected */}
-                    {config.provider === CustomApiProvider.ImageAgent && (
+                    {showImageAgentSettings && (
                       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-4">
                         <div className="flex items-center gap-2 mb-2">
                           <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
@@ -622,12 +671,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     )}
 
                   {/* AI Model - Only show for non-Image-Agent bots */}
-                  {(() => {
-                    const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                    const effectiveProvider = providerRef?.provider ?? config.provider;
-                    if (effectiveProvider === CustomApiProvider.ImageAgent) return null;
-
-                    return (
+                  {showAIModelSelection && (
                   <div className={formRowClass}>
                     <div className="flex items-center justify-between">
                       <p className={labelClass}>{t('AI Model')}</p>
@@ -668,8 +712,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       />
                     </div>
                   </div>
-                    );
-                  })()}
+                  )}
 
                   <div className={formRowClass}>
                     <div className="flex items-center justify-between">
@@ -723,31 +766,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       </div>
                     </div>
                   </div>
-                  {(() => {
-                    const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                    const effectiveProvider = providerRef?.provider ?? config.provider;
 
-                    const isProviderIn = (providers: CustomApiProvider[]) => providers.includes(effectiveProvider);
-
-                    const showThinkingBudget = isProviderIn([
-                      CustomApiProvider.Anthropic,
-                      CustomApiProvider.Bedrock,
-                      CustomApiProvider.Anthropic_CustomAuth,
-                      CustomApiProvider.VertexAI_Claude,
-                      CustomApiProvider.VertexAI_Gemini,
-                      CustomApiProvider.GeminiOpenAI,
-                      CustomApiProvider.QwenOpenAI,
-                    ]);
-                    const showReasoningEffort = isProviderIn([CustomApiProvider.OpenAI]);
-                    const isImageLikeProvider = (
-                      [CustomApiProvider.OpenAI_Image, CustomApiProvider.ChutesAI, CustomApiProvider.NovitaAI, CustomApiProvider.ImageAgent].includes(effectiveProvider) ||
-                      (effectiveProvider === CustomApiProvider.OpenRouter && !!config.advancedConfig?.openrouterIsImageModel)
-                    );
-                    const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort && !isImageLikeProvider;
-
-                    return (
-                      <>
-                        {showThinkingBudget && (
+                  {showThinkingBudget && (
                           <div className={formRowClass}>
                             <div className="flex items-center justify-between">
                               <p className={labelClass}>{config.thinkingMode ? t('Thinking Budget') : t('Temperature')}</p>
@@ -852,10 +872,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               </div>
                             </div>
                           </div>
-                        )}
-                      </>
-                    );
-                  })()}
+                  )}
+
                   <div className="border-t pt-3">
                     <button className="flex items-center gap-2 w-full text-left text-sm font-medium opacity-80 hover:opacity-100" onClick={() => toggleSection(index)}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className={`transition-transform ${expandedSections[index] ? 'rotate-90' : ''}`}><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" /></svg>
@@ -863,7 +881,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     </button>
                     {expandedSections[index] ? (
                       <div className="mt-3 space-y-4">
-                        {!config.providerRefId && config.provider === CustomApiProvider.Anthropic && (
+                        {showAnthropicAuthHeader && (
                           <div className={formRowClass}>
                             <p className={labelClass}>{t('Anthropic Auth Header')}</p>
                             <div className="flex-1">
@@ -879,7 +897,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                           </div>
                         )}
-                        {!config.providerRefId && (config.provider === CustomApiProvider.VertexAI_Gemini || config.provider === CustomApiProvider.Google) && (
+                        {showGeminiAuthMode && (
                           <div className={formRowClass}>
                             <p className={labelClass}>{t('Gemini Auth Mode')}</p>
                             <div className="flex-1">
@@ -895,7 +913,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                           </div>
                         )}
-                        {!config.providerRefId && config.provider !== CustomApiProvider.ImageAgent && (
+                        {showApiHost && (
                           <div className={formRowClass}>
                             <div className="flex items-center justify-between">
                               <p className={labelClass}>{t(config.isHostFullPath ? 'API Endpoint (Full Path)' : 'API Host')}</p>
@@ -963,7 +981,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           </div>
                         )}
 
-                        {!config.providerRefId && config.provider !== CustomApiProvider.ImageAgent && (
+                        {showApiKey && (
                           <div className={formRowClass}>
                             <p className={labelClass}>API Key</p>
                             <div className={inputContainerClass}>
@@ -981,11 +999,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                           </div>
                         )}
-                        {(() => {
-                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                          const effectiveProvider = providerRef?.provider ?? config.provider;
-                          if (effectiveProvider !== CustomApiProvider.OpenRouter) return null;
-                          return (
+                        {showOpenRouterMode && (
                             <div className="space-y-4">
                               <div className={formRowClass}>
                                 <p className={labelClass}>{t('Mode')}</p>
@@ -1007,14 +1021,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 />
                               </div>
                             </div>
-                          )
-                        })()}
-                        {(() => {
-                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                          const effectiveProvider = providerRef?.provider ?? config.provider;
-                          const showDeveloperOptions = [CustomApiProvider.OpenAI, CustomApiProvider.Anthropic, CustomApiProvider.VertexAI_Claude, CustomApiProvider.OpenRouter].includes(effectiveProvider);
-
-                          return showDeveloperOptions && (
+                        )}
+                        {showDeveloperOptions && (
                             <DeveloperOptionsPanel
                               config={config}
                               index={index}
@@ -1027,13 +1035,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               }}
                               effectiveProvider={effectiveProvider}
                             />
-                          );
-                        })()}
-                        {(() => {
-                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                          const effectiveProvider = providerRef?.provider ?? config.provider;
-                          if (effectiveProvider !== CustomApiProvider.OpenAI_Responses) return null;
-                          return (
+                        )}
+                        {showOpenAIResponsesOptions && (
                             <div className="space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
@@ -1067,14 +1070,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 <p className="text-xs opacity-70 mt-1">Optional. Raw JSON array for Responses API tools. If set, overrides the simple Web Search toggle.</p>
                               </div>
                             </div>
-                          );
-                        })()}
-                        {(() => {
-                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                          const effectiveProvider = providerRef?.provider ?? config.provider;
-                          const isImageProvider = [CustomApiProvider.OpenAI_Image, CustomApiProvider.ChutesAI, CustomApiProvider.NovitaAI, CustomApiProvider.ImageAgent].includes(effectiveProvider);
-                          const isImageAgent = effectiveProvider === CustomApiProvider.ImageAgent;
-                          return (isImageProvider || isImageAgent) && (
+                        )}
+                        {showImageSettings && (
                             <div className="space-y-4">
                             {isImageAgent && (
                               <>
@@ -1123,8 +1120,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                   { name: `1024x1536 ${t('portrait-suffix')}`, value: '1024x1536' },
                                   { name: `1536x1024 ${t('landscape-suffix')}`, value: '1536x1024' },
                                 ]}
-                                value={(config.directImageBotSettings?.params as any)?.size || config.imageSize || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].directImageBotSettings?.params as any) || {}), size: v as any }; u[index].directImageBotSettings = { ...(u[index].directImageBotSettings || {}), params }; u[index].imageSize = v as any; updateCustomApiConfigs(u); }}
+                                value={(config.imageFunctionToolSettings?.params as any)?.size || 'auto'}
+                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), size: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
                               />
                             </div>
 
@@ -1139,8 +1136,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                   { name: 'standard', value: 'standard' },
                                   { name: 'hd', value: 'hd' },
                                 ]}
-                                value={(config.directImageBotSettings?.params as any)?.quality || config.imageQuality || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].directImageBotSettings?.params as any) || {}), quality: v as any }; u[index].directImageBotSettings = { ...(u[index].directImageBotSettings || {}), params }; u[index].imageQuality = v as any; updateCustomApiConfigs(u); }}
+                                value={(config.imageFunctionToolSettings?.params as any)?.quality || 'auto'}
+                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), quality: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
                               />
                             </div>
 
@@ -1151,8 +1148,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                   { name: t('auto'), value: 'auto' },
                                   { name: t('transparent'), value: 'transparent' },
                                 ]}
-                                value={config.imageBackground || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageBackground = v as any; updateCustomApiConfigs(u); }}
+                                value={(config.imageFunctionToolSettings?.params as any)?.background || 'auto'}
+                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), background: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
                               />
                             </div>
 
@@ -1165,8 +1162,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                   { name: 'jpeg', value: 'jpeg' },
                                   { name: 'webp', value: 'webp' },
                                 ]}
-                                value={config.imageFormat || 'none'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageFormat = v as any; updateCustomApiConfigs(u); }}
+                                value={(config.imageFunctionToolSettings?.params as any)?.format || 'none'}
+                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), format: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
                               />
                             </div>
 
@@ -1176,14 +1173,14 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 type="number"
                                 min={0}
                                 max={100}
-                                value={typeof config.imageCompression === 'number' ? String(config.imageCompression) : ''}
+                                value={typeof (config.imageFunctionToolSettings?.params as any)?.output_compression === 'number' ? String((config.imageFunctionToolSettings?.params as any).output_compression) : ''}
                                 placeholder={t('Only for jpeg/webp')}
                                 onChange={(e) => {
                                   const val = e.currentTarget.value
                                   const num = val === '' ? undefined : Math.max(0, Math.min(100, parseInt(val)))
                                   const u = [...customApiConfigs]
-                                  // @ts-ignore
-                                  u[index].imageCompression = typeof num === 'number' && !isNaN(num) ? num : undefined
+                                  const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), output_compression: num }
+                                  u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }
                                   updateCustomApiConfigs(u)
                                 }}
                               />
@@ -1197,20 +1194,20 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                   { name: t('low'), value: 'low' },
                                   { name: t('auto'), value: 'auto' },
                                 ]}
-                                value={config.imageModeration || 'default'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageModeration = v as any; updateCustomApiConfigs(u); }}
+                                value={(config.imageFunctionToolSettings?.params as any)?.moderation || 'default'}
+                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), moderation: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
                               />
                             </div>
 
                             <div className={formRowClass}>
                               <p className={labelClass}>Provider Params (JSON)</p>
                               <Textarea
-                                defaultValue={JSON.stringify(config.directImageBotSettings?.params || {}, null, 2)}
+                                defaultValue={JSON.stringify(config.imageFunctionToolSettings?.params || {}, null, 2)}
                                 onBlur={(e) => {
                                   try {
                                     const json = e.currentTarget.value.trim() ? JSON.parse(e.currentTarget.value) : {}
                                     const u = [...customApiConfigs]
-                                    u[index].directImageBotSettings = { ...(u[index].directImageBotSettings || {}), params: json }
+                                    u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params: json }
                                     updateCustomApiConfigs(u)
                                   } catch (err) {
                                     toast.error('Invalid JSON')
@@ -1221,15 +1218,15 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               <span className="text-xs opacity-70">Use any provider-specific keys. See docs/image generation.</span>
                             </div>
                           </div>
-                        )
-                        })()}
+                        )}
                       </div>
                     ) : null}
                   </div>
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
         <div className="flex justify-end mt-4">
           <Button size="small" text={t('Add New Model')} icon={<BiPlus />} onClick={addNewCustomModel} color="primary" />
