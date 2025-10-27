@@ -31,18 +31,29 @@ interface Props {
 
 const MAX_CUSTOM_MODELS = 50;
 
-// Helper function to filter image providers
+// Helper function to filter image providers (for Image Agent)
 const getImageProviders = (providerConfigs: any[]) => {
   return providerConfigs.filter(p => {
+    // New: Use outputType if available
+    if (p.outputType) {
+      return p.outputType === 'image';
+    }
+    // Fallback: Use legacy providerType for backward compatibility
     const tpe = p.providerType as ('chat'|'image'|'chat-image'|'image-agent'|undefined);
+    // Note: OpenAI_Image is excluded (it's a Text API with function calling)
     return tpe === 'image' || tpe === 'chat-image' ||
-           [CustomApiProvider.ChutesAI, CustomApiProvider.NovitaAI, CustomApiProvider.OpenAI_Image].includes(p.provider);
+           [CustomApiProvider.ChutesAI, CustomApiProvider.NovitaAI].includes(p.provider);
   });
 };
 
 // Helper function to filter chat providers
 const getChatProviders = (providerConfigs: any[]) => {
   return providerConfigs.filter(p => {
+    // New: Use outputType if available
+    if (p.outputType) {
+      return p.outputType === 'text';
+    }
+    // Fallback: Use legacy providerType for backward compatibility
     const tpe = p.providerType as ('chat'|'image'|'chat-image'|'image-agent'|undefined);
     return !tpe || tpe === 'chat' || tpe === 'chat-image';
   });
@@ -502,11 +513,124 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           />
                           <span className="text-xs opacity-70">{t('Chatbot to enhance/generate image prompts')}</span>
                         </div>
+
+                        {/* Image Model Selection */}
+                        <div className={formRowClass}>
+                          <p className={labelClass}>{t('Image Model')}</p>
+                          {(() => {
+                            const imageProvider = (userConfig.providerConfigs || []).find(
+                              p => p.id === config.agenticImageBotSettings?.imageGeneratorProviderId
+                            );
+                            const isNovita = imageProvider?.provider === CustomApiProvider.NovitaAI || /novita/i.test(imageProvider?.host || '');
+
+                            if (isNovita) {
+                              // Novita: Fixed list only
+                              return (
+                                <>
+                                  <Select
+                                    options={[
+                                      { name: 'Qwen Image', value: 'qwen-image' },
+                                      { name: 'Hunyuan Image 3', value: 'hunyuan-image-3' },
+                                      { name: 'Seedream 4.0', value: 'seedream-4-0' },
+                                    ]}
+                                    value={config.model || ''}
+                                    onChange={(v) => {
+                                      const u = [...customApiConfigs];
+                                      u[index].model = v;
+                                      updateCustomApiConfigs(u);
+                                    }}
+                                  />
+                                  <span className="text-xs opacity-70">{t('Select Novita model. Tool definition will be set automatically.')}</span>
+                                </>
+                              );
+                            } else {
+                              // Chutes or others: Free input with suggestions
+                              return (
+                                <>
+                                  <Input
+                                    value={config.model || ''}
+                                    onChange={(e) => {
+                                      const u = [...customApiConfigs];
+                                      u[index].model = e.currentTarget.value;
+                                      updateCustomApiConfigs(u);
+                                    }}
+                                    placeholder="chroma, FLUX.1-dev, etc."
+                                  />
+                                  <span className="text-xs opacity-70">
+                                    {t('Common models: chroma, FLUX.1-dev, FLUX.1-schnell. Tool definition will be auto-detected.')}
+                                  </span>
+                                </>
+                              );
+                            }
+                          })()}
+                        </div>
+
+                        {/* Tool Definition Editor */}
+                        <div className={formRowClass}>
+                          <div className="flex items-center justify-between">
+                            <p className={labelClass}>{t('Tool Definition (Advanced)')}</p>
+                            <button
+                              onClick={() => {
+                                const u = [...customApiConfigs];
+                                u[index].toolDefinition = undefined; // Clear to use auto-detected default
+                                updateCustomApiConfigs(u);
+                              }}
+                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              {t('Restore Default')}
+                            </button>
+                          </div>
+                          <textarea
+                            value={(() => {
+                              if (config.toolDefinition) {
+                                return JSON.stringify(config.toolDefinition, null, 2);
+                              }
+                              // Show auto-detected tool definition
+                              const imageProvider = (userConfig.providerConfigs || []).find(
+                                p => p.id === config.agenticImageBotSettings?.imageGeneratorProviderId
+                              );
+                              if (config.model && imageProvider) {
+                                const { getDefaultToolDefinition } = require('~services/image-tool-definitions');
+                                const toolDefMeta = getDefaultToolDefinition(config.model, imageProvider.provider);
+                                return JSON.stringify(toolDefMeta.definition, null, 2);
+                              }
+                              return '// Select Image Provider and Model first';
+                            })()}
+                            onChange={(e) => {
+                              const u = [...customApiConfigs];
+                              try {
+                                const parsed = JSON.parse(e.target.value);
+                                u[index].toolDefinition = parsed;
+                              } catch {
+                                // Invalid JSON - don't update
+                              }
+                              updateCustomApiConfigs(u);
+                            }}
+                            className={`w-full h-32 p-2 text-xs font-mono border border-gray-300 dark:border-gray-700 rounded ${
+                              config.toolDefinition ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'
+                            }`}
+                            placeholder={'{\n  "name": "generate_image",\n  "description": "...",\n  "input_schema": {...}\n}'}
+                            readOnly={!config.toolDefinition}
+                          />
+                          <span className="text-xs opacity-70">
+                            {config.toolDefinition
+                              ? t('Custom tool definition. Click "Restore Default" to use auto-detection.')
+                              : t('Auto-detected from model. Click in the text area and edit to customize.')}
+                          </span>
+                        </div>
                       </div>
                     )}
+
+                  {/* AI Model - Only show for non-Image-Agent bots */}
+                  {(() => {
+                    const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
+                    const effectiveProvider = providerRef?.provider ?? config.provider;
+                    if (effectiveProvider === CustomApiProvider.ImageAgent) return null;
+
+                    return (
                   <div className={formRowClass}>
                     <div className="flex items-center justify-between">
-                      <p className={labelClass}>{config.provider === CustomApiProvider.ImageAgent ? t('Image Model') : t('AI Model')}</p>
+                      <p className={labelClass}>{t('AI Model')}</p>
                       {isProviderSupported(config.provider) && (
                         <button
                           onClick={() => handleFetchSingleModel(index)}
@@ -544,6 +668,9 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       />
                     </div>
                   </div>
+                    );
+                  })()}
+
                   <div className={formRowClass}>
                     <div className="flex items-center justify-between">
                       <p className={labelClass}>{t('System Prompt')}</p>

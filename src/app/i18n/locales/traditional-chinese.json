@@ -1,4 +1,5 @@
 {
+  "image_only_response": "（僅圖像回應）",
   "Error Details": "錯誤詳情",
   "Developer Options (Dangerous)": "開發者選項（危險）",
   "Allow Only Specific Providers (OpenRouter)": "僅允許特定供應商 (OpenRouter)",

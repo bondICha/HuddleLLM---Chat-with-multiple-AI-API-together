@@ -1,7 +1,8 @@
 import { AbstractBot, SendMessageParams, ConversationHistory, Event } from '../abstract-bot'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { getUserConfig, CustomApiProvider } from '~services/user-config'
-import { generateWithChutes, generateWithNovita, IMAGE_GENERATION_TOOL_CLAUDE } from '~services/image-tools'
+import { getDefaultToolDefinition } from '~services/image-tool-definitions'
+import { generateImage } from '~services/image-api-client'
 import { createBotInstance } from '..'
 
 /**
@@ -10,8 +11,15 @@ import { createBotInstance } from '..'
  * This bot acts as a wrapper that:
  * 1. Takes a Prompt Generator Bot (e.g., Claude, GPT)
  * 2. Adds image generation tool definition to it
- * 3. Intercepts tool calls and generates images
- * 4. Returns images to the user
+ * 3. Passes user images to Prompt Bot (for Edit support or visual understanding)
+ * 4. Intercepts tool calls and generates images
+ * 5. Returns images to the user
+ *
+ * ARCHITECTURE:
+ * - Tool definitions are model-specific (defined in image-tool-definitions.ts)
+ * - Tool call arguments are passed directly to the API (no parameter mapping)
+ * - Edit support is determined by the tool definition metadata
+ * - For non-Edit models, Claude sees images and describes them in text prompt instead
  */
 export class ImageAgentBot extends AbstractBot {
   private conversationContext?: ConversationHistory
@@ -21,7 +29,7 @@ export class ImageAgentBot extends AbstractBot {
   }
 
   get supportsImageInput() {
-    return false // Focus on text-to-image for now
+    return true // Phase A: Supports image input for editing or visual understanding
   }
 
   public setConversationHistory(history: ConversationHistory): void {
@@ -55,12 +63,23 @@ export class ImageAgentBot extends AbstractBot {
 
       const imageApiKey = imageProviderRef.apiKey
       const imageHost = imageProviderRef.host
-      const imageModel = custom.model || 'FLUX.1-dev'
-      const imageDialect = custom.imageScheme || (imageProviderRef as any).imageDialect || 'sd'
+      const imageModel = custom.model || 'chroma'
+      const imageProvider = imageProviderRef.provider
 
       if (!imageApiKey) {
         throw new ChatError('Image Provider API key not set', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
       }
+
+      // Get tool definition (from config or auto-detect from model)
+      const toolDefMeta = custom.toolDefinition
+        ? {
+            definition: custom.toolDefinition,
+            supportsEdit: false,
+            endpointSelector: undefined
+          }
+        : getDefaultToolDefinition(imageModel, imageProvider)
+
+      const userImages = params.images || []
 
       // Get Prompt Generator Bot
       const promptGenIndex = settings.promptGeneratorBotIndex
@@ -84,16 +103,30 @@ export class ImageAgentBot extends AbstractBot {
         throw new ChatError('Image Agent currently only supports Claude as Prompt Generator Bot', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
       }
 
-      // Inject tools into the bot and modify system prompt
+      // Inject tool definition into the bot (await for initialization to complete)
       if (typeof (promptBot as any).setTools === 'function') {
-        (promptBot as any).setTools([IMAGE_GENERATION_TOOL_CLAUDE])
+        await (promptBot as any).setTools([toolDefMeta.definition])
       }
 
+      // Modify system prompt with tool usage instructions
       const originalSystemMessage = (promptBot as any).getSystemMessage?.() || ''
-      const toolInstruction = `\n\nYou have access to an image generation tool called 'generate_image'. When the user asks you to create, generate, make, or show an image, you MUST use this tool. Do not describe or imagine the image in text - actually generate it using the tool.`
+      let toolInstruction = `\n\nYou have access to an image generation tool called 'generate_image'. When the user asks you to create, generate, make, or show an image, you MUST use this tool. Do not describe or imagine the image in text - actually generate it using the tool.`
+
+      // Add image-specific instructions if user provided images
+      if (userImages.length > 0) {
+        if (toolDefMeta.supportsEdit) {
+          toolInstruction += `\n\nThe user has provided ${userImages.length} image(s). You can edit these images by including them in the 'images' parameter of the generate_image tool call. The images are available to you for analysis.`
+        } else {
+          toolInstruction += `\n\n⚠️ IMPORTANT: The user has provided ${userImages.length} image(s), but this model (${imageModel}) does NOT support image editing. You CANNOT include images in the tool call parameters. Instead:
+1. Carefully examine the provided images
+2. Describe key visual elements (objects, colors, composition, style) in your text prompt
+3. Use rich textual descriptions to approximate what the user wants`
+        }
+      }
+
       if (typeof (promptBot as any).setSystemMessage === 'function') {
-        if (!originalSystemMessage.includes(`generate_image`)) {
-          (promptBot as any).setSystemMessage(originalSystemMessage + toolInstruction)
+        if (!originalSystemMessage.includes('generate_image')) {
+          await (promptBot as any).setSystemMessage(originalSystemMessage + toolInstruction)
         }
       }
 
@@ -104,8 +137,6 @@ export class ImageAgentBot extends AbstractBot {
 
       let toolCallDetected = false
       let lastTextUpdate = ''
-
-      const overrides = custom.imageGeneration
 
       const wrappedParams: SendMessageParams = {
         ...params,
@@ -123,68 +154,45 @@ export class ImageAgentBot extends AbstractBot {
             }
 
             try {
-              // Extract parameters
-              const prompt = args.prompt || params.prompt
-              const negativePrompt = args.negative_prompt || settings.negativePrompt || overrides?.negativePrompt
-              const width = args.width || settings.defaultWidth || overrides?.defaultWidth || 1024
-              const height = args.height || settings.defaultHeight || overrides?.defaultHeight || 1024
-              const steps = args.steps || settings.inferenceSteps || overrides?.inferenceSteps || 20
-              const guidanceScale = args.guidance_scale || settings.guidanceScale || overrides?.guidanceScale || 7.5
-              const seed = args.seed ?? settings.seed ?? overrides?.seed
+              // Use tool call arguments directly (they match the API format)
+              const apiBody: any = { ...args }
 
-              // Prepare generation parameters
-              const generationParams: any = {
-                model: imageModel,
-                prompt,
-                width,
-                height,
-                num_inference_steps: steps,
-                guidance_scale: guidanceScale,
-              }
-              if (negativePrompt) generationParams.negative_prompt = negativePrompt
-              if (typeof seed === 'number') generationParams.seed = seed
-
-              // Generate image
-              let imageUrl = ''
-              if (imageDialect === 'sd' || /chutes/i.test(imageHost || '')) {
-                imageUrl = await generateWithChutes({
-                  host: imageHost,
-                  apiKey: imageApiKey,
-                  model: imageModel,
-                  prompt,
-                  negativePrompt,
-                  width,
-                  height,
-                  steps,
-                  guidanceScale,
-                  seed,
-                  signal: params.signal,
-                })
-              } else if (imageDialect === 'novita' || /novita/i.test(imageHost || '')) {
-                imageUrl = await generateWithNovita({
-                  host: imageHost,
-                  apiKey: imageApiKey,
-                  model: imageModel,
-                  prompt,
-                  negativePrompt,
-                  width,
-                  height,
-                  steps,
-                  guidanceScale,
-                  seed,
-                  signal: params.signal,
-                })
-              } else {
-                throw new ChatError(`Unsupported image dialect: ${imageDialect}`, ErrorCode.UNKOWN_ERROR)
+              // Add model field for Chutes API (they require it in the body)
+              if (/chutes/i.test(imageHost || '')) {
+                apiBody.model = imageModel
               }
 
-              // Return image as markdown
+              // Show generation parameters immediately (before image generation)
+              const paramsJson = `\`\`\`json\n${JSON.stringify(apiBody, null, 2)}\n\`\`\``
+              const generatingText = lastTextUpdate
+                ? `${lastTextUpdate}\n\n⏳ Generating image...\n\n${paramsJson}`
+                : `⏳ Generating image...\n\n${paramsJson}`
+
+              params.onEvent({
+                type: 'UPDATE_ANSWER',
+                data: { text: generatingText },
+              })
+
+              // Determine endpoint
+              const hasImages = (apiBody.images && Array.isArray(apiBody.images) && apiBody.images.length > 0)
+              const endpoint = toolDefMeta.endpointSelector
+                ? toolDefMeta.endpointSelector(hasImages, imageHost)
+                : imageHost
+
+              // Determine if async API (Novita uses async pattern)
+              const isAsync = /novita/i.test(imageHost || '')
+
+              // Generate image using unified API client
+              const imageUrl = await generateImage({
+                endpoint,
+                apiKey: imageApiKey,
+                body: apiBody,
+                signal: params.signal,
+                isAsync,
+              })
+
+              // Update with image (replace "Generating..." with actual image)
               const markdown = `![Generated Image](${imageUrl})`
-
-              // Show generation parameters
-              const paramsJson = `\`\`\`json\n${JSON.stringify(generationParams, null, 2)}\n\`\`\``
-
-              // Update with any text that came before + image + params
               const finalText = lastTextUpdate
                 ? `${lastTextUpdate}\n\n${markdown}\n\n${paramsJson}`
                 : `${markdown}\n\n${paramsJson}`
@@ -217,8 +225,12 @@ export class ImageAgentBot extends AbstractBot {
         },
       }
 
-      // Call the prompt bot
-      await promptBot.doSendMessage(wrappedParams)
+      // Call the prompt bot with user images
+      // IMPORTANT: Pass images so Claude can see them (for Edit mode or visual understanding)
+      await promptBot.doSendMessage({
+        ...wrappedParams,
+        images: userImages,  // Pass through user's images
+      })
 
       if (!toolCallDetected) {
         params.onEvent({ type: 'DONE' })
@@ -231,12 +243,13 @@ export class ImageAgentBot extends AbstractBot {
         }
       }
 
+      // Cleanup: restore original state
       if (typeof (promptBot as any).setSystemMessage === 'function') {
-        (promptBot as any).setSystemMessage(originalSystemMessage)
+        await (promptBot as any).setSystemMessage(originalSystemMessage)
       }
 
       if (typeof (promptBot as any).setTools === 'function') {
-        (promptBot as any).setTools([])
+        await (promptBot as any).setTools([])
       }
     } catch (error) {
       params.onEvent({

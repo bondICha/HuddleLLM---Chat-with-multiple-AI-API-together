@@ -17,6 +17,25 @@ const CUSTOM_API_CONFIG_PREFIX = 'customApiConfig_';
  * API Providerの設定インターフェース
  * 複数のProvider設定を管理する型定義
  */
+/**
+ * Tool definition for function calling (Claude format)
+ */
+export interface ToolDefinition {
+  name: string;
+  description: string;
+  input_schema: {
+    type: 'object';
+    properties: Record<string, {
+      type: string;
+      description?: string;
+      default?: any;
+      enum?: string[];
+      items?: { type: string };  // For array types
+    }>;
+    required?: string[];
+  };
+}
+
 export interface ProviderConfig {
   /** ID（UUID形式など） */
   id: string;
@@ -38,9 +57,11 @@ export interface ProviderConfig {
   AuthMode?: 'header' | 'default';
   /** 高度な設定 */
   advancedConfig?: AdvancedConfig;
-  /** Providerの種別: 'chat' | 'image' | 'chat-image' | 'image-agent' */
+  /** Output data type: 'text' for chat/completion, 'image' for image generation */
+  outputType?: 'text' | 'image';
+  /** @deprecated Use outputType instead. Providerの種別: 'chat' | 'image' | 'chat-image' | 'image-agent' */
   providerType?: 'chat' | 'chat-image' | 'image-agent';
-  /** 画像APIのダイアレクト（Agent/Direct双方で使用可能） */
+  /** @deprecated Will be replaced by model-specific tool definitions. 画像APIのダイアレクト（Agent/Direct双方で使用可能） */
   imageDialect?: 'sd' | 'novita' | 'openai_responses' | 'openrouter_image' | 'qwen_openai' | 'seedream_openai' | 'custom';
 }
 
@@ -188,7 +209,9 @@ export interface CustomApiConfig {
   directImageBotSettings?: DirectImageBotSettings;
   /** [パターン2] Agentic画像生成ボット設定（雛形） */
   agenticImageBotSettings?: AgenticImageBotSettings;
-  /** Image Agent 用のスキーム（Providerのdialectを上書き可能） */
+  /** Tool definition for image generation (used with Image Agent) */
+  toolDefinition?: ToolDefinition;
+  /** @deprecated Will be replaced by toolDefinition. Image Agent 用のスキーム（Providerのdialectを上書き可能） */
   imageScheme?: 'sd' | 'novita' | 'openai_responses' | 'openrouter_image' | 'qwen_openai' | 'seedream_openai' | 'custom';
   // --- Legacy image fields (kept for UI/backward compatibility; migrated into directImageBotSettings.params) ---
   imageSize?: '1024x1024' | '1024x1536' | '1536x1024' | 'auto';

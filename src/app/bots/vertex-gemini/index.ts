@@ -3,6 +3,7 @@ import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract
 import { ChatError, ErrorCode } from '~utils/errors'
 import { file2base64 } from '~app/utils/file-utils'
 import { uuid } from '~utils'
+import i18n from '~app/i18n'
 
 type Part =
   | { text: string; thought?: boolean }
@@ -213,7 +214,7 @@ export class VertexGeminiBot extends AbstractBot {
       imageMarkdown = imgBuf.length ? `\n\n${imgBuf.join('\n\n')}` : ''
     } catch {}
 
-    if (!finalText) finalText = 'Empty response'
+    if (!finalText) finalText = i18n.t('image_only_response')
     this.conversationContext.messages.push(userContent)
     this.conversationContext.messages.push({ role: 'model', parts: [{ text: finalText }] })
     // Append images only for UI display, not for stored history

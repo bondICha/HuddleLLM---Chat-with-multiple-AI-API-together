@@ -1,4 +1,5 @@
 {
+  "image_only_response": "（画像のみのレスポンス）",
   "Error Details": "詳細エラーメッセージ",
   "Developer Options (Dangerous)": "開発者用オプション（危険）",
   "Allow Only Specific Providers (OpenRouter)": "許可するプロバイダーを限定 (OpenRouter)",

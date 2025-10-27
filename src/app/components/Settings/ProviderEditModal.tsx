@@ -11,6 +11,7 @@ import HostSearchInput from './HostSearchInput';
 import BotIcon from '../BotIcon';
 import IconSelectModal from './IconSelectModal';
 import ModelPreview from './ModelPreview';
+import { HiChatBubbleLeftRight, HiPhoto } from 'react-icons/hi2';
 
 interface Props {
   open: boolean;
@@ -91,11 +92,59 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
             </div>
           </div>
 
-          {/* API Scheme */}
+          {/* Output Data Type Tabs */}
+          <div className={formRowClass}>
+            <p className={labelClass}>{t('Output Data Type')}</p>
+            <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setEditingProvider({ ...editingProvider, outputType: 'text' })}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
+                  (editingProvider.outputType || 'text') === 'text'
+                    ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                <HiChatBubbleLeftRight className="w-4 h-4" />
+                Text
+              </button>
+              <button
+                onClick={() => setEditingProvider({ ...editingProvider, outputType: 'image' })}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
+                  editingProvider.outputType === 'image'
+                    ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                <HiPhoto className="w-4 h-4" />
+                Image (used by Image Agent)
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {editingProvider.outputType === 'image'
+                ? t('Dedicated image generation API. Used by Image Agent chatbot via Tool Call.')
+                : t('Chat/Completion API. For image generation (e.g., Nanobanana, OpenAI Responses), select Text.')}
+            </p>
+          </div>
+
+          {/* API Scheme - filtered by Output Type */}
           <div className={formRowClass}>
             <p className={labelClass}>{t('API Scheme')}</p>
             <Select
-              options={getApiSchemeOptions()}
+              options={getApiSchemeOptions().filter(opt => {
+                const isImageScheme = [
+                  CustomApiProvider.ChutesAI,
+                  CustomApiProvider.NovitaAI,
+                ].includes(opt.value);
+
+                const isImageAgent = opt.value === CustomApiProvider.ImageAgent;
+
+                // Filter based on selected output type
+                if (editingProvider.outputType === 'image') {
+                  return isImageScheme; // Only show image-specific schemes
+                } else {
+                  return !isImageScheme && !isImageAgent; // Show text schemes (exclude pure image and agent)
+                }
+              })}
               value={editingProvider.provider || CustomApiProvider.OpenAI}
               onChange={(v) => {
                 const next = { ...editingProvider, provider: v as CustomApiProvider };
@@ -106,44 +155,17 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
                 if (v === CustomApiProvider.VertexAI_Gemini || v === CustomApiProvider.Google) {
                   next.AuthMode = next.AuthMode || 'header';
                 }
+                // Set default hosts for image providers
+                if (v === CustomApiProvider.NovitaAI && !next.host) {
+                  next.host = 'https://api.novita.ai';
+                }
+                if (v === CustomApiProvider.ChutesAI && !next.host) {
+                  next.host = 'https://image.chutes.ai';
+                }
                 setEditingProvider(next);
               }}
             />
           </div>
-
-          {/* Provider Type */}
-          <div className={formRowClass}>
-            <p className={labelClass}>{t('Provider Type')}</p>
-            <Select
-              options={[
-                { name: 'Chat', value: 'chat' },
-                { name: 'Image Generation', value: 'image' },
-                { name: 'Chat+Image (e.g. nanobanana, openai-image-response)', value: 'chat-image' },
-              ]}
-              value={editingProvider.providerType || 'chat'}
-              onChange={(v) => setEditingProvider({ ...editingProvider, providerType: v as any })}
-            />
-          </div>
-
-          {/* Image Scheme (for image/chat-image providers) */}
-          {(['image','chat-image'] as any[]).includes(editingProvider.providerType) && (
-            <div className={formRowClass}>
-              <p className={labelClass}>{t('Image Scheme')}</p>
-              <Select
-                options={[
-                  { name: 'Stable Diffusion / Chutes (sd)', value: 'sd' },
-                  { name: 'Novita (novita)', value: 'novita' },
-                  { name: 'OpenAI Responses (openai_responses)', value: 'openai_responses' },
-                  { name: 'OpenRouter Image (openrouter_image)', value: 'openrouter_image' },
-                  { name: 'Qwen (OpenAI compat) (qwen_openai)', value: 'qwen_openai' },
-                  { name: 'Seedream (OpenAI compat) (seedream_openai)', value: 'seedream_openai' },
-                  { name: 'Custom', value: 'custom' },
-                ]}
-                value={(editingProvider as any).imageDialect || 'sd'}
-                onChange={(v) => setEditingProvider({ ...(editingProvider as any), imageDialect: v as any })}
-              />
-            </div>
-          )}
 
           {/* Anthropic Auth Header */}
           {editingProvider.provider === CustomApiProvider.Anthropic && (
@@ -203,6 +225,8 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
               <HostSearchInput
                   className='w-full'
                   placeholder={
+                  editingProvider.provider === CustomApiProvider.NovitaAI ? "https://api.novita.ai" :
+                  editingProvider.provider === CustomApiProvider.ChutesAI ? "https://image.chutes.ai" :
                   editingProvider.provider === CustomApiProvider.OpenRouter ? "https://openrouter.ai/api" :
                   editingProvider.provider === CustomApiProvider.Google ? t("Not applicable for Google Gemini") :
                   editingProvider.provider === CustomApiProvider.GeminiOpenAI ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" :
@@ -232,6 +256,11 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
                       </p>
                     )}
                   </>
+                )}
+                {editingProvider.outputType === 'image' && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    ℹ️ {t('Base URL only. Specific endpoints (e.g., /v3/async/qwen-image-txt2img) are automatically selected based on the model.')}
+                  </p>
                 )}
               </div>
               {editingProvider.provider !== CustomApiProvider.VertexAI_Claude && editingProvider.provider !== CustomApiProvider.GeminiOpenAI && (

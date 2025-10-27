@@ -342,7 +342,12 @@ export abstract class AsyncAbstractBot extends AbstractBot {
   }
 
   // System message setter for dynamic updates
-  setSystemMessage(systemMessage: string) {
+  async setSystemMessage(systemMessage: string) {
+    // Wait for initialization to complete
+    while (this.#bot instanceof DummyBot && !this.#initializeError) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
     if (!(this.#bot instanceof DummyBot) && this.#bot.setSystemMessage) {
       this.#bot.setSystemMessage(systemMessage);
     }
@@ -355,7 +360,12 @@ export abstract class AsyncAbstractBot extends AbstractBot {
     return undefined
   }
 
-  setTools(tools: any[]) {
+  async setTools(tools: any[]) {
+    // Wait for initialization to complete
+    while (this.#bot instanceof DummyBot && !this.#initializeError) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
     if (!(this.#bot instanceof DummyBot) && typeof (this.#bot as any).setTools === 'function') {
       (this.#bot as any).setTools(tools)
     }
