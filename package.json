@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "package": "yarn build && node scripts/zip.mjs"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "2.0.0-beta.32",
@@ -46,7 +47,8 @@
     "ts-jest": "^29.2.6",
     "typescript": "^5.3.3",
     "vite": "5.4.11",
-    "vite-tsconfig-paths": "^4.2.2"
+    "vite-tsconfig-paths": "^4.2.2",
+    "zip-a-folder": "^3.1.9"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.755.0",
