@@ -313,12 +313,14 @@ async function _migrateCustomApiConfigsFromSyncToLocal(): Promise<CustomApiConfi
 
 export async function getUserConfig(): Promise<UserConfig> {
   try {
-    // 1. customApiConfigs を local から取得
-    const localData = await Browser.storage.local.get('customApiConfigs');
+    // 1. Local storage から取得する項目 (端末固有の設定)
+    const localKeys = ['customApiConfigs', 'savedChatPairs'];
+    const localData = await Browser.storage.local.get(localKeys);
     let customConfigsInLocal: CustomApiConfig[] | undefined = localData.customApiConfigs;
+    let chatPairsInLocal: ChatPair[] | undefined = localData.savedChatPairs;
 
-    // 2. その他の設定を sync から取得 (customApiConfigs を除く)
-    const syncKeysToGet = Object.keys(userConfigWithDefaultValue).filter(k => k !== 'customApiConfigs');
+    // 2. その他の設定を sync から取得
+    const syncKeysToGet = Object.keys(userConfigWithDefaultValue).filter(k => !localKeys.includes(k));
     const syncData = await Browser.storage.sync.get(syncKeysToGet);
 
     let finalConfig = defaults({}, syncData, userConfigWithDefaultValue);
@@ -333,6 +335,7 @@ export async function getUserConfig(): Promise<UserConfig> {
 
     finalConfig.customApiConfigs = customConfigsInLocal || [...defaultCustomApiConfigs];
     finalConfig.providerConfigs = syncData.providerConfigs || [];
+    finalConfig.savedChatPairs = chatPairsInLocal || [];
     
     if (finalConfig.customApiConfigs) {
       finalConfig.customApiConfigs.forEach((config: CustomApiConfig) => {
@@ -482,17 +485,31 @@ export async function getUserConfig(): Promise<UserConfig> {
  */
 export async function updateUserConfig(updates: Partial<UserConfig>) {
   try {
-    const { customApiConfigs, providerConfigs, ...otherUpdates } = updates;
+    const { customApiConfigs, providerConfigs, savedChatPairs, ...otherUpdates } = updates;
 
-    // 1. customApiConfigs を local に保存 (存在する場合)
-    if (customApiConfigs !== undefined) { // null や空配列も保存対象とするため、undefined のみチェック
+    // 1. Local storage に保存する項目 (端末固有の設定)
+    const localUpdates: Record<string, any> = {};
+
+    // customApiConfigs を local に保存
+    if (customApiConfigs !== undefined) {
       if (Array.isArray(customApiConfigs)) {
-        const limitedConfigs = customApiConfigs.slice(0, MAX_CUSTOM_MODELS);
-        await Browser.storage.local.set({ customApiConfigs: limitedConfigs });
+        localUpdates.customApiConfigs = customApiConfigs.slice(0, MAX_CUSTOM_MODELS);
       } else {
-        // customApiConfigs が配列でない不正なケース (例: null)
-        await Browser.storage.local.set({ customApiConfigs: [] }); // 空配列として保存
+        localUpdates.customApiConfigs = [];
       }
+    }
+
+    // savedChatPairs を local に保存 (端末ごとの設定)
+    if (savedChatPairs !== undefined) {
+      if (Array.isArray(savedChatPairs)) {
+        localUpdates.savedChatPairs = savedChatPairs;
+      } else {
+        localUpdates.savedChatPairs = [];
+      }
+    }
+
+    if (Object.keys(localUpdates).length > 0) {
+      await Browser.storage.local.set(localUpdates);
     }
 
     // 2. providerConfigs を sync に保存 (存在する場合)
