@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { BiPlus, BiTrash, BiHide, BiShow, BiPencil, BiChevronDown, BiExpand } from 'react-icons/bi';
 import toast from 'react-hot-toast';
 import { cx } from '~/utils';
-import { UserConfig, CustomApiProvider, CustomApiConfig, SystemPromptMode, MODEL_LIST } from '~services/user-config';
+import { UserConfig, CustomApiProvider, CustomApiConfig, SystemPromptMode, MODEL_LIST, type ProviderConfig } from '~services/user-config';
+import { getDefaultImageModel } from '~services/image-tool-definitions';
 import { Input, Textarea } from '../Input';
 import Select from '../Select';
 import Switch from '../Switch';
@@ -31,32 +32,15 @@ interface Props {
 
 const MAX_CUSTOM_MODELS = 50;
 
-// Helper function to filter image providers (for Image Agent)
-const getImageProviders = (providerConfigs: any[]) => {
-  return providerConfigs.filter(p => {
-    // New: Use outputType if available
-    if (p.outputType) {
-      return p.outputType === 'image';
-    }
-    // Fallback: Use legacy providerType for backward compatibility
-    const tpe = p.providerType as ('chat'|'image'|'chat-image'|'image-agent'|undefined);
-    // Note: OpenAI_Image is excluded (it's a Text API with function calling)
-    return tpe === 'image' || tpe === 'chat-image' ||
-           [CustomApiProvider.ChutesAI, CustomApiProvider.NovitaAI].includes(p.provider);
-  });
+// Helper function to filter image providers (for Image Agent).
+// Only providers explicitly marked as image output are considered image-only.
+const getImageProviders = (providerConfigs: ProviderConfig[]) => {
+  return providerConfigs.filter(p => p.outputType === 'image');
 };
 
-// Helper function to filter chat providers
-const getChatProviders = (providerConfigs: any[]) => {
-  return providerConfigs.filter(p => {
-    // New: Use outputType if available
-    if (p.outputType) {
-      return p.outputType === 'text';
-    }
-    // Fallback: Use legacy providerType for backward compatibility
-    const tpe = p.providerType as ('chat'|'image'|'chat-image'|'image-agent'|undefined);
-    return !tpe || tpe === 'chat' || tpe === 'chat-image';
-  });
+// Helper function to filter chat providers (text or mixed via tool calling).
+const getChatProviders = (providerConfigs: ProviderConfig[]) => {
+  return providerConfigs.filter(p => p.outputType !== 'image');
 };
 
 const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
@@ -360,6 +344,27 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             const showImageSettings = isImageLikeProvider || isImageAgent;
             // ========== End Conditional Flags ==========
 
+            const linkedImageProvider = (userConfig.providerConfigs || []).find(
+              p => p.id === config.agenticImageBotSettings?.imageGeneratorProviderId
+            );
+
+            const imageAgentMeta = (() => {
+              if (!isImageAgent || !config.model || !linkedImageProvider) {
+                return null;
+              }
+              const imageModelConfig = getDefaultImageModel(config.model, linkedImageProvider.provider);
+              const host = (linkedImageProvider.host || '').trim();
+              const endpoint = typeof imageModelConfig.apiConfig.endpoint === 'function'
+                ? imageModelConfig.apiConfig.endpoint(false, host)
+                : imageModelConfig.apiConfig.endpoint || host;
+              return {
+                supportsEdit: imageModelConfig.apiConfig.supportsEdit,
+                endpoint,
+                hasHost: host.length > 0,
+                isAsync: imageModelConfig.apiConfig.isAsync,
+              };
+            })();
+
             return (
             <div key={config.id || index} className={cx("bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(255,255,255,0.07),0_4px_6px_-2px_rgba(255,255,255,0.04)] transition-all hover:shadow-xl dark:hover:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1),0_10px_10px_-5px_rgba(255,255,255,0.04)]")}>
               <div className="grid grid-cols-[60px_1fr_140px] items-center p-4 border-b border-white/20 dark:border-white/10 gap-2">
@@ -639,9 +644,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 p => p.id === config.agenticImageBotSettings?.imageGeneratorProviderId
                               );
                               if (config.model && imageProvider) {
-                                const { getDefaultToolDefinition } = require('~services/image-tool-definitions');
-                                const toolDefMeta = getDefaultToolDefinition(config.model, imageProvider.provider);
-                                return JSON.stringify(toolDefMeta.definition, null, 2);
+                                const imageModelConfig = getDefaultImageModel(config.model, imageProvider.provider);
+                                return JSON.stringify(imageModelConfig.toolDefinition, null, 2);
                               }
                               return '// Select Image Provider and Model first';
                             })()}
@@ -1072,151 +1076,141 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                         )}
                         {showImageSettings && (
-                            <div className="space-y-4">
-                            {isImageAgent && (
+                          <div className="space-y-4">
+                            {isImageAgent ? (
+                              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
+                                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('Image Provider Capabilities')}</p>
+                                <div className="flex justify-between text-sm">
+                                  <span className="opacity-70">{t('Edit Support')}</span>
+                                  <span className="font-medium">
+                                    {!linkedImageProvider || !config.model
+                                      ? t('Select provider and model')
+                                      : imageAgentMeta?.supportsEdit
+                                        ? t('Enabled')
+                                        : t('Disabled')}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="opacity-70">{t('API Type')}</span>
+                                  <span className="font-medium">
+                                    {!linkedImageProvider || !config.model
+                                      ? t('Select provider and model')
+                                      : imageAgentMeta?.isAsync
+                                        ? t('Async (task polling)')
+                                        : t('Synchronous response')}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="opacity-70">{t('Endpoint Preview')}</span>
+                                  <span className="font-medium text-right break-all">
+                                    {!linkedImageProvider || !config.model
+                                      ? t('Select provider and model')
+                                      : imageAgentMeta?.hasHost
+                                        ? imageAgentMeta?.endpoint || t('Configured')
+                                        : t('Set provider host to preview')}
+                                  </span>
+                                </div>
+                                <p className="text-xs opacity-70">
+                                  {t('Adjust tool parameters inside Tool Definition (Advanced) above.')}
+                                </p>
+                              </div>
+                            ) : (
                               <>
                                 <div className={formRowClass}>
-                                  <p className={labelClass}>{t('Negative Prompt')}</p>
-                                  <Textarea
-                                    value={config.agenticImageBotSettings?.negativePrompt || ''}
-                                    onChange={(e) => {
-                                      const u = [...customApiConfigs];
-                                      u[index].agenticImageBotSettings = {
-                                        ...(u[index].agenticImageBotSettings || {}),
-                                        negativePrompt: e.currentTarget.value
-                                      };
-                                      updateCustomApiConfigs(u);
-                                    }}
-                                    placeholder="blur, low quality, distortion"
-                                  />
-                                  <span className="text-xs opacity-70">{t('Describe what you don\'t want in the image')}</span>
-                                </div>
-                                <div className={formRowClass}>
-                                  <p className={labelClass}>{t('Image Scheme (override)')}</p>
+                                  <p className={labelClass}>{t('Image Size')}</p>
                                   <Select
                                     options={[
-                                      { name: t('Follow Provider'), value: 'provider' },
-                                      { name: 'Stable Diffusion / Chutes (sd)', value: 'sd' },
-                                      { name: 'Novita (novita)', value: 'novita' },
-                                      { name: 'OpenAI Responses (openai_responses)', value: 'openai_responses' },
-                                      { name: 'OpenRouter Image (openrouter_image)', value: 'openrouter_image' },
-                                      { name: 'Qwen (OpenAI compat) (qwen_openai)', value: 'qwen_openai' },
-                                      { name: 'Seedream (OpenAI compat) (seedream_openai)', value: 'seedream_openai' },
-                                      { name: 'Custom', value: 'custom' },
+                                      { name: t('auto'), value: 'auto' },
+                                      { name: '1024x1024', value: '1024x1024' },
+                                      { name: `1024x1536 ${t('portrait-suffix')}`, value: '1024x1536' },
+                                      { name: `1536x1024 ${t('landscape-suffix')}`, value: '1536x1024' },
                                     ]}
-                                    value={(config.imageScheme || 'provider') as any}
-                                    onChange={(v) => { const u = [...customApiConfigs]; u[index].imageScheme = (v === 'provider' ? undefined : (v as any)); updateCustomApiConfigs(u); }}
+                                    value={(config.imageFunctionToolSettings?.params as any)?.size || 'auto'}
+                                    onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), size: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
                                   />
-                                  <span className="text-xs opacity-70">{t('Override the provider dialect if needed')}</span>
+                                </div>
+
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>{t('Image Quality')}</p>
+                                  <Select
+                                    options={[
+                                      { name: t('auto'), value: 'auto' },
+                                      { name: t('low'), value: 'low' },
+                                      { name: t('medium'), value: 'medium' },
+                                      { name: t('high'), value: 'high' },
+                                      { name: 'standard', value: 'standard' },
+                                      { name: 'hd', value: 'hd' },
+                                    ]}
+                                    value={(config.imageFunctionToolSettings?.params as any)?.quality || 'auto'}
+                                    onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), quality: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
+                                  />
+                                </div>
+
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>{t('Background')}</p>
+                                  <Select
+                                    options={[
+                                      { name: t('auto'), value: 'auto' },
+                                      { name: t('transparent'), value: 'transparent' },
+                                    ]}
+                                    value={(config.imageFunctionToolSettings?.params as any)?.background || 'auto'}
+                                    onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), background: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
+                                  />
+                                </div>
+
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>{t('Output Format')}</p>
+                                  <Select
+                                    options={[
+                                      { name: 'none (default)', value: 'none' },
+                                      { name: 'png', value: 'png' },
+                                      { name: 'jpeg', value: 'jpeg' },
+                                      { name: 'webp', value: 'webp' },
+                                    ]}
+                                    value={(config.imageFunctionToolSettings?.params as any)?.format || 'none'}
+                                    onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), format: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
+                                  />
+                                </div>
+
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>{t('Compression (0-100)')}</p>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    value={typeof (config.imageFunctionToolSettings?.params as any)?.output_compression === 'number' ? String((config.imageFunctionToolSettings?.params as any).output_compression) : ''}
+                                    placeholder={t('Only for jpeg/webp')}
+                                    onChange={(e) => {
+                                      const val = e.currentTarget.value
+                                      const num = val === '' ? undefined : Math.max(0, Math.min(100, parseInt(val)))
+                                      const u = [...customApiConfigs]
+                                      const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), output_compression: num }
+                                      u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }
+                                      updateCustomApiConfigs(u)
+                                    }}
+                                  />
+                                </div>
+
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>Provider Params (JSON)</p>
+                                  <Textarea
+                                    defaultValue={JSON.stringify(config.imageFunctionToolSettings?.params || {}, null, 2)}
+                                    onBlur={(e) => {
+                                      try {
+                                        const json = e.currentTarget.value.trim() ? JSON.parse(e.currentTarget.value) : {}
+                                        const u = [...customApiConfigs]
+                                        u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params: json }
+                                        updateCustomApiConfigs(u)
+                                      } catch (err) {
+                                        toast.error('Invalid JSON')
+                                      }
+                                    }}
+                                    placeholder={`{\n  \"size\": \"1024x1024\",\n  \"quality\": \"high\"\n}`}
+                                  />
+                                  <span className="text-xs opacity-70">Use any provider-specific keys. See docs/image generation.</span>
                                 </div>
                               </>
                             )}
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Image Size')}</p>
-                              <Select
-                                options={[
-                                  { name: t('auto'), value: 'auto' },
-                                  { name: '1024x1024', value: '1024x1024' },
-                                  { name: `1024x1536 ${t('portrait-suffix')}`, value: '1024x1536' },
-                                  { name: `1536x1024 ${t('landscape-suffix')}`, value: '1536x1024' },
-                                ]}
-                                value={(config.imageFunctionToolSettings?.params as any)?.size || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), size: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Image Quality')}</p>
-                              <Select
-                                options={[
-                                  { name: t('auto'), value: 'auto' },
-                                  { name: t('low'), value: 'low' },
-                                  { name: t('medium'), value: 'medium' },
-                                  { name: t('high'), value: 'high' },
-                                  { name: 'standard', value: 'standard' },
-                                  { name: 'hd', value: 'hd' },
-                                ]}
-                                value={(config.imageFunctionToolSettings?.params as any)?.quality || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), quality: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Background')}</p>
-                              <Select
-                                options={[
-                                  { name: t('auto'), value: 'auto' },
-                                  { name: t('transparent'), value: 'transparent' },
-                                ]}
-                                value={(config.imageFunctionToolSettings?.params as any)?.background || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), background: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Output Format')}</p>
-                              <Select
-                                options={[
-                                  { name: 'none (default)', value: 'none' },
-                                  { name: 'png', value: 'png' },
-                                  { name: 'jpeg', value: 'jpeg' },
-                                  { name: 'webp', value: 'webp' },
-                                ]}
-                                value={(config.imageFunctionToolSettings?.params as any)?.format || 'none'}
-                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), format: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Compression (0-100)')}</p>
-                              <Input
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={typeof (config.imageFunctionToolSettings?.params as any)?.output_compression === 'number' ? String((config.imageFunctionToolSettings?.params as any).output_compression) : ''}
-                                placeholder={t('Only for jpeg/webp')}
-                                onChange={(e) => {
-                                  const val = e.currentTarget.value
-                                  const num = val === '' ? undefined : Math.max(0, Math.min(100, parseInt(val)))
-                                  const u = [...customApiConfigs]
-                                  const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), output_compression: num }
-                                  u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }
-                                  updateCustomApiConfigs(u)
-                                }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Moderation')}</p>
-                              <Select
-                                options={[
-                                  { name: t('default'), value: 'default' },
-                                  { name: t('low'), value: 'low' },
-                                  { name: t('auto'), value: 'auto' },
-                                ]}
-                                value={(config.imageFunctionToolSettings?.params as any)?.moderation || 'default'}
-                                onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), moderation: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>Provider Params (JSON)</p>
-                              <Textarea
-                                defaultValue={JSON.stringify(config.imageFunctionToolSettings?.params || {}, null, 2)}
-                                onBlur={(e) => {
-                                  try {
-                                    const json = e.currentTarget.value.trim() ? JSON.parse(e.currentTarget.value) : {}
-                                    const u = [...customApiConfigs]
-                                    u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params: json }
-                                    updateCustomApiConfigs(u)
-                                  } catch (err) {
-                                    toast.error('Invalid JSON')
-                                  }
-                                }}
-                                placeholder={`{\n  \"size\": \"1024x1024\",\n  \"quality\": \"high\"\n}`}
-                              />
-                              <span className="text-xs opacity-70">Use any provider-specific keys. See docs/image generation.</span>
-                            </div>
                           </div>
                         )}
                       </div>

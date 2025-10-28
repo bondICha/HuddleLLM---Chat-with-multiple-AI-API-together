@@ -16,6 +16,7 @@ const CONTEXT_SIZE = 120
 
 export abstract class AbstractChatGPTApiBot extends AbstractBot {
   private conversationContext?: ConversationContext
+  protected tools?: any[] // Tool definitions for function calling
 
   // ConversationHistoryインターフェースの実装
   public setConversationHistory(history: ConversationHistory): void {
@@ -69,6 +70,10 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
     });
     
     return { messages };
+  }
+
+  setTools(tools: any[]) {
+    this.tools = tools
   }
 
   private buildUserMessage(prompt: string, imageUrls?: string[]): ChatMessage {
@@ -137,6 +142,7 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
     let done = false
     const result: ChatMessage = { role: 'assistant', content: '' }
     let reasoningSummary = ''
+    let currentToolCall: { id: string; name: string; arguments: string } | null = null
 
     const finish = () => {
       done = true
@@ -192,6 +198,41 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
           result.content += delta.content
           // 思考タグを処理するために共通メソッドを使用
           this.emitUpdateAnswer(params, { text: result.content })
+        }
+
+        // Handle tool calls (OpenAI Function Calling format)
+        if (delta?.tool_calls && delta.tool_calls.length > 0) {
+          const toolCall = delta.tool_calls[0]
+
+          if (toolCall.id) {
+            // New tool call
+            currentToolCall = {
+              id: toolCall.id,
+              name: toolCall.function?.name || '',
+              arguments: toolCall.function?.arguments || '',
+            }
+          } else if (currentToolCall && toolCall.function?.arguments) {
+            // Continuation of arguments
+            currentToolCall.arguments += toolCall.function.arguments
+          }
+        }
+
+        // Check if tool call is complete (finish_reason === 'tool_calls')
+        if (data.choices[0].finish_reason === 'tool_calls' && currentToolCall) {
+          try {
+            const parsedArgs = JSON.parse(currentToolCall.arguments)
+            params.onEvent({
+              type: 'TOOL_CALL',
+              data: {
+                id: currentToolCall.id,
+                name: currentToolCall.name,
+                arguments: parsedArgs,
+              },
+            })
+            currentToolCall = null
+          } catch (err) {
+            console.error('Failed to parse tool call arguments:', err)
+          }
         }
       }
     })
@@ -305,6 +346,8 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
         messages,
         max_tokens: undefined,
         stream: true,
+        // Add tools if provided (for function calling / tool use)
+        ...(this.tools && this.tools.length > 0 && { tools: this.tools }),
         // Add reasoning parameters if Thinking is enabled (for OpenAI-compatible reasoning)
         ...(thinkingOn && {
           reasoning_effort: this.config.reasoningEffort || 'medium'

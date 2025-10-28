@@ -1,7 +1,7 @@
 import { AbstractBot, SendMessageParams, ConversationHistory, Event } from '../abstract-bot'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { getUserConfig, OPENAI_COMPATIBLE_PROVIDERS, CLAUDE_COMPATIBLE_PROVIDERS } from '~services/user-config'
-import { getDefaultToolDefinition, convertClaudeToolToOpenAI } from '~services/image-tool-definitions'
+import { getDefaultImageModel, convertClaudeToolToOpenAI } from '~services/image-tool-definitions'
 import { generateImage } from '~services/image-api-client'
 import { createBotInstance } from '..'
 import { file2base64 } from '~app/utils/file-utils'
@@ -71,14 +71,17 @@ export class ImageAgentBot extends AbstractBot {
         throw new ChatError('Image Provider API key not set', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
       }
 
-      // Get tool definition (from config or auto-detect from model)
-      const toolDefMeta = custom.toolDefinition
+      // Get image model configuration (from config or auto-detect from model)
+      const imageModelConfig = custom.toolDefinition
         ? {
-            definition: custom.toolDefinition,
-            supportsEdit: false,
-            endpointSelector: undefined
+            toolDefinition: custom.toolDefinition,
+            apiConfig: {
+              endpoint: imageHost || '',
+              isAsync: false,
+              supportsEdit: false,
+            }
           }
-        : getDefaultToolDefinition(imageModel, imageProvider)
+        : getDefaultImageModel(imageModel, imageProvider)
 
       const userImages = params.images || []
 
@@ -112,8 +115,8 @@ export class ImageAgentBot extends AbstractBot {
       // Convert to OpenAI format if needed
       if (typeof (promptBot as any).setTools === 'function') {
         const toolToInject = isOpenAIProvider
-          ? convertClaudeToolToOpenAI(toolDefMeta.definition)
-          : toolDefMeta.definition
+          ? convertClaudeToolToOpenAI(imageModelConfig.toolDefinition)
+          : imageModelConfig.toolDefinition
 
         await (promptBot as any).setTools([toolToInject])
       }
@@ -124,7 +127,7 @@ export class ImageAgentBot extends AbstractBot {
 
       // Add image-specific instructions if user provided images
       if (userImages.length > 0) {
-        if (toolDefMeta.supportsEdit) {
+        if (imageModelConfig.apiConfig.supportsEdit) {
           toolInstruction += `\n\nThe user has provided ${userImages.length} image(s). They are automatically passed into the generate_image tool for editing or reference. Describe the desired changes clearly in your prompt and do not add a separate images parameter.`
         } else {
           toolInstruction += `\n\nIMPORTANT: The user has provided ${userImages.length} image(s), but this model (${imageModel}) does NOT support image editing. You CANNOT include images in the tool call parameters. Instead:
@@ -168,13 +171,21 @@ export class ImageAgentBot extends AbstractBot {
               const apiBody: any = { ...args }
 
               // Auto inject user images into the expected field when supported
-              if (toolDefMeta.imageInputField) {
+              if (imageModelConfig.apiConfig.imageInputField) {
                 if (userImages.length > 0) {
-                  apiBody[toolDefMeta.imageInputField] = await Promise.all(
-                    userImages.map((img) => file2base64(img))
-                  )
+                  const fieldName = imageModelConfig.apiConfig.imageInputField
+                  // Singular field (e.g., 'image') expects a single string, plural (e.g., 'images') expects an array
+                  if (fieldName === 'image') {
+                    // Qwen edit: single image as string
+                    apiBody[fieldName] = await file2base64(userImages[0])
+                  } else {
+                    // Seedream: multiple images as array
+                    apiBody[fieldName] = await Promise.all(
+                      userImages.map((img) => file2base64(img))
+                    )
+                  }
                 } else {
-                  delete apiBody[toolDefMeta.imageInputField]
+                  delete apiBody[imageModelConfig.apiConfig.imageInputField]
                 }
               } else if ('images' in apiBody) {
                 // Ensure we do not send stray images parameter when the tool does not accept it
@@ -197,14 +208,11 @@ export class ImageAgentBot extends AbstractBot {
                 data: { text: generatingText },
               })
 
-              // Determine endpoint
+              // Determine endpoint based on whether images are present
               const hasImages = (apiBody.images && Array.isArray(apiBody.images) && apiBody.images.length > 0)
-              const endpoint = toolDefMeta.endpointSelector
-                ? toolDefMeta.endpointSelector(hasImages, imageHost)
-                : imageHost
-
-              // Determine if async API (Novita uses async pattern)
-              const isAsync = /novita/i.test(imageHost || '')
+              const endpoint = typeof imageModelConfig.apiConfig.endpoint === 'function'
+                ? imageModelConfig.apiConfig.endpoint(hasImages, imageHost || '')
+                : imageModelConfig.apiConfig.endpoint || imageHost
 
               // Generate image using unified API client
               const imageUrl = await generateImage({
@@ -212,7 +220,7 @@ export class ImageAgentBot extends AbstractBot {
                 apiKey: imageApiKey,
                 body: apiBody,
                 signal: params.signal,
-                isAsync,
+                isAsync: imageModelConfig.apiConfig.isAsync,
               })
 
               // Update with image (replace "Generating..." with actual image)

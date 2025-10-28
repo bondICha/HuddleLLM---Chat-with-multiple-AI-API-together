@@ -31,6 +31,10 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
   const labelClass = "font-medium text-sm";
   const inputContainerClass = "flex-1";
 
+  const resolveProviderMode = (prov: ProviderConfig): 'chat' | 'image' => {
+    return prov.outputType === 'image' ? 'image' : 'chat';
+  };
+
   return (
     <>
       <div className="p-4 rounded-lg bg-white/20 dark:bg-black/20 border border-gray-300 dark:border-gray-700 space-y-4">
@@ -79,21 +83,23 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     </p>
                     <p className="text-[10px] uppercase opacity-40">
                       {(() => {
-                        const tpe = prov.providerType as ('chat'|'image'|'chat-image'|'image-agent'|undefined)
-                        if (tpe === 'image') return 'IMAGE GENERATION'
-                        if (tpe === 'chat-image') return 'CHAT+IMAGE'
-                        return 'CHAT'
+                        const mode = resolveProviderMode(prov);
+                        if (mode === 'image') return 'IMAGE GENERATION';
+                        return 'CHAT';
                       })()}
                     </p>
                   </div>
                   <span className="text-xs font-mono opacity-40">#{pIndex + 1}</span>
                 </div>
- 
+
                 <div className="text-xs opacity-60 mb-3 space-y-1">
                   <div className="truncate">Host: {prov.host || t('Not set')}</div>
                   <div className="text-primary">API Key: {prov.apiKey ? '••••••••' : t('Not set')}</div>
                   <div className="opacity-50">
-                    Type: {(() => { const tpe = prov.providerType as ('chat'|'image'|'chat-image'|'image-agent'|undefined); return tpe === 'image' ? 'Image Generation' : tpe === 'chat-image' ? 'Chat+Image' : 'Chat' })()}
+                    Type: {(() => {
+                      const mode = resolveProviderMode(prov);
+                      return mode === 'image' ? 'Image Generation' : 'Chat';
+                    })()}
                   </div>
                 </div>
  

@@ -36,6 +36,9 @@ export interface ProviderConfig {
   AuthMode?: 'header' | 'default';
   /** Advanced configuration */
   advancedConfig?: AdvancedConfig;
-  /** Output data type: 'text' for chat/completion, 'image' for image generation */
+  /**
+   * Output data type: 'text' for chat/completion, 'image' for dedicated image APIs.
+   * Note: providers that expose image generation via chat/function-calling stay 'text'.
+   */
   outputType?: 'text' | 'image';
 }

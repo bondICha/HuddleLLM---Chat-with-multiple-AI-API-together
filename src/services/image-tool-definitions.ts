@@ -41,15 +41,32 @@ export function convertClaudeToolToOpenAI(claudeTool: ToolDefinition): any {
     },
   }
 }
-export interface ToolDefinitionWithMeta {
-  /** Tool definition in Claude format */
-  definition: ToolDefinition
+
+/**
+ * API処理のための設定
+ * Tool Call（LLMに渡すJSON定義）とは分離
+ */
+export interface ImageApiConfig {
+  /** API endpoint URL or function to determine endpoint */
+  endpoint: string | ((hasImages: boolean, baseHost: string) => string)
+  /** Whether this is a synchronous API (returns image directly) or async (returns task_id for polling) */
+  isAsync: boolean
   /** Whether this model supports image editing (img2img) */
   supportsEdit: boolean
-  /** Function to select the correct endpoint based on whether images are provided */
-  endpointSelector?: (hasImages: boolean, baseHost: string) => string
   /** When set, user-provided images are automatically injected into this request field as base64 strings */
   imageInputField?: string
+}
+
+/**
+ * 画像生成モデルの完全な設定
+ * - toolDefinition: LLMに渡すTool Call定義
+ * - apiConfig: API呼び出しのための設定
+ */
+export interface ImageModelConfig {
+  /** Tool definition in Claude format (for LLM) */
+  toolDefinition: ToolDefinition
+  /** API processing configuration (for actual API calls) */
+  apiConfig: ImageApiConfig
 }
 
 /**
@@ -61,8 +78,8 @@ export interface ToolDefinitionWithMeta {
  * API: https://image.chutes.ai/generate
  * Edit support: No
  */
-export const TOOL_CHUTES_CHROMA: ToolDefinitionWithMeta = {
-  definition: {
+export const MODEL_CHUTES_CHROMA: ImageModelConfig = {
+  toolDefinition: {
     name: 'generate_image',
     description: 'Generate an image using Chroma model. Images supplied by the user are not forwarded, so describe any visual references directly in the prompt.',
     input_schema: {
@@ -79,12 +96,12 @@ export const TOOL_CHUTES_CHROMA: ToolDefinitionWithMeta = {
         width: {
           type: 'number',
           description: 'Image width in pixels',
-          default: 1024,
+          default: 1280,
         },
         height: {
           type: 'number',
           description: 'Image height in pixels',
-          default: 1024,
+          default: 1280,
         },
         num_inference_steps: {
           type: 'number',
@@ -104,7 +121,14 @@ export const TOOL_CHUTES_CHROMA: ToolDefinitionWithMeta = {
       required: ['prompt'],
     },
   },
-  supportsEdit: false,
+  apiConfig: {
+    endpoint: (hasImages: boolean, baseHost: string) => {
+      const cleanHost = baseHost.replace(/\/$/, '')
+      return `${cleanHost}/generate`
+    },
+    isAsync: false,
+    supportsEdit: false,
+  },
 }
 
 /**
@@ -113,30 +137,30 @@ export const TOOL_CHUTES_CHROMA: ToolDefinitionWithMeta = {
  *      https://api.novita.ai/v3/async/qwen-image-edit (edit)
  * Edit support: Yes - different endpoints
  */
-export const TOOL_NOVITA_QWEN: ToolDefinitionWithMeta = {
-  definition: {
+export const MODEL_NOVITA_QWEN: ImageModelConfig = {
+  toolDefinition: {
     name: 'generate_image',
-    description: 'Generate or edit an image using Qwen Image model. User-supplied images are automatically included for editing; do not attempt to attach them manually.',
+    description: 'Generate or edit an image using Qwen Image model. When the user provides images, it will automatically switch to edit mode. When editing, the "size" parameter is ignored (original image size is used). When generating from scratch, you can specify the "size" parameter.',
     input_schema: {
       type: 'object',
       properties: {
         prompt: {
           type: 'string',
-          description: 'Text description for image generation or editing instructions',
+          description: 'Text description for image generation, or editing instructions when user provides images.',
         },
         size: {
           type: 'string',
-          description: 'Image resolution in format "WIDTH*HEIGHT". Must be between 256*256 and 1536*1536. Available: "1664*928" (16:9), "1472*1140" (4:3), "1328*1328" (1:1), "1140*1472" (3:4), "928*1664" (9:16).',
+          description: 'Image resolution in format "WIDTH*HEIGHT". Range: 256*256 to 1536*1536. Available: "1664*928" (16:9), "1472*1140" (4:3), "1328*1328" (1:1), "1140*1472" (3:4), "928*1664" (9:16). NOTE: This parameter is IGNORED in edit mode (when user provides images).',
           default: '1328*1328',
         },
         seed: {
           type: 'number',
-          description: 'Random seed for reproducibility. Use a specific number (e.g., 42) if the user wants consistent results, or omit/-1 for random generation.',
+          description: 'Random seed for reproducibility. Use a specific number (e.g., 42) for consistent results, or -1 for random generation.',
           default: -1,
         },
         output_format: {
           type: 'string',
-          description: 'Output image format. Use "png" for images requiring transparency, "webp" for smaller file size, or "jpeg" for standard use.',
+          description: 'Output image format. "png" for transparency support, "webp" for smaller file size, "jpeg" for standard use.',
           enum: ['jpeg', 'png', 'webp'],
           default: 'jpeg',
         },
@@ -144,13 +168,16 @@ export const TOOL_NOVITA_QWEN: ToolDefinitionWithMeta = {
       required: ['prompt'],
     },
   },
-  supportsEdit: true,
-  imageInputField: 'images',
-  endpointSelector: (hasImages: boolean, baseHost: string) => {
-    const cleanHost = baseHost.replace(/\/$/, '')
-    return hasImages
-      ? `${cleanHost}/v3/async/qwen-image-edit`
-      : `${cleanHost}/v3/async/qwen-image-txt2img`
+  apiConfig: {
+    endpoint: (hasImages: boolean, baseHost: string) => {
+      const cleanHost = baseHost.replace(/\/$/, '')
+      return hasImages
+        ? `${cleanHost}/v3/async/qwen-image-edit`
+        : `${cleanHost}/v3/async/qwen-image-txt2img`
+    },
+    isAsync: true,
+    supportsEdit: true,
+    imageInputField: 'image', // ✨ 単数形（editのAPI仕様に合わせる）
   },
 }
 
@@ -159,8 +186,8 @@ export const TOOL_NOVITA_QWEN: ToolDefinitionWithMeta = {
  * API: https://api.novita.ai/v3/async/hunyuan-image-3
  * Edit support: No
  */
-export const TOOL_NOVITA_HUNYUAN: ToolDefinitionWithMeta = {
-  definition: {
+export const MODEL_NOVITA_HUNYUAN: ImageModelConfig = {
+  toolDefinition: {
     name: 'generate_image',
     description: 'Generate an image using Hunyuan Image 3 model. Images provided by the user are not sent to the API, so incorporate any visual details into the prompt text.',
     input_schema: {
@@ -184,20 +211,24 @@ export const TOOL_NOVITA_HUNYUAN: ToolDefinitionWithMeta = {
       required: ['prompt'],
     },
   },
-  supportsEdit: false,
-  endpointSelector: (_hasImages: boolean, baseHost: string) => {
-    const cleanHost = baseHost.replace(/\/$/, '')
-    return `${cleanHost}/v3/async/hunyuan-image-3`
+  apiConfig: {
+    endpoint: (hasImages: boolean, baseHost: string) => {
+      const cleanHost = baseHost.replace(/\/$/, '')
+      return `${cleanHost}/v3/async/hunyuan-image-3`
+    },
+    isAsync: true,
+    supportsEdit: false,
   },
 }
 
 /**
  * 4. Novita AI - Seedream 4.0
- * API: https://api.novita.ai/v3/async/seedream-4-0 (single endpoint for both txt2img and edit)
+ * API: https://api.novita.ai/v3/seedream-4.0 (synchronous API)
  * Edit support: Yes - same endpoint, images parameter optional
+ * Note: This is a SYNCHRONOUS API (not async like other Novita models)
  */
-export const TOOL_NOVITA_SEEDREAM: ToolDefinitionWithMeta = {
-  definition: {
+export const MODEL_NOVITA_SEEDREAM: ImageModelConfig = {
+  toolDefinition: {
     name: 'generate_image',
     description: 'Generate or edit images using Seedream 4.0 model. Any images attached by the user are automatically forwarded for editing or reference.',
     input_schema: {
@@ -209,102 +240,106 @@ export const TOOL_NOVITA_SEEDREAM: ToolDefinitionWithMeta = {
         },
         size: {
           type: 'string',
-          description: 'Image resolution. Use "1K", "2K", "4K" or "WIDTHxHEIGHT" format (e.g., "2048x2048")',
+          description: 'Image resolution. Use "1K", "2K", "4K" or "WIDTHxHEIGHT" format (e.g., "2048x2048"). Pixel range: 1024x1024 to 4096x4096, aspect ratio: 1/16 to 16.',
           default: '2048x2048',
         },
         sequential_image_generation: {
           type: 'string',
-          description: 'Enable sequential generation mode',
+          description: 'Enable sequential generation mode. "auto" for automatic batch generation, "disabled" for single image.',
           enum: ['auto', 'disabled'],
           default: 'disabled',
         },
         max_images: {
           type: 'number',
-          description: 'Maximum number of images to generate (only applies when sequential_image_generation is "auto")',
+          description: 'Maximum number of images to generate (1-15). Only applies when sequential_image_generation is "auto". Total of reference images + generated images cannot exceed 15.',
           default: 15,
         },
         watermark: {
           type: 'boolean',
-          description: 'Add watermark to bottom-right corner',
-          default: false,
+          description: 'Add watermark to bottom-right corner. Default is true.',
+          default: true,
         },
       },
       required: ['prompt'],
     },
   },
-  supportsEdit: true,
-  imageInputField: 'images',
-  endpointSelector: (_hasImages: boolean, baseHost: string) => {
-    const cleanHost = baseHost.replace(/\/$/, '')
-    return `${cleanHost}/v3/async/seedream-4-0`
+  apiConfig: {
+    endpoint: (hasImages: boolean, baseHost: string) => {
+      const cleanHost = baseHost.replace(/\/$/, '')
+      return `${cleanHost}/v3/seedream-4.0`
+    },
+    isAsync: false, // ✨ Seedream 4.0 is synchronous
+    supportsEdit: true,
+    imageInputField: 'images',
   },
 }
 
 /**
- * Registry of all available tool definitions
+ * Registry of all available image model configurations
  * Key format: "provider-model" (e.g., "chutes-chroma", "novita-qwen")
  */
-export const TOOL_DEFINITION_REGISTRY: Record<string, ToolDefinitionWithMeta> = {
-  'chutes-chroma': TOOL_CHUTES_CHROMA,
-  'chutes-flux': TOOL_CHUTES_CHROMA, // Alias - uses same format
-  'novita-qwen': TOOL_NOVITA_QWEN,
-  'novita-hunyuan': TOOL_NOVITA_HUNYUAN,
-  'novita-hunyuan-image-3': TOOL_NOVITA_HUNYUAN, // Alias
-  'novita-seedream': TOOL_NOVITA_SEEDREAM,
-  'novita-seedream-4': TOOL_NOVITA_SEEDREAM, // Alias
+export const IMAGE_MODEL_REGISTRY: Record<string, ImageModelConfig> = {
+  'chutes-chroma': MODEL_CHUTES_CHROMA,
+  'chutes-flux': MODEL_CHUTES_CHROMA, // Alias - uses same format
+  'novita-qwen': MODEL_NOVITA_QWEN,
+  'novita-hunyuan': MODEL_NOVITA_HUNYUAN,
+  'novita-hunyuan-image-3': MODEL_NOVITA_HUNYUAN, // Alias
+  'novita-seedream': MODEL_NOVITA_SEEDREAM,
+  'novita-seedream-4': MODEL_NOVITA_SEEDREAM, // Alias
+  'novita-seedream-4-0': MODEL_NOVITA_SEEDREAM, // Alias
 }
 
 /**
- * Get tool definition by key
+ * Get image model configuration by key
  * @param key Registry key (e.g., "chutes-chroma", "novita-qwen")
- * @returns Tool definition with metadata, or undefined if not found
+ * @returns Image model configuration, or undefined if not found
  */
-export function getToolDefinitionByKey(key: string): ToolDefinitionWithMeta | undefined {
-  return TOOL_DEFINITION_REGISTRY[key.toLowerCase()]
+export function getImageModelByKey(key: string): ImageModelConfig | undefined {
+  return IMAGE_MODEL_REGISTRY[key.toLowerCase()]
 }
 
 /**
- * Get default tool definition for a given model
+ * Get default image model configuration for a given model
  * @param model Model identifier (e.g., "chroma", "qwen-image", "hunyuan-image-3")
  * @param provider Optional provider hint (e.g., "chutes", "novita")
- * @returns Tool definition with metadata, or default Chutes standard if not found
+ * @returns Image model configuration, or default Chutes standard if not found
  */
-export function getDefaultToolDefinition(model: string, provider?: string): ToolDefinitionWithMeta {
+export function getDefaultImageModel(model: string, provider?: string): ImageModelConfig {
   const modelLower = model.toLowerCase()
   const providerLower = provider?.toLowerCase() || ''
 
   // Try exact match first
   const exactKey = providerLower ? `${providerLower}-${modelLower}` : modelLower
-  const exact = getToolDefinitionByKey(exactKey)
+  const exact = getImageModelByKey(exactKey)
   if (exact) return exact
 
   // Pattern matching
   if (modelLower.includes('chroma')) {
-    return TOOL_CHUTES_CHROMA
+    return MODEL_CHUTES_CHROMA
   }
   if (modelLower.includes('qwen')) {
-    return TOOL_NOVITA_QWEN
+    return MODEL_NOVITA_QWEN
   }
   if (modelLower.includes('hunyuan')) {
-    return TOOL_NOVITA_HUNYUAN
+    return MODEL_NOVITA_HUNYUAN
   }
   if (modelLower.includes('seedream')) {
-    return TOOL_NOVITA_SEEDREAM
+    return MODEL_NOVITA_SEEDREAM
   }
   if (modelLower.includes('flux')) {
-    return TOOL_CHUTES_CHROMA
+    return MODEL_CHUTES_CHROMA
   }
 
   // Default fallback
-  return TOOL_CHUTES_CHROMA
+  return MODEL_CHUTES_CHROMA
 }
 
 /**
- * List of all available tool definition presets for UI display
+ * List of all available image model presets for UI display
  */
-export const TOOL_DEFINITION_PRESETS = [
-  { id: 'chutes-chroma', name: 'Chutes - Chroma', definition: TOOL_CHUTES_CHROMA },
-  { id: 'novita-qwen', name: 'Novita - Qwen Image', definition: TOOL_NOVITA_QWEN },
-  { id: 'novita-hunyuan', name: 'Novita - Hunyuan Image 3', definition: TOOL_NOVITA_HUNYUAN },
-  { id: 'novita-seedream', name: 'Novita - Seedream 4.0', definition: TOOL_NOVITA_SEEDREAM },
+export const IMAGE_MODEL_PRESETS = [
+  { id: 'chutes-chroma', name: 'Chutes - Chroma', config: MODEL_CHUTES_CHROMA },
+  { id: 'novita-qwen', name: 'Novita - Qwen Image', config: MODEL_NOVITA_QWEN },
+  { id: 'novita-hunyuan', name: 'Novita - Hunyuan Image 3', config: MODEL_NOVITA_HUNYUAN },
+  { id: 'novita-seedream', name: 'Novita - Seedream 4.0', config: MODEL_NOVITA_SEEDREAM },
 ]
