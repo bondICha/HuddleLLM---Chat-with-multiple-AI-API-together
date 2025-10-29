@@ -57,6 +57,19 @@ export const CLAUDE_COMPATIBLE_PROVIDERS = [
 ] as const
 
 /**
+ * Providers that support Extended Thinking / Thinking Budget feature
+ */
+export const THINKING_BUDGET_PROVIDERS = [
+  CustomApiProvider.Anthropic,
+  CustomApiProvider.Bedrock,
+  CustomApiProvider.Anthropic_CustomAuth,
+  CustomApiProvider.VertexAI_Claude,
+  CustomApiProvider.VertexAI_Gemini,
+  CustomApiProvider.GeminiOpenAI,
+  CustomApiProvider.QwenOpenAI,
+] as const
+
+/**
  * Image-only providers (used exclusively by Image Agent)
  * These cannot be selected as direct chatbots
  */

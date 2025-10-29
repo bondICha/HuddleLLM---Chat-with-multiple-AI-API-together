@@ -4,7 +4,7 @@ import { BiPlus, BiTrash, BiHide, BiShow, BiPencil, BiChevronDown, BiExpand } fr
 import toast from 'react-hot-toast';
 import CopyIcon from '../icons/CopyIcon';
 import { cx } from '~/utils';
-import { UserConfig, CustomApiProvider, CustomApiConfig, SystemPromptMode, MODEL_LIST, type ProviderConfig } from '~services/user-config';
+import { UserConfig, CustomApiProvider, CustomApiConfig, SystemPromptMode, MODEL_LIST, THINKING_BUDGET_PROVIDERS, type ProviderConfig } from '~services/user-config';
 import { getDefaultImageModel } from '~services/image-tool-definitions';
 import { Input, Textarea } from '../Input';
 import Select from '../Select';
@@ -141,12 +141,17 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         ? (config.isHostFullPath ?? false)
         : (userConfig.isCustomApiHostFullPath ?? false);
 
+    // Determine Gemini auth mode
+    // Provider AuthMode='default' maps to 'query', otherwise use chatbot's geminiAuthMode setting
+    const providerAuthMode = providerRef?.AuthMode || 'header';
+    const resolvedGeminiAuthMode = providerAuthMode === 'default' ? 'query' : (config.geminiAuthMode || 'header');
+
     const fetchConfig = {
       provider: providerRef?.provider ?? config.provider,
       apiKey: effectiveApiKey,
       host: effectiveHost,
       isHostFullPath: effectiveIsHostFullPath,
-      geminiAuthMode: ((providerRef?.AuthMode || 'header') === 'default') ? 'query' : (config.geminiAuthMode || 'header'),
+      geminiAuthMode: resolvedGeminiAuthMode,
     };
 
     await fetchSingleModel(fetchConfig, index);
@@ -371,15 +376,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             // Show flags
             const showImageAgentSettings = isImageAgent;
             const showAIModelSelection = !isImageAgent;
-            const showThinkingBudget = [
-              CustomApiProvider.Anthropic,
-              CustomApiProvider.Bedrock,
-              CustomApiProvider.Anthropic_CustomAuth,
-              CustomApiProvider.VertexAI_Claude,
-              CustomApiProvider.VertexAI_Gemini,
-              CustomApiProvider.GeminiOpenAI,
-              CustomApiProvider.QwenOpenAI,
-            ].includes(effectiveProvider);
+            const showThinkingBudget = THINKING_BUDGET_PROVIDERS.includes(effectiveProvider as any);
             const showReasoningEffort = isOpenAI;
 
             // Image Function Tool settings (for OpenAI_Image, OpenRouter Image, etc.)
