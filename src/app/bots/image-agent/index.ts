@@ -64,24 +64,24 @@ export class ImageAgentBot extends AbstractBot {
 
       const imageApiKey = imageProviderRef.apiKey
       const imageHost = imageProviderRef.host
-      const imageModel = custom.model || 'chroma'
+      const imageModel = custom.model
       const imageProvider = imageProviderRef.provider
 
       if (!imageApiKey) {
         throw new ChatError('Image Provider API key not set', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
       }
 
-      // Get image model configuration (from config or auto-detect from model)
-      const imageModelConfig = custom.toolDefinition
-        ? {
-            toolDefinition: custom.toolDefinition,
-            apiConfig: {
-              endpoint: imageHost || '',
-              isAsync: false,
-              supportsEdit: false,
-            }
-          }
-        : getDefaultImageModel(imageModel, imageProvider)
+      if (!imageModel) {
+        throw new ChatError('Image model not configured. Please select a model in chatbot settings.', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
+      }
+
+      // Get image model configuration (must always use default to ensure correct endpoint construction)
+      const imageModelConfig = getDefaultImageModel(imageModel, imageProvider)
+
+      // Override tool definition if custom one is provided
+      if (custom.toolDefinition) {
+        imageModelConfig.toolDefinition = custom.toolDefinition
+      }
 
       const userImages = params.images || []
 
@@ -210,9 +210,15 @@ export class ImageAgentBot extends AbstractBot {
 
               // Determine endpoint based on whether images are present
               const hasImages = (apiBody.images && Array.isArray(apiBody.images) && apiBody.images.length > 0)
-              const endpoint = typeof imageModelConfig.apiConfig.endpoint === 'function'
+              let endpoint = typeof imageModelConfig.apiConfig.endpoint === 'function'
                 ? imageModelConfig.apiConfig.endpoint(hasImages, imageHost || '')
-                : imageModelConfig.apiConfig.endpoint || imageHost
+                : (imageModelConfig.apiConfig.endpoint || imageHost || '')
+
+              // Replace %model placeholder with actual model name (URL-encoded)
+              // This supports both full path endpoints (e.g., Replicate) and dynamic endpoints
+              if (endpoint.includes('%model')) {
+                endpoint = endpoint.replace(/%model/g, encodeURIComponent(imageModel))
+              }
 
               // Generate image using unified API client
               const imageUrl = await generateImage({

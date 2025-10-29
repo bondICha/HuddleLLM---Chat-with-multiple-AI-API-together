@@ -232,9 +232,9 @@ export class CustomBot extends AsyncAbstractBot {
                 })
                 break;
             }
-            // ChutesAI and NovitaAI are now only used via Image Agent (not as direct chatbots)
+            // ChutesAI, NovitaAI, and Replicate are now only used via Image Agent (not as direct chatbots)
             case CustomApiProvider.ImageAgent: {
-                // Agentic wrapper: delegate to provider via image-tools
+                // Agentic wrapper: delegates to image generation providers
                 botInstance = new ImageAgentBot(this.customBotNumber - 1)
                 break;
             }

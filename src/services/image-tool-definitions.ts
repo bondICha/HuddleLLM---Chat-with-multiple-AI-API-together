@@ -275,6 +275,54 @@ export const MODEL_NOVITA_SEEDREAM: ImageModelConfig = {
 }
 
 /**
+ * 5. Replicate - Google Imagen 4
+ * API: https://api.replicate.com/v1/models/google/imagen-4/predictions
+ * Edit support: No
+ * Note: Uses model-specific endpoint, only input is sent (no version wrapper needed)
+ */
+export const MODEL_REPLICATE_IMAGEN4: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate high-quality images using Google Imagen 4 model via Replicate. Images provided by the user are not sent to the API, so incorporate any visual details into the prompt text.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Text prompt for image generation. Be specific and descriptive.',
+        },
+        aspect_ratio: {
+          type: 'string',
+          description: 'Aspect ratio of the generated image. Choose the closest match to your desired output size.',
+          enum: ['1:1', '9:16', '16:9', '3:4', '4:3'],
+          default: '1:1',
+        },
+        output_format: {
+          type: 'string',
+          description: 'Format of the output image. "png" for lossless quality and transparency support, "jpg" for smaller file size.',
+          enum: ['jpg', 'png'],
+          default: 'jpg',
+        },
+        safety_filter_level: {
+          type: 'string',
+          description: 'Safety filter strictness. "block_low_and_above" is strictest, "block_medium_and_above" blocks some prompts, "block_only_high" is most permissive but some prompts will still be blocked.',
+          enum: ['block_low_and_above', 'block_medium_and_above', 'block_only_high'],
+          default: 'block_only_high',
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    // Replicate uses full path with %model placeholder (not base URL)
+    // User should input: https://api.replicate.com/v1/models/%model/predictions
+    endpoint: '',
+    isAsync: true,
+    supportsEdit: false,
+  },
+}
+
+/**
  * Registry of all available image model configurations
  * Key format: "provider-model" (e.g., "chutes-chroma", "novita-qwen")
  */
@@ -287,6 +335,9 @@ export const IMAGE_MODEL_REGISTRY: Record<string, ImageModelConfig> = {
   'novita-seedream': MODEL_NOVITA_SEEDREAM,
   'novita-seedream-4': MODEL_NOVITA_SEEDREAM, // Alias
   'novita-seedream-4-0': MODEL_NOVITA_SEEDREAM, // Alias
+  'replicate-imagen-4': MODEL_REPLICATE_IMAGEN4,
+  'replicate-imagen4': MODEL_REPLICATE_IMAGEN4, // Alias
+  'replicate-google-imagen-4': MODEL_REPLICATE_IMAGEN4, // Alias
 }
 
 /**
@@ -305,7 +356,7 @@ export function getImageModelByKey(key: string): ImageModelConfig | undefined {
  * @returns Image model configuration, or default Chutes standard if not found
  */
 export function getDefaultImageModel(model: string, provider?: string): ImageModelConfig {
-  const modelLower = model.toLowerCase()
+  const modelLower = model.toLowerCase().replace(/\//g, '-') // Replace slashes with hyphens for key matching
   const providerLower = provider?.toLowerCase() || ''
 
   // Try exact match first
@@ -329,9 +380,12 @@ export function getDefaultImageModel(model: string, provider?: string): ImageMod
   if (modelLower.includes('flux')) {
     return MODEL_CHUTES_CHROMA
   }
+  if (modelLower.includes('imagen')) {
+    return MODEL_REPLICATE_IMAGEN4
+  }
 
-  // Default fallback
-  return MODEL_CHUTES_CHROMA
+  // No model found - throw error instead of returning arbitrary default
+  throw new Error(`Image model configuration not found for model: ${model} (provider: ${provider || 'unknown'})`)
 }
 
 /**
@@ -342,4 +396,5 @@ export const IMAGE_MODEL_PRESETS = [
   { id: 'novita-qwen', name: 'Novita - Qwen Image', config: MODEL_NOVITA_QWEN },
   { id: 'novita-hunyuan', name: 'Novita - Hunyuan Image 3', config: MODEL_NOVITA_HUNYUAN },
   { id: 'novita-seedream', name: 'Novita - Seedream 4.0', config: MODEL_NOVITA_SEEDREAM },
+  { id: 'replicate-imagen-4', name: 'Replicate - Google Imagen 4', config: MODEL_REPLICATE_IMAGEN4 },
 ]

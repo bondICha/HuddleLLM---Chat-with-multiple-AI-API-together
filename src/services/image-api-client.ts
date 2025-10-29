@@ -3,14 +3,14 @@ import { ChatError, ErrorCode } from '~utils/errors'
 /**
  * Unified image generation API client
  *
- * Handles both synchronous (Chutes) and asynchronous (Novita) image generation APIs.
- * Automatically detects the API pattern and handles polling for async APIs.
+ * Handles multiple image generation API patterns:
+ * 1. Synchronous (Chutes, Seedream): Direct image binary response
+ * 2. Asynchronous Novita: POST → {task_id} → GET task-result → {images: [{image_url}]}
+ * 3. Asynchronous Replicate: POST → {id} → GET /predictions/{id} → {output: "url"}
  *
  * EXTENSIBILITY:
- * - To support new providers, no code changes needed here
- * - Just ensure the provider's API follows either:
- *   1. Sync pattern: POST → image binary response
- *   2. Async pattern: POST → {task_id} → GET task-result → {images: [{image_url}]}
+ * - To support new providers following existing patterns, no code changes needed
+ * - For new API patterns, add a new handler function and detection logic
  */
 
 export interface GenerateImageParams {
@@ -34,7 +34,13 @@ export interface GenerateImageParams {
 export async function generateImage(params: GenerateImageParams): Promise<string> {
   const { endpoint, apiKey, body, signal, isAsync } = params
 
-  if (isAsync) {
+  // Detect API pattern from endpoint
+  const isReplicate = endpoint.includes('replicate.com')
+
+  if (isReplicate) {
+    // Replicate-style async: create prediction → poll for result
+    return await generateImageReplicate(endpoint, apiKey, body, signal)
+  } else if (isAsync) {
     // Novita-style async: create task → poll for result
     return await generateImageAsync(endpoint, apiKey, body, signal)
   } else {
@@ -193,6 +199,133 @@ async function generateImageAsync(
 
   throw new ChatError(
     'Image generation timeout (exceeded 3 minutes)',
+    ErrorCode.UNKOWN_ERROR
+  )
+}
+
+/**
+ * Asynchronous image generation (Replicate pattern)
+ * 1. POST request creates a prediction with input object
+ * 2. Poll GET /predictions/{id} endpoint until status is succeeded or failed
+ * Note: Using model-specific endpoint (/v1/models/MODEL_ID/predictions), so no version wrapper needed
+ */
+async function generateImageReplicate(
+  endpoint: string,
+  apiKey: string,
+  body: any,
+  signal?: AbortSignal
+): Promise<string> {
+  // Step 1: Create prediction with Replicate's request format
+  // For model-specific endpoints, only send input (no version field)
+  const replicateBody = {
+    input: { ...body }
+  }
+
+  // Remove 'model' field from input if it exists
+  delete replicateBody.input.model
+
+  const createResp = await fetch(endpoint, {
+    method: 'POST',
+    signal,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(replicateBody),
+  })
+
+  if (!createResp.ok) {
+    const text = await createResp.text().catch(() => '')
+    throw new ChatError(
+      `Failed to create Replicate prediction: ${createResp.status}`,
+      ErrorCode.UNKOWN_ERROR,
+      text
+    )
+  }
+
+  const createData = await createResp.json()
+  const predictionId = createData.id
+
+  if (!predictionId) {
+    throw new ChatError(
+      'No prediction ID in Replicate API response',
+      ErrorCode.UNKOWN_ERROR,
+      JSON.stringify(createData)
+    )
+  }
+
+  // Step 2: Poll for result
+  // For model-specific endpoint like /v1/models/MODEL_ID/predictions,
+  // polling uses generic /v1/predictions/{id}
+  const baseUrl = endpoint.includes('/models/')
+    ? endpoint.substring(0, endpoint.indexOf('/models/'))
+    : endpoint.substring(0, endpoint.lastIndexOf('/predictions'))
+  const resultUrl = `${baseUrl}/predictions/${encodeURIComponent(predictionId)}`
+
+  const startTime = Date.now()
+  const timeout = 180000 // 3 minutes
+
+  while (Date.now() - startTime < timeout) {
+    // Wait before polling
+    await new Promise(resolve => setTimeout(resolve, 2000)) // Poll every 2 seconds
+
+    if (signal?.aborted) {
+      throw new ChatError('Image generation cancelled', ErrorCode.UNKOWN_ERROR)
+    }
+
+    let resultResp
+    try {
+      resultResp = await fetch(resultUrl, {
+        method: 'GET',
+        signal,
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+      })
+    } catch (err) {
+      // Network error, continue polling
+      continue
+    }
+
+    if (!resultResp.ok) {
+      // Temporary error, continue polling
+      continue
+    }
+
+    let result
+    try {
+      result = await resultResp.json()
+    } catch (err) {
+      // JSON parse error, continue polling
+      continue
+    }
+
+    const status = result.status
+
+    if (status === 'succeeded') {
+      const imageUrl = result.output
+      if (!imageUrl || typeof imageUrl !== 'string') {
+        throw new ChatError(
+          'No image URL in successful Replicate prediction result',
+          ErrorCode.UNKOWN_ERROR,
+          JSON.stringify(result)
+        )
+      }
+      return imageUrl // Return URL directly (Replicate provides CDN URLs)
+    }
+
+    if (status === 'failed' || status === 'canceled') {
+      const error = result.error || 'Unknown error'
+      throw new ChatError(
+        `Replicate prediction ${status}: ${error}`,
+        ErrorCode.UNKOWN_ERROR,
+        JSON.stringify(result)
+      )
+    }
+
+    // Status is starting, processing, etc. - continue polling
+  }
+
+  throw new ChatError(
+    'Replicate prediction timeout (exceeded 3 minutes)',
     ErrorCode.UNKOWN_ERROR
   )
 }

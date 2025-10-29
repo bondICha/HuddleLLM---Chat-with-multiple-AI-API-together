@@ -193,7 +193,7 @@
   "Or enter model name manually": "或是手動輸入 model 名稱",
   "Advanced Settings": "進階設定",
   "API Provider": "API 供應商",
-  "Image Generation (Agent)": "圖像生成（Agent）",
+  "Image Generation (Agent)": "圖像生成（Agent，測試版）",
   "Image Provider": "圖像提供者",
   "Select Image Provider": "選擇圖像提供者",
   "Select which image generation API to use": "請選擇要使用的圖像生成 API",

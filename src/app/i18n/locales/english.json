@@ -191,7 +191,7 @@
   "portrait-suffix": "(portrait)",
   "landscape-suffix": "(landscape)",
   "Image Quality": "Image Quality",
-  "Image Generation (Agent)": "Image Generation (Agent)",
+  "Image Generation (Agent)": "Image Generation (Agent, Beta)",
   "Image Provider": "Image Provider",
   "Select Image Provider": "Select Image Provider",
   "Select which image generation API to use": "Select which image generation API to use",

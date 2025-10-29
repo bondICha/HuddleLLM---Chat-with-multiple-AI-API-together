@@ -191,7 +191,7 @@
   "portrait-suffix": "（縦長）",
   "landscape-suffix": "（横長）",
   "Image Quality": "画像品質",
-  "Image Generation (Agent)": "画像生成（エージェント）",
+  "Image Generation (Agent)": "画像生成（エージェント・ベータ）",
   "Image Provider": "画像プロバイダー",
   "Select Image Provider": "画像プロバイダーを選択",
   "Select which image generation API to use": "利用する画像生成APIを選択してください",

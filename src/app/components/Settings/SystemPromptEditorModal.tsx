@@ -8,7 +8,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   value: string;
-  onSave: (newValue: string) => void;
+  onSave: (newValue: string) => boolean | void;
   title?: string;
 }
 
@@ -24,8 +24,10 @@ const SystemPromptEditorModal: FC<Props> = ({ open, onClose, value, onSave, titl
   }, [open, value]);
 
   const handleSave = () => {
-    onSave(tempValue);
-    onClose();
+    const result = onSave(tempValue);
+    if (result !== false) {
+      onClose();
+    }
   };
 
   return (

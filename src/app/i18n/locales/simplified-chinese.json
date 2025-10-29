@@ -207,7 +207,7 @@
   "Or enter model name manually": "或手动输入模型名称",
   "Advanced Settings": "高级设置",
   "API Provider": "API提供商",
-  "Image Generation (Agent)": "图像生成（Agent）",
+  "Image Generation (Agent)": "图像生成（Agent，测试版）",
   "Image Provider": "图像提供方",
   "Select Image Provider": "选择图像提供方",
   "Select which image generation API to use": "请选择要使用的图像生成 API",

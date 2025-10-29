@@ -31,6 +31,7 @@ export enum CustomApiProvider {
   OpenRouter = 'openrouter', // Dedicated OpenRouter provider
   ChutesAI = 'chutes-ai', // Chutes AI (Image) - Image Agent only
   NovitaAI = 'novita-ai', // Novita AI (Image) - Image Agent only
+  Replicate = 'replicate', // Replicate (Image) - Image Agent only
   ImageAgent = 'image-agent', // Agentic Image wrapper
 }
 
@@ -62,6 +63,7 @@ export const CLAUDE_COMPATIBLE_PROVIDERS = [
 export const IMAGE_ONLY_PROVIDERS = [
   CustomApiProvider.ChutesAI,
   CustomApiProvider.NovitaAI,
+  CustomApiProvider.Replicate,
 ] as const
 
 // Preset provider information (default icons)
