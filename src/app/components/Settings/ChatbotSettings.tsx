@@ -377,7 +377,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             const showImageAgentSettings = isImageAgent;
             const showAIModelSelection = !isImageAgent;
             const showThinkingBudget = THINKING_BUDGET_PROVIDERS.includes(effectiveProvider as any);
-            const showReasoningEffort = isOpenAI;
+            const showReasoningEffort = isOpenAI || isOpenRouter;
 
             // Image Function Tool settings (for OpenAI_Image, OpenRouter Image, etc.)
             const showImageFunctionSettings =
@@ -403,8 +403,12 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
               if (!isImageAgent || !config.model || !linkedImageProvider) {
                 return null;
               }
-            const imageModelConfig = getDefaultImageModel(config.model, linkedImageProvider.provider);
-            if (!imageModelConfig) {
+
+            let imageModelConfig;
+            try {
+              imageModelConfig = getDefaultImageModel(config.model, linkedImageProvider.provider);
+            } catch (error) {
+              // Model not found - return fallback info
               return {
                 supportsEdit: false,
                 endpoint: (linkedImageProvider.host || '').trim(),
@@ -435,9 +439,14 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 return JSON.stringify(config.toolDefinition, null, 2);
               }
               if (config.model && linkedImageProvider) {
-                const defaultModelConfig = getDefaultImageModel(config.model, linkedImageProvider.provider);
-                if (defaultModelConfig) {
-                  return JSON.stringify(defaultModelConfig.toolDefinition, null, 2);
+                try {
+                  const defaultModelConfig = getDefaultImageModel(config.model, linkedImageProvider.provider);
+                  if (defaultModelConfig) {
+                    return JSON.stringify(defaultModelConfig.toolDefinition, null, 2);
+                  }
+                } catch (error) {
+                  // Model not found during input - show placeholder
+                  return '// Model configuration not found. Please check model name.';
                 }
               }
               return '// Select Image Provider and Model first';
@@ -448,7 +457,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             return (
             <div key={config.id || index} className={cx("bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(255,255,255,0.07),0_4px_6px_-2px_rgba(255,255,255,0.04)] transition-all hover:shadow-xl dark:hover:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1),0_10px_10px_-5px_rgba(255,255,255,0.04)]")}>
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-3 pt-3 pb-2 border-b border-white/20 dark:border-white/10">
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <span className="text-xs font-semibold text-primary bg-primary/10 dark:bg-primary/30 px-2 py-1 rounded-full">#{index + 1}</span>
                   <div className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-lg bg-white/50 dark:bg-black/40 cursor-pointer" onClick={() => setChatbotIconEditIndex(index)}>
                     <BotIcon iconName={config.avatar} size={48} />
@@ -459,6 +468,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         <div>
                           <label className="block text-xs font-medium mb-1 opacity-80">{t('Chatbot Name')}</label>
                           <Input
+                            className="w-full"
                             value={config.name}
                             onChange={(e) => {
                               const updatedConfigs = [...customApiConfigs];
@@ -480,6 +490,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </span>
                           </div>
                           <Input
+                            className="w-full text-sm"
                             value={config.shortName}
                             onChange={(e) => {
                               const updatedConfigs = [...customApiConfigs];
@@ -487,20 +498,19 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               updateCustomApiConfigs(updatedConfigs);
                             }}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') setEditingNameIndex(null); }}
-                            className="text-sm"
                             placeholder="Enter short name"
                             maxLength={10}
                           />
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-start gap-2 min-w-0">
+                      <div className="flex items-start gap-1 min-w-0">
                         <button className="text-left min-w-0 flex-1" onClick={() => setEditingNameIndex(index)}>
                           <p className="font-semibold truncate">{config.name}</p>
                           <p className="text-xs opacity-60 truncate mt-0.5">{config.shortName}</p>
                         </button>
                         <button
-                          className="p-1 rounded hover:bg-white/20"
+                          className="p-1 rounded hover:bg-white/20 flex-shrink-0"
                           onClick={() => setEditingNameIndex(index)}
                           title={t('Edit name')}
                           type="button"
@@ -512,20 +522,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     {!config.enabled && <span className="inline-flex items-center mt-2 text-[11px] px-2 py-0.5 rounded-full bg-gray-500 text-white">{t('Disabled')}</span>}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap justify-end">
-                  <NestedDropdown
-                    options={nestedTemplateOptions}
-                    value={'none'}
-                    onChange={(v) => { if (v && v !== 'none') applyTemplate(v, index); }}
-                    placeholder={t('Choose a preset to apply')}
-                    showModelId={false}
-                    trigger={
-                      <div className="px-3 py-2 rounded-lg hover:bg-white/20 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a.5.5 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" /></svg>
-                        <span className="text-xs font-medium">{t('Preset')}</span>
-                      </div>
-                    }
-                  />
+                <div className="flex flex-col gap-2 items-end">
                   <div className="flex items-center gap-1 flex-wrap">
                     <button className={`p-2 rounded hover:bg-white/20 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`} onClick={() => { if (index > 0) { const u = [...customApiConfigs];[u[index - 1], u[index]] = [u[index], u[index - 1]]; updateCustomApiConfigs(u); } }} disabled={index === 0} title={t('Move up')} type="button">
                       <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z" /></svg>
@@ -543,6 +540,19 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       <BiTrash size={14} />
                     </button>
                   </div>
+                  <NestedDropdown
+                    options={nestedTemplateOptions}
+                    value={'none'}
+                    onChange={(v) => { if (v && v !== 'none') applyTemplate(v, index); }}
+                    placeholder={t('Choose a preset to apply')}
+                    showModelId={false}
+                    trigger={
+                      <div className="px-3 py-2 rounded-lg hover:bg-white/20 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a.5.5 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" /></svg>
+                        <span className="text-xs font-medium">{t('Preset')}</span>
+                      </div>
+                    }
+                  />
                 </div>
               </div>
               <div className="px-4 pt-3 pb-4 space-y-6">
@@ -553,10 +563,12 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       <div className="relative">
                         {(() => {
                           const providers = userConfig.providerConfigs || [];
+                          // Filter out image-only providers (they can only be used via Image Agent)
+                          const chatProviders = providers.filter(p => !providerIsImageMode(p));
                           const options = [
                             { name: t('Individual Settings'), value: 'individual' },
                             { name: t('Image Generation (Agent)'), value: '__image_agent__' },
-                            ...providers.map((p) => ({ name: p.name, value: p.id, icon: p.icon }))
+                            ...chatProviders.map((p) => ({ name: p.name, value: p.id, icon: p.icon }))
                           ];
 
                           let currentValue = 'individual';
