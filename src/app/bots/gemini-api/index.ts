@@ -5,6 +5,7 @@ import { file2base64 } from '~app/utils/file-utils'
 import { ChatMessageModel } from '~types'
 import { uuid } from '~utils'
 import { getUserLocaleInfo } from '~utils/system-prompt-variables'
+import i18n from '~app/i18n'
 
 // GeminiApiBotのコンストラクタに渡すオプションの型定義
 interface GeminiApiBotOptions {
@@ -139,7 +140,7 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
       }
 
       if (!responseText) {
-        params.onEvent({ type: 'UPDATE_ANSWER', data: { text: 'Empty response' } })
+        params.onEvent({ type: 'UPDATE_ANSWER', data: { text: i18n.t('image_only_response') } })
       }
 
       params.onEvent({ type: 'DONE' })

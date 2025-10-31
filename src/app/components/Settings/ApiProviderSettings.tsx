@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BiPlus, BiTrash, BiEdit } from 'react-icons/bi';
 import toast from 'react-hot-toast';
@@ -8,6 +8,8 @@ import Blockquote from './Blockquote';
 import IconSelectModal from './IconSelectModal';
 import BotIcon from '../BotIcon';
 import ProviderEditModal from './ProviderEditModal';
+import { getApiSchemeOptions } from './api-scheme-options';
+import CopyIcon from '../icons/CopyIcon';
 
 interface Props {
   userConfig: UserConfig;
@@ -30,6 +32,22 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
   const formRowClass = "flex flex-col gap-2";
   const labelClass = "font-medium text-sm";
   const inputContainerClass = "flex-1";
+
+  const resolveProviderMode = (prov: ProviderConfig): 'chat' | 'image' => {
+    return prov.outputType === 'image' ? 'image' : 'chat';
+  };
+
+  const schemeLookup = useMemo(() => {
+    const map = new Map<CustomApiProvider, string>();
+    getApiSchemeOptions().forEach(opt => {
+      map.set(opt.value, opt.name);
+    });
+    return map;
+  }, []);
+
+  const getProviderScheme = (prov: ProviderConfig) => {
+    return schemeLookup.get(prov.provider) || prov.provider;
+  };
 
   return (
     <>
@@ -68,22 +86,15 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium text-sm truncate">{prov.name}</h4>
-                    <p className="text-xs opacity-60 truncate">
-                      {prov.provider === CustomApiProvider.OpenAI && 'OpenAI Compatible'}
-                      {prov.provider === CustomApiProvider.Anthropic && 'Anthropic Claude API'}
-                      {prov.provider === CustomApiProvider.Bedrock && 'AWS Bedrock (Anthropic)'}
-                      {prov.provider === CustomApiProvider.GeminiOpenAI && 'Google Gemini (OpenAI Format)'}
-                      {prov.provider === CustomApiProvider.QwenOpenAI && 'Qwen (OpenAI Format)'}
-                      {prov.provider === CustomApiProvider.VertexAI_Claude && 'VertexAI (Claude)'}
-                      {prov.provider === CustomApiProvider.Google && 'Google Gemini API (Deprecated)'}
-                    </p>
+                    <p className="text-xs opacity-60 truncate">{getProviderScheme(prov)}</p>
                   </div>
                   <span className="text-xs font-mono opacity-40">#{pIndex + 1}</span>
                 </div>
- 
+
                 <div className="text-xs opacity-60 mb-3 space-y-1">
                   <div className="truncate">Host: {prov.host || t('Not set')}</div>
                   <div className="text-primary">API Key: {prov.apiKey ? '••••••••' : t('Not set')}</div>
+                  <div className="truncate">Type: {resolveProviderMode(prov) === 'image' ? t('Image Generation') : t('Chat')}</div>
                 </div>
  
                 <div className="flex items-center justify-between">
@@ -128,7 +139,7 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       }}
                       title={t('Duplicate')}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1a2 2 0 0 0-2 2v8h1V3a1 1 0 0 1 1-1h8V1H4z" /><path d="M6 5a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5z" /></svg>
+                      <CopyIcon className="w-3 h-3" />
                     </button>
                     <button
                       className="p-1 rounded hover:bg-white/20 text-red-400"

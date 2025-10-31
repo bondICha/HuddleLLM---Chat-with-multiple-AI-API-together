@@ -12,6 +12,7 @@ import { VertexGeminiBot } from './vertex-gemini';
 // import { OpenAIImageBot } from './openai-image';
 import { OpenAIResponsesBot } from './openai-responses';
 import { OpenRouterImageBot } from './openrouter-image';
+import { ImageAgentBot } from './image-agent';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
 export class CustomBot extends AsyncAbstractBot {
@@ -186,8 +187,8 @@ export class CustomBot extends AsyncAbstractBot {
                         model: config.model,
                         systemMessage: processedSystemMessage,
                         isHostFullPath: false,
-                        // Prefer explicit AR in AdvancedConfig; fallback to Size mapping
-                        aspectRatio: (config.advancedConfig?.openrouterAspectRatio as any) || ((config.imageSize === '1024x1024') ? '1:1' : (config.imageSize === '1024x1536') ? '2:3' : (config.imageSize === '1536x1024') ? '3:2' : 'auto'),
+                        // Use explicit AR from AdvancedConfig or default
+                        aspectRatio: (config.advancedConfig?.openrouterAspectRatio as any) || 'auto',
                         providerOnly: effectiveAdvanced?.openrouterProviderOnly,
                     })
                 } else {
@@ -209,18 +210,14 @@ export class CustomBot extends AsyncAbstractBot {
                 break;
             }
             case CustomApiProvider.OpenAI_Image: {
+                // OpenAI_Image: Chat Bot with image generation via function calling
                 const imageTool: any = { type: 'image_generation' }
-                if (config.imageSize) imageTool.size = config.imageSize
-                if (config.imageQuality) imageTool.quality = config.imageQuality
-                if (config.imageBackground) imageTool.background = config.imageBackground
-                if (config.imageModeration) imageTool.moderation = (config.imageModeration === 'default') ? 'low' : config.imageModeration
-                if (config.imageFormat && config.imageFormat !== 'none') {
-                    imageTool.format = config.imageFormat
-                    if (typeof config.imageCompression === 'number' && (config.imageFormat === 'jpeg' || config.imageFormat === 'webp')) {
-                        const clamped = Math.max(0, Math.min(100, Math.round(config.imageCompression)))
-                        imageTool.output_compression = clamped
-                    }
+
+                // Apply user-defined parameters
+                if (config.imageFunctionToolSettings?.params) {
+                    Object.assign(imageTool, config.imageFunctionToolSettings.params)
                 }
+
                 botInstance = new OpenAIResponsesBot({
                     apiKey: effectiveApiKey,
                     host: effectiveHost,
@@ -233,6 +230,12 @@ export class CustomBot extends AsyncAbstractBot {
                     functionTools: [imageTool],
                     extraBody: undefined,
                 })
+                break;
+            }
+            // ChutesAI, NovitaAI, and Replicate are now only used via Image Agent (not as direct chatbots)
+            case CustomApiProvider.ImageAgent: {
+                // Agentic wrapper: delegates to image generation providers
+                botInstance = new ImageAgentBot(this.customBotNumber - 1)
                 break;
             }
             case CustomApiProvider.Google:

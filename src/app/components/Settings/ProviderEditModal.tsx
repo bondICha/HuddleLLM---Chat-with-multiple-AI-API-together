@@ -11,6 +11,7 @@ import HostSearchInput from './HostSearchInput';
 import BotIcon from '../BotIcon';
 import IconSelectModal from './IconSelectModal';
 import ModelPreview from './ModelPreview';
+import { HiChatBubbleLeftRight, HiPhoto } from 'react-icons/hi2';
 
 interface Props {
   open: boolean;
@@ -91,21 +92,97 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
             </div>
           </div>
 
-          {/* API Scheme */}
+          {/* Output Data Type Tabs */}
+          <div className={formRowClass}>
+            <p className={labelClass}>{t('Output Data Type')}</p>
+            <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setEditingProvider({ ...editingProvider, outputType: 'text' })}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
+                  (editingProvider.outputType || 'text') === 'text'
+                    ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                <HiChatBubbleLeftRight className="w-4 h-4" />
+                Text
+              </button>
+              <button
+                onClick={() => setEditingProvider({ ...editingProvider, outputType: 'image' })}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
+                  editingProvider.outputType === 'image'
+                    ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                <HiPhoto className="w-4 h-4" />
+                Image (used by Image Agent)
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {editingProvider.outputType === 'image'
+                ? t('Dedicated image generation API. Used by Image Agent chatbot via Tool Call.')
+                : t('Chat/Completion API. For image generation (e.g., Nanobanana, OpenAI Responses), select Text.')}
+            </p>
+          </div>
+
+          {/* API Scheme - filtered by Output Type */}
           <div className={formRowClass}>
             <p className={labelClass}>{t('API Scheme')}</p>
             <Select
-              options={getApiSchemeOptions()}
+              options={getApiSchemeOptions().filter(opt => {
+                const isImageScheme = [
+                  CustomApiProvider.ChutesAI,
+                  CustomApiProvider.NovitaAI,
+                  CustomApiProvider.Replicate,
+                ].includes(opt.value);
+
+                const isImageAgent = opt.value === CustomApiProvider.ImageAgent;
+
+                // Filter based on selected output type
+                if (editingProvider.outputType === 'image') {
+                  return isImageScheme; // Only show image-specific schemes
+                } else {
+                  return !isImageScheme && !isImageAgent; // Show text schemes (exclude pure image and agent)
+                }
+              })}
               value={editingProvider.provider || CustomApiProvider.OpenAI}
               onChange={(v) => {
                 const next = { ...editingProvider, provider: v as CustomApiProvider };
+
+                // Set isHostFullPath for providers that require full path
                 if (v === CustomApiProvider.GeminiOpenAI || v === CustomApiProvider.VertexAI_Claude || v === CustomApiProvider.VertexAI_Gemini) {
                   next.isHostFullPath = true;
                 }
+
                 // Default Auth mode for Gemini-capable providers
                 if (v === CustomApiProvider.VertexAI_Gemini || v === CustomApiProvider.Google) {
                   next.AuthMode = next.AuthMode || 'header';
                 }
+
+                // Set default hosts (always overwrite when scheme changes)
+                // Image providers
+                if (v === CustomApiProvider.NovitaAI) {
+                  next.host = 'https://api.novita.ai';
+                }
+                if (v === CustomApiProvider.ChutesAI) {
+                  next.host = 'https://image.chutes.ai';
+                }
+                if (v === CustomApiProvider.Replicate) {
+                  next.host = 'https://api.replicate.com/v1/models/%model/predictions';
+                  next.isHostFullPath = true; // Replicate requires full path
+                }
+                // Chat providers
+                if (v === CustomApiProvider.OpenRouter) {
+                  next.host = 'https://openrouter.ai/api';
+                }
+                if (v === CustomApiProvider.QwenOpenAI) {
+                  next.host = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+                }
+                if (v === CustomApiProvider.GeminiOpenAI) {
+                  next.host = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+                }
+
                 setEditingProvider(next);
               }}
             />
@@ -151,7 +228,7 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
           <div className={formRowClass}>
             <div className="flex items-center justify-between">
               <p className={labelClass}>{t(editingProvider.isHostFullPath ? 'API Endpoint (Full Path)' : 'API Host')}</p>
-              {editingProvider.provider === CustomApiProvider.VertexAI_Claude ? (
+              {(editingProvider.provider === CustomApiProvider.VertexAI_Claude || editingProvider.provider === CustomApiProvider.Replicate) ? (
                 <span className="text-sm">{t('Full Path')}</span>
               ) : (
                 <div className="flex items-center gap-1">
@@ -169,6 +246,9 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
               <HostSearchInput
                   className='w-full'
                   placeholder={
+                  editingProvider.provider === CustomApiProvider.NovitaAI ? "https://api.novita.ai" :
+                  editingProvider.provider === CustomApiProvider.ChutesAI ? "https://image.chutes.ai" :
+                  editingProvider.provider === CustomApiProvider.Replicate ? "https://api.replicate.com/v1/models/%model/predictions" :
                   editingProvider.provider === CustomApiProvider.OpenRouter ? "https://openrouter.ai/api" :
                   editingProvider.provider === CustomApiProvider.Google ? t("Not applicable for Google Gemini") :
                   editingProvider.provider === CustomApiProvider.GeminiOpenAI ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" :
@@ -199,8 +279,29 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
                     )}
                   </>
                 )}
+                {editingProvider.outputType === 'image' && (() => {
+                  const getProviderHelpText = () => {
+                    switch (editingProvider.provider) {
+                      case CustomApiProvider.NovitaAI:
+                        return t('Base URL only. Model-specific endpoints (e.g., /v3/async/qwen-image-txt2img) are automatically selected.');
+                      case CustomApiProvider.ChutesAI:
+                        return t('Base URL only. The /generate endpoint is automatically appended.');
+                      case CustomApiProvider.Replicate:
+                        return t('Full path required. Use %model as placeholder for model name (e.g., /v1/models/%model/predictions). The model name will be URL-encoded at request time.');
+                      default:
+                        return t('Base URL only. Specific endpoints are automatically selected based on the model.');
+                    }
+                  };
+                  return (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                      ℹ️ {getProviderHelpText()}
+                    </p>
+                  );
+                })()}
               </div>
-              {editingProvider.provider !== CustomApiProvider.VertexAI_Claude && editingProvider.provider !== CustomApiProvider.GeminiOpenAI && (
+              {editingProvider.provider !== CustomApiProvider.VertexAI_Claude &&
+               editingProvider.provider !== CustomApiProvider.GeminiOpenAI &&
+               editingProvider.provider !== CustomApiProvider.Replicate && (
                 <Switch
                   checked={editingProvider.isHostFullPath ?? false}
                   onChange={(checked) => {

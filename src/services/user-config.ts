@@ -7,154 +7,34 @@ import {
 } from '~app/consts'
 export { MODEL_LIST } from '../../config/model-list'
 
+// Import types for use in this file
+import {
+  SystemPromptMode,
+  FontType,
+  CustomApiProvider,
+  OPENAI_COMPATIBLE_PROVIDERS,
+  CLAUDE_COMPATIBLE_PROVIDERS,
+  THINKING_BUDGET_PROVIDERS,
+  IMAGE_ONLY_PROVIDERS,
+  PROVIDER_INFO,
+  type ModelInfo,
+  type AdvancedConfig,
+  type ProviderConfig,
+  type ToolDefinition,
+  type ImageFunctionToolSettings,
+  type AgenticImageBotSettings,
+  type CustomApiConfig,
+  type ChatPair,
+} from './user-config/types'
+
+// Re-export all types for external use
+export * from './user-config/types'
+
 // カスタムモデルの最大数
 const MAX_CUSTOM_MODELS = 50;
 
 // カスタムAPIの設定キーのプレフィックス
 const CUSTOM_API_CONFIG_PREFIX = 'customApiConfig_';
-
-/**
- * API Providerの設定インターフェース
- * 複数のProvider設定を管理する型定義
- */
-export interface ProviderConfig {
-  /** 安定したID（UUID形式など） */
-  id: string;
-  /** 表示名 */
-  name: string;
-  /** プロバイダ種別 */
-  provider: CustomApiProvider;
-  /** APIホスト */
-  host: string;
-  /** ホストが完全なパスかどうか */
-  isHostFullPath: boolean;
-  /** APIキー（空文字の場合は共通利用） */
-  apiKey: string;
-  /** アイコン識別子 */
-  icon: string;
-  /** Anthropic認証ヘッダタイプ */
-  isAnthropicUsingAuthorizationHeader?: boolean;
-  /** 認証方式: 'header' | 'query' (現在Gemini API用)*/
-  AuthMode?: 'header' | 'default';
-  /** 高度な設定 */
-  advancedConfig?: AdvancedConfig;
-  // UI関連の項目は必要に応じて追加
-}
-
-// System prompt mode enum
-export enum SystemPromptMode {
-  COMMON = 'common',     // Common promptをそのまま使う
-  APPEND = 'append',     // Common prompt + 個別prompt
-  OVERRIDE = 'override'  // 個別promptで上書き
-}
-
-// Font type enum
-export enum FontType {
-  SANS = 'sans',       // Sans-serif (ゴシック体)
-  SERIF = 'serif',     // Serif (明朝体)
-}
-
-
-// モデル情報の型定義
-export interface ModelInfo {
-    value: string;
-    icon?: string; // 個別のアイコン（オプション）
-}
-
-// プロバイダー情報（デフォルトアイコン含む）
-export const PROVIDER_INFO: Record<string, { icon: string }> = {
-    "OpenAI": { icon: "openai" },
-    "Anthropic": { icon: "anthropic" },
-    "Google": { icon: "gemini" },
-    "Grok": { icon: "grok" },
-    "Deepseek": { icon: "deepseek" },
-    "Perplexity": { icon: "perplexity" },
-    "OpenRouter": { icon: "openrouter" },
-    "Rakuten": { icon: "rakuten" },
-    "Custom": { icon: "openai" },
-};
-
-
-
-export enum CustomApiProvider {
-  OpenAI = 'openai',
-  Anthropic = 'anthropic', // Default, uses x-api-key
-  Bedrock = 'bedrock',
-  Anthropic_CustomAuth = 'anthropic-customauth', // Uses Authorization header
-  Google = 'google', // For Gemini API
-  GeminiOpenAI = 'openai-gemini', // For Gemini OpenAI Compatible API
-  QwenOpenAI = 'openai-qwen', // For Qwen OpenAI Compatible API
-  VertexAI_Claude = 'vertexai-claude', // For Google VertexAI Claude API
-  VertexAI_Gemini = 'vertexai-gemini', // For Google VertexAI Gemini
-  OpenAI_Image = 'openai-image', // For OpenAI Image Generation (gpt-image-1)
-  OpenAI_Responses = 'openai-responses', // For OpenAI Responses API
-  OpenRouter = 'openrouter', // Dedicated OpenRouter provider
-}
-
-export interface AdvancedConfig {
-  openrouterProviderOnly?: string; // Comma-separated list of providers for OpenRouter
-  anthropicBetaHeaders?: string; // Semicolon-separated "key:value" pairs for Anthropic beta headers
-  // OpenRouter specific
-  openrouterIsImageModel?: boolean; // Route via chat/completions with modalities
-  openrouterAspectRatio?: string;
-}
-
-/**
- * カスタムAPIの設定インターフェース
- * カスタムAPIの設定情報を保持する型定義
- */
-export interface CustomApiConfig {
-  id?: number // 未使用、後方互換性のため維持。
-  name: string,
-  shortName: string,
-  host: string,
-  model: string,
-  temperature: number,
-  systemMessage: string,
-  systemPromptMode: SystemPromptMode, // System promptの使用方法
-  avatar: string,
-  apiKey: string,
-  thinkingMode?: boolean, // thinking mode (or Reasoning)
-  thinkingBudget?: number, // Anthropic thinking budget
-  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high', // OpenAI reasoning effort
-  provider: CustomApiProvider,
-  webAccess?: boolean,
-  isAnthropicUsingAuthorizationHeader?: boolean, // Anthropicの認証ヘッダータイプを指定するフラグ
-  /** Gemini認証方式: 'header' | 'query' (個別設定時) */
-  geminiAuthMode?: 'header' | 'query',
-  enabled?: boolean, // 各チャットボットの有効/無効状態
-  isHostFullPath?: boolean; // hostが完全なパスかどうかを示すフラグ (デフォルト: false)
-  advancedConfig?: AdvancedConfig;
-  /** Provider参照ID */
-  providerRefId?: string;
-  // Image generation options (for OpenAI Image via Responses API)
-  // Partial images feature disabled
-  // imagePartialImages?: number | null; // 0-3, null to omit parameter
-  imageSize?: '1024x1024' | '1024x1536' | '1536x1024' | 'auto';
-  imageQuality?: 'low' | 'medium' | 'high' | 'auto';
-  imageBackground?: 'transparent' | 'auto';
-  // Output format (default png); if jpeg/webp, compression may be set (0-100)
-  imageFormat?: 'png' | 'jpeg' | 'webp' | 'none';
-  imageCompression?: number; // 0-100 for jpeg/webp
-  // Moderation strictness for gpt-image-1 tool: default (mapped to low), low, auto
-  imageModeration?: 'default' | 'low' | 'auto';
-  // OpenAI Responses API specific toggles
-  responsesWebSearch?: boolean; // Enable web_search_preview tool
-  /** JSON string for Responses API tools (function calling, web_search_preview, etc.) */
-  responsesFunctionTools?: string;
-}
-
-/**
- * チャットペアの設定インターフェース
- * 保存されたチャットペアの情報を保持する型定義
- */
-export interface ChatPair {
-  id: string, // ユニークID
-  name: string, // ペア名（デフォルトは各チャット名を|で区切ったもの）
-  botIndices: number[], // 選択されたボットのインデックス配列
-  createdAt: number, // 作成日時のタイムスタンプ
-  updatedAt: number, // 更新日時のタイムスタンプ
-}
 
 /**
  * デフォルトのカスタムAPI設定
@@ -231,12 +111,14 @@ async function _migrateCustomApiConfigsFromSyncToLocal(): Promise<CustomApiConfi
 
 export async function getUserConfig(): Promise<UserConfig> {
   try {
-    // 1. customApiConfigs を local から取得
-    const localData = await Browser.storage.local.get('customApiConfigs');
+    // 1. Local storage から取得する項目 (端末固有の設定)
+    const localKeys = ['customApiConfigs', 'savedChatPairs'];
+    const localData = await Browser.storage.local.get(localKeys);
     let customConfigsInLocal: CustomApiConfig[] | undefined = localData.customApiConfigs;
+    let chatPairsInLocal: ChatPair[] | undefined = localData.savedChatPairs;
 
-    // 2. その他の設定を sync から取得 (customApiConfigs を除く)
-    const syncKeysToGet = Object.keys(userConfigWithDefaultValue).filter(k => k !== 'customApiConfigs');
+    // 2. その他の設定を sync から取得
+    const syncKeysToGet = Object.keys(userConfigWithDefaultValue).filter(k => !localKeys.includes(k));
     const syncData = await Browser.storage.sync.get(syncKeysToGet);
 
     let finalConfig = defaults({}, syncData, userConfigWithDefaultValue);
@@ -251,6 +133,7 @@ export async function getUserConfig(): Promise<UserConfig> {
 
     finalConfig.customApiConfigs = customConfigsInLocal || [...defaultCustomApiConfigs];
     finalConfig.providerConfigs = syncData.providerConfigs || [];
+    finalConfig.savedChatPairs = chatPairsInLocal || [];
     
     if (finalConfig.customApiConfigs) {
       finalConfig.customApiConfigs.forEach((config: CustomApiConfig) => {
@@ -263,6 +146,9 @@ export async function getUserConfig(): Promise<UserConfig> {
         if (config.systemPromptMode === undefined) {
           config.systemPromptMode = SystemPromptMode.OVERRIDE; // マイグレーション: 既存設定にデフォルト値を設定
         }
+
+        // Note: Legacy image field migrations removed
+        // Users with old OpenAI_Image settings will get defaults (acceptable per requirements)
       });
     }
     
@@ -325,17 +211,31 @@ export async function getUserConfig(): Promise<UserConfig> {
  */
 export async function updateUserConfig(updates: Partial<UserConfig>) {
   try {
-    const { customApiConfigs, providerConfigs, ...otherUpdates } = updates;
+    const { customApiConfigs, providerConfigs, savedChatPairs, ...otherUpdates } = updates;
 
-    // 1. customApiConfigs を local に保存 (存在する場合)
-    if (customApiConfigs !== undefined) { // null や空配列も保存対象とするため、undefined のみチェック
+    // 1. Local storage に保存する項目 (端末固有の設定)
+    const localUpdates: Record<string, any> = {};
+
+    // customApiConfigs を local に保存
+    if (customApiConfigs !== undefined) {
       if (Array.isArray(customApiConfigs)) {
-        const limitedConfigs = customApiConfigs.slice(0, MAX_CUSTOM_MODELS);
-        await Browser.storage.local.set({ customApiConfigs: limitedConfigs });
+        localUpdates.customApiConfigs = customApiConfigs.slice(0, MAX_CUSTOM_MODELS);
       } else {
-        // customApiConfigs が配列でない不正なケース (例: null)
-        await Browser.storage.local.set({ customApiConfigs: [] }); // 空配列として保存
+        localUpdates.customApiConfigs = [];
       }
+    }
+
+    // savedChatPairs を local に保存 (端末ごとの設定)
+    if (savedChatPairs !== undefined) {
+      if (Array.isArray(savedChatPairs)) {
+        localUpdates.savedChatPairs = savedChatPairs;
+      } else {
+        localUpdates.savedChatPairs = [];
+      }
+    }
+
+    if (Object.keys(localUpdates).length > 0) {
+      await Browser.storage.local.set(localUpdates);
     }
 
     // 2. providerConfigs を sync に保存 (存在する場合)

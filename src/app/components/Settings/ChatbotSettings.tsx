@@ -2,20 +2,20 @@ import { FC, useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BiPlus, BiTrash, BiHide, BiShow, BiPencil, BiChevronDown, BiExpand } from 'react-icons/bi';
 import toast from 'react-hot-toast';
+import CopyIcon from '../icons/CopyIcon';
 import { cx } from '~/utils';
-import { UserConfig, CustomApiProvider, CustomApiConfig, SystemPromptMode, MODEL_LIST } from '~services/user-config';
+import { UserConfig, CustomApiProvider, CustomApiConfig, SystemPromptMode, MODEL_LIST, THINKING_BUDGET_PROVIDERS, type ProviderConfig } from '~services/user-config';
+import { getDefaultImageModel } from '~services/image-tool-definitions';
 import { Input, Textarea } from '../Input';
 import Select from '../Select';
 import Switch from '../Switch';
 import Range from '../Range';
 import Button from '../Button';
-import AvatarSelect from './AvatarSelect';
 import NestedDropdown, { NestedDropdownOption } from '../NestedDropdown';
 import TripleStateToggle from '../TripleStateToggle';
 import ModelSearchInput from '../ModelSearchInput';
 import DeveloperOptionsPanel from './DeveloperOptionsPanel';
 import { getTemplateOptions, getActivePresets, getPresetMapping } from '~services/preset-loader';
-import { getApiSchemeOptions } from './api-scheme-options';
 import { useApiModels } from '~hooks/use-api-models';
 import type { ApiModel } from '~utils/model-fetcher';
 import { revalidateEnabledBots } from '~app/hooks/use-enabled-bots';
@@ -30,6 +30,17 @@ interface Props {
 }
 
 const MAX_CUSTOM_MODELS = 50;
+const TOOL_DEFINITION_EXPAND_OFFSET = 4000;
+
+const providerIsImageMode = (providerConfig?: ProviderConfig) => {
+  if (!providerConfig) return false;
+  return providerConfig.outputType === 'image';
+};
+
+// Helper function to filter image providers (for Image Agent).
+const getImageProviders = (providerConfigs: ProviderConfig[]) => {
+  return providerConfigs.filter(providerIsImageMode);
+};
 
 const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
   const { t } = useTranslation();
@@ -38,8 +49,9 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
   const [editingPrompt, setEditingPrompt] = useState<{ index: number; text: string; isCommon: boolean } | null>(null);
   const [nestedTemplateOptions, setNestedTemplateOptions] = useState<NestedDropdownOption[]>([]);
   const [chatbotIconEditIndex, setChatbotIconEditIndex] = useState<number | null>(null);
+  const [editingToolDefinition, setEditingToolDefinition] = useState<{ index: number; text: string } | null>(null);
 
-  const { loading: modelsLoading, fetchAllModels, fetchSingleModel, modelsPerConfig, errorsPerConfig, isProviderSupported } = useApiModels();
+  const { loading: modelsLoading, fetchSingleModel, modelsPerConfig, errorsPerConfig, isProviderSupported } = useApiModels();
   const prevModelsPerConfigRef = useRef<Record<number, ApiModel[]>>({});
   const prevErrorsPerConfigRef = useRef<Record<number, string | null>>({});
 
@@ -129,12 +141,17 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         ? (config.isHostFullPath ?? false)
         : (userConfig.isCustomApiHostFullPath ?? false);
 
+    // Determine Gemini auth mode
+    // Provider AuthMode='default' maps to 'query', otherwise use chatbot's geminiAuthMode setting
+    const providerAuthMode = providerRef?.AuthMode || 'header';
+    const resolvedGeminiAuthMode = providerAuthMode === 'default' ? 'query' : (config.geminiAuthMode || 'header');
+
     const fetchConfig = {
       provider: providerRef?.provider ?? config.provider,
       apiKey: effectiveApiKey,
       host: effectiveHost,
       isHostFullPath: effectiveIsHostFullPath,
-      geminiAuthMode: ((providerRef?.AuthMode || 'header') === 'default') ? 'query' : (config.geminiAuthMode || 'header'),
+      geminiAuthMode: resolvedGeminiAuthMode,
     };
 
     await fetchSingleModel(fetchConfig, index);
@@ -271,6 +288,65 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     revalidateEnabledBots();
   };
 
+  const duplicateCustomModel = (index: number) => {
+    const source = customApiConfigs[index];
+    if (!source) return;
+
+    const newId = Math.max(0, ...customApiConfigs.map(c => c.id ?? 0)) + 1;
+    const baseShort = (source.shortName && source.shortName.trim().length > 0 ? source.shortName : source.name || `Custom${newId}`).replace(/\s+/g, '');
+    const shortName = (baseShort ? `${baseShort}C` : `Custom${newId}`).slice(0, 10);
+
+    const duplicatedConfig: CustomApiConfig = {
+      ...source,
+      id: newId,
+      name: source.name ? `${source.name} Copy` : `Custom AI ${newId}`,
+      shortName,
+      enabled: false,
+    };
+
+    duplicatedConfig.advancedConfig = source.advancedConfig ? { ...source.advancedConfig } : undefined;
+    duplicatedConfig.imageFunctionToolSettings = source.imageFunctionToolSettings
+      ? {
+          ...source.imageFunctionToolSettings,
+          params: source.imageFunctionToolSettings.params
+            ? { ...source.imageFunctionToolSettings.params }
+            : undefined,
+        }
+      : undefined;
+    duplicatedConfig.agenticImageBotSettings = source.agenticImageBotSettings
+      ? {
+          ...source.agenticImageBotSettings,
+          promptGeneratorBotIndex: null,
+        }
+      : undefined;
+    duplicatedConfig.toolDefinition = source.toolDefinition
+      ? JSON.parse(JSON.stringify(source.toolDefinition))
+      : undefined;
+
+    const updated = [
+      ...customApiConfigs.slice(0, index + 1),
+      duplicatedConfig,
+      ...customApiConfigs.slice(index + 1),
+    ];
+    updateCustomApiConfigs(updated);
+    toast.success(t('Duplicated model created'));
+  };
+
+  const handleToolDefinitionSave = (newValue: string) => {
+    if (editingToolDefinition === null) return true;
+    try {
+      const parsed = JSON.parse(newValue);
+      const updatedConfigs = [...customApiConfigs];
+      updatedConfigs[editingToolDefinition.index].toolDefinition = parsed;
+      updateCustomApiConfigs(updatedConfigs);
+      toast.success(t('Tool definition updated'));
+      return true;
+    } catch {
+      toast.error(t('Invalid JSON'));
+      return false;
+    }
+  };
+
   const formRowClass = "flex flex-col gap-2";
   const labelClass = "font-medium text-sm";
   const inputContainerClass = "flex-1";
@@ -283,19 +359,105 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
           <Button size="small" text={t('Add New Model')} icon={<BiPlus />} onClick={addNewCustomModel} color="primary" />
         </div>
         <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))' }}>
-          {customApiConfigs.map((config, index) => (
+          {customApiConfigs.map((config, index) => {
+            // ========== Conditional Flags ==========
+            const providerRef = config.providerRefId
+              ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId)
+              : undefined;
+            const effectiveProvider = providerRef?.provider ?? config.provider;
+
+            const isImageAgent = effectiveProvider === CustomApiProvider.ImageAgent;
+            const isOpenAI = effectiveProvider === CustomApiProvider.OpenAI;
+            const isAnthropic = effectiveProvider === CustomApiProvider.Anthropic;
+            const isOpenRouter = effectiveProvider === CustomApiProvider.OpenRouter;
+            const isGemini = effectiveProvider === CustomApiProvider.VertexAI_Gemini || effectiveProvider === CustomApiProvider.Google;
+            const isOpenAIResponses = effectiveProvider === CustomApiProvider.OpenAI_Responses;
+
+            // Show flags
+            const showImageAgentSettings = isImageAgent;
+            const showAIModelSelection = !isImageAgent;
+            const showThinkingBudget = THINKING_BUDGET_PROVIDERS.includes(effectiveProvider as any);
+            const showReasoningEffort = isOpenAI;
+
+            // Image Function Tool settings (for OpenAI_Image, OpenRouter Image, etc.)
+            const showImageFunctionSettings =
+              effectiveProvider === CustomApiProvider.OpenAI_Image ||
+              (isOpenRouter && !!config.advancedConfig?.openrouterIsImageModel);
+
+            const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort && !isImageAgent && !showImageFunctionSettings;
+
+            const showAnthropicAuthHeader = !config.providerRefId && isAnthropic;
+            const showGeminiAuthMode = !config.providerRefId && isGemini;
+            const showApiHost = !config.providerRefId && !isImageAgent;
+            const showApiKey = !config.providerRefId && !isImageAgent;
+            const showOpenRouterMode = isOpenRouter;
+            const showDeveloperOptions = [CustomApiProvider.OpenAI, CustomApiProvider.Anthropic, CustomApiProvider.VertexAI_Claude, CustomApiProvider.OpenRouter].includes(effectiveProvider);
+            const showOpenAIResponsesOptions = isOpenAIResponses;
+            // ========== End Conditional Flags ==========
+
+            const linkedImageProvider = (userConfig.providerConfigs || []).find(
+              p => p.id === config.agenticImageBotSettings?.imageGeneratorProviderId
+            );
+
+            const imageAgentMeta = (() => {
+              if (!isImageAgent || !config.model || !linkedImageProvider) {
+                return null;
+              }
+            const imageModelConfig = getDefaultImageModel(config.model, linkedImageProvider.provider);
+            if (!imageModelConfig) {
+              return {
+                supportsEdit: false,
+                endpoint: (linkedImageProvider.host || '').trim(),
+                hasHost: (linkedImageProvider.host || '').trim().length > 0,
+                isAsync: false,
+              };
+            }
+            const host = (linkedImageProvider.host || '').trim();
+            let endpoint = typeof imageModelConfig.apiConfig.endpoint === 'function'
+              ? imageModelConfig.apiConfig.endpoint(false, host)
+              : imageModelConfig.apiConfig.endpoint || host;
+
+            // Replace %model placeholder with actual model name for preview
+            if (endpoint.includes('%model') && config.model) {
+              endpoint = endpoint.replace(/%model/g, encodeURIComponent(config.model));
+            }
+
+              return {
+                supportsEdit: imageModelConfig.apiConfig.supportsEdit,
+                endpoint,
+                hasHost: host.length > 0,
+                isAsync: imageModelConfig.apiConfig.isAsync,
+              };
+            })();
+
+            const toolDefinitionText = (() => {
+              if (config.toolDefinition) {
+                return JSON.stringify(config.toolDefinition, null, 2);
+              }
+              if (config.model && linkedImageProvider) {
+                const defaultModelConfig = getDefaultImageModel(config.model, linkedImageProvider.provider);
+                if (defaultModelConfig) {
+                  return JSON.stringify(defaultModelConfig.toolDefinition, null, 2);
+                }
+              }
+              return '// Select Image Provider and Model first';
+            })();
+
+            const toolDefinitionExpanded = !!expandedSections[index + TOOL_DEFINITION_EXPAND_OFFSET];
+
+            return (
             <div key={config.id || index} className={cx("bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(255,255,255,0.07),0_4px_6px_-2px_rgba(255,255,255,0.04)] transition-all hover:shadow-xl dark:hover:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1),0_10px_10px_-5px_rgba(255,255,255,0.04)]")}>
-              <div className="grid grid-cols-[60px_1fr_140px] items-center p-4 border-b border-white/20 dark:border-white/10 gap-2">
-                <span className="font-bold text-lg text-primary text-center">#{index + 1}</span>
-                <div className="flex flex-col items-center justify-center">
-                  <div className="w-16 h-16 mb-2 cursor-pointer" onClick={() => setChatbotIconEditIndex(index)}>
-                    <BotIcon iconName={config.avatar} size={64} />
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-3 pt-3 pb-2 border-b border-white/20 dark:border-white/10">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-xs font-semibold text-primary bg-primary/10 dark:bg-primary/30 px-2 py-1 rounded-full">#{index + 1}</span>
+                  <div className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-lg bg-white/50 dark:bg-black/40 cursor-pointer" onClick={() => setChatbotIconEditIndex(index)}>
+                    <BotIcon iconName={config.avatar} size={48} />
                   </div>
-                  <div className="relative w-full max-w-[200px]">
+                  <div className="flex-1 min-w-0">
                     {editingNameIndex === index ? (
-                      <div className="space-y-3 editing-area">
+                      <div className="space-y-2 editing-area">
                         <div>
-                          <label className="block text-xs font-medium text-center mb-1 opacity-80">{t('Chatbot Name')}</label>
+                          <label className="block text-xs font-medium mb-1 opacity-80">{t('Chatbot Name')}</label>
                           <Input
                             value={config.name}
                             onChange={(e) => {
@@ -305,13 +467,12 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             }}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') setEditingNameIndex(null); }}
                             autoFocus
-                            className="text-center"
                             placeholder="Enter chatbot name"
                           />
                         </div>
                         <div>
-                          <div className="flex items-center justify-center mb-1">
-                            <label className="text-xs font-medium opacity-80 mr-1">{t('Short Name (10 chars)')}</label>
+                          <div className="flex items-center gap-1 mb-1">
+                            <label className="text-xs font-medium opacity-80">{t('Short Name (10 chars)')}</label>
                             <span className="cursor-help text-xs group relative">ⓘ
                               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 hidden group-hover:block bg-gray-900 dark:bg-gray-800 text-white text-xs p-3 rounded-md shadow-xl z-50 border border-gray-600">
                                 {t('Short name displayed when sidebar is collapsed. Will wrap to multiple lines if needed.')}
@@ -326,81 +487,328 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               updateCustomApiConfigs(updatedConfigs);
                             }}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') setEditingNameIndex(null); }}
-                            className="text-center text-sm"
+                            className="text-sm"
                             placeholder="Enter short name"
                             maxLength={10}
                           />
                         </div>
                       </div>
                     ) : (
-                      <div className="relative group">
-                        <div className="cursor-pointer" onClick={() => setEditingNameIndex(index)}>
-                          <p className="font-semibold text-center truncate">{config.name}</p>
-                          <p className="text-sm text-center truncate opacity-60 mt-1">{config.shortName}</p>
-                        </div>
-                        <BiPencil className="absolute right-0 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-70 transition-opacity cursor-pointer" onClick={() => setEditingNameIndex(index)} />
+                      <div className="flex items-start gap-2 min-w-0">
+                        <button className="text-left min-w-0 flex-1" onClick={() => setEditingNameIndex(index)}>
+                          <p className="font-semibold truncate">{config.name}</p>
+                          <p className="text-xs opacity-60 truncate mt-0.5">{config.shortName}</p>
+                        </button>
+                        <button
+                          className="p-1 rounded hover:bg-white/20"
+                          onClick={() => setEditingNameIndex(index)}
+                          title={t('Edit name')}
+                          type="button"
+                        >
+                          <BiPencil size={14} />
+                        </button>
                       </div>
                     )}
+                    {!config.enabled && <span className="inline-flex items-center mt-2 text-[11px] px-2 py-0.5 rounded-full bg-gray-500 text-white">{t('Disabled')}</span>}
                   </div>
-                  {!config.enabled && <span className="text-xs bg-gray-500 text-white px-2 py-0.5 rounded-full mt-2">{t('Disabled')}</span>}
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <NestedDropdown
-                      options={nestedTemplateOptions}
-                      value={'none'}
-                      onChange={(v) => { if (v && v !== 'none') applyTemplate(v, index); }}
-                      placeholder={t('Choose a preset to apply')}
-                      showModelId={false}
-                      trigger={
-                        <div className="p-2 rounded-lg hover:bg-white/20 flex flex-col items-center justify-center min-w-[60px] w-full">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" className="mb-1"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" /></svg>
-                          <span className="text-xs font-medium">Preset</span>
-                        </div>
-                      }
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-1 flex-shrink-0">
-                    <button className={`p-2 rounded-lg ${index === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/20'} flex items-center justify-center`} onClick={() => { if (index > 0) { const u = [...customApiConfigs];[u[index - 1], u[index]] = [u[index], u[index - 1]]; updateCustomApiConfigs(u); } }} disabled={index === 0} title={t('Move up')}>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z" /></svg>
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  <NestedDropdown
+                    options={nestedTemplateOptions}
+                    value={'none'}
+                    onChange={(v) => { if (v && v !== 'none') applyTemplate(v, index); }}
+                    placeholder={t('Choose a preset to apply')}
+                    showModelId={false}
+                    trigger={
+                      <div className="px-3 py-2 rounded-lg hover:bg-white/20 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a.5.5 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" /></svg>
+                        <span className="text-xs font-medium">{t('Preset')}</span>
+                      </div>
+                    }
+                  />
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <button className={`p-2 rounded hover:bg-white/20 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`} onClick={() => { if (index > 0) { const u = [...customApiConfigs];[u[index - 1], u[index]] = [u[index], u[index - 1]]; updateCustomApiConfigs(u); } }} disabled={index === 0} title={t('Move up')} type="button">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z" /></svg>
                     </button>
-                    <button className={`p-2 rounded-lg ${index === customApiConfigs.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/20'} flex items-center justify-center`} onClick={() => { if (index < customApiConfigs.length - 1) { const u = [...customApiConfigs];[u[index], u[index + 1]] = [u[index + 1], u[index]]; updateCustomApiConfigs(u); } }} disabled={index === customApiConfigs.length - 1} title={t('Move down')}>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" /></svg>
+                    <button className={`p-2 rounded hover:bg-white/20 ${index === customApiConfigs.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`} onClick={() => { if (index < customApiConfigs.length - 1) { const u = [...customApiConfigs];[u[index], u[index + 1]] = [u[index + 1], u[index]]; updateCustomApiConfigs(u); } }} disabled={index === customApiConfigs.length - 1} title={t('Move down')} type="button">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" /></svg>
                     </button>
-                    <button className="p-2 rounded-lg hover:bg-white/20 flex items-center justify-center" onClick={() => toggleBotEnabledState(index)} title={config.enabled ? t('Disable') : t('Enable')}>
+                    <button className="p-2 rounded hover:bg-white/20" onClick={() => duplicateCustomModel(index)} title={t('Duplicate')} type="button">
+                      <CopyIcon className="w-3.5 h-3.5" />
+                    </button>
+                    <button className="p-2 rounded hover:bg-white/20" onClick={() => toggleBotEnabledState(index)} title={config.enabled ? t('Disable') : t('Enable')} type="button">
                       {config.enabled ? <BiShow size={14} /> : <BiHide size={14} />}
                     </button>
-                    <button className="p-2 rounded-lg hover:bg-white/20 text-red-400 flex items-center justify-center" onClick={() => deleteCustomModel(index)} title={t('Delete')}>
+                    <button className="p-2 rounded hover:bg-white/20 text-red-400" onClick={() => deleteCustomModel(index)} title={t('Delete')} type="button">
                       <BiTrash size={14} />
                     </button>
                   </div>
                 </div>
               </div>
-              <div className="p-4 space-y-6">
+              <div className="px-4 pt-3 pb-4 space-y-6">
                 <div className="space-y-4">
+                    {/* API Provider - with Image Agent option */}
                     <div className={formRowClass}>
                       <p className={labelClass}>{t('API Provider')}</p>
                       <div className="relative">
-                        <Select
-                          options={[
-                            // Individual Settings のときはアイコンを表示しない（undefined）
+                        {(() => {
+                          const providers = userConfig.providerConfigs || [];
+                          const options = [
                             { name: t('Individual Settings'), value: 'individual' },
-                            ...(userConfig.providerConfigs || []).map((p) => ({ name: p.name, value: p.id, icon: p.icon }))
-                          ]}
-                          value={config.providerRefId || 'individual'}
-                          onChange={(v) => {
-                            const updatedConfigs = [...customApiConfigs];
-                            if (v === 'individual') {
-                              updatedConfigs[index].providerRefId = undefined;
-                            } else {
-                              updatedConfigs[index].providerRefId = v;
-                            }
-                            updateCustomApiConfigs(updatedConfigs);
-                          }}
-                          showIcon={true}
-                        />
+                            { name: t('Image Generation (Agent)'), value: '__image_agent__' },
+                            ...providers.map((p) => ({ name: p.name, value: p.id, icon: p.icon }))
+                          ];
+
+                          let currentValue = 'individual';
+                          if (config.provider === CustomApiProvider.ImageAgent) {
+                            currentValue = '__image_agent__';
+                          } else if (config.providerRefId) {
+                            currentValue = config.providerRefId;
+                          }
+
+                          return (
+                            <Select
+                              options={options}
+                              value={currentValue}
+                              onChange={(v) => {
+                                const updatedConfigs = [...customApiConfigs];
+                                if (v === 'individual') {
+                                  updatedConfigs[index].providerRefId = undefined;
+                                  if (updatedConfigs[index].provider === CustomApiProvider.ImageAgent) {
+                                    updatedConfigs[index].provider = CustomApiProvider.OpenAI;
+                                  }
+                                } else if (v === '__image_agent__') {
+                                  updatedConfigs[index].provider = CustomApiProvider.ImageAgent;
+                                  updatedConfigs[index].providerRefId = undefined;
+                                  updatedConfigs[index].agenticImageBotSettings = updatedConfigs[index].agenticImageBotSettings || {};
+                                } else {
+                                  updatedConfigs[index].providerRefId = v;
+                                  if (updatedConfigs[index].provider === CustomApiProvider.ImageAgent) {
+                                    updatedConfigs[index].provider = CustomApiProvider.OpenAI;
+                                  }
+                                }
+                                updateCustomApiConfigs(updatedConfigs);
+                              }}
+                              showIcon={true}
+                            />
+                          );
+                        })()}
                       </div>
                     </div>
+
+                    {/* Image Agent Settings - Show when Image Agent is selected */}
+                    {showImageAgentSettings && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/>
+                            <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd"/>
+                          </svg>
+                          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('Image Generation Settings')}</p>
+                        </div>
+
+                        <div className={formRowClass}>
+                          <p className={labelClass}>{t('Image Provider')}</p>
+                          <Select
+                            options={[
+                              { name: t('Select Image Provider'), value: '' },
+                              ...getImageProviders(userConfig.providerConfigs || []).map(p => ({ name: p.name, value: p.id, icon: p.icon }))
+                            ]}
+                            value={config.agenticImageBotSettings?.imageGeneratorProviderId || ''}
+                            onChange={(v) => {
+                              const u = [...customApiConfigs];
+                              u[index].agenticImageBotSettings = {
+                                ...(u[index].agenticImageBotSettings || {}),
+                                imageGeneratorProviderId: v || undefined
+                              };
+                              updateCustomApiConfigs(u);
+                            }}
+                            showIcon={true}
+                          />
+                          <span className="text-xs opacity-70">{t('Select which image generation API to use')}</span>
+                        </div>
+
+                        <div className={formRowClass}>
+                          <p className={labelClass}>{t('Prompt Generator Bot')}</p>
+                          <Select
+                            options={[
+                              { name: t('None (Use raw prompt)'), value: '-1' },
+                              ...customApiConfigs
+                                .map((c, i) => ({ name: `#${i + 1} ${c.name}`, value: String(i) }))
+                                .filter((_, optIndex) => optIndex !== index)
+                            ]}
+                            value={
+                              config.agenticImageBotSettings?.promptGeneratorBotIndex === null ||
+                              config.agenticImageBotSettings?.promptGeneratorBotIndex === undefined
+                                ? '-1'
+                                : String(config.agenticImageBotSettings.promptGeneratorBotIndex)
+                            }
+                            onChange={(v) => {
+                              const u = [...customApiConfigs];
+                              u[index].agenticImageBotSettings = {
+                                ...(u[index].agenticImageBotSettings || {}),
+                                promptGeneratorBotIndex: v === '-1' ? null : parseInt(v)
+                              };
+                              updateCustomApiConfigs(u);
+                            }}
+                          />
+                          <span className="text-xs opacity-70">{t('Chatbot to enhance/generate image prompts')}</span>
+                        </div>
+
+                        {/* Image Model Selection */}
+                        <div className={formRowClass}>
+                          <p className={labelClass}>{t('Image Model')}</p>
+                          {(() => {
+                            const imageProvider = (userConfig.providerConfigs || []).find(
+                              p => p.id === config.agenticImageBotSettings?.imageGeneratorProviderId
+                            );
+                            const isNovita = imageProvider?.provider === CustomApiProvider.NovitaAI || /novita/i.test(imageProvider?.host || '');
+                            const isReplicate = imageProvider?.provider === CustomApiProvider.Replicate || /replicate/i.test(imageProvider?.host || '');
+
+                            if (isNovita) {
+                              // Novita: Fixed list only
+                              const novitaModels = [
+                                { name: 'Qwen Image', value: 'qwen-image' },
+                                { name: 'Hunyuan Image 3', value: 'hunyuan-image-3' },
+                                { name: 'Seedream 4.0', value: 'seedream-4-0' },
+                              ];
+
+                              // Auto-set default model if not yet configured
+                              if (!config.model && novitaModels.length > 0) {
+                                const u = [...customApiConfigs];
+                                u[index].model = novitaModels[0].value;
+                                updateCustomApiConfigs(u);
+                              }
+
+                              return (
+                                <>
+                                  <Select
+                                    options={novitaModels}
+                                    value={config.model || novitaModels[0].value}
+                                    onChange={(v) => {
+                                      const u = [...customApiConfigs];
+                                      u[index].model = v;
+                                      updateCustomApiConfigs(u);
+                                    }}
+                                  />
+                                  <span className="text-xs opacity-70">{t('Select Novita model. Tool definition will be set automatically.')}</span>
+                                </>
+                              );
+                            } else if (isReplicate) {
+                              // Replicate: Fixed list (currently only Imagen 4)
+                              const replicateModels = [
+                                { name: 'Google Imagen 4', value: 'google/imagen-4' },
+                                // Future models can be added here
+                              ];
+
+                              // Auto-set default model if not yet configured
+                              if (!config.model && replicateModels.length > 0) {
+                                const u = [...customApiConfigs];
+                                u[index].model = replicateModels[0].value;
+                                updateCustomApiConfigs(u);
+                              }
+
+                              return (
+                                <>
+                                  <Select
+                                    options={replicateModels}
+                                    value={config.model || replicateModels[0].value}
+                                    onChange={(v) => {
+                                      const u = [...customApiConfigs];
+                                      u[index].model = v;
+                                      updateCustomApiConfigs(u);
+                                    }}
+                                  />
+                                  <span className="text-xs opacity-70">{t('Select Replicate model. Tool definition will be set automatically.')}</span>
+                                </>
+                              );
+                            } else {
+                              // Chutes or others: Free input with suggestions
+                              return (
+                                <>
+                                  <Input
+                                    value={config.model || ''}
+                                    onChange={(e) => {
+                                      const u = [...customApiConfigs];
+                                      u[index].model = e.currentTarget.value;
+                                      updateCustomApiConfigs(u);
+                                    }}
+                                    placeholder="chroma, FLUX.1-dev, etc."
+                                  />
+                                  <span className="text-xs opacity-70">
+                                    {t('Common models: chroma, FLUX.1-dev, FLUX.1-schnell. Tool definition will be auto-detected.')}
+                                  </span>
+                                </>
+                              );
+                            }
+                          })()}
+                        </div>
+
+                        {/* Tool Definition Editor */}
+                        <div className={formRowClass}>
+                          <div className="flex items-center justify-between">
+                            <p className={labelClass}>{t('Tool Definition (Advanced)')}</p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingToolDefinition({
+                                    index,
+                                    text: toolDefinitionText,
+                                  });
+                                }}
+                                className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                                title={t('Edit in full screen')}
+                              >
+                                <BiExpand size={16} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const u = [...customApiConfigs];
+                                  u[index].toolDefinition = undefined; // Clear to use auto-detected default
+                                  updateCustomApiConfigs(u);
+                                }}
+                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                              >
+                                {t('Restore Default')}
+                              </button>
+                            </div>
+                          </div>
+                          <textarea
+                            value={toolDefinitionText}
+                            onChange={(e) => {
+                              const u = [...customApiConfigs];
+                              try {
+                                const parsed = JSON.parse(e.target.value);
+                                u[index].toolDefinition = parsed;
+                              } catch {
+                                // Invalid JSON - don't update
+                              }
+                              updateCustomApiConfigs(u);
+                            }}
+                            className={`w-full p-2 text-xs font-mono border border-gray-300 dark:border-gray-700 border-b-0 rounded-t-md ${
+                              config.toolDefinition ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'
+                            } ${toolDefinitionExpanded ? 'h-64' : 'max-h-[10rem]'} overflow-y-auto`}
+                            placeholder={'{\n  "name": "generate_image",\n  "description": "...",\n  "input_schema": {...}\n}'}
+                            readOnly={!config.toolDefinition}
+                          />
+                          <div
+                            className="h-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center justify-center rounded-b-md"
+                            onClick={() => toggleSection(index + TOOL_DEFINITION_EXPAND_OFFSET)}
+                            title={toolDefinitionExpanded ? t('Collapse') : t('Expand')}
+                          >
+                            <BiChevronDown size={16} className={`text-gray-600 dark:text-gray-300 transition-transform ${toolDefinitionExpanded ? 'rotate-180' : ''}`} />
+                          </div>
+                          <span className="text-xs opacity-70">
+                            {config.toolDefinition
+                              ? t('Custom tool definition. Click "Restore Default" to use auto-detection.')
+                              : t('Auto-detected from model. Click the expand button to copy and customize.')}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                  {/* AI Model - Only show for non-Image-Agent bots */}
+                  {showAIModelSelection && (
                   <div className={formRowClass}>
                     <div className="flex items-center justify-between">
                       <p className={labelClass}>{t('AI Model')}</p>
@@ -441,6 +849,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       />
                     </div>
                   </div>
+                  )}
+
                   <div className={formRowClass}>
                     <div className="flex items-center justify-between">
                       <p className={labelClass}>{t('System Prompt')}</p>
@@ -493,27 +903,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       </div>
                     </div>
                   </div>
-                  {(() => {
-                    const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                    const effectiveProvider = providerRef?.provider ?? config.provider;
-                    
-                    const isProviderIn = (providers: CustomApiProvider[]) => providers.includes(effectiveProvider);
 
-                    const showThinkingBudget = isProviderIn([
-                      CustomApiProvider.Anthropic,
-                      CustomApiProvider.Bedrock,
-                      CustomApiProvider.Anthropic_CustomAuth,
-                      CustomApiProvider.VertexAI_Claude,
-                      CustomApiProvider.VertexAI_Gemini,
-                      CustomApiProvider.GeminiOpenAI,
-                      CustomApiProvider.QwenOpenAI,
-                    ]);
-                    const showReasoningEffort = isProviderIn([CustomApiProvider.OpenAI]);
-                    const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort && !isProviderIn([CustomApiProvider.OpenAI_Image]);
-
-                    return (
-                      <>
-                        {showThinkingBudget && (
+                  {showThinkingBudget && (
                           <div className={formRowClass}>
                             <div className="flex items-center justify-between">
                               <p className={labelClass}>{config.thinkingMode ? t('Thinking Budget') : t('Temperature')}</p>
@@ -618,10 +1009,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               </div>
                             </div>
                           </div>
-                        )}
-                      </>
-                    );
-                  })()}
+                  )}
+
                   <div className="border-t pt-3">
                     <button className="flex items-center gap-2 w-full text-left text-sm font-medium opacity-80 hover:opacity-100" onClick={() => toggleSection(index)}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className={`transition-transform ${expandedSections[index] ? 'rotate-90' : ''}`}><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" /></svg>
@@ -629,29 +1018,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     </button>
                     {expandedSections[index] ? (
                       <div className="mt-3 space-y-4">
-                        {!config.providerRefId && (
-                          <div className={formRowClass}>
-                            <p className={labelClass}>{t('API Scheme')}</p>
-                            <div className="flex-1">
-                              <Select
-                                options={getApiSchemeOptions()}
-                                value={config.provider || CustomApiProvider.OpenAI}
-                                onChange={(v) => {
-                                  const updatedConfigs = [...customApiConfigs];
-                                  updatedConfigs[index].provider = v as CustomApiProvider;
-                                  if (v === CustomApiProvider.GeminiOpenAI || v === CustomApiProvider.VertexAI_Claude || v === CustomApiProvider.VertexAI_Gemini) {
-                                    updatedConfigs[index].isHostFullPath = true;
-                                  }
-                                  if (v === CustomApiProvider.VertexAI_Gemini || v === CustomApiProvider.Google) {
-                                    updatedConfigs[index].geminiAuthMode = updatedConfigs[index].geminiAuthMode || 'header';
-                                  }
-                                  updateCustomApiConfigs(updatedConfigs);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        {!config.providerRefId && config.provider === CustomApiProvider.Anthropic && (
+                        {showAnthropicAuthHeader && (
                           <div className={formRowClass}>
                             <p className={labelClass}>{t('Anthropic Auth Header')}</p>
                             <div className="flex-1">
@@ -667,7 +1034,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                           </div>
                         )}
-                        {!config.providerRefId && (config.provider === CustomApiProvider.VertexAI_Gemini || config.provider === CustomApiProvider.Google) && (
+                        {showGeminiAuthMode && (
                           <div className={formRowClass}>
                             <p className={labelClass}>{t('Gemini Auth Mode')}</p>
                             <div className="flex-1">
@@ -683,7 +1050,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                           </div>
                         )}
-                        {!config.providerRefId && (
+                        {showApiHost && (
                           <div className={formRowClass}>
                             <div className="flex items-center justify-between">
                               <p className={labelClass}>{t(config.isHostFullPath ? 'API Endpoint (Full Path)' : 'API Host')}</p>
@@ -750,8 +1117,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                           </div>
                         )}
-                        
-                        {!config.providerRefId && (
+
+                        {showApiKey && (
                           <div className={formRowClass}>
                             <p className={labelClass}>API Key</p>
                             <div className={inputContainerClass}>
@@ -769,11 +1136,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                           </div>
                         )}
-                        {(() => {
-                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                          const effectiveProvider = providerRef?.provider ?? config.provider;
-                          if (effectiveProvider !== CustomApiProvider.OpenRouter) return null;
-                          return (
+                        {showOpenRouterMode && (
                             <div className="space-y-4">
                               <div className={formRowClass}>
                                 <p className={labelClass}>{t('Mode')}</p>
@@ -795,14 +1158,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 />
                               </div>
                             </div>
-                          )
-                        })()}
-                        {(() => {
-                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                          const effectiveProvider = providerRef?.provider ?? config.provider;
-                          const showDeveloperOptions = [CustomApiProvider.OpenAI, CustomApiProvider.Anthropic, CustomApiProvider.VertexAI_Claude, CustomApiProvider.OpenRouter].includes(effectiveProvider);
-
-                          return showDeveloperOptions && (
+                        )}
+                        {showDeveloperOptions && (
                             <DeveloperOptionsPanel
                               config={config}
                               index={index}
@@ -815,13 +1172,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               }}
                               effectiveProvider={effectiveProvider}
                             />
-                          );
-                        })()}
-                        {(() => {
-                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                          const effectiveProvider = providerRef?.provider ?? config.provider;
-                          if (effectiveProvider !== CustomApiProvider.OpenAI_Responses) return null;
-                          return (
+                        )}
+                        {showOpenAIResponsesOptions && (
                             <div className="space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
@@ -855,108 +1207,155 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 <p className="text-xs opacity-70 mt-1">Optional. Raw JSON array for Responses API tools. If set, overrides the simple Web Search toggle.</p>
                               </div>
                             </div>
-                          );
-                        })()}
-                        {(() => {
-                          const providerRef = config.providerRefId ? userConfig.providerConfigs?.find(p => p.id === config.providerRefId) : undefined;
-                          const effectiveProvider = providerRef?.provider ?? config.provider;
-                          return effectiveProvider === CustomApiProvider.OpenAI_Image && (
-                           <div className="space-y-4">
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Image Size')}</p>
-                              <Select
-                                options={[
-                                  { name: t('auto'), value: 'auto' },
-                                  { name: '1024x1024', value: '1024x1024' },
-                                  { name: `1024x1536 ${t('portrait-suffix')}`, value: '1024x1536' },
-                                  { name: `1536x1024 ${t('landscape-suffix')}`, value: '1536x1024' },
-                                ]}
-                                value={config.imageSize || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageSize = v as any; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Image Quality')}</p>
-                              <Select
-                                options={[
-                                  { name: t('auto'), value: 'auto' },
-                                  { name: t('low'), value: 'low' },
-                                  { name: t('medium'), value: 'medium' },
-                                  { name: t('high'), value: 'high' },
-                                ]}
-                                value={config.imageQuality || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageQuality = v as any; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Background')}</p>
-                              <Select
-                                options={[
-                                  { name: t('auto'), value: 'auto' },
-                                  { name: t('transparent'), value: 'transparent' },
-                                ]}
-                                value={config.imageBackground || 'auto'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageBackground = v as any; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Output Format')}</p>
-                              <Select
-                                options={[
-                                  { name: 'none (default)', value: 'none' },
-                                  { name: 'png', value: 'png' },
-                                  { name: 'jpeg', value: 'jpeg' },
-                                  { name: 'webp', value: 'webp' },
-                                ]}
-                                value={config.imageFormat || 'none'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageFormat = v as any; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Compression (0-100)')}</p>
-                              <Input
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={typeof config.imageCompression === 'number' ? String(config.imageCompression) : ''}
-                                placeholder={t('Only for jpeg/webp')}
-                                onChange={(e) => {
-                                  const val = e.currentTarget.value
-                                  const num = val === '' ? undefined : Math.max(0, Math.min(100, parseInt(val)))
-                                  const u = [...customApiConfigs]
-                                  // @ts-ignore
-                                  u[index].imageCompression = typeof num === 'number' && !isNaN(num) ? num : undefined
-                                  updateCustomApiConfigs(u)
-                                }}
-                              />
-                            </div>
-
-                            <div className={formRowClass}>
-                              <p className={labelClass}>{t('Moderation')}</p>
-                              <Select
-                                options={[
-                                  { name: t('default'), value: 'default' },
-                                  { name: t('low'), value: 'low' },
-                                  { name: t('auto'), value: 'auto' },
-                                ]}
-                                value={config.imageModeration || 'default'}
-                                onChange={(v) => { const u = [...customApiConfigs]; u[index].imageModeration = v as any; updateCustomApiConfigs(u); }}
-                              />
-                            </div>
+                        )}
+                        {/* Image Agent Settings */}
+                        {isImageAgent && (
+                          <div className="space-y-4">
+                              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
+                                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('Image Provider Capabilities')}</p>
+                                <div className="flex justify-between text-sm">
+                                  <span className="opacity-70">{t('Edit Support')}</span>
+                                  <span className="font-medium">
+                                    {!linkedImageProvider || !config.model
+                                      ? t('Select provider and model')
+                                      : imageAgentMeta?.supportsEdit
+                                        ? t('Enabled')
+                                        : t('Disabled')}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="opacity-70">{t('API Type')}</span>
+                                  <span className="font-medium">
+                                    {!linkedImageProvider || !config.model
+                                      ? t('Select provider and model')
+                                      : imageAgentMeta?.isAsync
+                                        ? t('Async (task polling)')
+                                        : t('Synchronous response')}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="opacity-70">{t('Endpoint Preview')}</span>
+                                  <span className="font-medium text-right break-all">
+                                    {!linkedImageProvider || !config.model
+                                      ? t('Select provider and model')
+                                      : imageAgentMeta?.hasHost
+                                        ? imageAgentMeta?.endpoint || t('Configured')
+                                        : t('Set provider host to preview')}
+                                  </span>
+                                </div>
+                                <p className="text-xs opacity-70">
+                                  {t('Adjust tool parameters inside Tool Definition (Advanced) above.')}
+                                </p>
+                              </div>
                           </div>
-                        )
-                        })()}
+                        )}
+
+                        {/* Image Function Tool Settings (for OpenAI_Image, OpenRouter Image, etc.) */}
+                        {showImageFunctionSettings && (
+                          <div className="space-y-4">
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>{t('Image Size')}</p>
+                                  <Select
+                                    options={[
+                                      { name: t('auto'), value: 'auto' },
+                                      { name: '1024x1024', value: '1024x1024' },
+                                      { name: `1024x1536 ${t('portrait-suffix')}`, value: '1024x1536' },
+                                      { name: `1536x1024 ${t('landscape-suffix')}`, value: '1536x1024' },
+                                    ]}
+                                    value={(config.imageFunctionToolSettings?.params as any)?.size || 'auto'}
+                                    onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), size: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
+                                  />
+                                </div>
+
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>{t('Image Quality')}</p>
+                                  <Select
+                                    options={[
+                                      { name: t('auto'), value: 'auto' },
+                                      { name: t('low'), value: 'low' },
+                                      { name: t('medium'), value: 'medium' },
+                                      { name: t('high'), value: 'high' },
+                                      { name: 'standard', value: 'standard' },
+                                      { name: 'hd', value: 'hd' },
+                                    ]}
+                                    value={(config.imageFunctionToolSettings?.params as any)?.quality || 'auto'}
+                                    onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), quality: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
+                                  />
+                                </div>
+
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>{t('Background')}</p>
+                                  <Select
+                                    options={[
+                                      { name: t('auto'), value: 'auto' },
+                                      { name: t('transparent'), value: 'transparent' },
+                                    ]}
+                                    value={(config.imageFunctionToolSettings?.params as any)?.background || 'auto'}
+                                    onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), background: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
+                                  />
+                                </div>
+
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>{t('Output Format')}</p>
+                                  <Select
+                                    options={[
+                                      { name: 'none (default)', value: 'none' },
+                                      { name: 'png', value: 'png' },
+                                      { name: 'jpeg', value: 'jpeg' },
+                                      { name: 'webp', value: 'webp' },
+                                    ]}
+                                    value={(config.imageFunctionToolSettings?.params as any)?.format || 'none'}
+                                    onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), format: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
+                                  />
+                                </div>
+
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>{t('Compression (0-100)')}</p>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    value={typeof (config.imageFunctionToolSettings?.params as any)?.output_compression === 'number' ? String((config.imageFunctionToolSettings?.params as any).output_compression) : ''}
+                                    placeholder={t('Only for jpeg/webp')}
+                                    onChange={(e) => {
+                                      const val = e.currentTarget.value
+                                      const num = val === '' ? undefined : Math.max(0, Math.min(100, parseInt(val)))
+                                      const u = [...customApiConfigs]
+                                      const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), output_compression: num }
+                                      u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }
+                                      updateCustomApiConfigs(u)
+                                    }}
+                                  />
+                                </div>
+
+                                <div className={formRowClass}>
+                                  <p className={labelClass}>Provider Params (JSON)</p>
+                                  <Textarea
+                                    defaultValue={JSON.stringify(config.imageFunctionToolSettings?.params || {}, null, 2)}
+                                    onBlur={(e) => {
+                                      try {
+                                        const json = e.currentTarget.value.trim() ? JSON.parse(e.currentTarget.value) : {}
+                                        const u = [...customApiConfigs]
+                                        u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params: json }
+                                        updateCustomApiConfigs(u)
+                                      } catch (err) {
+                                        toast.error('Invalid JSON')
+                                      }
+                                    }}
+                                    placeholder={`{\n  \"size\": \"1024x1024\",\n  \"quality\": \"high\"\n}`}
+                                  />
+                                  <span className="text-xs opacity-70">Use any provider-specific keys. See docs/image generation.</span>
+                                </div>
+                          </div>
+                        )}
                       </div>
                     ) : null}
                   </div>
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
         <div className="flex justify-end mt-4">
           <Button size="small" text={t('Add New Model')} icon={<BiPlus />} onClick={addNewCustomModel} color="primary" />
@@ -977,6 +1376,15 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             }
             toast.success(t('System prompt updated'));
           }}
+        />
+      )}
+      {editingToolDefinition && (
+        <SystemPromptEditorModal
+          open={editingToolDefinition !== null}
+          onClose={() => setEditingToolDefinition(null)}
+          value={editingToolDefinition.text}
+          onSave={(newValue) => handleToolDefinitionSave(newValue)}
+          title={t('Edit Tool Definition')}
         />
       )}
       <IconSelectModal
