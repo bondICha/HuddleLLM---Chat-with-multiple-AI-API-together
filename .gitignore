@@ -44,6 +44,11 @@ dist.pem
 chathub.zip
 chathub/*
 huddlellm.zip
-docs/*
+
+# Documentation
+# Ignore local development notes, keep only official release notes
+docs/_local/
+docs/_temp/
+
 temp/*
 release/*
