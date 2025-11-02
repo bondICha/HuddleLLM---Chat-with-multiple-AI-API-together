@@ -6,6 +6,13 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.13.0',
+    notes: [
+      'releasenote_v2130_image_agent',
+      'releasenote_v2130_ui_improvements',
+    ],
+  },
+  {
     version: '2.12.6',
     notes: [
       'releasenote_v2126_openrouter_image_generation',
