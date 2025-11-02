@@ -227,12 +227,22 @@ export class ImageAgentBot extends AbstractBot {
               const imageField = imageModelConfig.apiConfig.imageInputField
               const hasImages = (imageField === 'image' && apiBody.image) ||
                                 (imageField === 'images' && Array.isArray(apiBody.images) && apiBody.images.length > 0)
-              let endpoint = typeof imageModelConfig.apiConfig.endpoint === 'function'
-                ? imageModelConfig.apiConfig.endpoint(hasImages, imageHost || '')
-                : (imageModelConfig.apiConfig.endpoint || imageHost || '')
+
+              // Build endpoint URL based on provider and configuration
+              let endpoint: string
+              if (typeof imageModelConfig.apiConfig.endpoint === 'function') {
+                // Dynamic endpoint selection (e.g., Novita Qwen with different txt2img vs edit endpoints)
+                endpoint = imageModelConfig.apiConfig.endpoint(hasImages, imageHost || '')
+              } else if (imageModelConfig.apiConfig.endpoint) {
+                // Fixed endpoint specified in configuration
+                endpoint = imageModelConfig.apiConfig.endpoint
+              } else {
+                // Use host directly (for providers like Replicate with full path URLs)
+                endpoint = imageHost || ''
+              }
 
               // Replace %model placeholder with actual model name (URL-encoded)
-              // This supports both full path endpoints (e.g., Replicate) and dynamic endpoints
+              // This supports full path endpoints (e.g., Replicate) where users specify %model in the URL
               if (endpoint.includes('%model')) {
                 endpoint = endpoint.replace(/%model/g, encodeURIComponent(imageModel))
               }

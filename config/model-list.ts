@@ -65,6 +65,13 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
         "Qwen-Coder-480B-A35B-Instruct": { value: "qwen3-coder-480b-a35b-instruct", icon: "qianwen" },
     },
     // ベンダー特有のモデルIDを「Custom」カテゴリとして追加
+    "Replicate": {
+        // Image generation models
+        "Google Imagen 4": { value: "google/imagen-4", icon: "replicate" },
+        "Google Imagen 4 Fast": { value: "google/imagen-4-fast", icon: "replicate" },
+        "Tencent Hunyuan Image 3": { value: "tencent/hunyuan-image-3", icon: "replicate" },
+        "ByteDance Seedream 4.0": { value: "bytedance/seedream-4", icon: "replicate" },
+    },
     "Custom": {
         // Bedrock用のGeminiモデル
         "Google Gemini 2.5 Flash": { value: "google/gemini-2.5-flash", icon: "gemini" },
