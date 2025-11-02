@@ -18,7 +18,13 @@ export interface ToolDefinition {
       description?: string;
       default?: any;
       enum?: string[];
-      items?: { type: string };  // For array types
+      items?: {
+        type: string;
+        format?: string; // Add format for items like URIs
+      };
+      minimum?: number; // Add minimum for number/integer types
+      maximum?: number; // Add maximum for number/integer types
+      maxItems?: number; // Add maxItems for array types
     }>;
     required?: string[];
   };
