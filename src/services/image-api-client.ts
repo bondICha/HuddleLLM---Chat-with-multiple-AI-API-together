@@ -78,14 +78,41 @@ async function generateImageSync(
     )
   }
 
-  // Convert image blob to data URL
-  const blob = await resp.blob()
+  // Check if response is JSON (for Seedream) or binary image
+  const contentType = resp.headers.get('content-type')
+  if (contentType && contentType.includes('application/json')) {
+    // Handle JSON response (Seedream pattern)
+    const jsonResponse = await resp.json()
 
-  if (!blob || blob.size === 0) {
-    throw new ChatError('Received empty image from API', ErrorCode.UNKOWN_ERROR)
+    // Extract image URL from JSON response
+    // Handle different response formats
+    let imageUrl = jsonResponse.images?.[0]?.image_url
+    if (!imageUrl && Array.isArray(jsonResponse.images) && typeof jsonResponse.images[0] === 'string') {
+      imageUrl = jsonResponse.images[0]
+    }
+    if (!imageUrl && jsonResponse.image_url) {
+      imageUrl = jsonResponse.image_url
+    }
+
+    if (!imageUrl) {
+      throw new ChatError(
+        'No image URL in JSON response',
+        ErrorCode.UNKOWN_ERROR,
+        JSON.stringify(jsonResponse)
+      )
+    }
+
+    return imageUrl // Return URL directly
+  } else {
+    // Handle binary image response (Chutes pattern)
+    const blob = await resp.blob()
+
+    if (!blob || blob.size === 0) {
+      throw new ChatError('Received empty image from API', ErrorCode.UNKOWN_ERROR)
+    }
+
+    return await blobToDataURL(blob)
   }
-
-  return await blobToDataURL(blob)
 }
 
 /**
@@ -301,8 +328,17 @@ async function generateImageReplicate(
     const status = result.status
 
     if (status === 'succeeded') {
-      const imageUrl = result.output
-      if (!imageUrl || typeof imageUrl !== 'string') {
+      const output = result.output
+      let imageUrl: string | undefined
+
+      // Handle different output formats: string (Imagen 4) or array (Hunyuan 3)
+      if (typeof output === 'string') {
+        imageUrl = output
+      } else if (Array.isArray(output) && output.length > 0 && typeof output[0] === 'string') {
+        imageUrl = output[0] // Take first image from array
+      }
+
+      if (!imageUrl) {
         throw new ChatError(
           'No image URL in successful Replicate prediction result',
           ErrorCode.UNKOWN_ERROR,

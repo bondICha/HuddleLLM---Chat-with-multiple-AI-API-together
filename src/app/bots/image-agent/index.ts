@@ -198,7 +198,22 @@ export class ImageAgentBot extends AbstractBot {
               }
 
               // Show generation parameters immediately (before image generation)
-              const paramsJson = `\`\`\`json\n${JSON.stringify(apiBody, null, 2)}\n\`\`\``
+              // Create a display version with masked image data
+              const displayBody = { ...apiBody }
+              if (imageModelConfig.apiConfig.imageInputField && userImages.length > 0) {
+                const fieldName = imageModelConfig.apiConfig.imageInputField
+                if (fieldName === 'image' && displayBody.image) {
+                  // Get filename from the first user image
+                  const fileName = userImages[0]?.name || 'Input Image'
+                  displayBody.image = `[${fileName}]`
+                } else if (fieldName === 'images' && Array.isArray(displayBody.images)) {
+                  displayBody.images = displayBody.images.map((_: any, index: number) => {
+                    const fileName = userImages[index]?.name || `Input Image ${index + 1}`
+                    return `[${fileName}]`
+                  })
+                }
+              }
+              const paramsJson = `\`\`\`json\n${JSON.stringify(displayBody, null, 2)}\n\`\`\``
               const generatingText = lastTextUpdate
                 ? `${lastTextUpdate}\n\n⏳ Generating image...\n\n${paramsJson}`
                 : `⏳ Generating image...\n\n${paramsJson}`
@@ -209,7 +224,9 @@ export class ImageAgentBot extends AbstractBot {
               })
 
               // Determine endpoint based on whether images are present
-              const hasImages = (apiBody.images && Array.isArray(apiBody.images) && apiBody.images.length > 0)
+              const imageField = imageModelConfig.apiConfig.imageInputField
+              const hasImages = (imageField === 'image' && apiBody.image) ||
+                                (imageField === 'images' && Array.isArray(apiBody.images) && apiBody.images.length > 0)
               let endpoint = typeof imageModelConfig.apiConfig.endpoint === 'function'
                 ? imageModelConfig.apiConfig.endpoint(hasImages, imageHost || '')
                 : (imageModelConfig.apiConfig.endpoint || imageHost || '')

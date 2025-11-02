@@ -256,8 +256,8 @@ export const MODEL_NOVITA_SEEDREAM: ImageModelConfig = {
         },
         watermark: {
           type: 'boolean',
-          description: 'Add watermark to bottom-right corner. Default is true.',
-          default: true,
+          description: 'Add watermark to bottom-right corner. Default is false.',
+          default: false,
         },
       },
       required: ['prompt'],
@@ -323,6 +323,69 @@ export const MODEL_REPLICATE_IMAGEN4: ImageModelConfig = {
 }
 
 /**
+ * 6. Replicate - Tencent Hunyuan Image 3
+ * API: https://api.replicate.com/v1/models/tencent/hunyuan-image-3/predictions
+ * Edit support: No
+ * Note: Uses model-specific endpoint, returns array of URLs
+ */
+export const MODEL_REPLICATE_HUNYUAN3: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate high-quality images using Tencent Hunyuan Image 3 model via Replicate. Images provided by the user are not sent to the API, so incorporate any visual details into the prompt text.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Text prompt for image generation. Be specific and descriptive.',
+        },
+        aspect_ratio: {
+          type: 'string',
+          description: 'Aspect ratio of the generated image.',
+          enum: ['1:1', '9:16', '16:9', '3:4', '4:3'],
+          default: '1:1',
+        },
+        go_fast: {
+          type: 'boolean',
+          description: 'Run faster predictions with additional optimizations.',
+          default: true,
+        },
+        seed: {
+          type: 'integer',
+          description: 'Random seed. Set for reproducible generation.',
+        },
+        output_format: {
+          type: 'string',
+          description: 'Format of the output images.',
+          enum: ['webp', 'jpg', 'png'],
+          default: 'webp',
+        },
+        output_quality: {
+          type: 'integer',
+          description: 'Quality when saving the output images, from 0 to 100. 100 is best quality, 0 is lowest quality. Not relevant for .png outputs.',
+          minimum: 0,
+          maximum: 100,
+          default: 95,
+        },
+        disable_safety_checker: {
+          type: 'boolean',
+          description: 'Disable safety checker for generated images.',
+          default: false,
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    // Replicate uses full path with %model placeholder (not base URL)
+    // User should input: https://api.replicate.com/v1/models/%model/predictions
+    endpoint: '',
+    isAsync: true,
+    supportsEdit: false,
+  },
+}
+
+/**
  * Registry of all available image model configurations
  * Key format: "provider-model" (e.g., "chutes-chroma", "novita-qwen")
  */
@@ -338,6 +401,9 @@ export const IMAGE_MODEL_REGISTRY: Record<string, ImageModelConfig> = {
   'replicate-imagen-4': MODEL_REPLICATE_IMAGEN4,
   'replicate-imagen4': MODEL_REPLICATE_IMAGEN4, // Alias
   'replicate-google-imagen-4': MODEL_REPLICATE_IMAGEN4, // Alias
+  'replicate-hunyuan-3': MODEL_REPLICATE_HUNYUAN3,
+  'replicate-hunyuan-image-3': MODEL_REPLICATE_HUNYUAN3, // Alias
+  'replicate-tencent-hunyuan-3': MODEL_REPLICATE_HUNYUAN3, // Alias
 }
 
 /**
@@ -372,6 +438,10 @@ export function getDefaultImageModel(model: string, provider?: string): ImageMod
     return MODEL_NOVITA_QWEN
   }
   if (modelLower.includes('hunyuan')) {
+    // Prioritize Replicate Hunyuan if provider is Replicate
+    if (providerLower === 'replicate') {
+      return MODEL_REPLICATE_HUNYUAN3
+    }
     return MODEL_NOVITA_HUNYUAN
   }
   if (modelLower.includes('seedream')) {
@@ -397,4 +467,5 @@ export const IMAGE_MODEL_PRESETS = [
   { id: 'novita-hunyuan', name: 'Novita - Hunyuan Image 3', config: MODEL_NOVITA_HUNYUAN },
   { id: 'novita-seedream', name: 'Novita - Seedream 4.0', config: MODEL_NOVITA_SEEDREAM },
   { id: 'replicate-imagen-4', name: 'Replicate - Google Imagen 4', config: MODEL_REPLICATE_IMAGEN4 },
+  { id: 'replicate-hunyuan-3', name: 'Replicate - Tencent Hunyuan Image 3', config: MODEL_REPLICATE_HUNYUAN3 },
 ]
