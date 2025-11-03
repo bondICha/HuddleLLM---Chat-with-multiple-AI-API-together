@@ -188,6 +188,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
 
   return (
     <div
+      id={message.id}
       className={cx(
         'group flex gap-2 w-full',
         message.author === 'user' ? 'flex-row-reverse' : 'flex-row',

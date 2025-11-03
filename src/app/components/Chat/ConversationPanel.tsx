@@ -28,6 +28,8 @@ interface Props {
   resetConversation: () => void
   generating: boolean
   stopGenerating: () => void
+  shouldAutoScroll?: boolean
+  setAutoScroll?: (shouldAutoScroll: boolean) => void
   mode?: 'full' | 'compact'
   onSwitchBot?: (index: number) => void
   onPropaganda?: (text: string) => Promise<void>
@@ -78,6 +80,50 @@ const ConversationPanel: FC<Props> = (props) => {
     },
     [props],
   )
+
+  // Assistantメッセージの位置を監視して、上部が画面トップに到達したらスクロールを停止
+  useEffect(() => {
+    if (!props.generating || !props.shouldAutoScroll || !props.setAutoScroll) {
+      return
+    }
+
+    // 最新のアシスタントメッセージ要素を取得
+    const messages = props.messages
+    if (messages.length < 2) return // 少なくともユーザーとAssistantのメッセージが必要
+
+    const lastAssistantMessage = [...messages].reverse().find(msg => msg.author !== 'user')
+    if (!lastAssistantMessage) return
+
+    // DOM要素を取得
+    const assistantElement = document.getElementById(lastAssistantMessage.id)
+    if (!assistantElement) return
+
+    const container = assistantElement.closest('.custom-scrollbar') as HTMLElement
+    if (!container) return
+
+    // Intersection Observer を使用して要素の交差を監視
+    // 画面の高さの15%を余裕として設定
+    const margin = window.innerHeight * 0.15
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          // 要素の上部がコンテナの上部からmarginの位置に到達したら停止
+          if (entry.boundingClientRect.top <= entry.rootBounds!.top + margin) {
+            props.setAutoScroll!(false)
+          }
+        })
+      },
+      { root: container }
+    )
+
+    observer.observe(assistantElement)
+
+    // クリーンアップ
+    return () => {
+      observer.disconnect()
+    }
+  }, [props.generating, props.messages, props.shouldAutoScroll, props.setAutoScroll])
 
   const resetConversation = useCallback(() => {
     if (!props.generating) {
@@ -171,6 +217,7 @@ const ConversationPanel: FC<Props> = (props) => {
           messages={props.messages}
           className={cx(marginClass)}
           onPropaganda={props.onPropaganda}
+          shouldAutoScroll={props.shouldAutoScroll}
         />
         <div
           className={cx(

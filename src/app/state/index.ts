@@ -21,6 +21,7 @@ export const chatFamily = atomFamily(
       generatingMessageId: '',
       abortController: undefined as AbortController | undefined,
       conversationId: uuid(),
+      shouldAutoScroll: true, // 自動スクロール制御用
     })
   },
   (a, b) => a.index === b.index && a.page === b.page,

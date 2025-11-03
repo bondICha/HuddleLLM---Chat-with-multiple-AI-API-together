@@ -31,6 +31,15 @@ export function useChat(index: number) {
     [setChatState],
   )
 
+  const setAutoScroll = useCallback(
+    (shouldAutoScroll: boolean) => {
+      setChatState((draft) => {
+        draft.shouldAutoScroll = shouldAutoScroll
+      })
+    },
+    [setChatState],
+  )
+
   const sendMessage = useCallback(
     async (input: string, images?: File[], attachments?: { name: string; content: string }[]) => {
       // URL処理
@@ -165,6 +174,7 @@ export function useChat(index: number) {
       setChatState((draft) => {
         draft.generatingMessageId = botMessageId
         draft.abortController = abortController
+        draft.shouldAutoScroll = true // 新しいメッセージ送信時に自動スクロールをリセット
       })
 
       let compressedImages: File[] | undefined = undefined
@@ -235,6 +245,7 @@ export function useChat(index: number) {
       draft.generatingMessageId = ''
       draft.messages = []
       draft.conversationId = uuid()
+      draft.shouldAutoScroll = true // リセット時に自動スクロールを有効化
     })
   }, [chatState.bot, setChatState])
 
@@ -386,7 +397,9 @@ export function useChat(index: number) {
       generating: !!chatState.generatingMessageId,
       stopGenerating,
       modifyLastMessage,
-      isInitialized: botInitialized
+      isInitialized: botInitialized,
+      shouldAutoScroll: chatState.shouldAutoScroll,
+      setAutoScroll,
     }),
     [
       index,
@@ -394,11 +407,13 @@ export function useChat(index: number) {
       chatState.generatingMessageId,
       chatState.messages,
       chatState.conversationId,
+      chatState.shouldAutoScroll,
       resetConversation,
       sendMessage,
       stopGenerating,
       modifyLastMessage,
-      botInitialized
+      botInitialized,
+      setAutoScroll,
     ],
   )
 

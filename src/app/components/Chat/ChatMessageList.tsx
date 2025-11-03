@@ -1,4 +1,4 @@
-import { FC } from 'react'
+import { FC, useEffect } from 'react'
 import { cx } from '~/utils'
 import { useStickToBottom } from 'use-stick-to-bottom'
 import { ChatMessageModel } from '~types'
@@ -10,10 +10,11 @@ interface Props {
   messages: ChatMessageModel[]
   className?: string
   onPropaganda?: (text: string) => void
+  shouldAutoScroll?: boolean
 }
 
 const ChatMessageList: FC<Props> = (props) => {
-  const { scrollRef, contentRef, isAtBottom, scrollToBottom } = useStickToBottom({
+  const { scrollRef, contentRef, isAtBottom, scrollToBottom, stopScroll } = useStickToBottom({
     resize: 'smooth',
     initial: {
       mass: 0.8,
@@ -21,6 +22,23 @@ const ChatMessageList: FC<Props> = (props) => {
       stiffness: 0.1
     },
   })
+
+  // shouldAutoScrollがfalseの場合はスクロールを停止、trueの場合はスクロールを再開
+  useEffect(() => {
+    if (props.shouldAutoScroll === false) {
+      stopScroll()
+    } else {
+      // shouldAutoScrollがtrueになったら最下部にスクロール
+      scrollToBottom()
+    }
+  }, [props.shouldAutoScroll, stopScroll, scrollToBottom])
+
+  // 新しいメッセージが追加されたときに自動スクロールを確認
+  useEffect(() => {
+    if (props.shouldAutoScroll) {
+      scrollToBottom()
+    }
+  }, [props.messages, props.shouldAutoScroll, scrollToBottom])
 
   return (
     <div className="flex-1 relative overflow-hidden">
