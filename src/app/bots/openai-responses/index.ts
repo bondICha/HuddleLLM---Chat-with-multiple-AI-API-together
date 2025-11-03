@@ -1,4 +1,3 @@
-import { isArray } from 'lodash-es'
 import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract-bot'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { parseSSEResponse } from '~utils/sse'
@@ -20,6 +19,7 @@ const CONTEXT_SIZE = 120
 
 export class OpenAIResponsesBot extends AbstractBot {
   private conversationContext?: ConversationContext
+  private tools?: any[] // Tool definitions for function calling
   constructor(
     private config: {
       apiKey: string
@@ -45,7 +45,15 @@ export class OpenAIResponsesBot extends AbstractBot {
 
   get supportsImageInput() { return true }
 
+  getSystemMessage() {
+    return this.config.systemMessage
+  }
+
   setSystemMessage(systemMessage: string) { this.config.systemMessage = systemMessage }
+
+  setTools(tools: any[]) {
+    this.tools = tools
+  }
 
   public setConversationHistory(history: ConversationHistory): void {
     if (history.messages && Array.isArray(history.messages)) {
@@ -243,8 +251,10 @@ export class OpenAIResponsesBot extends AbstractBot {
     })
     body.input = sanitize(body.input)
 
-    // Tools precedence: explicit functionTools param > extra_body.tools > web_search_preview toggle
-    if (this.config.functionTools && Array.isArray(this.config.functionTools)) {
+    // Tools precedence: setTools() > explicit functionTools param > extra_body.tools > web_search_preview toggle
+    if (this.tools && Array.isArray(this.tools) && this.tools.length > 0) {
+      body.tools = this.tools
+    } else if (this.config.functionTools && Array.isArray(this.config.functionTools)) {
       body.tools = this.config.functionTools
     } else if (extraBodyObj && Array.isArray((extraBodyObj as any).tools)) {
       body.tools = (extraBodyObj as any).tools

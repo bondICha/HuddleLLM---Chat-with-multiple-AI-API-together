@@ -377,7 +377,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             const showImageAgentSettings = isImageAgent;
             const showAIModelSelection = !isImageAgent;
             const showThinkingBudget = THINKING_BUDGET_PROVIDERS.includes(effectiveProvider as any);
-            const showReasoningEffort = isOpenAI || isOpenRouter;
+            const showReasoningEffort = isOpenAI || isOpenRouter || isOpenAIResponses;
 
             // Image Function Tool settings (for OpenAI_Image, OpenRouter Image, etc.)
             const showImageFunctionSettings =
