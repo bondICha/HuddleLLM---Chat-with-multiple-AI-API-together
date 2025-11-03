@@ -150,7 +150,7 @@ export const MODEL_NOVITA_QWEN: ImageModelConfig = {
         },
         size: {
           type: 'string',
-          description: 'Image resolution in format "WIDTH*HEIGHT". Range: 256*256 to 1536*1536. Available: "1664*928" (16:9), "1472*1140" (4:3), "1328*1328" (1:1), "1140*1472" (3:4), "928*1664" (9:16). NOTE: This parameter is IGNORED in edit mode (when user provides images).',
+          description: 'Image resolution in format "WIDTH*HEIGHT". Range: 256*256 to 1536*1536. Available: "1536*864" (16:9), "1536*1152" (4:3), "1328*1328" (1:1), "1152*1536" (3:4), "864*1536" (9:16). NOTE: This parameter is IGNORED in edit mode (when user provides images).',
           default: '1328*1328',
         },
         seed: {
