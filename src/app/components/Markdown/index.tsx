@@ -15,6 +15,7 @@ import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import supersub from 'remark-supersub'
 import remarkDirective from 'remark-directive';
+import rehypeExternalLinks from 'rehype-external-links'
 import Tooltip from '../Tooltip'
 import './markdown.css'
 import type { Pluggable } from 'unified';
@@ -180,8 +181,15 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
         remarkPlugins
       }
       rehypePlugins={allowHtml
-        ? [rehypeRaw, [rehypeHighlight, { detect: false, ignoreMissing: true }]]
-        : [[rehypeHighlight, { detect: false, ignoreMissing: true }]]
+        ? [
+            rehypeRaw,
+            [rehypeHighlight, { detect: false, ignoreMissing: true }],
+            [rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }]
+          ]
+        : [
+            [rehypeHighlight, { detect: false, ignoreMissing: true }],
+            [rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }]
+          ]
       }
       {...({ urlTransform: (url: string) => url } as any)}
       className={`markdown-body markdown-custom-styles code-block-no-margin !text-base font-normal`}
