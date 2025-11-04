@@ -30,6 +30,7 @@ import {
 import { getVersion } from '~utils'
 import PagePanel from '../components/Page'
 import { getCompanyProfileConfigs, getCompanyProfileState, CompanyProfileStatus } from '~services/company-profile'
+import OldStorageNotification from '~app/components/Settings/OldStorageNotification'
 
 
 const ChatBotSettingPanel: FC<PropsWithChildren<{ title: string }>> = (props) => {
@@ -120,6 +121,7 @@ function SettingPage() {
           {t('Company Profile Active')}: {companyInfo.name} (v{companyInfo.version})
         </div>
       )}
+      <OldStorageNotification />
       <div className="flex flex-col gap-5 mt-3 mb-10 px-10" style={{ backgroundColor: themeColor ? `${themeColor}15` : 'rgba(17, 24, 39, 0.15)' }}>
         <ExportDataPanel userConfig={userConfig} updateConfigValue={updateConfigValue} />
         <div>
