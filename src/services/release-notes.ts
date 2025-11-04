@@ -6,6 +6,12 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.13.1',
+    notes: [
+      'releasenote_v2131_enhanced_scroll_experience',
+    ],
+  },
+  {
     version: '2.13.0',
     notes: [
       'releasenote_v2130_image_agent',

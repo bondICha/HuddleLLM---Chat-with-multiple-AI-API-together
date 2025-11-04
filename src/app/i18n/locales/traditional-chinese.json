@@ -336,6 +336,7 @@
   "Aggressive Cleanup": "積極清理",
   "Cleaning...": "清理中...",
   "Successfully removed {{total}} old storage keys": "成功刪除了{{total}}個舊儲存金鑰",
-  "Error cleaning up old storage keys": "清理舊儲存金鑰時出錯"
+  "Error cleaning up old storage keys": "清理舊儲存金鑰時出錯",
+  "releasenote_v2131_enhanced_scroll_experience": "## 增強滾動體驗\n\n改進了聊天滾動行為以提高可讀性：\n\n- 自動滾動現在在AI回應可見85%時停止\n- 防止在長回應期間錯過內容\n- 用戶現在可以按照自己的節奏閱讀，而不會被強制滾動\n- 智能追蹤滾動位置以優化閱讀體驗\n\n功能介紹影片： https://youtu.be/FkXAKiFgAuU\n\n*註*：此發行說明由GLM Coding編寫。關於GLM Coding的更多資訊： https://z.ai/subscribe?ic=PJ3WELGRXZ"
 }
   

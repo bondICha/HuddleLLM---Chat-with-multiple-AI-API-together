@@ -1,1 +1,1 @@
-🚀 You’ve been invited to join the GLM Coding Plan! Enjoy full support for Claude Code, Cline, and 10+ top coding tools — starting at just $6/month. Subscribe now and grab the limited-time deal! Link： https://z.ai/subscribe?ic=PJ3WELGRXZ
+🚀 You’ve been invited to join the GLM Coding Plan! Invitation Link： https://z.ai/subscribe?ic=PJ3WELGRXZ

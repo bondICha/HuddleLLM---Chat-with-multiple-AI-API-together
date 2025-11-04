@@ -335,5 +335,6 @@
   "Aggressive Cleanup": "积极清理",
   "Cleaning...": "清理中...",
   "Successfully removed {{total}} old storage keys": "成功删除了{{total}}个旧存储密钥",
-  "Error cleaning up old storage keys": "清理旧存储密钥时出错"
+  "Error cleaning up old storage keys": "清理旧存储密钥时出错",
+  "releasenote_v2131_enhanced_scroll_experience": "## 增强滚动体验\n\n改进了聊天滚动行为以提高可读性：\n\n- 自动滚动现在在AI响应可见85%时停止\n- 防止在长响应期间错过内容\n- 用户现在可以按照自己的节奏阅读，而不会被强制滚动\n- 智能跟踪滚动位置以优化阅读体验\n\n功能介绍视频： https://youtu.be/FkXAKiFgAuU\n\n*注*：此发布说明由GLM Coding编写。关于GLM Coding的更多信息： https://z.ai/subscribe?ic=PJ3WELGRXZ"
 }

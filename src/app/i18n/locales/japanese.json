@@ -377,5 +377,6 @@
   "Aggressive Cleanup": "アグレッシブクリーンアップ",
   "Cleaning...": "クリーンアップ中...",
   "Successfully removed {{total}} old storage keys": "{{total}}件の古いストレージキーを正常に削除しました",
-  "Error cleaning up old storage keys": "古いストレージキーのクリーンアップ中にエラーが発生しました"
+  "Error cleaning up old storage keys": "古いストレージキーのクリーンアップ中にエラーが発生しました",
+  "releasenote_v2131_enhanced_scroll_experience": "## スクロール体験の向上\n\nチャットのスクロール動作を改善し、読みやすさを向上させました：\n\n- AIの応答が85%表示された時点で自動スクロールが停止するようになりました\n- 長い応答中にコンテンツを見逃すことを防ぎます\n- ユーザーは強制的にスクロールされることなく、自分のペースで読めるようになりました\n\n機能紹介はこちらのYouTube動画をご覧ください： https://youtu.be/FkXAKiFgAuU\n\n*注記*：このリリースノートはGLM Codingによって作成されました。GLM Codingについて詳しくはこちら： https://z.ai/subscribe?ic=PJ3WELGRXZ"
 }

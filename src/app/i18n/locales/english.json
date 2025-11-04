@@ -367,5 +367,6 @@
   "Aggressive Cleanup": "Aggressive Cleanup",
   "Cleaning...": "Cleaning...",
   "Successfully removed {{total}} old storage keys": "Successfully removed {{total}} old storage keys",
-  "Error cleaning up old storage keys": "Error cleaning up old storage keys"
+  "Error cleaning up old storage keys": "Error cleaning up old storage keys",
+  "releasenote_v2131_enhanced_scroll_experience": "## Enhanced Scroll Experience\n\nImproved chat scrolling behavior for better readability:\n\n- Auto-scroll now stops when 85% of AI response is visible\n- Prevents content from being missed during long responses\n- Users can now read at their own pace without being forced to scroll\n- Scroll position is intelligently tracked to optimize reading experience\n\nWatch the feature introduction video: https://youtu.be/FkXAKiFgAuU\n\n*Note*: This release note was written by GLM Coding. For more information about GLM Coding: https://z.ai/subscribe?ic=PJ3WELGRXZ"
 }
