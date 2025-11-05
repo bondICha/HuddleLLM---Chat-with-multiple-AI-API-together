@@ -1,5 +1,8 @@
 import { zip } from 'zip-a-folder';
 import { readFileSync, mkdirSync, existsSync } from 'fs';
+import { join } from 'path';
+import { createWriteStream } from 'fs';
+import archiver from 'archiver';
 
 // Read manifest.config.ts as a text file
 const manifestContent = readFileSync('manifest.config.ts', 'utf-8');
@@ -19,5 +22,30 @@ if (!existsSync(dir)) {
   mkdirSync(dir, { recursive: true });
 }
 
-await zip('dist', filepath);
-console.log(`✅ Extension zipped to ${filepath}`);
+// Create a zip file with .vite directory excluded
+const output = createWriteStream(filepath);
+const archive = archiver('zip', {
+  zlib: { level: 9 } // Sets the compression level.
+});
+
+output.on('close', () => {
+  console.log(`✅ Extension zipped to ${filepath}`);
+  console.log(`${archive.pointer()} total bytes`);
+});
+
+archive.on('error', (err) => {
+  throw err;
+});
+
+archive.pipe(output);
+
+// Add all files from dist directory except .vite directory
+archive.directory('dist', false, (entry) => {
+  // Exclude .vite directory
+  if (entry.name.startsWith('.vite/')) {
+    return false;
+  }
+  return entry;
+});
+
+await archive.finalize();

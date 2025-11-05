@@ -7393,6 +7393,7 @@ __metadata:
     "@typescript-eslint/parser": "npm:^6.15.0"
     "@vitejs/plugin-react": "npm:^4.2.1"
     antd: "npm:^5.24.3"
+    archiver: "npm:^7.0.1"
     async-cache-dedupe: "npm:^2.0.0"
     autoprefixer: "npm:^10.4.16"
     browser-fs-access: "npm:^0.35.0"

@@ -18,6 +18,7 @@ import CustomAPISettings from '~app/components/Settings/CustomApiSettings'
 import ExportDataPanel from '~app/components/Settings/ExportDataPanel'
 import ShortcutPanel from '~app/components/Settings/ShortcutPanel'
 import AllHostsPermissionPanel from '~app/components/Settings/AllHostsPermissionPanel'
+import DangerZone from '~app/components/Settings/DangerZone'
 import Switch from '~app/components/Switch'
 
 import { ALL_IN_ONE_PAGE_ID } from '~app/consts'
@@ -102,13 +103,18 @@ function SettingPage() {
       // userConfigのディープコピーを渡すことで副作用を防ぐ
       await updateUserConfig(cloneDeep(userConfig));
       setDirty(false);
-      
-      toast.success(t('Settings saved. API changes require reload')); 
+
+      toast.success(t('Settings saved. API changes require reload'));
     } catch (error) {
       console.error('Failed to save settings:', error);
       toast.error(t('Failed to save settings. Please try again.'));
     }
   }, [userConfig, t]); // userConfig を依存配列に戻す
+
+  const handleConfigReset = useCallback(() => {
+    // Reload the page to reset the state
+    window.location.reload();
+  }, []);
 
   if (!userConfig) {
     return null
@@ -154,6 +160,7 @@ function SettingPage() {
         </div>
         */}
         <ShortcutPanel />
+        <DangerZone onConfigReset={handleConfigReset} />
       </div>
       {dirty && (
         <motion.div

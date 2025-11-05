@@ -350,3 +350,73 @@ export async function getSavedChatPairs(): Promise<ChatPair[]> {
   const config = await getUserConfig();
   return config.savedChatPairs || [];
 }
+
+/**
+ * ユーザー設定をすべて初期化する（デフォルト設定に戻す）
+ * @returns Promise<void>
+ */
+export async function resetUserConfig(): Promise<void> {
+  try {
+    // 1. Browser.storage.local をすべてクリア
+    await Browser.storage.local.clear();
+
+    // 2. Browser.storage.sync をすべてクリア
+    await Browser.storage.sync.clear();
+
+    // 3. localStorage (Web Storage API) をすべてクリア
+    localStorage.clear();
+
+    // デフォルト設定を保存
+    await updateUserConfig({ ...userConfigWithDefaultValue });
+  } catch (error) {
+    console.error('Failed to reset user config:', error);
+    throw error;
+  }
+}
+
+/**
+ * フラグ系・表示設定のみをリセットする（起動回数、初回起動フラグ、言語、テーマ、フォントなど）
+ * Chat・API関係の設定は保持されます
+ * @returns Promise<void>
+ */
+export async function resetFlags(): Promise<void> {
+  try {
+    // Browser.storage.sync から削除するキー
+    const syncKeysToRemove = [
+      'openTimes',
+      'premiumModalOpenTimes',
+      'hasUsedOmniboxSearch',
+      'lastCheckReleaseNotesVersion',
+      'showSessionRestore',
+      'startupPage',
+      'fontType',
+    ];
+    await Browser.storage.sync.remove(syncKeysToRemove);
+
+    // Browser.storage.local から削除するキー
+    const allLocalData = await Browser.storage.local.get(null);
+    const localKeysToRemove = [
+      ...Object.keys(allLocalData).filter(key => key.startsWith('companyProfile_')),
+      'pendingOmniboxSearch',
+    ];
+    if (localKeysToRemove.length > 0) {
+      await Browser.storage.local.remove(localKeysToRemove);
+    }
+
+    // localStorage から削除するキー
+    const localStorageKeysToRemove = [
+      'language',
+      'themeMode',
+      'sidebarCollapsed',
+      'sidebarDisplayMode',
+      'themeColor',
+      'followArcTheme',
+      'restoreOnStartup',
+      'sidePanelBot',
+    ];
+    localStorageKeysToRemove.forEach(key => localStorage.removeItem(key));
+  } catch (error) {
+    console.error('Failed to reset flags:', error);
+    throw error;
+  }
+}
