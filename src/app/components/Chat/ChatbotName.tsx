@@ -36,23 +36,18 @@ const ChatbotName: FC<Props> = (props) => {
     details.push('⚙️  Configuration:')
     
     if (config.temperature !== undefined) {
-      details.push(`   🌡️  Temperature: ${config.temperature}`)
+      details.push(`   🌡️ Temperature: ${config.temperature}`)
     }
     
     if (config.thinkingMode !== undefined) {
-      details.push(`   🧠 Thinking Mode: ${config.thinkingMode ? 'Enabled' : 'Disabled'}`)
+      details.push(`   🤔 Thinking Mode: ${config.thinkingMode ? 'Enabled' : 'Disabled'}`)
     }
     
     if (config.thinkingBudget !== undefined && config.thinkingMode) {
-      details.push(`   💰 Thinking Budget: ${config.thinkingBudget}`)
+      details.push(`   📈 Thinking Budget: ${config.thinkingBudget}`)
     }
-    
-    if (config.reasoningMode !== undefined) {
-      details.push(`   🔍 Reasoning Mode: ${config.reasoningMode ? 'Enabled' : 'Disabled'}`)
-    }
-    
-    if (config.reasoningEffort && config.reasoningMode) {
-      details.push(`   🎯 Reasoning Effort: ${config.reasoningEffort}`)
+    else if (config.reasoningEffort && config.reasoningMode) {
+      details.push(`   📈 Reasoning Effort: ${config.reasoningEffort}`)
     }
     
     

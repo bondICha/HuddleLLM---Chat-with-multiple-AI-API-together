@@ -6,9 +6,11 @@ import { BsCheckAll } from "react-icons/bs";
 import { LuCircleCheckBig } from "react-icons/lu";
 import { BeatLoader } from 'react-spinners'
 import { ChatMessageModel } from '~/types'
+import Expandable from '../common/Expandable'
 import Markdown from '../Markdown'
 import MessageBubble from './MessageBubble'
 import { useTranslation } from 'react-i18next'
+import ExpandableDialog from '../ExpandableDialog'
 
 const COPY_ICON_CLASS = 'self-top cursor-pointer invisible group-hover:visible mt-[6px] text-primary-text'
 const RESET_TIMER_DURATION = 4000
@@ -69,7 +71,8 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
   const messageRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { t } = useTranslation()
-
+  const [openedAttachment, setOpenedAttachment] = useState<{ name: string; content: string } | null>(null)
+ 
 
   const imageUrls = useMemo(() => {
     return message.images ? message.images.map(img => URL.createObjectURL(img)) : []
@@ -185,6 +188,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
 
   return (
     <div
+      id={message.id}
       className={cx(
         'group flex gap-2 w-full',
         message.author === 'user' ? 'flex-row-reverse' : 'flex-row',
@@ -207,14 +211,56 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
             </div>
           )}
           {message.text ? (
-            <Markdown>{message.text}</Markdown>
+            message.author === 'user' ? (
+              <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{message.text}</div>
+            ) : (
+              <Markdown>{message.text}</Markdown>
+            )
           ) : (
             !message.error && (
               <BeatLoader size={10} className="leading-tight" color="rgb(var(--primary-text))" />
             )
           )}
+          {message.author === 'user' && message.attachments && message.attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 my-2">
+              {message.attachments.map((att, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-1 bg-primary-border dark:bg-secondary rounded-full px-2 py-1 border border-primary-border cursor-pointer"
+                  onClick={() => setOpenedAttachment(att)}
+                >
+                  <span className="text-xs text-primary-text font-semibold cursor-default truncate max-w-[140px] ml-1">
+                    {att.name}
+                  </span>
+                  <span className="text-xs text-secondary-text ml-1">({att.content.length} {t('chars')})</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {!!message.error && (
-            <p className="text-[#cc0000] dark:text-[#ff0033]">{message.error.message}</p>
+            <div className="text-[#cc0000] dark:text-[#ff0033] space-y-1">
+              <p>{message.error.message}</p>
+              {message.error.cause && (
+                <Expandable
+                  header={<p className="text-sm opacity-80">({t('Error Details')})</p>}
+                  initiallyExpanded={false}
+                >
+                  <pre className="whitespace-pre-wrap text-sm">
+                    {(() => {
+                      try {
+                        const causeObj = typeof message.error.cause === 'string'
+                          ? JSON.parse(message.error.cause)
+                          : message.error.cause;
+                        return JSON.stringify(causeObj, null, 2);
+                      } catch {
+                        return String(message.error.cause);
+                      }
+                    })()}
+                  </pre>
+                </Expandable>
+              )}
+            </div>
           )}
         </MessageBubble>
       </div>
@@ -224,6 +270,33 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
           {messageHeight > MESSAGE_HEIGHT_THRESHOLD && <ActionButton />}
         </div>
       )}
+      {/* Read-only attachment modal (footer left: characters, right: close) */}
+      <ExpandableDialog
+        open={!!openedAttachment}
+        onClose={() => setOpenedAttachment(null)}
+        title={openedAttachment?.name || ''}
+        size="2xl"
+        className="flex flex-col"
+      >
+        <div className="flex-grow p-4 overflow-y-auto">
+          <div className="w-full h-full p-4 bg-gray-50 dark:bg-gray-800 rounded border">
+            <pre className="whitespace-pre-wrap text-sm text-primary-text font-mono">
+              {openedAttachment?.content || ''}
+            </pre>
+          </div>
+        </div>
+        <div className="flex justify-between items-center p-4 border-t border-primary-border">
+          <span className="text-sm text-secondary-text">
+            {t('Character count')}: {openedAttachment?.content.length || 0}
+          </span>
+          <button
+            className="px-3 py-1 rounded bg-primary text-primary-background"
+            onClick={() => setOpenedAttachment(null)}
+          >
+            {t('Close')}
+          </button>
+        </div>
+      </ExpandableDialog>
     </div>
   )
 }

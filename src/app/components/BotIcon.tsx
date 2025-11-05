@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import OpenAILogo from './logos/OpenAILogos';
 import ClaudeLogo from './logos/ClaudeLogos';
 import PerplexityLogo from './logos/PerplexityLogos';
+import { FiCode } from 'react-icons/fi';
 
 // =====================================================================================
 // IMPORTANT: アイコン追加・変更時の注意
@@ -20,10 +21,13 @@ import chatglmLogo from '~/assets/logos/chatglm.svg';
 import chatgptLogo from '~/assets/logos/chatgpt.svg';
 import falconLogo from '~/assets/logos/falcon.jpeg';
 import geminiLogo from '~/assets/logos/gemini.svg';
-import grokLogo from '~/assets/logos/grok.png';
+import grokOldLogo from '~/assets/logos/grok.png';
+import grokLogo from '~/assets/logos/grok.svg';
+import gurokkuLogo from '~/assets/logos/gurokku.svg';
 import llamaLogo from '~/assets/logos/llama.png';
 import mistralLogo from '~/assets/logos/mistral.png';
 import piLogo from '~/assets/logos/pi.png';
+import pplxLogo from '~/assets/logos/pplx.jpg';
 import qianwenLogo from '~/assets/logos/qianwen.png';
 import rakutenLogo from '~/assets/logos/rakuten.svg';
 import vicunaLogo from '~/assets/logos/vicuna.jpg';
@@ -46,6 +50,13 @@ import deepinfraLogo from '~/assets/logos/deepinfra.svg';
 import sbIntuitionsLogo from '~/assets/logos/sb-intuitions.png';
 import tsuzumiLogo from '~/assets/logos/tsuzumi.png';
 import kimiLogo from '~/assets/logos/kimi.webp';
+import tongyiLogo from '~/assets/logos/tongyi.svg';
+import xaiLogo from '~/assets/logos/xai.svg';
+import bytedanceLogo from '~/assets/logos/bytedance.svg';
+import zhipuLogo from '~/assets/logos/zhipu.svg';
+import chutesLogo from '~/assets/logos/chutes.svg';
+import novitaLogo from '~/assets/logos/novita.svg';
+import openrouterLogo from '~/assets/logos/openrouter.svg';
 
 // 特殊フォーマットのアイコンID用マッピング
 const specialFormatMap: Record<string, string> = {
@@ -75,10 +86,13 @@ const iconMap: Record<string, string> = {
   'gemini': geminiLogo,
   'gemini-png': geminiLogo,
   'grok': grokLogo,
+  'gurokku': gurokkuLogo,
   'llama': llamaLogo,
   'ollama': llamaLogo,
   'mistral': mistralLogo,
   'pi': piLogo,
+  'pplx': pplxLogo,
+  'perplexity': pplxLogo,
   'qianwen': qianwenLogo,
   'rakuten': rakutenLogo,
   'vicuna': vicunaLogo,
@@ -98,6 +112,13 @@ const iconMap: Record<string, string> = {
   'sb-intuitions': sbIntuitionsLogo,
   'tsuzumi': tsuzumiLogo,
   'kimi': kimiLogo,
+  'tongyi': tongyiLogo,
+  'xai': xaiLogo,
+  'zhipu': zhipuLogo,
+  'bytedance': bytedanceLogo,
+  'chutes': chutesLogo,
+  'novita': novitaLogo,
+  'openrouter': openrouterLogo,
 };
 
 // 安全なアイコン表示のための検証関数
@@ -240,11 +261,10 @@ const BotIcon: React.FC<BotIconProps> = ({ iconName, size = 24, className = '' }
       const style = iconName.split('.')[1]?.toLowerCase();
       
       if (['sonar', 'color', 'mono', 'square'].includes(style)) {
-        // サーバーサイドレンダリングの場合など、PerplexityLogoが使えない環境ではfallback
         if (typeof window === 'undefined' || !PerplexityLogo) {
           return (
             <img
-              src={chatgptLogo}
+              src={pplxLogo}
               alt="Perplexity"
               style={{ width: size, height: size, objectFit: 'contain' }}
               className={className}
@@ -279,22 +299,24 @@ const BotIcon: React.FC<BotIconProps> = ({ iconName, size = 24, className = '' }
       provider = iconName.split('.')[0].toLowerCase();
     }
     
-    // 対応するアイコンを検索
-    const icon = Object.entries(iconMap).find(
-      ([key]) => provider.toLowerCase().includes(key.toLowerCase())
-    );
-    
-    // アイコンが見つかった場合は表示、見つからなかった場合はデフォルトアイコン
-    if (icon) {
+    const lowerProvider = provider.toLowerCase();
+    const exactSrc = iconMap[lowerProvider];
+
+    if (exactSrc) {
       return (
         <img
-          src={icon[1]}
+          src={exactSrc}
           alt={provider}
           style={{ width: size, height: size, objectFit: 'contain' }}
           className={className}
           title={iconName}
         />
       );
+    }
+
+    // FiCodeアイコン
+    if (iconName === 'FiCode') {
+      return <FiCode size={size} className={className} />;
     }
 
     // どのアイコンにも一致しない場合はデフォルトアイコンを表示

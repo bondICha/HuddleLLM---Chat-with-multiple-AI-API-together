@@ -4,7 +4,86 @@ import { getVersion } from '~utils'
 // translate
 
 
-const RELEASE_NOTES = [
+export const RELEASE_NOTES = [
+  {
+    version: '2.13.1',
+    notes: [
+      'releasenote_v2131_enhanced_scroll_experience',
+    ],
+  },
+  {
+    version: '2.13.0',
+    notes: [
+      'releasenote_v2130_image_agent',
+      'releasenote_v2130_ui_improvements',
+    ],
+  },
+  {
+    version: '2.12.6',
+    notes: [
+      'releasenote_v2126_openrouter_image_generation',
+    ],
+  },
+  {
+    version: '2.12.5',
+    notes: [
+      'releasenote_v2125_vertex_gemini_update',
+    ],
+  },
+  {
+    version: '2.12.3',
+    notes: [
+      'releasenote_openai_responses_image_beta',
+    ],
+  },
+  {
+    version: '2.12.2',
+    notes: [
+      'releasenote_v2122_model_preview_enhancement',
+      'releasenote_v2122_session_restore_toggle',
+      'releasenote_v2122_provider_icons',
+      'releasenote_v2122_by_glm_46',
+    ],
+  },
+  {
+    version: '2.12.0',
+    notes: [
+      'releasenote_v2120_provider_feature',
+      'releasenote_v2120_claude_sonnet_45',
+      'releasenote_v2120_release_note_by_claude_sonnet_45',
+    ],
+  },
+  {
+    version: '2.11.0',
+    notes: [
+      'releasenote_v2110_file_attachment_support',
+      'releasenote_v2110_drag_and_drop_support',
+      'releasenote_v2110_pdf_support_removed',
+    ],
+  },
+  {
+    version: '2.10.11',
+    notes: [
+      'releasenote_v21011_fix_claude_empty_message_error',
+      'releasenote_v21011_remove_image_on_history_restore',
+      'releasenote_v21011_expandable_chat_input_field',
+    ],
+  },
+  {
+    version: '2.10.8',
+    notes: [
+      'releasenote_v2110_gemini_openai_format_and_thinking_support',
+      'releasenote_v2110_model_list_api_support',
+    ],
+  },
+  {
+    version: '2.10.5',
+    notes: [
+      'releasenote_v2105_code_expansion_modal_enhancement',
+      'releasenote_v2105_font_type_setting',
+      'releasenote_v2105_this_release_note_is_made_by_grok_code',
+    ],
+  },
   {
     version: '2.9.0',
     notes: [
@@ -150,7 +229,7 @@ export async function markCurrentVersionAsRead(): Promise<void> {
   await Browser.storage.sync.set({ lastCheckReleaseNotesVersion: version })
 }
 
-export async function checkReleaseNotes(): Promise<string[]> {
+export async function checkReleaseNotes(): Promise<{version: string, notes: string[]}[]> {
   const version = getVersion()
   const { lastCheckReleaseNotesVersion } = await Browser.storage.sync.get('lastCheckReleaseNotesVersion')
   // バージョン記録の更新は行わない（markCurrentVersionAsRead関数に移動）
@@ -159,6 +238,9 @@ export async function checkReleaseNotes(): Promise<string[]> {
   }
   return RELEASE_NOTES
     .filter(({ version: v }) => compareVersions(v, lastCheckReleaseNotesVersion) > 0)
-    .map(({ notes }) => notes)
-    .flat()
+}
+
+// 手動でリリースノートを表示するための関数（すべてのバージョンを返す）
+export function getAllReleaseNotes(): {version: string, notes: string[]}[] {
+  return RELEASE_NOTES.slice(0, 10) // 最新10バージョンのみ表示
 }

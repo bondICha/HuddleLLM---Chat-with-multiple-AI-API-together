@@ -87,6 +87,7 @@ const MessageBubble: FC<PropsWithChildren<Props>> = (props) => {
                 {t('com_ui_thoughts')}
               </>
             }
+            initiallyExpanded={false}
           >
             {props.thinking}
           </Expandable>

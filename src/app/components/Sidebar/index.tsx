@@ -7,18 +7,19 @@ import { useTranslation } from 'react-i18next'
 import { PencilIcon, ArrowPathIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline'
 import allInOneIcon from '~/assets/all-in-one.svg'
 import collapseIcon from '~/assets/icons/collapse.svg'
-import hamburgerIcon from '~/assets/icons/hamburger.svg'
-import feedbackIcon from '~/assets/icons/feedback.svg'
+import HamburgerIcon from '../icons/HamburgerIcon'
+import releaseNotesIcon from '~/assets/icons/release-notes.svg'
 import githubIcon from '~/assets/icons/github.svg'
 import settingIcon from '~/assets/icons/setting.svg'
 import themeIcon from '~/assets/icons/theme.svg'
 import minimalLogo from '~/assets/icon.png'
 import logo from '~/assets/logo.png'
 import BotIcon from '../BotIcon'
+import CollapsedMosaic from './CollapsedMosaic'
 import { cx } from '~/utils'
 import { useEnabledBots } from '~app/hooks/use-enabled-bots'
-import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom } from '~app/state'
-import { checkReleaseNotes } from '~services/release-notes'
+import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom, restoreOnStartupAtom } from '~app/state'
+import { checkReleaseNotes, getAllReleaseNotes } from '~services/release-notes'
 import * as api from '~services/server-api'
 import {
   getAppOpenTimes,
@@ -56,6 +57,7 @@ function IconButton(props: { icon: string; onClick?: () => void }) {
   )
 }
 
+
 function Sidebar() {
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useAtom(sidebarCollapsedAtom)
@@ -77,6 +79,8 @@ function Sidebar() {
   const [editingPairId, setEditingPairId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [hasInitialized, setHasInitialized] = useState(false)
+  // 起動時に履歴再開モーダルを表示する設定（デフォルトON）
+  const [restoreOnStartup, setRestoreOnStartup] = useAtom(restoreOnStartupAtom)
 
   // アクティブなAll-In-Oneを管理
   const [activeAllInOne, setActiveAllInOne] = useAtom(activeAllInOneAtom)
@@ -381,9 +385,11 @@ useEffect(() => {
           
           // Update check count regardless of result
           const currentState = await getCompanyProfileState(preset.companyName);
+          // Do not advance stored version on automatic checks.
+          // Keep the previously saved version so we can detect future upgrades correctly.
           const newState = {
             companyName: preset.companyName,
-            version: preset.version,
+            version: currentState?.version || preset.version, // initialize only on first run
             status: currentState?.status || CompanyProfileStatus.UNCONFIRMED,
             lastChecked: Date.now(),
             checkCount: (currentState?.checkCount || 0) + 1
@@ -447,6 +453,18 @@ useEffect(() => {
     return botAvatars[index] ?? 'OpenAI.Black';
   }
 
+  // リリースノートを表示する関数
+  const handleShowReleaseNotes = () => {
+    try {
+      const releaseNotes = getAllReleaseNotes();
+      if (releaseNotes && releaseNotes.length > 0) {
+        setReleaseNotes(releaseNotes);
+      }
+    } catch (error) {
+      console.error('Failed to load release notes:', error);
+    }
+  }
+
   // Check if it's mobile mode
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 520
   const shouldShowAsHamburger = sidebarDisplayMode === 'hamburger' || (sidebarDisplayMode === 'auto' && isMobile)
@@ -491,9 +509,9 @@ useEffect(() => {
       <button
         id="hamburger-button"
         onClick={() => setIsMobileMenuOpen(true)}
-        className="fixed top-8 left-2 z-50 p-2 rounded-lg bg-primary-background bg-opacity-90 hover:bg-opacity-100 transition-all"
+        className="fixed top-8 left-2 z-50 p-2 rounded-lg bg-primary-background bg-opacity-90 hover:bg-opacity-100 transition-all text-primary-text"
       >
-        <img src={hamburgerIcon} className="w-6 h-6" />
+        <HamburgerIcon className="w-6 h-6" />
       </button>
     )
   }
@@ -558,10 +576,14 @@ useEffect(() => {
                 : 'bg-secondary bg-opacity-20 text-primary-text hover:opacity-100',
               (shouldShowAsHamburger || !collapsed)
                 ? 'flex-row gap-3 py-[11px]'
-                : 'flex-col justify-center items-center gap-1 px-1 py-[5px]'
+                : 'flex-col justify-center items-center gap-1 px-1 py-[8px] min-h-[56px]'
             )}
           >
-            <img src={allInOneIcon} className="w-5 h-5" />
+            <div className="flex -space-x-1">
+              <div className="rounded-full border border-white overflow-hidden w-6 h-6">
+                <img src={allInOneIcon} className="w-6 h-6" />
+              </div>
+            </div>
             <span className={cx(
               'font-medium text-sm',
               !shouldShowAsHamburger && collapsed && 'overflow-hidden text-ellipsis leading-tight text-center break-words w-full'
@@ -606,27 +628,31 @@ useEffect(() => {
                   : 'bg-secondary bg-opacity-20 text-primary-text hover:opacity-100',
                 (shouldShowAsHamburger || !collapsed)
                   ? 'flex-row gap-3 py-[11px]'
-                  : 'flex-col justify-center items-center gap-1 px-1 py-[5px]'
+                  : 'flex-col justify-center items-center gap-1 px-1 py-[8px] min-h-[56px]'
               )}
             >
-              <div className="flex -space-x-1">
-                {pair.botIndices.slice(0, Math.min(4, shouldShowAsHamburger || !collapsed ? 4 : 2)).map((botIndex, i) => (
-                  <div key={i} className={cx(
-                    "rounded-full border border-white overflow-hidden",
-                    collapsed ? "w-4 h-4" : "w-4 h-4"
-                  )}>
-                    <BotIcon iconName={getBotAvatar(botIndex)} size={16} />
-                  </div>
-                ))}
-                {pair.botIndices.length > (shouldShowAsHamburger || !collapsed ? 4 : 2) && (
-                  <div className={cx(
-                    "rounded-full bg-secondary text-xs flex items-center justify-center border border-white",
-                    collapsed ? "w-4 h-4" : "w-4 h-4"
-                  )}>
-                    +{pair.botIndices.length - (shouldShowAsHamburger || !collapsed ? 4 : 2)}
-                  </div>
-                )}
-              </div>
+              {(!shouldShowAsHamburger && collapsed) ? (
+                <CollapsedMosaic icons={pair.botIndices.map(getBotAvatar)} />
+              ) : (
+                <div className="flex -space-x-1">
+                  {pair.botIndices.slice(0, Math.min(4, shouldShowAsHamburger || !collapsed ? 4 : 2)).map((botIndex, i) => (
+                    <div key={i} className={cx(
+                      "rounded-full border border-white overflow-hidden",
+                      collapsed ? "w-4 h-4" : "w-5 h-5"
+                    )}>
+                      <BotIcon iconName={getBotAvatar(botIndex)} size={collapsed ? 16 : 20} />
+                    </div>
+                  ))}
+                  {pair.botIndices.length > (shouldShowAsHamburger || !collapsed ? 4 : 2) && (
+                    <div className={cx(
+                      "rounded-full bg-secondary flex items-center justify-center border border-white",
+                      collapsed ? "w-4 h-4 text-xs" : "w-5 h-5 text-[11px]"
+                    )}>
+                      +{pair.botIndices.length - (shouldShowAsHamburger || !collapsed ? 4 : 2)}
+                    </div>
+                  )}
+                </div>
+              )}
               {(shouldShowAsHamburger || !collapsed) && (
                 <div className="flex-1 min-w-0">
                   {editingPairId === pair.id ? (
@@ -723,6 +749,23 @@ useEffect(() => {
           )
         })}
       </div>
+      {/* 起動時に履歴再開表示 トグル */}
+      {(shouldShowAsHamburger || !collapsed) && (
+        <div className="mt-3 mb-1 px-1 flex items-center justify-between">
+          <span className="text-xs text-primary-text opacity-80">{t('Show session restore on startup')}</span>
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={restoreOnStartup}
+              onChange={(e) => setRestoreOnStartup(e.target.checked)}
+            />
+            <div className="w-10 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:bg-blue-500 relative transition-colors">
+              <span className={cx('absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-all', restoreOnStartup ? 'translate-x-5' : 'translate-x-0')} />
+            </div>
+          </label>
+        </div>
+      )}
       <div className="mt-auto pt-2">
         {(shouldShowAsHamburger || !collapsed) && <hr className="border-[#ffffff4d]" />}
         <div className={cx('flex mt-5 gap-[10px] mb-4', (shouldShowAsHamburger || !collapsed) ? 'flex-row' : 'flex-col')}>
@@ -734,10 +777,10 @@ useEffect(() => {
             </Tooltip>
           )}
           {(shouldShowAsHamburger || !collapsed) && (
-            <Tooltip content={t('Feedback')}>
-              <a href="https://github.com/bondICha/HuddleLLM---Chat-with-multiple-AI-API-together/issues" target="_blank" rel="noreferrer">
-                <IconButton icon={feedbackIcon} />
-              </a>
+            <Tooltip content={t('Release Notes')}>
+              <div onClick={handleShowReleaseNotes}>
+                <IconButton icon={releaseNotesIcon} />
+              </div>
             </Tooltip>
           )}
           {(shouldShowAsHamburger || !collapsed) && (

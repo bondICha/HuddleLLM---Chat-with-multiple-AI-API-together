@@ -5,6 +5,7 @@ import { file2base64 } from '~app/utils/file-utils'
 import { ChatMessageModel } from '~types'
 import { uuid } from '~utils'
 import { getUserLocaleInfo } from '~utils/system-prompt-variables'
+import i18n from '~app/i18n'
 
 // GeminiApiBotのコンストラクタに渡すオプションの型定義
 interface GeminiApiBotOptions {
@@ -139,15 +140,35 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
       }
 
       if (!responseText) {
-        params.onEvent({ type: 'UPDATE_ANSWER', data: { text: 'Empty response' } })
+        params.onEvent({ type: 'UPDATE_ANSWER', data: { text: i18n.t('image_only_response') } })
       }
 
       params.onEvent({ type: 'DONE' })
       this.conversationContext.messages.push({ role: 'model', parts: [{ text: responseText }] })
 
     } catch (error) {
-      console.error('Gemini API error:', error)
-      params.onEvent({ type: 'ERROR', error: new ChatError('Gemini API error', ErrorCode.GEMINI_API_ERROR) })
+      console.error('Gemini API error:', error);
+      const err = error as any;
+      let finalCause = err;
+      let finalMessage = err.message || err.toString();
+
+      // Check for nested JSON string in error message
+      if (err.message && typeof err.message === 'string') {
+        try {
+          const nestedError = JSON.parse(err.message);
+          if (nestedError.error) {
+            finalCause = nestedError.error;
+            finalMessage = nestedError.error.message || finalMessage;
+          }
+        } catch (e) {
+          // Not a JSON string, do nothing
+        }
+      }
+      
+      const statusLine = `[GoogleGenerativeAI Error]`;
+      const combinedMessage = `${statusLine}; ${finalMessage}`;
+
+      params.onEvent({ type: 'ERROR', error: new ChatError(combinedMessage, ErrorCode.GEMINI_API_ERROR, finalCause) });
     }
   }
 

@@ -9,6 +9,7 @@ interface Props {
   onClose: () => void
   className?: string
   borderless?: boolean
+  titleBarAddon?: React.ReactNode
 }
 
 const Dialog: FC<PropsWithChildren<Props>> = (props) => {
@@ -26,7 +27,7 @@ const Dialog: FC<PropsWithChildren<Props>> = (props) => {
         >
           <div className="fixed inset-0 bg-black/30 bg-opacity-75 transition-opacity" />
         </Transition.Child>
-        <div className="fixed inset-0 flex items-center justify-center max-h-screen m-5">
+        <div className="fixed inset-0 flex items-center justify-center m-5 overflow-y-auto">
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -38,7 +39,7 @@ const Dialog: FC<PropsWithChildren<Props>> = (props) => {
           >
             <HeadlessDialog.Panel
               className={cx(
-                'mx-auto rounded-2xl bg-primary-background shadow-2xl max-h-full overflow-hidden flex flex-col',
+                'mx-auto rounded-2xl bg-primary-background shadow-2xl max-h-[85vh] overflow-auto flex flex-col transition-all duration-300 ease-in-out',
                 props.className,
               )}
             >
@@ -46,12 +47,15 @@ const Dialog: FC<PropsWithChildren<Props>> = (props) => {
                 <HeadlessDialog.Title
                   className={cx(
                     !props.borderless && 'border-b',
-                    'border-solid border-primary-border flex flex-row justify-center items-center py-3 px-5',
+                    'border-solid border-primary-border flex flex-row justify-between items-center py-3 px-5',
                   )}
                 >
-                  <span className="ml-auto" />
+                  <div className="w-8">{/* spacer */}</div>
                   <span className="font-bold text-primary-text text-base">{props.title}</span>
-                  <img src={closeIcon} className="w-4 h-4 ml-auto mr-[10px] cursor-pointer" onClick={props.onClose} />
+                  <div className="flex items-center gap-2">
+                    {props.titleBarAddon}
+                    <img src={closeIcon} className="w-4 h-4 cursor-pointer" onClick={props.onClose} />
+                  </div>
                 </HeadlessDialog.Title>
               ) : (
                 <HeadlessDialog.Title></HeadlessDialog.Title>

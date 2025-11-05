@@ -15,6 +15,7 @@ import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import supersub from 'remark-supersub'
 import remarkDirective from 'remark-directive';
+import rehypeExternalLinks from 'rehype-external-links'
 import Tooltip from '../Tooltip'
 import './markdown.css'
 import type { Pluggable } from 'unified';
@@ -94,7 +95,7 @@ export const code: React.ElementType = memo(({ className, children }: TCodeProps
       ? children 
       : reactNodeToString(children);
     
-    return <CodeBlock language={lang ?? 'text'} code={codeString} />;
+    return <CodeBlock language={lang ?? ''} code={codeString} />;
   }
 });
 
@@ -180,9 +181,17 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
         remarkPlugins
       }
       rehypePlugins={allowHtml
-        ? [rehypeRaw, [rehypeHighlight, { detect: true, ignoreMissing: true }]]
-        : [[rehypeHighlight, { detect: true, ignoreMissing: true }]]
+        ? [
+            rehypeRaw,
+            [rehypeHighlight, { detect: false, ignoreMissing: true }],
+            [rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }]
+          ]
+        : [
+            [rehypeHighlight, { detect: false, ignoreMissing: true }],
+            [rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }]
+          ]
       }
+      {...({ urlTransform: (url: string) => url } as any)}
       className={`markdown-body markdown-custom-styles code-block-no-margin !text-base font-normal`}
       // linkTarget="_blank" // Deprecated at markdown 9.0.0
       components={{
@@ -194,6 +203,36 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
             <Tooltip content={props.title}>
               <a {...props} title={undefined} />
             </Tooltip>
+          )
+        },
+        img: ({ node, ...props }) => {
+          const src = (props as any).src as string | undefined
+          const [url, setUrl] = useState<string | undefined>(src)
+          useEffect(() => {
+            let revoke: (() => void) | null = null
+            const run = async () => {
+              if (src && src.startsWith('data:')) {
+                try {
+                  const res = await fetch(src)
+                  const blob = await res.blob()
+                  const obj = URL.createObjectURL(blob)
+                  setUrl(obj)
+                  revoke = () => URL.revokeObjectURL(obj)
+                } catch {
+                  setUrl(src)
+                }
+              } else {
+                setUrl(src)
+              }
+            }
+            run()
+            return () => { if (revoke) revoke() }
+          }, [src])
+          if (!url) return <img {...(props as any)} />
+          return (
+            <a href={url} target="_blank" rel="noopener noreferrer">
+              <img {...(props as any)} src={url} />
+            </a>
           )
         },
         code,

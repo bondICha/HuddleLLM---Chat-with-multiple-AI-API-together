@@ -20,7 +20,8 @@ import chatgptLogo from '~/assets/logos/chatgpt.svg';
 import falconLogo from '~/assets/logos/falcon.jpeg';
 import geminiLogo from '~/assets/logos/gemini.svg';
 import geminiPngLogo from '~/assets/logos/gemini.png';
-import grokLogo from '~/assets/logos/grok.png';
+import grokLogo from '~/assets/logos/grok.svg';
+import gurokkuLogo from '~/assets/logos/gurokku.svg';
 import llamaLogo from '~/assets/logos/llama.png';
 import mistralLogo from '~/assets/logos/mistral.png';
 import piLogo from '~/assets/logos/pi.png';
@@ -45,6 +46,13 @@ import deepinfraLogo from '~/assets/logos/deepinfra.svg';
 import sbIntuitionsLogo from '~/assets/logos/sb-intuitions.png';
 import tsuzumiLogo from '~/assets/logos/tsuzumi.png';
 import kimiLogo from '~/assets/logos/kimi.webp';
+import tongyiLogo from '~/assets/logos/tongyi.svg';
+import xaiLogo from '~/assets/logos/xai.svg';
+import bytedanceLogo from '~/assets/logos/bytedance.svg';
+import zhipuLogo from '~/assets/logos/zhipu.svg';
+import chutesLogo from '~/assets/logos/chutes.svg';
+import novitaLogo from '~/assets/logos/novita.svg';
+import openrouterLogo from '~/assets/logos/openrouter.svg';
 
 // アイコンオプションの定義
 interface IconOption {
@@ -111,6 +119,7 @@ const otherIcons: IconOption[] = [
   { id: 'falcon', name: 'Falcon', src: falconLogo },
   { id: 'gemini-png', name: 'Gemini (PNG)', src: geminiPngLogo },
   { id: 'grok', name: 'Grok', src: grokLogo },
+  { id: 'gurokku', name: 'Gurokku', src: gurokkuLogo },
   { id: 'guanaco', name: 'Guanaco', src: guanacoLogo },
   { id: 'huddlellm', name: 'HuddleLLM', src: huddleLLMLogo },
   { id: 'hyperbolic', name: 'Hyperbolic', src: hyperbolicLogo },
@@ -123,11 +132,18 @@ const otherIcons: IconOption[] = [
   { id: 'sambanova', name: 'SambaNova', src: sambaNovaLogo },
   { id: 'sb-intuitions', name: 'SB Intuitions', src: sbIntuitionsLogo },
   { id: 'stablelm', name: 'StableLM', src: stablelmLogo },
-  { id: 'vicuna', name: 'Vicuna', src: vicunaLogo },
   { id: 'tsuzumi', name: 'Tsuzumi', src: tsuzumiLogo },
+  { id: 'tongyi', name: 'Tongyi', src: tongyiLogo },
+  { id: 'vicuna', name: 'Vicuna', src: vicunaLogo },
   { id: 'wizardlm', name: 'WizardLM', src: wizardlmLogo },
+  { id: 'xai', name: 'xAI', src: xaiLogo },
+  { id: 'bytedance', name: 'ByteDance', src: bytedanceLogo },
   { id: 'xunfei', name: 'XunFei', src: xunfeiLogo },
-  { id: 'yi', name: 'Yi', src: yiLogo }
+  { id: 'yi', name: 'Yi', src: yiLogo },
+  { id: 'zhipu', name: 'Zhipu AI', src: zhipuLogo },
+  { id: 'chutes', name: 'Chutes', src: chutesLogo },
+  { id: 'novita', name: 'Novita', src: novitaLogo },
+  { id: 'openrouter', name: 'OpenRouter', src: openrouterLogo }
 ];
 
 interface IconSelectProps {

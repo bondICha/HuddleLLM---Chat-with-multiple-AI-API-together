@@ -1,13 +1,14 @@
 {
   "name": "huddlellm-extension",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.11.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "package": "yarn build && node scripts/zip.mjs"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "2.0.0-beta.32",
@@ -20,7 +21,6 @@
     "@types/react": "18.2.45",
     "@types/react-color": "^3.0.10",
     "@types/react-dom": "18.2.18",
-    "@types/react-scroll-to-bottom": "^4",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@types/turndown": "^5.0.4",
     "@types/uuid": "^9.0.7",
@@ -28,6 +28,7 @@
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "archiver": "^7.0.1",
     "autoprefixer": "^10.4.16",
     "chrome-types": "^0.1.246",
     "eslint": "^8.56.0",
@@ -47,7 +48,8 @@
     "ts-jest": "^29.2.6",
     "typescript": "^5.3.3",
     "vite": "5.4.11",
-    "vite-tsconfig-paths": "^4.2.2"
+    "vite-tsconfig-paths": "^4.2.2",
+    "zip-a-folder": "^3.1.9"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.755.0",
@@ -98,11 +100,11 @@
     "react-icons": "^5.4.0",
     "react-markdown": "^9.0.1",
     "react-node-to-string": "^0.1.2",
-    "react-scroll-to-bottom": "^4.2.0",
     "react-spinners": "^0.13.8",
     "react-syntax-highlighter": "^15.6.1",
     "react-textarea-autosize": "^8.5.3",
     "react-viewport-list": "^7.1.2",
+    "rehype-external-links": "^3.0.0",
     "rehype-highlight": "^7.0.2",
     "rehype-raw": "^7.0.0",
     "rehype-stringify": "^9.0.4",
@@ -120,6 +122,7 @@
     "tailwind-merge": "^2.1.0",
     "turndown": "^7.1.2",
     "unified": "^10.1.2",
+    "use-stick-to-bottom": "^1.1.1",
     "uuid": "^9.0.1",
     "webextension-polyfill": "^0.10.0",
     "websocket-as-promised": "^2.0.1"

@@ -5,152 +5,36 @@ import {
   ALL_IN_ONE_PAGE_ID, CHATGPT_API_MODELS,
   CHATBOTS_UPDATED_EVENT, DEFAULT_SYSTEM_MESSAGE
 } from '~app/consts'
+export { MODEL_LIST } from '../../config/model-list'
+
+// Import types for use in this file
+import {
+  SystemPromptMode,
+  FontType,
+  CustomApiProvider,
+  OPENAI_COMPATIBLE_PROVIDERS,
+  CLAUDE_COMPATIBLE_PROVIDERS,
+  THINKING_BUDGET_PROVIDERS,
+  IMAGE_ONLY_PROVIDERS,
+  PROVIDER_INFO,
+  type ModelInfo,
+  type AdvancedConfig,
+  type ProviderConfig,
+  type ToolDefinition,
+  type ImageFunctionToolSettings,
+  type AgenticImageBotSettings,
+  type CustomApiConfig,
+  type ChatPair,
+} from './user-config/types'
+
+// Re-export all types for external use
+export * from './user-config/types'
 
 // カスタムモデルの最大数
 const MAX_CUSTOM_MODELS = 50;
 
 // カスタムAPIの設定キーのプレフィックス
 const CUSTOM_API_CONFIG_PREFIX = 'customApiConfig_';
-
-
-// System prompt mode enum
-export enum SystemPromptMode {
-  COMMON = 'common',     // Common promptをそのまま使う
-  APPEND = 'append',     // Common prompt + 個別prompt
-  OVERRIDE = 'override'  // 個別promptで上書き
-}
-
-
-// モデル情報の型定義
-export interface ModelInfo {
-    value: string;
-    icon?: string; // 個別のアイコン（オプション）
-}
-
-// プロバイダー情報（デフォルトアイコン含む）
-export const PROVIDER_INFO: Record<string, { icon: string }> = {
-    "OpenAI": { icon: "openai" },
-    "Anthropic": { icon: "anthropic" },
-    "Google": { icon: "gemini" },
-    "Grok": { icon: "grok" },
-    "Deepseek": { icon: "deepseek" },
-    "Perplexity": { icon: "perplexity" },
-    "Rakuten": { icon: "rakuten" },
-    "Custom": { icon: "openai" },
-};
-
-// モデルリストをプロバイダーごとに階層化
-export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
-    "OpenAI": {
-        "GPT-5": "gpt-5",
-        "GPT-5 Chat": "gpt-5-chat-latest",
-        "GPT-4.1": "gpt-4.1",
-        "GPT-4.1 mini": "gpt-4.1-mini",
-        "o4-mini": "o4-mini",
-        "o3": "o3",
-    },
-    "Anthropic": {
-        "Claude Sonnet 4": "claude-sonnet-4-0",
-        "Claude Opus 4.1": "claude-opus-4-1",
-        "Claude Haiku 3.5": "claude-3-5-haiku-latest",
-    },
-    "Google": {
-        "Gemini 2.5 Pro": "gemini-2.5-pro",
-        "Gemini 2.5 Flash": "gemini-2.5-flash",
-    },
-    "Grok": {
-        "Grok 4": "grok-4",
-        "Grok 3 Mini": "grok-3-mini",
-        "Grok 3 Mini Fast": "grok-3-mini-fast",
-    },
-    "Deepseek": {
-        "Deepseek Chat": "deepseek-chat",
-        "Deepseek Reasoner": "deepseek-reasoner",
-    },
-    "Perplexity": {
-        "Sonar Pro": "sonar-pro",
-        "Sonar": "sonar",
-        "Sonar Deep Research": "sonar-deep-research",
-        "Sonar Reasoning Pro": "sonar-reasoning-pro",
-        "Sonar Reasoning": "sonar-reasoning",
-    },
-    "Rakuten": {
-        "DeepSeek-R1": "DeepSeek-R1",
-        "RakutenAI-2.0-MoE": "RakutenAI-2.0-MoE",
-        "Rakuten-AI-3.0-Alpha": "Rakuten-AI-3.0-Alpha",
-        "RakutenAI-7B-instruct": "RakutenAI-7B-instruct",
-        "DeepSeek-V3": "DeepSeek-V3",
-        "RakutenAI-2.0-Mini-1.5B": "RakutenAI-2.0-Mini-1.5B",
-    },
-    // ベンダー特有のモデルIDを「Custom」カテゴリとして追加
-    "Custom": {
-        // Bedrock用のGeminiモデル
-        "Google Gemini 2.5 Flash": { value: "google/gemini-2.5-flash", icon: "gemini" },
-        "Google Gemini 2.5 Pro": { value: "google/gemini-2.5-pro", icon: "gemini" },
-        // Bedrock用のClaudeモデル
-        "Claude Sonnet 4 (Bedrock, US)": { value: "us.anthropic.claude-sonnet-4-20250514-v1:0", icon: "anthropic" },
-        "Claude Sonnet 4 (Bedrock)": { value: "anthropic.claude-sonnet-4-20250514-v1:0", icon: "anthropic" },
-        "Claude 3.5 Haiku (Bedrock)": { value: "anthropic.claude-3-5-haiku-20241022-v1:0", icon: "anthropic" },
-        "OpenAI/GPT-OSS-120b": { value: "openai/gpt-oss-120b", icon: "openai" },
-        "OpenAI/GPT-OSS-20b": { value: "openai/gpt-oss-20b", icon: "openai" },
-        "通义千问/Qwen3-Coder-480B-A35B-Instruct": { value: "Qwen/Qwen3-Coder-480B-A35B-Instruct", icon: "qianwen" },
-        "通义千问/Qwen3-235B-A22B-Thinking-2507": { value: "Qwen/Qwen3-235B-A22B-Thinking-2507", icon: "qianwen" },
-        "通义千问/Qwen3-235B-A22B-Instruct-2507": { value: "Qwen/Qwen3-235B-A22B-Instruct-2507", icon: "qianwen" },
-        "DeepSeek/DeepSeek-V3.1": { value: "deepseek-ai/DeepSeek-V3.1", icon: "deepseek" },
-        "DeepSeek/DeepSeek-R1": { value: "deepseek-ai/DeepSeek-R1", icon: "deepseek" },
-        "moonshotai/Kimi-K2-Instruct": { value: "moonshotai/Kimi-K2-Instruct", icon: "kimi" },
-    },
-};
-// Note: Removed individual model enums (ClaudeAPIModel, GeminiAPIModel, etc.) and CustomAPIModel enum
-
-
-export enum CustomApiProvider {
-  OpenAI = 'openai',
-  Anthropic = 'anthropic', // Default, uses x-api-key
-  Bedrock = 'bedrock',
-  Anthropic_CustomAuth = 'anthropic-customauth', // Uses Authorization header
-  Google = 'google', // For Gemini API
-  Perplexity = 'perplexity', // For Perplexity API
-  VertexAI_Claude = 'vertexai-claude' // For Google VertexAI Claude API
-}
-
-/**
- * カスタムAPIの設定インターフェース
- * カスタムAPIの設定情報を保持する型定義
- */
-export interface CustomApiConfig {
-  id?: number // 未使用、後方互換性のため維持。
-  name: string,
-  shortName: string,
-  host: string,
-  model: string,
-  temperature: number,
-  systemMessage: string,
-  systemPromptMode: SystemPromptMode, // System promptの使用方法
-  avatar: string,
-  apiKey: string,
-  thinkingMode?: boolean, // Anthropic thinking mode
-  thinkingBudget?: number, // Anthropic thinking budget
-  reasoningMode?: boolean, // OpenAI reasoning mode
-  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high', // OpenAI reasoning effort
-  provider: CustomApiProvider,
-  webAccess?: boolean,
-  isAnthropicUsingAuthorizationHeader?: boolean, // Anthropicの認証ヘッダータイプを指定するフラグ
-  enabled?: boolean, // 各チャットボットの有効/無効状態
-  isHostFullPath?: boolean; // hostが完全なパスかどうかを示すフラグ (デフォルト: false)
-}
-
-/**
- * チャットペアの設定インターフェース
- * 保存されたチャットペアの情報を保持する型定義
- */
-export interface ChatPair {
-  id: string, // ユニークID
-  name: string, // ペア名（デフォルトは各チャット名を|で区切ったもの）
-  botIndices: number[], // 選択されたボットのインデックス配列
-  createdAt: number, // 作成日時のタイムスタンプ
-  updatedAt: number, // 更新日時のタイムスタンプ
-}
 
 /**
  * デフォルトのカスタムAPI設定
@@ -169,11 +53,13 @@ const userConfigWithDefaultValue = {
   chatgptWebAccess: false,
   claudeWebAccess: false,
   customApiConfigs: defaultCustomApiConfigs,
+  providerConfigs: [] as ProviderConfig[], // API Provider設定
   customApiKey: '',
   customApiHost: '',
   commonSystemMessage: DEFAULT_SYSTEM_MESSAGE,
   isCustomApiHostFullPath: false, // デフォルト値を設定
   savedChatPairs: [] as ChatPair[], // 保存されたチャットペア
+  fontType: FontType.SERIF, // フォントタイプ（デフォルト: Sans-serif）
 }
 
 export type UserConfig = typeof userConfigWithDefaultValue
@@ -225,12 +111,14 @@ async function _migrateCustomApiConfigsFromSyncToLocal(): Promise<CustomApiConfi
 
 export async function getUserConfig(): Promise<UserConfig> {
   try {
-    // 1. customApiConfigs を local から取得
-    const localData = await Browser.storage.local.get('customApiConfigs');
+    // 1. Local storage から取得する項目 (端末固有の設定)
+    const localKeys = ['customApiConfigs', 'savedChatPairs'];
+    const localData = await Browser.storage.local.get(localKeys);
     let customConfigsInLocal: CustomApiConfig[] | undefined = localData.customApiConfigs;
+    let chatPairsInLocal: ChatPair[] | undefined = localData.savedChatPairs;
 
-    // 2. その他の設定を sync から取得 (customApiConfigs を除く)
-    const syncKeysToGet = Object.keys(userConfigWithDefaultValue).filter(k => k !== 'customApiConfigs');
+    // 2. その他の設定を sync から取得
+    const syncKeysToGet = Object.keys(userConfigWithDefaultValue).filter(k => !localKeys.includes(k));
     const syncData = await Browser.storage.sync.get(syncKeysToGet);
 
     let finalConfig = defaults({}, syncData, userConfigWithDefaultValue);
@@ -244,6 +132,8 @@ export async function getUserConfig(): Promise<UserConfig> {
     }
 
     finalConfig.customApiConfigs = customConfigsInLocal || [...defaultCustomApiConfigs];
+    finalConfig.providerConfigs = syncData.providerConfigs || [];
+    finalConfig.savedChatPairs = chatPairsInLocal || [];
     
     if (finalConfig.customApiConfigs) {
       finalConfig.customApiConfigs.forEach((config: CustomApiConfig) => {
@@ -256,6 +146,9 @@ export async function getUserConfig(): Promise<UserConfig> {
         if (config.systemPromptMode === undefined) {
           config.systemPromptMode = SystemPromptMode.OVERRIDE; // マイグレーション: 既存設定にデフォルト値を設定
         }
+
+        // Note: Legacy image field migrations removed
+        // Users with old OpenAI_Image settings will get defaults (acceptable per requirements)
       });
     }
     
@@ -266,6 +159,37 @@ export async function getUserConfig(): Promise<UserConfig> {
         }
       });
       await Browser.storage.sync.remove('enabledBots');
+    }
+
+    // Migration for providerConfigs
+    if ((!finalConfig.providerConfigs || finalConfig.providerConfigs.length === 0) && finalConfig.customApiKey) {
+      const defaultProvider: ProviderConfig = {
+        id: 'default-provider',
+        name: 'Default Provider',
+        provider: CustomApiProvider.OpenAI,
+        host: finalConfig.customApiHost || 'https://api.openai.com',
+        isHostFullPath: finalConfig.isCustomApiHostFullPath || false,
+        apiKey: finalConfig.customApiKey,
+        icon: 'openai',
+      };
+      finalConfig.providerConfigs = [defaultProvider];
+      finalConfig.customApiConfigs.forEach(config => {
+        if (!config.host && !config.apiKey) {
+          config.providerRefId = defaultProvider.id;
+        }
+      });
+      // Clean up old common settings
+      finalConfig.customApiKey = '';
+      finalConfig.customApiHost = '';
+      finalConfig.isCustomApiHostFullPath = false;
+      
+      await updateUserConfig({
+        providerConfigs: finalConfig.providerConfigs,
+        customApiConfigs: finalConfig.customApiConfigs,
+        customApiKey: finalConfig.customApiKey,
+        customApiHost: finalConfig.customApiHost,
+        isCustomApiHostFullPath: finalConfig.isCustomApiHostFullPath,
+      });
     }
     
     if (finalConfig.hasOwnProperty('useCustomChatbotOnly')) {
@@ -287,20 +211,43 @@ export async function getUserConfig(): Promise<UserConfig> {
  */
 export async function updateUserConfig(updates: Partial<UserConfig>) {
   try {
-    const { customApiConfigs, ...otherUpdates } = updates;
+    const { customApiConfigs, providerConfigs, savedChatPairs, ...otherUpdates } = updates;
 
-    // 1. customApiConfigs を local に保存 (存在する場合)
-    if (customApiConfigs !== undefined) { // null や空配列も保存対象とするため、undefined のみチェック
+    // 1. Local storage に保存する項目 (端末固有の設定)
+    const localUpdates: Record<string, any> = {};
+
+    // customApiConfigs を local に保存
+    if (customApiConfigs !== undefined) {
       if (Array.isArray(customApiConfigs)) {
-        const limitedConfigs = customApiConfigs.slice(0, MAX_CUSTOM_MODELS);
-        await Browser.storage.local.set({ customApiConfigs: limitedConfigs });
+        localUpdates.customApiConfigs = customApiConfigs.slice(0, MAX_CUSTOM_MODELS);
       } else {
-        // customApiConfigs が配列でない不正なケース (例: null)
-        await Browser.storage.local.set({ customApiConfigs: [] }); // 空配列として保存
+        localUpdates.customApiConfigs = [];
       }
     }
 
-    // 2. その他の設定を sync に保存 (存在する場合)
+    // savedChatPairs を local に保存 (端末ごとの設定)
+    if (savedChatPairs !== undefined) {
+      if (Array.isArray(savedChatPairs)) {
+        localUpdates.savedChatPairs = savedChatPairs;
+      } else {
+        localUpdates.savedChatPairs = [];
+      }
+    }
+
+    if (Object.keys(localUpdates).length > 0) {
+      await Browser.storage.local.set(localUpdates);
+    }
+
+    // 2. providerConfigs を sync に保存 (存在する場合)
+    if (providerConfigs !== undefined) {
+      if (Array.isArray(providerConfigs)) {
+        await Browser.storage.sync.set({ providerConfigs });
+      } else {
+        await Browser.storage.sync.set({ providerConfigs: [] });
+      }
+    }
+
+    // 3. その他の設定を sync に保存 (存在する場合)
     if (Object.keys(otherUpdates).length > 0) {
       const updatesForSync: Record<string, any> = {};
       const keysToRemoveFromSync: string[] = [];
@@ -404,3 +351,72 @@ export async function getSavedChatPairs(): Promise<ChatPair[]> {
   return config.savedChatPairs || [];
 }
 
+/**
+ * ユーザー設定をすべて初期化する（デフォルト設定に戻す）
+ * @returns Promise<void>
+ */
+export async function resetUserConfig(): Promise<void> {
+  try {
+    // 1. Browser.storage.local をすべてクリア
+    await Browser.storage.local.clear();
+
+    // 2. Browser.storage.sync をすべてクリア
+    await Browser.storage.sync.clear();
+
+    // 3. localStorage (Web Storage API) をすべてクリア
+    localStorage.clear();
+
+    // デフォルト設定を保存
+    await updateUserConfig({ ...userConfigWithDefaultValue });
+  } catch (error) {
+    console.error('Failed to reset user config:', error);
+    throw error;
+  }
+}
+
+/**
+ * フラグ系・表示設定のみをリセットする（起動回数、初回起動フラグ、言語、テーマ、フォントなど）
+ * Chat・API関係の設定は保持されます
+ * @returns Promise<void>
+ */
+export async function resetFlags(): Promise<void> {
+  try {
+    // Browser.storage.sync から削除するキー
+    const syncKeysToRemove = [
+      'openTimes',
+      'premiumModalOpenTimes',
+      'hasUsedOmniboxSearch',
+      'lastCheckReleaseNotesVersion',
+      'showSessionRestore',
+      'startupPage',
+      'fontType',
+    ];
+    await Browser.storage.sync.remove(syncKeysToRemove);
+
+    // Browser.storage.local から削除するキー
+    const allLocalData = await Browser.storage.local.get(null);
+    const localKeysToRemove = [
+      ...Object.keys(allLocalData).filter(key => key.startsWith('companyProfile_')),
+      'pendingOmniboxSearch',
+    ];
+    if (localKeysToRemove.length > 0) {
+      await Browser.storage.local.remove(localKeysToRemove);
+    }
+
+    // localStorage から削除するキー
+    const localStorageKeysToRemove = [
+      'language',
+      'themeMode',
+      'sidebarCollapsed',
+      'sidebarDisplayMode',
+      'themeColor',
+      'followArcTheme',
+      'restoreOnStartup',
+      'sidePanelBot',
+    ];
+    localStorageKeysToRemove.forEach(key => localStorage.removeItem(key));
+  } catch (error) {
+    console.error('Failed to reset flags:', error);
+    throw error;
+  }
+}

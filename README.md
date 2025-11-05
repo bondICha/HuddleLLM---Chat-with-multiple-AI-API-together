@@ -22,8 +22,8 @@
 
 ## 🤝 Sponsors
 
-<div style="background-color:#e8f5e9; padding:10px; border-left:5px solid #4caf50; border-radius:5px;"> <!-- 緑とアイコンで強調 -->
-<h2><b>Important Remarks</b> <span style="color:#4caf50;">&#9888;</span></h2>
+
+<a href="https://hb.afl.rakuten.co.jp/hsc/4de3c8d2.70fad0d8.4de3c8d3.f4787067/?link_type=pict&ut=eyJwYWdlIjoic2hvcCIsInR5cGUiOiJwaWN0IiwiY29sIjoxLCJjYXQiOiI0NCIsImJhbiI6Mjc5NDg1OCwiYW1wIjpmYWxzZX0%3D" target="_blank" rel="nofollow sponsored noopener" style="word-wrap:break-word;"><img src="https://hbb.afl.rakuten.co.jp/hsb/4de3c8d2.70fad0d8.4de3c8d3.f4787067/?me_id=1&me_adv_id=2794858&t=pict" border="0" style="margin:2px" alt="" title=""></a>
 
 
 </div>

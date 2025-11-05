@@ -21,6 +21,7 @@ export const chatFamily = atomFamily(
       generatingMessageId: '',
       abortController: undefined as AbortController | undefined,
       conversationId: uuid(),
+      shouldAutoScroll: true, // 自動スクロール制御用
     })
   },
   (a, b) => a.index === b.index && a.page === b.page,
@@ -31,9 +32,11 @@ export const sidebarCollapsedAtom = atomWithStorage('sidebarCollapsed', false, u
 export const sidebarDisplayModeAtom = atomWithStorage<'auto' | 'hamburger' | 'fixed'>('sidebarDisplayMode', 'auto', undefined, { getOnInit: true })
 export const themeColorAtom = atomWithStorage('themeColor', getDefaultThemeColor())
 export const followArcThemeAtom = atomWithStorage('followArcTheme', false)
+/** 起動時に履歴再開モーダルを表示する設定（デフォルト: ON） */
+export const restoreOnStartupAtom = atomWithStorage<boolean>('restoreOnStartup', true, undefined, { getOnInit: true })
 export const sidePanelBotAtom = atomWithStorage<number>('sidePanelBot', 0)
 export const showDiscountModalAtom = atom<false | true | Campaign>(false)
-export const releaseNotesAtom = atom<string[]>([])
+export const releaseNotesAtom = atom<{ version: string; notes: string[] }[]>([])
 export const pendingSearchQueryAtom = atom<string | null>(null)
 export const sessionRestoreModalAtom = atom(false)
 export const companyProfileModalAtom = atom(false)

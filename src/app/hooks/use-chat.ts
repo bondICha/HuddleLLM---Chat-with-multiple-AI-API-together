@@ -31,8 +31,17 @@ export function useChat(index: number) {
     [setChatState],
   )
 
+  const setAutoScroll = useCallback(
+    (shouldAutoScroll: boolean) => {
+      setChatState((draft) => {
+        draft.shouldAutoScroll = shouldAutoScroll
+      })
+    },
+    [setChatState],
+  )
+
   const sendMessage = useCallback(
-    async (input: string, images?: File[]) => {
+    async (input: string, images?: File[], attachments?: { name: string; content: string }[]) => {
       // URL処理
       const urlPattern = /@(https?:\/\/[^\s]+)/g
       const matches = [...input.matchAll(urlPattern)]
@@ -136,26 +145,36 @@ export function useChat(index: number) {
         }
       }
 
-      const finalMessage = cleanInput.trim() + (fetchedContent ? '\n\n' + fetchedContent : '')
-
+      // 添付は履歴に残さない。UI用の attachments は message に保持しつつ、保存時に除去する（既存仕様・下部で処理）
       const botMessageId = uuid()
       setChatState((draft) => {
         draft.messages.push(
           {
             id: uuid(),
-            text: input, // 元のメッセージを保持（@URL含む）
+            text: input, // 画面表示用にそのまま保持（ただし履歴保存時にattachmentsは落とす）
             images,
+            attachments: attachments && attachments.length ? attachments : undefined,
             author: 'user',
             fetchedUrls: fetchedUrls.length > 0 ? fetchedUrls : undefined
           },
           { id: botMessageId, text: '', author: index }, // Use index as author
         )
       })
+      
+      // API へ渡す最終メッセージは、ユーザ本文 + 取得URL + 添付を末尾に付加
+      let finalMessage = cleanInput.trim() + (fetchedContent ? '\n\n' + fetchedContent : '')
+      if (attachments && attachments.length) {
+        const attachmentSection = attachments
+          .map(att => `<${att.name}>\n${att.content}\n</${att.name}>`)
+          .join('\n\n')
+        finalMessage = `${finalMessage}\n\n---\n\n<Attachment>\n\n${attachmentSection}\n\n</Attachment>`
+      }
 
       const abortController = new AbortController()
       setChatState((draft) => {
         draft.generatingMessageId = botMessageId
         draft.abortController = abortController
+        draft.shouldAutoScroll = true // 新しいメッセージ送信時に自動スクロールをリセット
       })
 
       let compressedImages: File[] | undefined = undefined
@@ -173,7 +192,7 @@ export function useChat(index: number) {
         for await (const answer of resp) {
           updateMessage(botMessageId, (message) => {
             message.text = answer.text;
-                        if (answer.thinking) {
+            if (answer.thinking) {
               message.thinking = answer.thinking;
             }
             if (answer.searchResults) {
@@ -199,6 +218,7 @@ export function useChat(index: number) {
       setChatState((draft) => {
         draft.abortController = undefined
         draft.generatingMessageId = ''
+        // no-op
       })
     },
     [index, chatState.bot, setChatState, updateMessage],
@@ -225,6 +245,7 @@ export function useChat(index: number) {
       draft.generatingMessageId = ''
       draft.messages = []
       draft.conversationId = uuid()
+      draft.shouldAutoScroll = true // リセット時に自動スクロールを有効化
     })
   }, [chatState.bot, setChatState])
 
@@ -329,7 +350,9 @@ export function useChat(index: number) {
 
   useEffect(() => {
     if (chatState.messages.length) {
-      setConversationMessages(index, chatState.conversationId, chatState.messages)
+      // 履歴保存時に添付を除去（画像同様、添付テキストは残さない）
+      const sanitized = chatState.messages.map(({ attachments, ...rest }) => rest)
+      setConversationMessages(index, chatState.conversationId, sanitized as ChatMessageModel[])
     }
   }, [index, chatState.conversationId, chatState.messages])
 
@@ -374,7 +397,9 @@ export function useChat(index: number) {
       generating: !!chatState.generatingMessageId,
       stopGenerating,
       modifyLastMessage,
-      isInitialized: botInitialized
+      isInitialized: botInitialized,
+      shouldAutoScroll: chatState.shouldAutoScroll,
+      setAutoScroll,
     }),
     [
       index,
@@ -382,11 +407,13 @@ export function useChat(index: number) {
       chatState.generatingMessageId,
       chatState.messages,
       chatState.conversationId,
+      chatState.shouldAutoScroll,
       resetConversation,
       sendMessage,
       stopGenerating,
       modifyLastMessage,
-      botInitialized
+      botInitialized,
+      setAutoScroll,
     ],
   )
 

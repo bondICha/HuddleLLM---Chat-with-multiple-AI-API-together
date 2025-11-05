@@ -14,10 +14,11 @@ import { useAtomValue } from 'jotai'
 import { themeColorAtom } from '~app/state'
 
 
-import CustomAPISettings from '~app/components/Settings/CustomAPISettings'
+import CustomAPISettings from '~app/components/Settings/CustomApiSettings'
 import ExportDataPanel from '~app/components/Settings/ExportDataPanel'
 import ShortcutPanel from '~app/components/Settings/ShortcutPanel'
 import AllHostsPermissionPanel from '~app/components/Settings/AllHostsPermissionPanel'
+import DangerZone from '~app/components/Settings/DangerZone'
 import Switch from '~app/components/Switch'
 
 import { ALL_IN_ONE_PAGE_ID } from '~app/consts'
@@ -29,6 +30,8 @@ import {
 } from '~services/user-config'
 import { getVersion } from '~utils'
 import PagePanel from '../components/Page'
+import { getCompanyProfileConfigs, getCompanyProfileState, CompanyProfileStatus } from '~services/company-profile'
+import OldStorageNotification from '~app/components/Settings/OldStorageNotification'
 
 
 const ChatBotSettingPanel: FC<PropsWithChildren<{ title: string }>> = (props) => {
@@ -44,6 +47,7 @@ function SettingPage() {
   const { t } = useTranslation()
   const [userConfig, setUserConfig] = useState<UserConfig | undefined>(undefined)
   const [dirty, setDirty] = useState(false)
+  const [companyInfo, setCompanyInfo] = useState<{ name: string; version: string } | null>(null)
   const themeColor = useAtomValue(themeColorAtom)
 
 
@@ -52,6 +56,25 @@ function SettingPage() {
       setUserConfig(config);
     });
 
+    // Check for active company profile from stored state
+    const checkActiveCompanyProfile = async () => {
+      try {
+        const configs = await getCompanyProfileConfigs();
+        for (const profile of configs) {
+          const state = await getCompanyProfileState(profile.companyName);
+          if (state && state.status === CompanyProfileStatus.IMPORTED) {
+            setCompanyInfo({ name: profile.companyName, version: profile.version });
+            return;
+          }
+        }
+        setCompanyInfo(null);
+      } catch (error) {
+        console.error('Failed to check company profile:', error);
+        setCompanyInfo(null);
+      }
+    };
+
+    checkActiveCompanyProfile();
   }, [])
 
   const updateConfigValue = useCallback(
@@ -75,18 +98,23 @@ function SettingPage() {
 
     try {
       // Request host permissions for all custom API hosts to prevent CORS issues
-      await requestHostPermissions(userConfig.customApiConfigs || [], userConfig.customApiHost);
+      await requestHostPermissions(userConfig.customApiConfigs || [], userConfig.providerConfigs || []);
 
       // userConfigのディープコピーを渡すことで副作用を防ぐ
       await updateUserConfig(cloneDeep(userConfig));
       setDirty(false);
-      
-      toast.success(t('Settings saved. API changes require reload')); 
+
+      toast.success(t('Settings saved. API changes require reload'));
     } catch (error) {
       console.error('Failed to save settings:', error);
       toast.error(t('Failed to save settings. Please try again.'));
     }
   }, [userConfig, t]); // userConfig を依存配列に戻す
+
+  const handleConfigReset = useCallback(() => {
+    // Reload the page to reset the state
+    window.location.reload();
+  }, []);
 
   if (!userConfig) {
     return null
@@ -94,6 +122,12 @@ function SettingPage() {
 
   return (
     <PagePanel title={`${t('Settings')} (v${getVersion()})`}>
+      {companyInfo && (
+        <div className="mx-10 mt-3">
+          {t('Company Profile Active')}: {companyInfo.name} (v{companyInfo.version})
+        </div>
+      )}
+      <OldStorageNotification />
       <div className="flex flex-col gap-5 mt-3 mb-10 px-10" style={{ backgroundColor: themeColor ? `${themeColor}15` : 'rgba(17, 24, 39, 0.15)' }}>
         <ExportDataPanel userConfig={userConfig} updateConfigValue={updateConfigValue} />
         <div>
@@ -126,6 +160,7 @@ function SettingPage() {
         </div>
         */}
         <ShortcutPanel />
+        <DangerZone onConfigReset={handleConfigReset} />
       </div>
       {dirty && (
         <motion.div

@@ -8,6 +8,7 @@ import { file2base64 } from '~app/utils/file-utils';
 import { ChatMessageModel } from '~types';
 import { uuid } from '~utils';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
+import { sanitizeMessagesForClaude, ensureNonEmptyText } from '../claude-message-sanitizer';
 import {
   BedrockRuntimeClient,
   ConverseCommand,
@@ -99,7 +100,7 @@ export abstract class AbstractBedrockApiBot extends AbstractBot {
     const content: ContentPart[] = [];
 
     // Add text content first
-    content.push({ text: prompt });
+    content.push({ text: ensureNonEmptyText(prompt) });
 
     // Then add images if any
     if (images && images.length > 0) {
@@ -478,21 +479,23 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
       // Create the base command object
       const converceCommandObject: any = {
         modelId: this.getModelName(),
-        messages: messages,
+        messages: sanitizeMessagesForClaude(messages),
         system: [{ text: this.getSystemMessage() }]
       };
   
       // Add reasoning configuration or temperature based on thinkingMode flag
       if (this.config.thinkingMode) {
+        const budgetTokens = Math.max(this.config.thinkingBudget || 2000, 1024);
         const reasoningConfig = {
           thinking: {
             type: "enabled",
-            budget_tokens: this.config.thinkingBudget || 2000
+            budget_tokens: budgetTokens
           }
         };
         converceCommandObject.additionalModelRequestFields = reasoningConfig;
+        // Set maxTokens to budget_tokens + some to avoid 400 Bad Request
         converceCommandObject.inferenceConfig = {
-          maxTokens: 64000,
+          maxTokens: Math.min(budgetTokens + 12000, 64000),
         };
       } else {
         converceCommandObject.inferenceConfig = {
@@ -558,36 +561,14 @@ export class BedrockApiBot extends AbstractBedrockApiBot {
 
     } catch (error: unknown) {
       console.error('Bedrock API error:', error);
-      
-      // より詳細なエラー情報をログに出力
-      if (error instanceof Error) {
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-      }
-      
-      // AWS SDK固有のエラー情報
-      if (error && typeof error === 'object') {
-        const errorObj = error as any;
-        console.error('Error code:', errorObj.$metadata?.httpStatusCode || errorObj.statusCode);
-        console.error('Error response:', errorObj.$response);
-        console.error('Full error object:', JSON.stringify(error, null, 2));
-      }
-      
-      // エラーオブジェクトの型を判定
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Unknown error occurred';
-    
-      // statusCodeの取得
-      const statusCode = (error as { statusCode?: number })?.statusCode || 500;
-    
-      return new Response(JSON.stringify({ error: errorMessage }), {
-        status: statusCode,
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+      const err = error as any;
+      const statusCode = err.$metadata?.httpStatusCode || err.statusCode || 'N/A';
+      const statusText = err.name || 'Bedrock API Error';
+      const statusLine = `${statusCode} ${statusText}`;
+      const apiMessage = err.message || 'Unknown error occurred';
+      const combinedMessage = `${statusLine}; ${apiMessage}`;
+
+      throw new ChatError(combinedMessage, ErrorCode.UNKOWN_ERROR, err);
     }
     // Ensure the try...catch block is properly closed before the method ends.
   } // This closes the fetchCompletionApi method

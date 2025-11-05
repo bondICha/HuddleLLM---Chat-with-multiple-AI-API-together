@@ -37,7 +37,9 @@ const cache = createCache({
 const cacheInstance = cache.define(
   'compressImageFile',
   {
-    serialize: (image: File) => image.name,
+    // Use a more specific cache key to avoid collisions when different files share the same name
+    // Include size and lastModified to distinguish distinct uploads
+    serialize: (image: File) => `${image.name}:${image.size}:${image.lastModified}`,
   },
   _compressImageFile,
 )

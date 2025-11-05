@@ -1,6 +1,5 @@
 import { isArray } from 'lodash-es'
 import { requestHostPermission } from '~app/utils/permissions'
-import { UserConfig, getUserConfig } from '~services/user-config' // Import getUserConfig
 import { ChatError, ErrorCode } from '~utils/errors'
 import { parseSSEResponse } from '~utils/sse'
 import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract-bot'
@@ -8,6 +7,7 @@ import { file2base64 } from '~app/utils/file-utils'
 import { ChatMessageModel } from '~types'
 import { uuid } from '~utils'
 import { getUserLocaleInfo } from '~utils/system-prompt-variables'
+import { sanitizeMessagesForClaude, ensureNonEmptyText } from '../claude-message-sanitizer'
 
 interface ChatMessage {
   role: string
@@ -79,7 +79,7 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
 
   private async buildUserMessage(prompt: string, images?: File[]): Promise<ChatMessage> {
     if (!images || images.length === 0) {
-      return { role: 'user', content: prompt }
+      return { role: 'user', content: ensureNonEmptyText(prompt) }
     }
 
     const imageContents = await Promise.all(images.map(async (image) => {
@@ -104,7 +104,7 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
     return {
       role: 'user',
       content: [
-        { type: 'text', text: prompt },
+        { type: 'text', text: ensureNonEmptyText(prompt) },
         ...validImageContents
       ],
     }
@@ -143,6 +143,8 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
       messages.push(result)
     }
 
+    let currentToolUse: any = null
+
     await parseSSEResponse(resp, (message) => {
       console.debug('claude sse message', message)
       try {
@@ -159,17 +161,63 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
               thinking: thinkingContent,
             },
           });
+        } else if (data.type === 'content_block_start' && data.content_block?.type === 'tool_use') {
+          // Tool use block started
+          currentToolUse = {
+            id: data.content_block.id,
+            name: data.content_block.name,
+            input: '',
+          }
+        } else if (data.type === 'content_block_delta' && data.delta?.type === 'input_json_delta') {
+          // Tool use input delta
+          if (currentToolUse) {
+            currentToolUse.input += data.delta.partial_json || ''
+          }
+        } else if (data.type === 'content_block_stop' && currentToolUse) {
+          // Tool use block ended - parse and emit
+          try {
+            const input = JSON.parse(currentToolUse.input)
+            params.onEvent({
+              type: 'TOOL_CALL',
+              data: {
+                id: currentToolUse.id,
+                name: currentToolUse.name,
+                arguments: input,
+              },
+            })
+            // Store in result for conversation context
+            if (!Array.isArray(result.content)) {
+              result.content = []
+            }
+            result.content.push({
+              type: 'tool_use',
+              id: currentToolUse.id,
+              name: currentToolUse.name,
+              input: input,
+            })
+          } catch (e) {
+            console.error('Failed to parse tool input:', e)
+          }
+          currentToolUse = null
         } else if (data.type === 'content_block_start' || data.type === 'content_block_delta') {
           if (data.delta?.text) {
             if (typeof result.content === 'string') {
               result.content += data.delta.text
+            } else if (Array.isArray(result.content)) {
+              // Find or create text block
+              const textBlock = result.content.find((b: any) => b.type === 'text')
+              if (textBlock) {
+                textBlock.text = (textBlock.text || '') + data.delta.text
+              } else {
+                result.content.push({ type: 'text', text: data.delta.text })
+              }
             } else {
               result.content = data.delta.text
             }
             params.onEvent({
               type: 'UPDATE_ANSWER',
               data: {
-                text: typeof result.content === 'string' ? result.content : '',
+                text: typeof result.content === 'string' ? result.content : result.content.find((b: any) => b.type === 'text')?.text || '',
                 thinking: thinkingContent || undefined,
               },
             });
@@ -234,6 +282,8 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       thinkingBudget?: number;
       isHostFullPath?: boolean; // Add isHostFullPath to the config type
       webAccess?: boolean;
+      advancedConfig?: any;
+      tools?: any[]; // Tool definitions for function calling
     },
     thinkingMode: boolean = false,
     private useCustomAuthorizationHeader: boolean = false
@@ -250,6 +300,11 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
     this.config.systemMessage = systemMessage
   }
 
+  setTools(tools: any[]) {
+    this.config.tools = tools
+    console.log('[ClaudeApiBot] setTools called with:', tools)
+  }
+
   async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal) {
     const hasImageInput = messages.some(
       (message) => isArray(message.content) && message.content.some((part) => part.type === 'image')
@@ -257,21 +312,28 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
 
     const body: any = {
       model: this.getModelName(),
-      messages,
-      max_tokens: hasImageInput ? 4096 : 8192,
+      messages: sanitizeMessagesForClaude(messages),
       stream: true,
       system: this.getSystemMessage(),
     }
 
+    // Add tools if provided
+    if (this.config.tools && this.config.tools.length > 0) {
+      body.tools = this.config.tools;
+    }
+
     // Add Extended Thinking configuration or temperature based on thinkingMode flag
     if (this.thinkingMode) {
+      const budgetTokens = Math.max(this.config.thinkingBudget || 2000, 1024); // Minimum 1024 tokens as per Extended Thinking spec
       body.thinking = {
         type: "enabled",
-        budget_tokens: Math.max(this.config.thinkingBudget || 2000, 1024) // Minimum 1024 tokens as per Extended Thinking spec
+        budget_tokens: budgetTokens
       };
+      body.max_tokens = Math.min(budgetTokens + 12000, 64000);
       // Temperature is not compatible with Extended Thinking mode
       // Do not set temperature when thinking mode is enabled
     } else {
+      body.max_tokens = hasImageInput ? 4096 : 8192;
       body.temperature = this.config.temperature; // Use config.temperature
     }
 
@@ -287,12 +349,16 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       headers['x-api-key'] = this.config.apiKey; // Use config.apiKey
     }
 
-    const { host: configHost, isHostFullPath: configIsHostFullPath } = this.config;
-    const userConfig = await getUserConfig(); // Get common user config
+    if (this.config.advancedConfig?.anthropicBetaHeaders) {
+      const betaValues = this.config.advancedConfig.anthropicBetaHeaders.split(',').map((v: string) => v.trim()).filter((v: string) => v);
+      if (betaValues.length > 0) {
+        headers['anthropic-beta'] = betaValues.join(', ');
+      }
+    }
 
-    const hostValue = configHost || userConfig.customApiHost;
-    // Prioritize individual bot's isHostFullPath, then common setting, then default to false.
-    const isFullPath = configIsHostFullPath ?? userConfig.isCustomApiHostFullPath ?? false;
+    // Use values passed from CustomBot; do not read global config here
+    const { host: hostValue, isHostFullPath: configIsHostFullPath } = this.config;
+    const isFullPath = configIsHostFullPath ?? false;
 
     let fullUrlStr: string;
 
@@ -311,7 +377,7 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       fullUrlStr = fullUrlStr.replace(/([^:]\/)\/+/g, "$1"); // Replace multiple slashes with single
       fullUrlStr = fullUrlStr.replace(/\/v1\/v1\//g, "/v1/");
     }
-    
+
     const resp = await fetch(fullUrlStr, {
       method: 'POST',
       signal,
@@ -319,11 +385,25 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       body: JSON.stringify(body),
     })
     if (!resp.ok) {
-      const error = await resp.text()
-      if (error.includes('insufficient_quota')) {
-        throw new ChatError('Insufficient Claude API usage quota', ErrorCode.CLAUDE_INSUFFICIENT_QUOTA)
+      const statusLine = `${resp.status} ${resp.statusText || 'Error'}`;
+      const errorText = await resp.text();
+      let cause;
+      let apiMessage = '';
+      try {
+        cause = JSON.parse(errorText);
+        apiMessage = (cause as any)?.error?.message || (cause as any)?.error?.type || '';
+      } catch (e) {
+        cause = errorText;
+        apiMessage = errorText.substring(0, 300);
       }
+      const combinedMessage = `${statusLine}; ${apiMessage}`;
+
+      if (apiMessage.includes('insufficient_quota')) {
+        throw new ChatError(combinedMessage, ErrorCode.CLAUDE_INSUFFICIENT_QUOTA, cause);
       }
+      
+      throw new ChatError(combinedMessage, ErrorCode.UNKOWN_ERROR, cause);
+    }
     return resp
   }
 
@@ -344,3 +424,4 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
     return true
   }
 }
+

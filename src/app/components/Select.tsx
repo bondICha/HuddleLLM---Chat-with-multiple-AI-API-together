@@ -2,15 +2,16 @@ import { Listbox, Transition } from '@headlessui/react'
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
 import { cx } from '~/utils'
 import { Fragment, useMemo, useRef, useState, useEffect } from 'react'
+import BotIcon from './BotIcon'
 
 interface Props<T> {
-  options: { value: T; name: string; icon?: string }[] // iconプロパティを追加
+  options: { value: T; name: string; icon?: string }[]
   value: T
   onChange: (value: T) => void
   size?: 'normal' | 'small'
   disabled?: boolean
   position?: 'top' | 'down'
-  showIcon?: boolean // アイコン表示制御用のプロパティを追加
+  showIcon?: boolean
 }
 
 function Select<T extends string>(props: Props<T>) {
@@ -55,7 +56,7 @@ function Select<T extends string>(props: Props<T>) {
     <Listbox value={value} onChange={onChange} disabled={disabled}>
       {({ open }) => (
         <>
-          <div className="relative">
+          <div className={cx('relative', open && 'z-50')}>
             <Listbox.Button
               ref={buttonRef}
               className={cx(
@@ -67,7 +68,7 @@ function Select<T extends string>(props: Props<T>) {
             >
               <div className="flex items-center gap-2">
                 {showIcon && selectedOption?.icon && (
-                  <img src={selectedOption.icon} alt="" className="w-5 h-5" />
+                  <BotIcon iconName={selectedOption.icon} size={20} />
                 )}
                 <span className="block truncate">{selectedOption?.name || 'Select an option'}</span>
               </div>
@@ -88,7 +89,7 @@ function Select<T extends string>(props: Props<T>) {
             >
               <Listbox.Options
                 className={cx(
-                  'absolute z-10 mt-1 max-h-80	 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black dark:ring-gray-700 ring-opacity-5 focus:outline-none', // Dark mode styles for options panel
+                  'absolute z-50 mt-1 max-h-80	 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black dark:ring-gray-700 ring-opacity-5 focus:outline-none', // Dark mode styles for options panel
                   size === 'normal' ? 'text-sm' : 'text-xs',
                   dropPosition === 'top' && 'bottom-full mb-1',
                 )}
@@ -107,7 +108,7 @@ function Select<T extends string>(props: Props<T>) {
                     {({ selected, active }) => (
                       <div className="flex items-center gap-2">
                         {showIcon && option.icon && (
-                          <img src={option.icon} alt="" className="w-5 h-5" />
+                          <BotIcon iconName={option.icon} size={20} />
                         )}
                         <span className={cx(selected ? 'font-semibold' : 'font-normal', 'block truncate')}>
                           {option.name}

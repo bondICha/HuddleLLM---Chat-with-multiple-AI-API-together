@@ -1,20 +1,45 @@
 import Browser from 'webextension-polyfill'
 
-export async function requestHostPermissions(customApiConfigs: any[], customApiHost?: string): Promise<void> {
-  try {
-    // Request host permissions for all custom API hosts to prevent CORS issues
-    if (customApiConfigs && customApiConfigs.length > 0) {
-      const originsToRequest = customApiConfigs
-        .map(config => config.host || customApiHost) // Use common host if specific host is empty
-        .filter(host => host && host.startsWith('http')) // Filter valid http/https URLs
-        .map(host => host.replace(/\/$/, '') + '/'); // Ensure trailing slash for permission matching
-      const uniqueOrigins = [...new Set(originsToRequest)]; // Remove duplicates
+import { ProviderConfig } from './user-config';
 
-      if (uniqueOrigins.length > 0) {
-        console.log('Requesting permissions for origins:', uniqueOrigins);
-        // Request permissions from the browser
-        await Browser.permissions.request({ origins: uniqueOrigins });
+export async function requestHostPermissions(
+  customApiConfigs: any[],
+  providerConfigs: ProviderConfig[],
+): Promise<void> {
+  try {
+    const origins = new Set<string>();
+
+    // Collect hosts from individual chatbot settings (only when using individual settings = no providerRefId)
+    customApiConfigs.forEach(config => {
+      try {
+        if (config?.enabled && !config?.providerRefId && config?.host) {
+          const raw = config.host.startsWith('http') ? config.host : `https://${config.host}`;
+          const url = new URL(raw);
+          origins.add(`${url.protocol}//${url.hostname}/`);
+        }
+      } catch (e) {
+        console.warn('Invalid API host:', config?.host);
       }
+    });
+
+    // Collect hosts from provider configs
+    providerConfigs.forEach(provider => {
+      try {
+        if (provider?.host) {
+          const raw = provider.host.startsWith('http') ? provider.host : `https://${provider.host}`;
+          const url = new URL(raw);
+          origins.add(`${url.protocol}//${url.hostname}/`);
+        }
+      } catch (e) {
+        console.warn('Invalid provider host:', provider?.host);
+      }
+    });
+
+    const uniqueOrigins = Array.from(origins);
+
+    if (uniqueOrigins.length > 0) {
+      console.log('Requesting permissions for origins:', uniqueOrigins);
+      await Browser.permissions.request({ origins: uniqueOrigins });
     }
   } catch (error) {
     console.error('Error requesting permissions:', error);

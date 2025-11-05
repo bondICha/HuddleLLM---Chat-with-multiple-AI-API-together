@@ -21,7 +21,7 @@ const Range: FC<RangeProps> = ({ value, onChange, min = 0, max = 2, step = 0.1, 
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="w-full h-2 cursor-pointer"
       />
-      <span className="min-w-[3ch]">{value.toFixed(1)}</span>
+      <span className="min-w-[3ch]">{value?.toFixed(1) || '0.0'}</span>
     </div>
   )
 }

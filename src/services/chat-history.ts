@@ -40,7 +40,8 @@ export async function setConversationMessages(index: number, cid: string, messag
     await Browser.storage.local.set({ [`conversations:${index}`]: conversations })
   }
   const key = `conversation:${index}:${cid}:messages`
-  await Browser.storage.local.set({ [key]: messages })
+  const storableMessages = messages.map((m) => ({ ...m, images: undefined }))
+  await Browser.storage.local.set({ [key]: storableMessages })
 }
 
 export async function loadHistoryMessages(index: number): Promise<ConversationWithMessages[]> {
@@ -111,8 +112,9 @@ export async function saveSessionSnapshot(sessionUUID: string, botIndices: numbe
   
   for (const botIndex of botIndices) {
     const messages = currentMessages?.[botIndex] || []
-    conversations[botIndex] = messages
-    totalMessageCount += messages.length
+    const storableMessages = messages.map((m) => ({ ...m, images: undefined }))
+    conversations[botIndex] = storableMessages
+    totalMessageCount += storableMessages.length
   }
   
   const existingIndex = snapshots.findIndex((s: SessionSnapshot) => s.sessionUUID === sessionUUID)

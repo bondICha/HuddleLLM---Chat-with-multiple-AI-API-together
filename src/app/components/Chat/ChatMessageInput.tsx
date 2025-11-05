@@ -13,19 +13,29 @@ import {
 } from '@floating-ui/react'
 import { fileOpen } from 'browser-fs-access'
 import { cx } from '~/utils'
-import { ClipboardEventHandler, FC, ReactNode, memo, useCallback, useMemo, useRef, useState } from 'react'
+import { ClipboardEventHandler, FC, ReactNode, memo, useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GoBook, GoImage } from 'react-icons/go'
+import { GoBook, GoImage, GoPaperclip, GoFile } from 'react-icons/go'
+import { BiExpand } from 'react-icons/bi'
 import { RiDeleteBackLine } from 'react-icons/ri'
 import { Prompt } from '~services/prompts'
 import Button from '../Button'
 import PromptCombobox, { ComboboxContext } from '../PromptCombobox'
 import PromptLibraryDialog from '../PromptLibrary/Dialog'
-import TextInput from './TextInput'
+import ExpandableDialog from '../ExpandableDialog'
+import TextInput from './TextInput';
+import { processFile } from '~app/utils/file-processor';
+
+interface Attachment {
+  id: string;
+  file: File;
+  type: 'image' | 'text';
+  content?: string;
+}
 
 interface Props {
   mode: 'full' | 'compact'
-  onSubmit: (value: string, images?: File[]) => void
+  onSubmit: (value: string, images?: File[], attachments?: { name: string; content: string }[]) => void
   className?: string
   disabled?: boolean
   placeholder?: string
@@ -35,6 +45,7 @@ interface Props {
   maxRows?: number
   fullHeight?: boolean
   onHeightChange?: (height: number) => void
+  onVisibilityChange?: (visible: boolean) => void
 }
 
 const ChatMessageInput: FC<Props> = (props) => {
@@ -43,17 +54,22 @@ const ChatMessageInput: FC<Props> = (props) => {
     placeholder = t('Use / to select prompts, @URL to fetch content, Shift+Enter to add new line'),
     fullHeight = false,
     onHeightChange,
+    onVisibilityChange,
     ...restProps
   } = props
 
   const [value, setValue] = useState('')
-  const [images, setImages] = useState<File[]>([])
+  const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [editingAttachment, setEditingAttachment] = useState<Attachment | null>(null);
   const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [isPromptLibraryDialogOpen, setIsPromptLibraryDialogOpen] = useState(false)
-
-  const [activeIndex, setActiveIndex] = useState<number | null>(null)
-  const [isComboboxOpen, setIsComboboxOpen] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
+  const [isDragging, setIsDragging] = useState(false);
+ 
+   const [activeIndex, setActiveIndex] = useState<number | null>(null)
+   const [isComboboxOpen, setIsComboboxOpen] = useState(false)
 
   const { refs, floatingStyles, context } = useFloating({
     whileElementsMounted: autoUpdate,
@@ -64,6 +80,8 @@ const ChatMessageInput: FC<Props> = (props) => {
   })
 
   const floatingListRef = useRef([])
+  const dragCounterRef = useRef(0)
+  const dragOverTimerRef = useRef<number | null>(null)
 
   const handleSelect = useCallback((p: Prompt) => {
     if (p.id === 'PROMPT_LIBRARY') {
@@ -109,20 +127,44 @@ const ChatMessageInput: FC<Props> = (props) => {
 
   const onFormSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault()
-      if (value.trim() || images.length > 0) {
-        props.onSubmit(value, images)
-        setValue('')
-        setImages([])
+      e.preventDefault();
+      const textAttachments = attachments
+        .filter(a => a.type === 'text')
+        .map(a => ({ name: a.file.name, content: a.content || '' }));
+      const images = attachments.filter(a => a.type === 'image').map(a => a.file);
+
+      if (value.trim() || images.length > 0 || textAttachments.length > 0) {
+        props.onSubmit(value, images, textAttachments);
+        setValue('');
+        setAttachments([]);
       }
     },
-    [images, props, value],
-  )
+    [attachments, props, value],
+  );
 
   const onValueChange = useCallback((v: string) => {
     setValue(v)
     setIsComboboxOpen(v === '/')
   }, [])
+
+  const modalSubmit = useCallback(() => {
+    const textAttachments = attachments
+      .filter(a => a.type === 'text')
+      .map(a => ({ name: a.file.name, content: a.content || '' }));
+    const images = attachments.filter(a => a.type === 'image').map(a => a.file);
+
+    if (value.trim() || images.length > 0 || textAttachments.length > 0) {
+      props.onSubmit(value, images, textAttachments);
+      setValue('');
+      setAttachments([]);
+    }
+    // Close modal first, then focus on main input after a delay
+    setIsExpanded(false)
+    // Delay focus to ensure modal is fully closed and events are cleared
+    setTimeout(() => {
+      inputRef.current?.focus()
+    }, 100)
+  }, [value, attachments, props.onSubmit])
 
   const insertTextAtCursor = useCallback(
     (text: string) => {
@@ -140,88 +182,257 @@ const ChatMessageInput: FC<Props> = (props) => {
     setIsPromptLibraryDialogOpen(true)
   }, [])
 
+  const handleFileSelect = useCallback(async (files: File[]) => {
+    for (const file of files) {
+      const result = await processFile(file);
+      const id = `${file.name}-${file.lastModified}-${Math.random()}`;
+
+      switch (result.type) {
+        case 'image':
+          setAttachments(prev => [...prev, { id, file, type: 'image' }]);
+          break;
+        case 'text':
+          setAttachments(prev => [...prev, { id, file, type: result.type, content: result.content }]);
+          break;
+        case 'unsupported':
+          alert(`DEBUG: Unsupported file: ${result.error}`);
+          break; // Don't add unsupported files
+      }
+    }
+    inputRef.current?.focus();
+  }, []);
+
   const selectImage = useCallback(async () => {
     const files = await fileOpen({
       mimeTypes: ['image/jpg', 'image/jpeg', 'image/png', 'image/gif'],
       extensions: ['.jpg', '.jpeg', '.png', '.gif'],
       multiple: true,
-    })
-    console.debug('📁 Selected files:', files.map(f => ({ name: f.name, size: f.size, lastModified: f.lastModified })))
-    setImages(prev => {
-      const newImages = [...prev, ...files]
-      console.debug('🖼️ All images after selection:', newImages.map((f, i) => ({ 
-        index: i, 
-        name: f.name, 
-        size: f.size, 
-        lastModified: f.lastModified,
-        sameAsFirst: i > 0 ? f === newImages[0] : false
-      })))
-      return newImages
-    })
-    inputRef.current?.focus()
-  }, [])
+    });
+    handleFileSelect(files);
+  }, [handleFileSelect]);
 
-  const removeImage = useCallback((index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index))
-  }, [])
+  const selectAttachments = useCallback(async () => {
+    const files = await fileOpen({
+      multiple: true,
+    });
+    handleFileSelect(files);
+  }, [handleFileSelect]);
 
-  const onPaste: ClipboardEventHandler<HTMLTextAreaElement> = useCallback((event) => {
-    const pastedFiles = event.clipboardData.files
-    if (!pastedFiles.length) {
-      return
+  const removeAttachment = useCallback((id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+  }, []);
+
+  const onPaste: ClipboardEventHandler<HTMLTextAreaElement> = useCallback(
+    (event) => {
+      const items = Array.from(event.clipboardData.items);
+      const files = items.map(item => item.getAsFile()).filter((f): f is File => !!f);
+      
+      if (files.length > 0) {
+        event.preventDefault();
+        handleFileSelect(files);
+      }
+    },
+    [handleFileSelect],
+  );
+  
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current += 1;
+    setIsDragging(true);
+  }, []);
+ 
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
     }
-    const imageFiles = Array.from(pastedFiles).filter((file) => file.type.startsWith('image/'))
-    if (imageFiles.length > 0) {
-      event.preventDefault()
-      setImages(prev => [...prev, ...imageFiles])
-      inputRef.current?.focus()
+  }, []);
+ 
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+    if (dragOverTimerRef.current) {
+      clearTimeout(dragOverTimerRef.current);
+    }
+    dragOverTimerRef.current = window.setTimeout(() => {
+      dragCounterRef.current = 0;
+      setIsDragging(false);
+      dragOverTimerRef.current = null;
+    }, 200);
+  }, [isDragging]);
+ 
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (dragOverTimerRef.current) {
+        clearTimeout(dragOverTimerRef.current);
+        dragOverTimerRef.current = null;
+      }
+      setIsDragging(false);
+      dragCounterRef.current = 0;
+ 
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        handleFileSelect(files);
+      }
+    },
+    [handleFileSelect],
+  );
+ 
+   const handleBlur = useCallback(() => {
+     setTimeout(() => {
+       if (!formRef.current?.contains(document.activeElement)) {
+        setIsFocused(false)
+      }
+    }, 100)
+  }, [])
+
+  const isCompactMode = props.mode === 'compact'
+  const hasContent = value.length > 0 || attachments.length > 0
+  const shouldShowInput = !isCompactMode || (isCompactMode && (isFocused || hasContent))
+
+  useEffect(() => {
+    if (isCompactMode) {
+      onVisibilityChange?.(shouldShowInput)
+    }
+  }, [isCompactMode, shouldShowInput, onVisibilityChange])
+
+  // Cleanup drag-over debounce timer on unmount to avoid leaks
+  useEffect(() => {
+    return () => {
+      if (dragOverTimerRef.current) {
+        clearTimeout(dragOverTimerRef.current)
+      }
     }
   }, [])
 
   return (
-    <form className={cx('flex flex-row items-center gap-3', fullHeight && 'h-full', props.className)} onSubmit={onFormSubmit} ref={formRef}>
-      {props.mode === 'full' && (
-        <>
-          <GoBook
-            size={22}
-            className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200"
-            onClick={openPromptLibrary}
-            title="Prompt library"
-          />
-          {isPromptLibraryDialogOpen && (
-            <PromptLibraryDialog
-              isOpen={true}
-              onClose={() => setIsPromptLibraryDialogOpen(false)}
-              insertPrompt={insertTextAtCursor}
-            />
-          )}
-          <ComboboxContext.Provider value={comboboxContext}>
-            {isComboboxOpen && (
-              <FloatingFocusManager context={context} modal={false} initialFocus={-1}>
-                <div ref={refs.setFloating} style={{ ...floatingStyles }} {...getFloatingProps()}>
-                  <FloatingList elementsRef={floatingListRef}>
-                    <PromptCombobox />
-                  </FloatingList>
-                </div>
-              </FloatingFocusManager>
-            )}
-          </ComboboxContext.Provider>
-          {props.supportImageInput && (
-            <GoImage size={22} className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200" onClick={selectImage} title="Image input" />
-          )}
-        </>
+    <form
+      className={cx(
+        'relative flex flex-row items-center',
+        fullHeight && 'h-full',
+        props.className,
+        !isCompactMode && 'gap-3',
+        isCompactMode && (shouldShowInput ? 'gap-3' : 'gap-0'),
       )}
-      <div className={cx("w-full flex flex-col justify-start", fullHeight && "h-full")} ref={refs.setReference} {...getReferenceProps()}>
-        {images.length > 0 && (
+      onSubmit={onFormSubmit}
+      ref={formRef}
+      onFocus={() => setIsFocused(true)}
+      onBlur={handleBlur}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="pointer-events-none absolute inset-0 z-10 rounded-xl bg-black/10 dark:bg-white/5 flex items-center justify-center">
+          <div className="flex flex-row items-center justify-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed border-blue-500 bg-white/70 dark:bg-black/40">
+            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+              <GoImage size={18} />
+              <GoPaperclip size={18} />
+            </div>
+            <span className="text-sm font-semibold text-primary-text">{t('Drop files to attach')}</span>
+            <span className="text-xs text-secondary-text">({t('Images and text files are supported')})</span>
+          </div>
+        </div>
+      )}
+      <div className={cx('flex items-center gap-3', isCompactMode && !shouldShowInput && 'hidden')}>
+        {props.mode === 'full' && (
+          <>
+            <GoBook
+              size={22}
+              className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200"
+              onClick={openPromptLibrary}
+              title="Prompt library"
+            />
+            {isPromptLibraryDialogOpen && (
+              <PromptLibraryDialog
+                isOpen={true}
+                onClose={() => setIsPromptLibraryDialogOpen(false)}
+                insertPrompt={insertTextAtCursor}
+              />
+            )}
+            <ComboboxContext.Provider value={comboboxContext}>
+              {isComboboxOpen && (
+                <FloatingFocusManager context={context} modal={false} initialFocus={-1}>
+                  <div ref={refs.setFloating} style={{ ...floatingStyles }} {...getFloatingProps()}>
+                    <FloatingList elementsRef={floatingListRef}>
+                      <PromptCombobox />
+                    </FloatingList>
+                  </div>
+                </FloatingFocusManager>
+              )}
+            </ComboboxContext.Provider>
+            {props.supportImageInput && (
+              <>
+                <GoImage
+                  size={22}
+                  className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200"
+                  onClick={selectImage}
+                  title={t('Image input')}
+                />
+                <GoPaperclip
+                  size={22}
+                  className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200"
+                  onClick={selectAttachments}
+                  title={t('Attach file (Non-binary-text)')}
+                />
+              </>
+            )}
+          </>
+        )}
+        <BiExpand
+          size={props.mode === 'compact' ? 16 : 22}
+          className={cx(
+            'cursor-pointer transition-colors duration-200',
+            props.mode === 'compact'
+              ? 'text-light-text hover:text-primary-text'
+              : 'text-secondary-text hover:text-primary-text',
+          )}
+          onClick={() => setIsExpanded(true)}
+          title={t('Compose Message')}
+        />
+      </div>
+      <div
+        className={cx('w-full flex flex-col justify-start', fullHeight && 'h-full')}
+        ref={refs.setReference}
+        {...getReferenceProps()}
+      >
+        {isCompactMode && !shouldShowInput ? null : attachments.length > 0 ? (
           <div className="flex flex-row items-center flex-wrap w-full mb-1 gap-2">
-            {images.map((img, index) => (
-              <div key={index} className="flex items-center gap-1 bg-primary-border dark:bg-secondary rounded-full px-2 py-1 border border-primary-border">
-                <span className="text-xs text-primary-text font-semibold cursor-default truncate max-w-[100px]">{img.name}</span>
-                <RiDeleteBackLine size={12} className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200 hover:scale-110" onClick={() => removeImage(index)} />
+            {attachments.map((att) => (
+              <div
+                key={att.id}
+                className="flex items-center gap-1 bg-primary-border dark:bg-secondary rounded-full px-2 py-1 border border-primary-border cursor-pointer"
+                onClick={() => att.type === 'text' && setEditingAttachment(att)}
+              >
+                {att.type === 'image' && <GoImage size={12} className="text-secondary-text" />}
+                {att.type === 'text' && <GoFile size={12} className="text-secondary-text" />}
+                <span className="text-xs text-primary-text font-semibold cursor-default truncate max-w-[100px] ml-1">
+                  {att.file.name}
+                </span>
+                {att.type === 'text' && att.content && (
+                  <span className="text-xs text-secondary-text ml-1">
+                    ({att.content.length} {t('chars')})
+                  </span>
+                )}
+                <RiDeleteBackLine
+                  size={12}
+                  className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200 hover:scale-110 ml-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeAttachment(att.id);
+                  }}
+                />
               </div>
             ))}
           </div>
-        )}
+        ) : null}
         <TextInput
           ref={inputRef}
           formref={formRef}
@@ -231,13 +442,91 @@ const ChatMessageInput: FC<Props> = (props) => {
           value={value}
           onValueChange={onValueChange}
           autoFocus={props.autoFocus}
-          onPaste={props.supportImageInput ? onPaste : undefined}
+          onPaste={onPaste}
           maxRows={props.maxRows}
           fullHeight={fullHeight}
           onHeightChange={onHeightChange}
+          className={cx(isCompactMode && !shouldShowInput && 'text-center')}
         />
       </div>
-      {props.actionButton || <Button text="-" className="invisible" size={props.mode === 'full' ? 'normal' : 'tiny'} />}
+      {isCompactMode && !shouldShowInput
+        ? null
+        : props.actionButton || <Button text="-" className="invisible" size={props.mode === 'full' ? 'normal' : 'tiny'} />}
+
+      {isExpanded && (
+        <ExpandableDialog
+          open={isExpanded}
+          onClose={() => {
+            setIsExpanded(false)
+            // Delay focus to ensure modal is fully closed and events are cleared
+            setTimeout(() => {
+              inputRef.current?.focus()
+            }, 100)
+          }}
+          title={t('Compose Message')}
+          size="2xl"
+          className="flex flex-col"
+          footer={
+            <div className="flex justify-end">
+              <Button
+                text={t('Send')}
+                color="primary"
+                onClick={modalSubmit}
+                disabled={!value.trim()}
+              />
+            </div>
+          }
+        >
+          <div className="p-4 h-full">
+            <TextInput
+              value={value}
+              onValueChange={setValue}
+              placeholder={t('Enter to add a new line')}
+              className="w-full h-full resize-none outline-none bg-transparent text-base"
+              autoFocus
+              fullHeight
+              onSubmit={modalSubmit}
+            />
+          </div>
+        </ExpandableDialog>
+      )}
+      {editingAttachment && (
+        <ExpandableDialog
+          open={!!editingAttachment}
+          onClose={() => setEditingAttachment(null)}
+          title={editingAttachment.file.name}
+          size="2xl"
+          className="flex flex-col"
+        >
+          <div className="flex-grow p-4">
+            <TextInput
+              value={editingAttachment.content || ''}
+              onValueChange={(newContent) => {
+                setEditingAttachment(prev => prev ? { ...prev, content: newContent } : null);
+              }}
+              placeholder={t('Edit file content...')}
+              className="w-full h-full resize-none outline-none bg-transparent text-base"
+              autoFocus
+              fullHeight
+            />
+          </div>
+          <div className="flex justify-between items-center p-4 border-t border-primary-border">
+            <span className="text-sm text-secondary-text">
+              {t('Character count')}: {editingAttachment.content?.length || 0}
+            </span>
+            <Button
+              text={t('Save')}
+              color="primary"
+              onClick={() => {
+                if (editingAttachment) {
+                  setAttachments(prev => prev.map(a => a.id === editingAttachment.id ? editingAttachment : a));
+                }
+                setEditingAttachment(null);
+              }}
+            />
+          </div>
+        </ExpandableDialog>
+      )}
     </form>
   )
 }

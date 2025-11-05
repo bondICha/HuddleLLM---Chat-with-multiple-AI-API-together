@@ -11,6 +11,7 @@ export interface Props {
   type?: ButtonHTMLAttributes<HTMLButtonElement>['type']
   onClick?: () => void
   isLoading?: boolean
+  disabled?: boolean
   size?: 'small' | 'normal' | 'tiny'
   icon?: ReactNode
 }
@@ -28,8 +29,10 @@ const Button = React.forwardRef<HTMLButtonElement, Props>((props, ref) => {
         size === 'tiny' && 'text-xs px-3 py-[3px] rounded-lg',
         props.color === 'primary' ? 'text-white bg-primary-blue hover:bg-blue-700 dark:hover:bg-blue-600' : 'text-primary-text dark:text-gray-200 bg-secondary dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600', // Add dark mode styles and hover effects
         props.className,
+        props.disabled && 'opacity-50 cursor-not-allowed',
       )}
       onClick={props.onClick}
+      disabled={props.disabled || props.isLoading}
     >
       {props.isLoading ? (
         <BeatLoader size={size === 'normal' ? 10 : 5} color={props.color === 'primary' ? 'white' : '#A0A0A0'} />

@@ -14,6 +14,10 @@
   color: white !important;
 }
 
+.light .bg-secondary .markdown-body {
+  color: #000000 !important;
+}
+
 .primary-message-bubble .markdown-body table,
 .primary-message-bubble .markdown-body th,
 .primary-message-bubble .markdown-body td {
@@ -57,6 +61,7 @@
     max-width: min(80%, 300px);
     margin-top: 5px;
   }
+  
   & a:not(:has(sup)) {
     color: inherit;
     text-decoration: underline;
@@ -83,3 +88,41 @@
   overflow-x: auto;
   width: 100%;
 }
+
+
+/* Font type settings for AI messages */
+/* When serif font is selected for AI messages */
+.markdown-body.markdown-custom-styles {
+  font-family: 'Noto Sans CJK JP', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans CJK KR', 'system-ui';
+}
+
+/* Reset font family for code blocks to use monospace only */
+.markdown-body.markdown-custom-styles pre code,
+.markdown-body.markdown-custom-styles code {
+  font-family: 'IBM Plex Mono', Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", "Noto Sans Mono CJK JP", "Noto Sans Mono CJK SC", "Noto Sans Mono CJK TC", "Noto Sans Mono CJK KR", ui-monospace, monospace !important;
+}
+
+/* Override inline styles from react-syntax-highlighter */
+.markdown-body.markdown-custom-styles pre code[style*="font-family"],
+.markdown-body.markdown-custom-styles code[style*="font-family"] {
+  font-family: 'IBM Plex Mono', Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", "Noto Sans Mono CJK JP", "Noto Sans Mono CJK SC", "Noto Sans Mono CJK TC", "Noto Sans Mono CJK KR", ui-monospace, monospace !important;
+}
+
+/* Font type settings for AI messages */
+/* When serif font is selected for AI messages */
+:root[data-font-type="serif"] .bg-secondary .markdown-body.markdown-custom-styles {
+  font-family: 'Noto Serif JP', 'Noto Serif SC', 'Noto Serif TC', 'Noto Serif CJK KR', serif;
+}
+
+/* When sans font is selected for AI messages (default) */
+:root[data-font-type="sans"] .bg-secondary .markdown-body.markdown-custom-styles {
+  font-family: 'Noto Sans CJK JP', 'Noto Sans CJK SC', 'Noto Sans CJK TC', 'Noto Sans CJK KR', 'system-ui';
+}
+
+/* AI-generated images in chat and history */
+div.group.flex-row div.bg-secondary div.markdown-body img,
+div.group.bg-primary-background div.markdown-body img {
+    max-width: min(100%, 600px);
+    max-height: min(100%, 600px);
+}
+

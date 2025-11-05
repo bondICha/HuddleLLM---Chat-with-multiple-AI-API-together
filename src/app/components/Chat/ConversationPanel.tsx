@@ -24,10 +24,12 @@ interface Props {
   index: number
   bot: BotInstance
   messages: ChatMessageModel[]
-  onUserSendMessage: (input: string, images?: File[]) => void
+  onUserSendMessage: (input: string, images?: File[], attachments?: { name: string; content: string }[]) => void
   resetConversation: () => void
   generating: boolean
   stopGenerating: () => void
+  shouldAutoScroll?: boolean
+  setAutoScroll?: (shouldAutoScroll: boolean) => void
   mode?: 'full' | 'compact'
   onSwitchBot?: (index: number) => void
   onPropaganda?: (text: string) => Promise<void>
@@ -43,6 +45,7 @@ const ConversationPanel: FC<Props> = (props) => {
   const [botName, setBotName] = useState<string>('Custom Bot')
   const [botAvatar, setBotAvatar] = useState<string>('OpenAI.Black')
   const [botConfig, setBotConfig] = useState<any>(null)
+  const [isInputVisible, setIsInputVisible] = useState(mode !== 'compact')
 
   // コンポーネントマウント時に設定を取得
   useEffect(() => {
@@ -72,11 +75,55 @@ const ConversationPanel: FC<Props> = (props) => {
   }, [props.resetConversation])
 
   const onSubmit = useCallback(
-    async (input: string, images?: File[]) => {
-      props.onUserSendMessage(input, images)
+    async (input: string, images?: File[], attachments?: { name: string; content: string }[]) => {
+      props.onUserSendMessage(input, images, attachments)
     },
     [props],
   )
+
+  // Assistantメッセージの位置を監視して、上部が画面トップに到達したらスクロールを停止
+  useEffect(() => {
+    if (!props.generating || !props.shouldAutoScroll || !props.setAutoScroll) {
+      return
+    }
+
+    // 最新のアシスタントメッセージ要素を取得
+    const messages = props.messages
+    if (messages.length < 2) return // 少なくともユーザーとAssistantのメッセージが必要
+
+    const lastAssistantMessage = [...messages].reverse().find(msg => msg.author !== 'user')
+    if (!lastAssistantMessage) return
+
+    // DOM要素を取得
+    const assistantElement = document.getElementById(lastAssistantMessage.id)
+    if (!assistantElement) return
+
+    const container = assistantElement.closest('.custom-scrollbar') as HTMLElement
+    if (!container) return
+
+    // Intersection Observer を使用して要素の交差を監視
+    // 画面の高さの15%を余裕として設定
+    const margin = window.innerHeight * 0.15
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          // 要素の上部がコンテナの上部からmarginの位置に到達したら停止
+          if (entry.boundingClientRect.top <= entry.rootBounds!.top + margin) {
+            props.setAutoScroll!(false)
+          }
+        })
+      },
+      { root: container }
+    )
+
+    observer.observe(assistantElement)
+
+    // クリーンアップ
+    return () => {
+      observer.disconnect()
+    }
+  }, [props.generating, props.messages, props.shouldAutoScroll, props.setAutoScroll])
 
   const resetConversation = useCallback(() => {
     if (!props.generating) {
@@ -170,9 +217,23 @@ const ConversationPanel: FC<Props> = (props) => {
           messages={props.messages}
           className={cx(marginClass)}
           onPropaganda={props.onPropaganda}
+          shouldAutoScroll={props.shouldAutoScroll}
         />
-        <div className={cx('mt-3 flex flex-col ', marginClass, mode === 'full' ? 'mb-3' : 'mb-[5px]')}>
-          <div className={cx('flex flex-row items-center gap-[5px]', mode === 'full' ? 'mb-3' : 'mb-0')}>
+        <div
+          className={cx(
+            'flex flex-col transition-all duration-300 ease-in-out',
+            marginClass,
+            mode === 'full' && 'mt-3 mb-3',
+            mode === 'compact' && (isInputVisible ? 'mt-3 mb-[5px]' : 'mb-[5px]'),
+          )}
+        >
+          <div
+            className={cx(
+              'flex flex-row items-center gap-[5px]',
+              mode === 'full' ? 'mb-3' : 'mb-0',
+              mode === 'compact' && !isInputVisible && 'hidden',
+            )}
+          >
             {mode === 'compact' && (
               <span className="font-medium text-xs text-light-text cursor-default">Send to {botName}</span>
             )}
@@ -181,11 +242,17 @@ const ConversationPanel: FC<Props> = (props) => {
           <ChatMessageInput
             mode={mode}
             disabled={props.generating}
-            placeholder={mode === 'compact' ? '' : undefined}
+            placeholder={
+              mode === 'compact' && !isInputVisible ? `Send a message to ${botName}...` : mode === 'compact' ? '' : undefined
+            }
             onSubmit={onSubmit}
             autoFocus={mode === 'full'}
-            supportImageInput={mode === 'full' && props.bot.supportsImageInput}
+            supportImageInput={true || props.bot.supportsImageInput}  // 現在画像サポート有無を設定画面で確認していないため、暫定的に常にtrue
             actionButton={inputActionButton}
+            onVisibilityChange={mode === 'compact' ? setIsInputVisible : undefined}
+            className={cx(
+              mode === 'compact' && !isInputVisible && 'bg-transparent border-b border-primary-border rounded-none',
+            )}
           />
         </div>
       </div>

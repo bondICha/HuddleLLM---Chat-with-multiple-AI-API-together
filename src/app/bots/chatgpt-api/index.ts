@@ -1,5 +1,4 @@
 import { isArray } from 'lodash-es'
-import { UserConfig, getUserConfig } from '~services/user-config'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { parseSSEResponse } from '~utils/sse'
 import { AsyncAbstractBot, AbstractBot, SendMessageParams, MessageParams, ConversationHistory } from '../abstract-bot'
@@ -17,6 +16,7 @@ const CONTEXT_SIZE = 120
 
 export abstract class AbstractChatGPTApiBot extends AbstractBot {
   private conversationContext?: ConversationContext
+  protected tools?: any[] // Tool definitions for function calling
 
   // ConversationHistoryインターフェースの実装
   public setConversationHistory(history: ConversationHistory): void {
@@ -70,6 +70,10 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
     });
     
     return { messages };
+  }
+
+  setTools(tools: any[]) {
+    this.tools = tools
   }
 
   private buildUserMessage(prompt: string, imageUrls?: string[]): ChatMessage {
@@ -138,6 +142,7 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
     let done = false
     const result: ChatMessage = { role: 'assistant', content: '' }
     let reasoningSummary = ''
+    let currentToolCall: { id: string; name: string; arguments: string } | null = null
 
     const finish = () => {
       done = true
@@ -194,6 +199,41 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
           // 思考タグを処理するために共通メソッドを使用
           this.emitUpdateAnswer(params, { text: result.content })
         }
+
+        // Handle tool calls (OpenAI Function Calling format)
+        if (delta?.tool_calls && delta.tool_calls.length > 0) {
+          const toolCall = delta.tool_calls[0]
+
+          if (toolCall.id) {
+            // New tool call
+            currentToolCall = {
+              id: toolCall.id,
+              name: toolCall.function?.name || '',
+              arguments: toolCall.function?.arguments || '',
+            }
+          } else if (currentToolCall && toolCall.function?.arguments) {
+            // Continuation of arguments
+            currentToolCall.arguments += toolCall.function.arguments
+          }
+        }
+
+        // Check if tool call is complete (finish_reason === 'tool_calls')
+        if (data.choices[0].finish_reason === 'tool_calls' && currentToolCall) {
+          try {
+            const parsedArgs = JSON.parse(currentToolCall.arguments)
+            params.onEvent({
+              type: 'TOOL_CALL',
+              data: {
+                id: currentToolCall.id,
+                name: currentToolCall.name,
+                arguments: parsedArgs,
+              },
+            })
+            currentToolCall = null
+          } catch (err) {
+            console.error('Failed to parse tool call arguments:', err)
+          }
+        }
       }
     })
 
@@ -224,9 +264,11 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       systemMessage: string;
       isHostFullPath?: boolean;
       webAccess?: boolean;
+      thinkingMode?: boolean;
       botIndex?: number; // CustomBotからのインデックス
-      reasoningMode?: boolean; // OpenAI reasoning mode
       reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
+      advancedConfig?: any; // To pass OpenRouter provider options
+      extraBody?: any; // Extra body parameters for compatible APIs
     },
   ) {
     super()
@@ -247,11 +289,11 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
     const model = this.getModelName()
 
     const { apiKey: openaiApiKey, host: configHost, isHostFullPath: configIsHostFullPath } = this.config;
-    const userConfig = await getUserConfig(); // Get common user config
-
-    const hostValue = configHost || userConfig.customApiHost;
-    // Prioritize individual bot's isHostFullPath, then common setting, then default to false.
-    const isFullPath = configIsHostFullPath ?? userConfig.isCustomApiHostFullPath ?? false;
+    
+    // Use the values passed from CustomBot (already resolved with common settings)
+    const hostValue = configHost;
+    const isFullPath = configIsHostFullPath ?? false;
+    const apiKeyValue = openaiApiKey;
 
     let fullUrlStr: string;
 
@@ -275,33 +317,69 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       (message) => isArray(message.content) && message.content.some((part) => part.type === 'image_url'),
     )
     
+    
+    const thinkingOn = this.config.thinkingMode;
+    
+    // Normalize extraBody to object (supports stringified JSON)
+    let extraBodyObj: any | undefined;
+    if (this.config.extraBody !== undefined) {
+      if (typeof this.config.extraBody === 'string') {
+        try {
+          extraBodyObj = JSON.parse(this.config.extraBody);
+        } catch (e) {
+          throw new ChatError('Invalid extraBody JSON', ErrorCode.UNKOWN_ERROR, e);
+        }
+      } else {
+        extraBodyObj = this.config.extraBody;
+      }
+    }
+    
     const resp = await fetch(fullUrlStr, {
       method: 'POST',
       signal,
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${openaiApiKey}`,
+        Authorization: `Bearer ${apiKeyValue}`,
       },
       body: JSON.stringify({
         model,
         messages,
         max_tokens: undefined,
         stream: true,
-        // Add reasoning parameters if reasoning mode is enabled
-        ...(this.config.reasoningMode && {
+        // Add tools if provided (for function calling / tool use)
+        ...(this.tools && this.tools.length > 0 && { tools: this.tools }),
+        // Add reasoning parameters if Thinking is enabled (for OpenAI-compatible reasoning)
+        ...(thinkingOn && {
           reasoning_effort: this.config.reasoningEffort || 'medium'
         }),
-        // Include temperature only if reasoning mode is disabled
-        ...((!this.config.reasoningMode) && {
+        // Include temperature only if Thinking is disabled
+        ...((!thinkingOn) && {
           temperature: this.config.temperature
-        })
+        }),
+        // Add OpenRouter specific provider options
+        ...(this.config.advancedConfig?.openrouterProviderOnly && {
+          provider: {
+            only: this.config.advancedConfig.openrouterProviderOnly.split(',').map((p: string) => p.trim()).filter((p: string) => p)
+          }
+        }),
+        // Add extra body parameters if provided
+        ...(extraBodyObj ? { extra_body: extraBodyObj } : {}),
       }),
     })
     if (!resp.ok) {
-      const error = await resp.text()
-      if (error.includes('insufficient_quota')) {
-        throw new ChatError('Insufficient ChatGPT API usage quota', ErrorCode.CHATGPT_INSUFFICIENT_QUOTA)
+      const statusLine = `${resp.status} ${resp.statusText || 'Error'}`;
+      const errorText = await resp.text();
+      let cause;
+      let apiMessage = '';
+      try {
+        cause = JSON.parse(errorText);
+        apiMessage = (cause as any)?.error?.message || '';
+      } catch (e) {
+        cause = errorText;
+        apiMessage = errorText.substring(0, 300); // Take a snippet if not JSON
       }
+      const combinedMessage = `${statusLine}; ${apiMessage}`;
+      throw new ChatError(combinedMessage, ErrorCode.UNKOWN_ERROR, cause);
     }
     return resp
   }

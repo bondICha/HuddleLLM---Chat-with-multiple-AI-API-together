@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router'
 import { cx } from '~/utils'
 import { useAtom } from 'jotai'
 import { ComponentPropsWithoutRef, FC, useCallback, useEffect, useMemo, useState } from 'react'
@@ -10,9 +9,13 @@ import { applyThemeMode } from '~app/utils/color-scheme'
 import { isArcBrowser } from '~app/utils/env'
 import { getLanguage, setLanguage } from '~services/storage/language'
 import { ThemeMode, getUserThemeMode, setUserThemeMode } from '~services/theme'
+import { FontType } from '~services/user-config'
+import { useUserConfig } from '~app/hooks/use-user-config'
+import { updateUserConfig } from '~services/user-config'
 import { languageCodes } from '../../i18n'
 import Dialog from '../Dialog'
 import Select from '../Select'
+import Expandable from '../common/Expandable'
 
 const Button: FC<ComponentPropsWithoutRef<'button'>> = (props) => {
   const { className, ...extraProps } = props
@@ -54,6 +57,8 @@ const ThemeSettingModal: FC<Props> = (props) => {
   const [sidebarDisplayMode, setSidebarDisplayMode] = useAtom(sidebarDisplayModeAtom)
   const [zoomLevel, setZoomLevel] = useState<number | null>(null)
   const [lang, setLang] = useState(() => getLanguage() || 'auto')
+  const userConfig = useUserConfig()
+  const [fontType, setFontType] = useState<FontType>(userConfig?.fontType || FontType.SERIF)
 
   const languageOptions = useMemo(() => {
     const nameGenerator = new Intl.DisplayNames('en', { type: 'language' })
@@ -76,7 +81,7 @@ const ThemeSettingModal: FC<Props> = (props) => {
 
   const updateZoomLevel = useCallback(
     (op: '+' | '-') => {
-      if (!zoomLevel) {
+      if (zoomLevel === null) {
         return
       }
       const newZoom = op === '+' ? zoomLevel + 0.1 : zoomLevel - 0.1
@@ -111,6 +116,14 @@ const ThemeSettingModal: FC<Props> = (props) => {
       i18n.changeLanguage(lang === 'auto' ? undefined : lang)
     },
     [i18n],
+  )
+
+  const onFontTypeChange = useCallback(
+    (fontType: FontType) => {
+      setFontType(fontType)
+      updateUserConfig({ fontType })
+    },
+    [],
   )
 
   return (
@@ -180,7 +193,7 @@ const ThemeSettingModal: FC<Props> = (props) => {
             position="top"
           />
         </div>
-        <div className="w-[300px]">
+        <div className="">
           <p className="font-bold text-lg mb-3">{t('Sidebar Display Mode')}</p>
           <Select
             options={[
@@ -192,6 +205,89 @@ const ThemeSettingModal: FC<Props> = (props) => {
             onChange={(mode: 'auto' | 'hamburger' | 'fixed') => setSidebarDisplayMode(mode)}
             position="top"
           />
+        </div>
+        <div className="">
+          <p className="font-bold text-lg mb-3">{t('Font Type')}</p>
+          <Select
+            options={[
+              { name: t('Sans-serif (Gothic)'), value: FontType.SANS },
+              { name: t('Serif (Mincho)'), value: FontType.SERIF },
+            ]}
+            value={fontType}
+            onChange={onFontTypeChange}
+            position="top"
+          />
+          <Expandable
+            initiallyExpanded={false}
+            header={
+              <span className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                {t('Optimal font display experience for CJK (Chinese, Japanese, Korean)')}
+              </span>
+            }
+          >
+            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                {t('This application uses Noto CJK fonts. Please download and install them for the best experience:')}
+              </p>
+
+              <div className="space-y-1">
+                <a
+                  href="https://github.com/notofonts/noto-cjk/tree/main/Sans#downloading-noto-sans-cjk"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline block"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('Downloading Noto Sans CJK')}
+                </a>
+                <a
+                  href="https://github.com/notofonts/noto-cjk/tree/main/Serif#downloading-noto-serif-cjk"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline block"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t('Downloading Noto Serif CJK')}
+                </a>
+              </div>
+
+              <div className="mt-2">
+                <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">
+                  {t('Direct download links')}
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>
+                    <a
+                      href="https://github.com/googlefonts/noto-cjk/raw/main/Sans/Variable/OTC/NotoSansCJK-VF.otf.ttc"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t('Noto Sans CJK Variable OTC')}
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://github.com/googlefonts/noto-cjk/raw/main/Sans/Variable/OTC/NotoSansMonoCJK-VF.otf.ttc"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t('Noto Sans Mono CJK Variable OTC')}
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://github.com/googlefonts/noto-cjk/raw/main/Serif/Variable/OTC/NotoSerifCJK-VF.otf.ttc"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t('Noto Serif CJK Variable OTC')}
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </Expandable>
         </div>
       </div>
     </Dialog>

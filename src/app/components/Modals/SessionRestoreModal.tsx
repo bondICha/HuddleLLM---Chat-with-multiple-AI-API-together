@@ -661,6 +661,7 @@ const SessionRestoreModal: FC = () => {
             </Dialog.Title>
             <div className="text-sm text-white mb-1 text-center">
               {t('Use ↑↓ keys to navigate, Enter to select, Esc to close')}
+              <p className="text-xs text-white mt-1">{t('Images in chat history will not be restored.')}</p>
               <div className="mt-1">
                 <button
                   onClick={() => setShowDebug(!showDebug)}

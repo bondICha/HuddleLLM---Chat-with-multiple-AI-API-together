@@ -1,7 +1,7 @@
 import { fileOpen, fileSave } from 'browser-fs-access'
 import Browser from 'webextension-polyfill'
 import { requestHostPermissions } from '~services/host-permissions'
-import { CustomApiConfig } from '~services/user-config'
+import { CustomApiConfig, ProviderConfig, CustomApiProvider } from '~services/user-config'
 
 export async function exportData() {
   const [syncData, localData] = await Promise.all([Browser.storage.sync.get(null), Browser.storage.local.get(null)])
@@ -55,7 +55,7 @@ export async function importData() {
   try {
     const importedConfig = json.local
     if (importedConfig?.customApiConfigs) {
-      await requestHostPermissions(importedConfig.customApiConfigs, importedConfig.customApiHost)
+      await requestHostPermissions(importedConfig.customApiConfigs, importedConfig.providerConfigs || [])
     }
   } catch (permissionError) {
     console.error('Error requesting permissions after full import:', permissionError)
@@ -76,11 +76,11 @@ export async function exportCustomAPITemplate() {
   const localData = await Browser.storage.local.get('customApiConfigs');
   const customApiConfigsArray = localData.customApiConfigs as CustomApiConfig[] | undefined;
 
-  // syncストレージからcustomApiHost と commonSystemMessage を取得
-  const syncData = await Browser.storage.sync.get(['customApiHost', 'commonSystemMessage']);
+  // syncストレージからproviderConfigs と commonSystemMessage を取得
+  const syncData = await Browser.storage.sync.get(['providerConfigs', 'commonSystemMessage']);
   
-  const templateExportData: { customApiConfigs?: Partial<CustomApiConfig>[], customApiHost?: string, commonSystemMessage?: string } = {};
-
+  const templateExportData: { customApiConfigs?: Partial<CustomApiConfig>[], providerConfigs?: Partial<ProviderConfig>[], commonSystemMessage?: string } = {};
+ 
   if (customApiConfigsArray && Array.isArray(customApiConfigsArray)) {
     templateExportData.customApiConfigs = customApiConfigsArray.map(config => {
       // APIキーを除外したコピーを作成
@@ -89,9 +89,24 @@ export async function exportCustomAPITemplate() {
     });
   }
   
-  // 共通のAPIホストを含める
-  if (syncData.customApiHost) {
-    templateExportData.customApiHost = syncData.customApiHost;
+  // providerConfigsを含める（API Keyは除外）
+  if (syncData.providerConfigs) {
+    const providerConfigsArray = syncData.providerConfigs as ProviderConfig[];
+    templateExportData.providerConfigs = providerConfigsArray.map((p) => {
+      const isAnthropic = p.provider === CustomApiProvider.Anthropic || p.provider === CustomApiProvider.Anthropic_CustomAuth
+      return {
+        id: p.id,
+        name: p.name,
+        provider: p.provider,
+        host: p.host,
+        isHostFullPath: p.isHostFullPath,
+        apiKey: '', // redact api key for template export
+        icon: p.icon,
+        ...(isAnthropic ? { isAnthropicUsingAuthorizationHeader: p.isAnthropicUsingAuthorizationHeader } : {}),
+        ...(p.AuthMode ? { AuthMode: p.AuthMode } : {}),
+        advancedConfig: p.advancedConfig,
+      } as Partial<ProviderConfig>
+    });
   }
   
   // Common System Message を含める

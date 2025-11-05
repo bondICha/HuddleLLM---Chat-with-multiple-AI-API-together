@@ -6,9 +6,13 @@ import { ClaudeApiBot } from './claude-api';
 import { getUserConfig, CustomApiConfig, CustomApiProvider, SystemPromptMode } from '~/services/user-config';
 import { ChatError, ErrorCode } from '~utils/errors';
 import { BedrockApiBot } from './bedrock-api';
-import { GeminiApiBot } from './gemini-api'; // Import GeminiApiBot
-import { PerplexityApiBot } from './perplexity-api'; // Import PerplexityApiBot
-import { VertexClaudeBot } from './vertex-claude'; // Import VertexClaudeBot
+import { GeminiApiBot } from './gemini-api';
+import { VertexClaudeBot } from './vertex-claude';
+import { VertexGeminiBot } from './vertex-gemini';
+// import { OpenAIImageBot } from './openai-image';
+import { OpenAIResponsesBot } from './openai-responses';
+import { OpenRouterImageBot } from './openrouter-image';
+import { ImageAgentBot } from './image-agent';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
 export class CustomBot extends AsyncAbstractBot {
@@ -26,6 +30,10 @@ export class CustomBot extends AsyncAbstractBot {
 
     get chatBotName() {
         return this.config?.name
+    }
+
+    get modelName() {
+        return this.config?.model
     }
 
     get avatar() {
@@ -88,7 +96,7 @@ export class CustomBot extends AsyncAbstractBot {
     // setConversationHistoryはAsyncAbstractBotが処理する
 
     private async createBotInstance() {
-        const { customApiKey, customApiHost, customApiConfigs, commonSystemMessage } = await getUserConfig();
+        const { customApiKey, customApiHost, customApiConfigs, commonSystemMessage, isCustomApiHostFullPath, providerConfigs } = await getUserConfig();
         const config = customApiConfigs[this.customBotNumber - 1];
 
         if (!config) {
@@ -99,88 +107,244 @@ export class CustomBot extends AsyncAbstractBot {
         // 共通ロジックを使用
         const processedSystemMessage = this.buildSystemPrompt(config, commonSystemMessage);
 
-        const provider = config.provider || (
-            config.model.includes('anthropic.claude') ? CustomApiProvider.Bedrock : CustomApiProvider.OpenAI
-        );
+        // Resolve effective Provider/API settings based on providerRefId only
+        const providerRef = (config.providerRefId)
+            ? (providerConfigs || []).find((p) => p.id === config.providerRefId)
+            : undefined;
 
-        // 既存のswitch文と同じbotインスタンス作成ロジック
+        const effectiveProvider = providerRef?.provider ?? (config.provider || (config.model.includes('anthropic.claude') ? CustomApiProvider.Bedrock : CustomApiProvider.OpenAI));
+
+        const effectiveHost = (providerRef?.host && providerRef.host.trim().length > 0)
+            ? providerRef.host
+            : (config.host && config.host.trim().length > 0)
+                ? config.host
+                : customApiHost;
+
+        const effectiveIsHostFullPath = providerRef
+            ? (providerRef.isHostFullPath ?? false)
+            : (config.host && config.host.trim().length > 0)
+                ? (config.isHostFullPath ?? false)
+                : isCustomApiHostFullPath;
+
+        const effectiveApiKey = (providerRef?.apiKey && providerRef.apiKey.trim().length > 0)
+            ? providerRef.apiKey
+            : (config.apiKey || customApiKey);
+
+        const anthHeader = providerRef?.isAnthropicUsingAuthorizationHeader ?? (config.isAnthropicUsingAuthorizationHeader || false);
+        const effectiveAdvanced = providerRef?.advancedConfig ?? config.advancedConfig;
+
         let botInstance;
-        switch (provider) {
+        switch (effectiveProvider) {
             case CustomApiProvider.Bedrock:
                 botInstance = new BedrockApiBot({
-                    apiKey: config.apiKey || customApiKey,
-                    host: config.host || customApiHost,
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingMode: config.thinkingMode,
                     thinkingBudget: config.thinkingBudget,
                     webAccess: config.webAccess,
+                    isHostFullPath: effectiveIsHostFullPath,
                 });
                 break;
             case CustomApiProvider.Anthropic:
                 botInstance = new ClaudeApiBot({
-                    apiKey: config.apiKey || customApiKey,
-                    host: config.host || customApiHost,
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingBudget: config.thinkingBudget,
-                    isHostFullPath: config.isHostFullPath,
+                    isHostFullPath: effectiveIsHostFullPath,
                     webAccess: config.webAccess,
-                }, config.thinkingMode, config.isAnthropicUsingAuthorizationHeader || false);
+                    advancedConfig: effectiveAdvanced,
+                }, config.thinkingMode, anthHeader);
                 break;
             case CustomApiProvider.OpenAI:
                 botInstance = new ChatGPTApiBot({
-                    apiKey: config.apiKey || customApiKey,
-                    host: config.host || customApiHost,
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
-                    isHostFullPath: config.isHostFullPath,
+                    isHostFullPath: effectiveIsHostFullPath,
                     webAccess: config.webAccess,
                     botIndex: this.customBotNumber - 1, // 0ベースのインデックス
-                    reasoningMode: config.reasoningMode,
+                    thinkingMode: config.thinkingMode,
                     reasoningEffort: config.reasoningEffort,
+                    advancedConfig: effectiveAdvanced,
                 });
                 break;
+            case CustomApiProvider.OpenRouter: {
+                const isImageModel = !!(config.advancedConfig?.openrouterIsImageModel)
+                const hostForOR = effectiveHost || 'https://openrouter.ai/api'
+                if (isImageModel) {
+                    // Route to OpenRouter image bot (chat/completions with modalities)
+                    botInstance = new OpenRouterImageBot({
+                        apiKey: effectiveApiKey,
+                        host: hostForOR,
+                        model: config.model,
+                        systemMessage: processedSystemMessage,
+                        isHostFullPath: false,
+                        // Use explicit AR from AdvancedConfig or default
+                        aspectRatio: (config.advancedConfig?.openrouterAspectRatio as any) || 'auto',
+                        providerOnly: effectiveAdvanced?.openrouterProviderOnly,
+                    })
+                } else {
+                    // Route chat to OpenAI-compatible ChatGPTApiBot with OpenRouter headers via host
+                    botInstance = new ChatGPTApiBot({
+                        apiKey: effectiveApiKey,
+                        host: hostForOR,
+                        model: config.model,
+                        temperature: config.temperature,
+                        systemMessage: processedSystemMessage,
+                        isHostFullPath: false,
+                        webAccess: config.webAccess,
+                        botIndex: this.customBotNumber - 1,
+                        thinkingMode: config.thinkingMode,
+                        reasoningEffort: config.reasoningEffort,
+                        advancedConfig: effectiveAdvanced,
+                    })
+                }
+                break;
+            }
+            case CustomApiProvider.OpenAI_Image: {
+                // OpenAI_Image: Chat Bot with image generation via function calling
+                const imageTool: any = { type: 'image_generation' }
+
+                // Apply user-defined parameters
+                if (config.imageFunctionToolSettings?.params) {
+                    Object.assign(imageTool, config.imageFunctionToolSettings.params)
+                }
+
+                botInstance = new OpenAIResponsesBot({
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
+                    model: config.model || 'gpt-5',
+                    systemMessage: processedSystemMessage,
+                    isHostFullPath: effectiveIsHostFullPath,
+                    webAccess: false,
+                    thinkingMode: config.thinkingMode,
+                    reasoningEffort: config.reasoningEffort,
+                    functionTools: [imageTool],
+                    extraBody: undefined,
+                })
+                break;
+            }
+            // ChutesAI, NovitaAI, and Replicate are now only used via Image Agent (not as direct chatbots)
+            case CustomApiProvider.ImageAgent: {
+                // Agentic wrapper: delegates to image generation providers
+                botInstance = new ImageAgentBot(this.customBotNumber - 1)
+                break;
+            }
             case CustomApiProvider.Google:
                 botInstance = new GeminiApiBot({
-                    geminiApiKey: config.apiKey || customApiKey,
+                    geminiApiKey: effectiveApiKey,
                     geminiApiModel: config.model,
                     geminiApiSystemMessage: processedSystemMessage,
                     geminiApiTemperature: config.temperature,
                     webAccess: config.webAccess,
                 });
                 break;
-            case CustomApiProvider.Perplexity:
-                botInstance = new PerplexityApiBot({
-                    apiKey: config.apiKey || customApiKey,
+            case CustomApiProvider.OpenAI_Responses:
+                botInstance = new OpenAIResponsesBot({
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
                     model: config.model,
-                    host: config.host || customApiHost,
-                    isHostFullPath: config.isHostFullPath,
+                    systemMessage: processedSystemMessage,
+                    isHostFullPath: effectiveIsHostFullPath,
+                    webAccess: !!config.responsesWebSearch,
+                    thinkingMode: config.thinkingMode,
+                    reasoningEffort: config.reasoningEffort,
+                    functionTools: (() => {
+                      if (config.responsesFunctionTools && config.responsesFunctionTools.trim().length > 0) {
+                        try {
+                          const parsed = JSON.parse(config.responsesFunctionTools);
+                          return Array.isArray(parsed) ? parsed : undefined;
+                        } catch {
+                          return undefined;
+                        }
+                      }
+                      return undefined;
+                    })(),
+                    extraBody: undefined,
+                });
+                break;
+            case CustomApiProvider.GeminiOpenAI:
+                botInstance = new ChatGPTApiBot({
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
+                    model: config.model,
+                    temperature: config.temperature,
+                    systemMessage: processedSystemMessage,
+                    thinkingMode: false, // No compatibility with OpenAI Reasoning
                     webAccess: config.webAccess,
+                    isHostFullPath: true, // GeminiOpenAI は常に Full Path
+                    extraBody: config.thinkingMode ? {
+                        google: {
+                            thinking_config: {
+                                include_thoughts: true,
+                                thinking_budget: config.thinkingBudget || 2000
+                            }
+                        }
+                    } : undefined
+                });
+                break;
+            case CustomApiProvider.QwenOpenAI:
+                botInstance = new ChatGPTApiBot({
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
+                    model: config.model,
+                    temperature: config.temperature,
+                    systemMessage: processedSystemMessage,
+                    thinkingMode: config.thinkingMode,
+                    webAccess: config.webAccess,
+                    isHostFullPath: effectiveIsHostFullPath,
+                    extraBody: config.thinkingMode ? {
+                        enable_thinking: true,
+                        thinking_budget: config.thinkingBudget || 2000
+                    } : undefined
                 });
                 break;
             case CustomApiProvider.VertexAI_Claude:
                 botInstance = new VertexClaudeBot({
-                    apiKey: config.apiKey || customApiKey,
-                    host: config.host || customApiHost,
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
                     model: config.model,
                     temperature: config.temperature,
                     systemMessage: processedSystemMessage,
                     thinkingMode: config.thinkingMode, // Now properly supported with correct max_tokens
                     thinkingBudget: config.thinkingBudget,
-                    isHostFullPath: config.isHostFullPath,
+                    isHostFullPath: effectiveIsHostFullPath,
                     webAccess: config.webAccess,
+                    advancedConfig: effectiveAdvanced,
+                });
+                break;
+            case CustomApiProvider.VertexAI_Gemini:
+                botInstance = new VertexGeminiBot({
+                    apiKey: effectiveApiKey,
+                    host: effectiveHost,
+                    model: config.model,
+                    systemMessage: processedSystemMessage,
+                    temperature: config.temperature,
+                    thinkingMode: config.thinkingMode,
+                    thinkingBudget: config.thinkingBudget,
+                    isHostFullPath: true,
+                    webAccess: config.webAccess,
+                    geminiAuthMode: ((providerRef?.AuthMode || 'header') === 'default') ? 'query' : (config.geminiAuthMode || 'header'),
                 });
                 break;
             default:
-                console.error(`Unsupported provider detected: ${provider}`);
-                throw new ChatError(`Unsupported provider: ${provider}`, ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);
+                console.error(`Unsupported provider detected: ${effectiveProvider}`);
+                throw new ChatError(`Unsupported provider: ${effectiveProvider}`, ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR);
         }
 
 
+        // Ensure initial system message is applied on the created bot (for bots that support it)
+        if (botInstance && typeof (botInstance as any).setSystemMessage === 'function') {
+            (botInstance as any).setSystemMessage(processedSystemMessage);
+        }
         return botInstance;
     }
 }

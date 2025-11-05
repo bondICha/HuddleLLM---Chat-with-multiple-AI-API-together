@@ -164,19 +164,21 @@ const GeneralChatPanel: FC<{
   }, [chats.length, supportImageInput])
 
   const sendSingleMessage = useCallback(
-    (input: string, index: number) => {
-      const chat = chats.find((c) => c.index === index)
-      chat?.sendMessage(input)
-    },
-    [chats],
-  )
+   (input: string, index: number, images?: File[], attachments?: { name: string; content: string }[]) => {
+     const chat = chats.find((c) => c.index === index);
+     if (chat) {
+       chat.sendMessage(input, images, attachments);
+     }
+   },
+   [chats],
+ );
 
   const sendAllMessage = useCallback(
-    (input: string, images?: File[]) => {
-      if (!input?.trim() && !images?.length) return;
+    (input: string, images?: File[], attachments?: { name: string; content: string }[]) => {
+      if (!input?.trim() && !images?.length && !attachments?.length) return;
 
       // まずメッセージを送信
-      uniqBy(chats, (c) => c.index).forEach((c) => c.sendMessage(input, images));
+      uniqBy(chats, (c) => c.index).forEach((c) => c.sendMessage(input, images, attachments));
     },
     [chats],
   )
@@ -288,13 +290,15 @@ const GeneralChatPanel: FC<{
             index={chat.index}
             bot={chat.bot}
             messages={chat.messages}
-            onUserSendMessage={(input) => sendSingleMessage(input, chat.index)}
+            onUserSendMessage={(input, images, attachments) => sendSingleMessage(input, chat.index, images, attachments)}
             generating={chat.generating}
             stopGenerating={chat.stopGenerating}
             mode="compact"
             resetConversation={chat.resetConversation}
             onSwitchBot={setBots ? (newIndex) => onSwitchBot(newIndex, index) : undefined}
             onPropaganda={modifyAllLastMessage}
+            shouldAutoScroll={chat.shouldAutoScroll}
+            setAutoScroll={chat.setAutoScroll}
           />
         ))}
       </div>

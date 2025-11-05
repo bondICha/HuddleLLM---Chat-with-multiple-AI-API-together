@@ -1,0 +1,613 @@
+import { ToolDefinition } from './user-config'
+
+/**
+ * Tool definition with metadata for image generation
+ *
+ * EXTENSIBILITY NOTE:
+ * When adding new models/providers in the future:
+ * 1. Create a new ToolDefinition matching the API's parameter names exactly
+ * 2. Set supportsEdit: true if the model supports image editing
+ * 3. Implement endpointSelector if the model uses different endpoints for txt2img vs edit
+ * 4. Add to TOOL_DEFINITION_REGISTRY with a unique key
+ */
+
+/**
+ * Convert Claude Tool Use format to OpenAI Function Calling format
+ *
+ * Claude format:
+ * {
+ *   name: "...",
+ *   description: "...",
+ *   input_schema: { type: "object", properties: {...}, required: [...] }
+ * }
+ *
+ * OpenAI format:
+ * {
+ *   type: "function",
+ *   function: {
+ *     name: "...",
+ *     description: "...",
+ *     parameters: { type: "object", properties: {...}, required: [...] }
+ *   }
+ * }
+ */
+export function convertClaudeToolToOpenAI(claudeTool: ToolDefinition): any {
+  return {
+    type: 'function',
+    function: {
+      name: claudeTool.name,
+      description: claudeTool.description,
+      parameters: claudeTool.input_schema,
+    },
+  }
+}
+
+/**
+ * API処理のための設定
+ * Tool Call（LLMに渡すJSON定義）とは分離
+ */
+export interface ImageApiConfig {
+  /** API endpoint URL or function to determine endpoint */
+  endpoint: string | ((hasImages: boolean, baseHost: string) => string)
+  /** Whether this is a synchronous API (returns image directly) or async (returns task_id for polling) */
+  isAsync: boolean
+  /** Whether this model supports image editing (img2img) */
+  supportsEdit: boolean
+  /** When set, user-provided images are automatically injected into this request field as base64 strings */
+  imageInputField?: string
+}
+
+/**
+ * 画像生成モデルの完全な設定
+ * - toolDefinition: LLMに渡すTool Call定義
+ * - apiConfig: API呼び出しのための設定
+ */
+export interface ImageModelConfig {
+  /** Tool definition in Claude format (for LLM) */
+  toolDefinition: ToolDefinition
+  /** API processing configuration (for actual API calls) */
+  apiConfig: ImageApiConfig
+}
+
+/**
+ * Default tool definitions for currently supported models
+ */
+
+/**
+ * 1. Chutes AI - Chroma (and other standard SD models like FLUX.1-dev)
+ * API: https://image.chutes.ai/generate
+ * Edit support: No
+ */
+export const MODEL_CHUTES_CHROMA: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate an image using Chroma model. Images supplied by the user are not forwarded, so describe any visual references directly in the prompt.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'A detailed description of the image to generate. Be specific and descriptive.',
+        },
+        negative_prompt: {
+          type: 'string',
+          description: 'Things to avoid in the image (e.g., "blurry, low quality")',
+        },
+        width: {
+          type: 'number',
+          description: 'Image width in pixels',
+          default: 1280,
+        },
+        height: {
+          type: 'number',
+          description: 'Image height in pixels',
+          default: 1280,
+        },
+        num_inference_steps: {
+          type: 'number',
+          description: 'Number of inference steps (higher = better quality but slower)',
+          default: 50,
+        },
+        guidance_scale: {
+          type: 'number',
+          description: 'How closely to follow the prompt (7-15 recommended)',
+          default: 7.5,
+        },
+        seed: {
+          type: 'number',
+          description: 'Random seed for reproducibility (optional)',
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    endpoint: (hasImages: boolean, baseHost: string) => {
+      const cleanHost = baseHost.replace(/\/$/, '')
+      return `${cleanHost}/generate`
+    },
+    isAsync: false,
+    supportsEdit: false,
+  },
+}
+
+/**
+ * 2. Novita AI - Qwen Image
+ * API: https://api.novita.ai/v3/async/qwen-image-txt2img (txt2img)
+ *      https://api.novita.ai/v3/async/qwen-image-edit (edit)
+ * Edit support: Yes - different endpoints
+ */
+export const MODEL_NOVITA_QWEN: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate or edit an image using Qwen Image model. When the user provides images, it will automatically switch to edit mode. When editing, the "size" parameter is ignored (original image size is used). When generating from scratch, you can specify the "size" parameter.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Text description for image generation, or editing instructions when user provides images.',
+        },
+        size: {
+          type: 'string',
+          description: 'Image resolution in format "WIDTH*HEIGHT". Range: 256*256 to 1536*1536. Available: "1536*864" (16:9), "1536*1152" (4:3), "1328*1328" (1:1), "1152*1536" (3:4), "864*1536" (9:16). NOTE: This parameter is IGNORED in edit mode (when user provides images).',
+          default: '1328*1328',
+        },
+        seed: {
+          type: 'number',
+          description: 'Random seed for reproducibility. Use a specific number (e.g., 42) for consistent results, or -1 for random generation.',
+          default: -1,
+        },
+        output_format: {
+          type: 'string',
+          description: 'Output image format. "png" for transparency support, "webp" for smaller file size, "jpeg" for standard use.',
+          enum: ['jpeg', 'png', 'webp'],
+          default: 'jpeg',
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    endpoint: (hasImages: boolean, baseHost: string) => {
+      const cleanHost = baseHost.replace(/\/$/, '')
+      return hasImages
+        ? `${cleanHost}/v3/async/qwen-image-edit`
+        : `${cleanHost}/v3/async/qwen-image-txt2img`
+    },
+    isAsync: true,
+    supportsEdit: true,
+    imageInputField: 'image', // ✨ 単数形（editのAPI仕様に合わせる）
+  },
+}
+
+/**
+ * 3. Novita AI - Hunyuan Image 3
+ * API: https://api.novita.ai/v3/async/hunyuan-image-3
+ * Edit support: No
+ */
+export const MODEL_NOVITA_HUNYUAN: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate an image using Hunyuan Image 3 model. Images provided by the user are not sent to the API, so incorporate any visual details into the prompt text.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'A detailed description of the image to generate. Be specific and descriptive.',
+        },
+        size: {
+          type: 'string',
+          description: 'Image size in format "WIDTH*HEIGHT" (e.g., "1024*1024"). Range: 256-1536 per dimension.',
+          default: '1024*1024',
+        },
+        seed: {
+          type: 'number',
+          description: 'Random seed for reproducibility. -1 for random. Range: -1 to 2147483647',
+          default: -1,
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    endpoint: (hasImages: boolean, baseHost: string) => {
+      const cleanHost = baseHost.replace(/\/$/, '')
+      return `${cleanHost}/v3/async/hunyuan-image-3`
+    },
+    isAsync: true,
+    supportsEdit: false,
+  },
+}
+
+/**
+ * 4. Novita AI - Seedream 4.0
+ * API: https://api.novita.ai/v3/seedream-4.0 (synchronous API)
+ * Edit support: Yes - same endpoint, images parameter optional
+ * Note: This is a SYNCHRONOUS API (not async like other Novita models)
+ */
+export const MODEL_NOVITA_SEEDREAM: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate or edit images using Seedream 4.0 model. Any images attached by the user are automatically forwarded for editing or reference.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Detailed text description for image generation. Recommended: under 600 words in English.',
+        },
+        size: {
+          type: 'string',
+          description: 'Image resolution. Use "1K", "2K", "4K" or "WIDTHxHEIGHT" format (e.g., "2048x2048"). Pixel range: 1024x1024 to 4096x4096, aspect ratio: 1/16 to 16.',
+          default: '2048x2048',
+        },
+        sequential_image_generation: {
+          type: 'string',
+          description: 'Enable sequential generation mode. "auto" for automatic batch generation, "disabled" for single image.',
+          enum: ['auto', 'disabled'],
+          default: 'disabled',
+        },
+        max_images: {
+          type: 'number',
+          description: 'Maximum number of images to generate (1-15). Only applies when sequential_image_generation is "auto". Total of reference images + generated images cannot exceed 15.',
+          default: 15,
+        },
+        watermark: {
+          type: 'boolean',
+          description: 'Add watermark to bottom-right corner. Default is false.',
+          default: false,
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    endpoint: (hasImages: boolean, baseHost: string) => {
+      const cleanHost = baseHost.replace(/\/$/, '')
+      return `${cleanHost}/v3/seedream-4.0`
+    },
+    isAsync: false, // ✨ Seedream 4.0 is synchronous
+    supportsEdit: true,
+    imageInputField: 'images',
+  },
+}
+
+/**
+ * 5. Replicate - Google Imagen 4
+ * API: https://api.replicate.com/v1/models/google/imagen-4/predictions
+ * Edit support: No
+ * Note: Uses model-specific endpoint, only input is sent (no version wrapper needed)
+ */
+export const MODEL_REPLICATE_IMAGEN4: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate high-quality images using Google Imagen 4 model via Replicate. Images provided by the user are not sent to the API, so incorporate any visual details into the prompt text.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Text prompt for image generation. Be specific and descriptive.',
+        },
+        aspect_ratio: {
+          type: 'string',
+          description: 'Aspect ratio of the generated image. Choose the closest match to your desired output size.',
+          enum: ['1:1', '9:16', '16:9', '3:4', '4:3'],
+          default: '1:1',
+        },
+        output_format: {
+          type: 'string',
+          description: 'Format of the output image. "png" for lossless quality and transparency support, "jpg" for smaller file size.',
+          enum: ['jpg', 'png'],
+          default: 'jpg',
+        },
+        safety_filter_level: {
+          type: 'string',
+          description: 'Safety filter strictness. "block_low_and_above" is strictest, "block_medium_and_above" blocks some prompts, "block_only_high" is most permissive but some prompts will still be blocked.',
+          enum: ['block_low_and_above', 'block_medium_and_above', 'block_only_high'],
+          default: 'block_only_high',
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    // Replicate uses full path with %model placeholder (not base URL)
+    // User should input: https://api.replicate.com/v1/models/%model/predictions
+    endpoint: '',
+    isAsync: true,
+    supportsEdit: false,
+  },
+}
+
+/**
+ * 6. Replicate - Tencent Hunyuan Image 3
+ * API: https://api.replicate.com/v1/models/tencent/hunyuan-image-3/predictions
+ * Edit support: No
+ * Note: Uses model-specific endpoint, returns array of URLs
+ */
+export const MODEL_REPLICATE_HUNYUAN3: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate high-quality images using Tencent Hunyuan Image 3 model via Replicate. Images provided by the user are not sent to the API, so incorporate any visual details into the prompt text.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Text prompt for image generation. Be specific and descriptive.',
+        },
+        aspect_ratio: {
+          type: 'string',
+          description: 'Aspect ratio of the generated image.',
+          enum: ['1:1', '9:16', '16:9', '3:4', '4:3'],
+          default: '1:1',
+        },
+        go_fast: {
+          type: 'boolean',
+          description: 'Run faster predictions with additional optimizations.',
+          default: true,
+        },
+        seed: {
+          type: 'integer',
+          description: 'Random seed. Set for reproducible generation.',
+        },
+        output_format: {
+          type: 'string',
+          description: 'Format of the output images.',
+          enum: ['webp', 'jpg', 'png'],
+          default: 'webp',
+        },
+        output_quality: {
+          type: 'integer',
+          description: 'Quality when saving the output images, from 0 to 100. 100 is best quality, 0 is lowest quality. Not relevant for .png outputs.',
+          minimum: 0,
+          maximum: 100,
+          default: 95,
+        },
+        disable_safety_checker: {
+          type: 'boolean',
+          description: 'Disable safety checker for generated images.',
+          default: false,
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    // Replicate uses full path with %model placeholder (not base URL)
+    // User should input: https://api.replicate.com/v1/models/%model/predictions
+    endpoint: '',
+    isAsync: true,
+    supportsEdit: false,
+  },
+}
+
+/**
+ * 7. Replicate - ByteDance Seedream 4.0
+ * API: https://api.replicate.com/v1/models/bytedance/seedream-4/predictions
+ * Edit support: Yes - same endpoint, image_input parameter optional
+ * Note: Returns array of URLs, supports multiple images and high resolution up to 4K
+ */
+export const MODEL_REPLICATE_SEEDREAM4: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate or edit images using ByteDance Seedream 4.0 model via Replicate. Supports both text-to-image generation and image editing. Can handle multiple input images and generate multiple outputs. Supports high resolution up to 4K.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Text prompt for image generation or editing instructions.',
+        },
+        image_input: {
+          type: 'array',
+          description: 'Input image(s) for image-to-image generation. List of 1-10 images for single or multi-reference generation. When provided, enables image editing mode.',
+          items: {
+            type: 'string',
+            format: 'uri',
+          },
+          maxItems: 10,
+        },
+        size: {
+          type: 'string',
+          description: 'Image resolution: 1K (1024px), 2K (2048px), 4K (4096px), or custom for specific dimensions.',
+          enum: ['1K', '2K', '4K', 'custom'],
+          default: '4K',
+        },
+        aspect_ratio: {
+          type: 'string',
+          description: 'Image aspect ratio. Only used when size is not custom. Use match_input_image to automatically match the input image\'s aspect ratio.',
+          enum: ['1:1', '9:16', '16:9', '3:4', '4:3', 'match_input_image'],
+          default: '1:1',
+        },
+        width: {
+          type: 'integer',
+          description: 'Custom image width (only used when size=custom). Range: 1024-4096 pixels.',
+          minimum: 1024,
+          maximum: 4096,
+        },
+        height: {
+          type: 'integer',
+          description: 'Custom image height (only used when size=custom). Range: 1024-4096 pixels.',
+          minimum: 1024,
+          maximum: 4096,
+        },
+        sequential_image_generation: {
+          type: 'string',
+          description: 'Group image generation mode. disabled generates a single image. auto lets the model decide whether to generate multiple related images.',
+          enum: ['disabled', 'auto'],
+          default: 'disabled',
+        },
+        max_images: {
+          type: 'integer',
+          description: 'Maximum number of images to generate when sequential_image_generation=auto. Range: 1-15. Total images (input + generated) cannot exceed 15.',
+          minimum: 1,
+          maximum: 15,
+          default: 15,
+        },
+        enhance_prompt: {
+          type: 'boolean',
+          description: 'Enable prompt enhancement for higher quality results, this will take longer to generate.',
+          default: false,
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    // Replicate uses full path with %model placeholder (not base URL)
+    // User should input: https://api.replicate.com/v1/models/%model/predictions
+    endpoint: '',
+    isAsync: true,
+    supportsEdit: true,
+    imageInputField: 'image_input', // Array of image URLs
+  },
+}
+
+/**
+ * 8. Replicate - Google Imagen 4 Fast
+ * API: https://api.replicate.com/v1/models/google/imagen-4-fast/predictions
+ * Edit support: No
+ * Note: Fast version of Imagen 4 optimized for speed and cost over quality
+ */
+export const MODEL_REPLICATE_IMAGEN4_FAST: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate images quickly using Google Imagen 4 Fast model via Replicate. Optimized for speed and cost over quality. Images provided by the user are not sent to the API, so incorporate any visual details into the prompt text.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Text prompt for image generation. Be specific and descriptive.',
+        },
+        aspect_ratio: {
+          type: 'string',
+          description: 'Aspect ratio of the generated image. Choose the closest match to your desired output size.',
+          enum: ['1:1', '9:16', '16:9', '3:4', '4:3'],
+          default: '4:3',
+        },
+        safety_filter_level: {
+          type: 'string',
+          description: 'Safety filter strictness. block_low_and_above is strictest, block_medium_and_above blocks some prompts, block_only_high is most permissive but some prompts will still be blocked.',
+          enum: ['block_low_and_above', 'block_medium_and_above', 'block_only_high'],
+          default: 'block_only_high',
+        },
+        output_format: {
+          type: 'string',
+          description: 'Format of the output image.',
+          enum: ['jpg', 'png', 'webp'],
+          default: 'webp',
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    // Replicate uses full path with %model placeholder (not base URL)
+    // User should input: https://api.replicate.com/v1/models/%model/predictions
+    endpoint: '',
+    isAsync: true,
+    supportsEdit: false,
+  },
+}
+
+/**
+ * Registry of all available image model configurations
+ * Key format: "provider-model" (e.g., "chutes-chroma", "novita-qwen")
+ */
+export const IMAGE_MODEL_REGISTRY: Record<string, ImageModelConfig> = {
+  'chutes-chroma': MODEL_CHUTES_CHROMA,
+  'chutes-flux': MODEL_CHUTES_CHROMA, // Alias - uses same format
+  'novita-qwen': MODEL_NOVITA_QWEN,
+  'novita-hunyuan': MODEL_NOVITA_HUNYUAN,
+  'novita-hunyuan-image-3': MODEL_NOVITA_HUNYUAN, // Alias
+  'novita-seedream': MODEL_NOVITA_SEEDREAM,
+  'novita-seedream-4': MODEL_NOVITA_SEEDREAM, // Alias
+  'novita-seedream-4-0': MODEL_NOVITA_SEEDREAM, // Alias
+  'replicate-imagen-4': MODEL_REPLICATE_IMAGEN4,
+  'replicate-imagen4': MODEL_REPLICATE_IMAGEN4, // Alias
+  'replicate-google-imagen-4': MODEL_REPLICATE_IMAGEN4, // Alias
+  'replicate-imagen-4-fast': MODEL_REPLICATE_IMAGEN4_FAST,
+  'replicate-imagen4-fast': MODEL_REPLICATE_IMAGEN4_FAST, // Alias
+  'replicate-google-imagen-4-fast': MODEL_REPLICATE_IMAGEN4_FAST, // Alias
+  'replicate-hunyuan-3': MODEL_REPLICATE_HUNYUAN3,
+  'replicate-hunyuan-image-3': MODEL_REPLICATE_HUNYUAN3, // Alias
+  'replicate-tencent-hunyuan-3': MODEL_REPLICATE_HUNYUAN3, // Alias
+  'replicate-seedream-4': MODEL_REPLICATE_SEEDREAM4,
+  'replicate-seedream': MODEL_REPLICATE_SEEDREAM4, // Alias
+  'replicate-bytedance-seedream-4': MODEL_REPLICATE_SEEDREAM4, // Alias
+}
+
+/**
+ * Get image model configuration by key
+ * @param key Registry key (e.g., "chutes-chroma", "novita-qwen")
+ * @returns Image model configuration, or undefined if not found
+ */
+export function getImageModelByKey(key: string): ImageModelConfig | undefined {
+  return IMAGE_MODEL_REGISTRY[key.toLowerCase()]
+}
+
+/**
+ * Get default image model configuration for a given model
+ * @param model Model identifier (e.g., "chroma", "qwen-image", "hunyuan-image-3")
+ * @param provider Optional provider hint (e.g., "chutes", "novita")
+ * @returns Image model configuration, or default Chutes standard if not found
+ */
+export function getDefaultImageModel(model: string, provider?: string): ImageModelConfig {
+  const modelLower = model.toLowerCase().replace(/\//g, '-') // Replace slashes with hyphens for key matching
+  const providerLower = provider?.toLowerCase() || ''
+
+  // Try exact match first
+  const exactKey = providerLower ? `${providerLower}-${modelLower}` : modelLower
+  const exact = getImageModelByKey(exactKey)
+  if (exact) return exact
+
+  // Pattern matching
+  if (modelLower.includes('chroma')) {
+    return MODEL_CHUTES_CHROMA
+  }
+  if (modelLower.includes('qwen')) {
+    return MODEL_NOVITA_QWEN
+  }
+  if (modelLower.includes('hunyuan')) {
+    // Prioritize Replicate Hunyuan if provider is Replicate
+    if (providerLower === 'replicate') {
+      return MODEL_REPLICATE_HUNYUAN3
+    }
+    return MODEL_NOVITA_HUNYUAN
+  }
+  if (modelLower.includes('seedream')) {
+    // Prioritize Replicate Seedream if provider is Replicate
+    if (providerLower === 'replicate') {
+      return MODEL_REPLICATE_SEEDREAM4
+    }
+    return MODEL_NOVITA_SEEDREAM
+  }
+  if (modelLower.includes('flux')) {
+    return MODEL_CHUTES_CHROMA
+  }
+  if (modelLower.includes('imagen')) {
+    return MODEL_REPLICATE_IMAGEN4
+  }
+
+  // No model found - throw error instead of returning arbitrary default
+  throw new Error(`Image model configuration not found for model: ${model} (provider: ${provider || 'unknown'})`)
+}
+
+/**
+ * List of all available image model presets for UI display
+ */
+export const IMAGE_MODEL_PRESETS = [
+  { id: 'chutes-chroma', name: 'Chutes - Chroma', config: MODEL_CHUTES_CHROMA },
+  { id: 'novita-qwen', name: 'Novita - Qwen Image', config: MODEL_NOVITA_QWEN },
+  { id: 'novita-hunyuan', name: 'Novita - Hunyuan Image 3', config: MODEL_NOVITA_HUNYUAN },
+  { id: 'novita-seedream', name: 'Novita - Seedream 4.0', config: MODEL_NOVITA_SEEDREAM },
+  { id: 'replicate-imagen-4', name: 'Replicate - Google Imagen 4', config: MODEL_REPLICATE_IMAGEN4 },
+  { id: 'replicate-imagen-4-fast', name: 'Replicate - Google Imagen 4 Fast', config: MODEL_REPLICATE_IMAGEN4_FAST },
+  { id: 'replicate-hunyuan-3', name: 'Replicate - Tencent Hunyuan Image 3', config: MODEL_REPLICATE_HUNYUAN3 },
+  { id: 'replicate-seedream-4', name: 'Replicate - ByteDance Seedream 4.0', config: MODEL_REPLICATE_SEEDREAM4 },
+]
