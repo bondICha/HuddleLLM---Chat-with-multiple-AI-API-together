@@ -110,7 +110,7 @@ const ExpandableDialog: FC<PropsWithChildren<Props>> = (props) => {
               ) : (
                 <HeadlessDialog.Title></HeadlessDialog.Title>
               )}
-              <div className="flex-1 overflow-y-auto custom-scrollbar">{props.children}</div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">{props.children}</div>
               {props.footer && (
                 <div className="flex-shrink-0 border-t border-primary-border p-4">{props.footer}</div>
               )}
