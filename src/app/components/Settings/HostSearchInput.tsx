@@ -1,7 +1,7 @@
 import { FC, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Input } from '../Input';
-import { HOST_PRESETS } from '~/../config/host-presets';
+import { getHostSuggestions } from '~/../config/providers/provider-defaults';
 
 interface HostSearchInputProps {
   value: string;
@@ -22,9 +22,9 @@ const HostSearchInput: FC<HostSearchInputProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredHosts, setFilteredHosts] = useState<string[]>([]);
 
-  // Extract unique hosts from api-presets
+  // Get host suggestions from provider defaults
   const getAllHosts = (): string[] => {
-    return [...HOST_PRESETS].sort();
+    return getHostSuggestions();
   };
 
   // Load and filter hosts based on input value

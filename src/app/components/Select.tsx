@@ -2,22 +2,25 @@ import { Listbox, Transition } from '@headlessui/react'
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid'
 import { cx } from '~/utils'
 import { Fragment, useMemo, useRef, useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import BotIcon from './BotIcon'
 
 interface Props<T> {
-  options: { value: T; name: string; icon?: string }[]
+  options: { value: T; name: string; icon?: string; recommended?: boolean }[]
   value: T
   onChange: (value: T) => void
   size?: 'normal' | 'small'
   disabled?: boolean
   position?: 'top' | 'down'
   showIcon?: boolean
+  showRecommended?: boolean
 }
 
 function Select<T extends string>(props: Props<T>) {
-  const { options, value, onChange, size = 'normal', disabled, position, showIcon = false } = props
+  const { options, value, onChange, size = 'normal', disabled, position, showIcon = false, showRecommended = false } = props
   const selectedOption = useMemo(() => options.find((o) => o.value === value)!, [options, value])
-  
+  const { t } = useTranslation()
+
   const buttonRef = useRef<HTMLButtonElement>(null)
   const [dropPosition, setDropPosition] = useState<'top' | 'down'>('down')
 
@@ -113,6 +116,11 @@ function Select<T extends string>(props: Props<T>) {
                         <span className={cx(selected ? 'font-semibold' : 'font-normal', 'block truncate')}>
                           {option.name}
                         </span>
+                        {showRecommended && option.recommended && (
+                          <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded whitespace-nowrap">
+                            {t('Recommended')}
+                          </span>
+                        )}
                         {selected ? (
                           <span
                             className={cx(

@@ -1,3 +1,4 @@
+
 /**
  * Base types and enums for user configuration
  */

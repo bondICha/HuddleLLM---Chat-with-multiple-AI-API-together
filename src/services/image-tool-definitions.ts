@@ -611,3 +611,117 @@ export const IMAGE_MODEL_PRESETS = [
   { id: 'replicate-hunyuan-3', name: 'Replicate - Tencent Hunyuan Image 3', config: MODEL_REPLICATE_HUNYUAN3 },
   { id: 'replicate-seedream-4', name: 'Replicate - ByteDance Seedream 4.0', config: MODEL_REPLICATE_SEEDREAM4 },
 ]
+
+/**
+ * Dynamic model registry for user-added Replicate models
+ * Models are stored in localStorage with key 'dynamic-image-models'
+ */
+export interface DynamicImageModel {
+  id: string
+  name: string
+  modelName: string // e.g., "black-forest-labs/flux-schnell"
+  toolDefinition: ToolDefinition
+  description?: string
+  addedAt: number
+}
+
+/**
+ * Get dynamic models from localStorage
+ */
+export function getDynamicImageModels(): DynamicImageModel[] {
+  try {
+    const stored = localStorage.getItem('dynamic-image-models')
+    return stored ? JSON.parse(stored) : []
+  } catch (error) {
+    console.error('Error loading dynamic image models:', error)
+    return []
+  }
+}
+
+/**
+ * Save dynamic model to localStorage and registry
+ */
+export function saveDynamicImageModel(model: Omit<DynamicImageModel, 'id' | 'addedAt'>): string {
+  const id = `dynamic-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  const dynamicModel: DynamicImageModel = {
+    ...model,
+    id,
+    addedAt: Date.now()
+  }
+
+  // Save to localStorage
+  const existingModels = getDynamicImageModels()
+  const updatedModels = [...existingModels, dynamicModel]
+  localStorage.setItem('dynamic-image-models', JSON.stringify(updatedModels))
+
+  // Add to runtime registry
+  const config: ImageModelConfig = {
+    toolDefinition: model.toolDefinition,
+    apiConfig: {
+      endpoint: '', // Replicate uses host directly
+      isAsync: true,
+      supportsEdit: model.toolDefinition.input_schema.properties?.image_input !== undefined
+    }
+  }
+  IMAGE_MODEL_REGISTRY[id] = config
+
+  return id
+}
+
+/**
+ * Remove dynamic model by ID
+ */
+export function removeDynamicImageModel(id: string): boolean {
+  try {
+    // Remove from localStorage
+    const existingModels = getDynamicImageModels()
+    const filteredModels = existingModels.filter(model => model.id !== id)
+    localStorage.setItem('dynamic-image-models', JSON.stringify(filteredModels))
+
+    // Remove from runtime registry
+    delete IMAGE_MODEL_REGISTRY[id]
+    return true
+  } catch (error) {
+    console.error('Error removing dynamic image model:', error)
+    return false
+  }
+}
+
+/**
+ * Load all dynamic models into registry (call on app startup)
+ */
+export function loadDynamicImageModels(): void {
+  const dynamicModels = getDynamicImageModels()
+  dynamicModels.forEach(model => {
+    const config: ImageModelConfig = {
+      toolDefinition: model.toolDefinition,
+      apiConfig: {
+        endpoint: '', // Replicate uses host directly
+        isAsync: true,
+        supportsEdit: model.toolDefinition.input_schema.properties?.image_input !== undefined
+      }
+    }
+    IMAGE_MODEL_REGISTRY[model.id] = config
+  })
+}
+
+/**
+ * Get all image models (static + dynamic) for UI display
+ */
+export function getAllImageModels(): Array<{ id: string; name: string; config: ImageModelConfig; isDynamic?: boolean }> {
+  const staticModels = IMAGE_MODEL_PRESETS.map(preset => ({
+    id: preset.id,
+    name: preset.name,
+    config: preset.config,
+    isDynamic: false
+  }))
+
+  const dynamicModels = getDynamicImageModels().map(model => ({
+    id: model.id,
+    name: model.name,
+    config: IMAGE_MODEL_REGISTRY[model.id]!,
+    isDynamic: true
+  }))
+
+  return [...staticModels, ...dynamicModels]
+}

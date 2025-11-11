@@ -1,24 +1,29 @@
 import { CustomApiProvider } from '~services/user-config'
 
-export type ApiSchemeOption = { name: string; value: CustomApiProvider }
+export type ApiSchemeOption = {
+  name: string
+  value: CustomApiProvider
+  recommended?: boolean
+  outputType?: 'text' | 'image'
+}
 
 export function getApiSchemeOptions(): ApiSchemeOption[] {
   return [
-    { name: 'OpenAI Compatible (Completion)', value: CustomApiProvider.OpenAI },
-    { name: 'OpenRouter (Chat / Image)', value: CustomApiProvider.OpenRouter },
-    { name: 'OpenAI Responses API (Beta)', value: CustomApiProvider.OpenAI_Responses },
-    { name: 'OpenAI Image (gpt-image-1, Beta)', value: CustomApiProvider.OpenAI_Image },
-    { name: 'Image Agent (Generate + Agentic Chatbot)', value: CustomApiProvider.ImageAgent },
-    { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic },
-    { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock },
-    { name: 'Google Gemini (OpenAI Format)', value: CustomApiProvider.GeminiOpenAI },
-    { name: 'Qwen (OpenAI Format)', value: CustomApiProvider.QwenOpenAI },
-    { name: 'VertexAI (Claude)', value: CustomApiProvider.VertexAI_Claude },
-    { name: 'Google Gemini (Image, Beta)', value: CustomApiProvider.VertexAI_Gemini },
-    { name: 'Google Gemini API (Deprecated)', value: CustomApiProvider.Google },
+    { name: 'OpenAI Compatible (Completion)', value: CustomApiProvider.OpenAI, outputType: 'text' },
+    { name: 'OpenRouter (Chat / Image)', value: CustomApiProvider.OpenRouter, outputType: 'text' },
+    { name: 'OpenAI Responses API (Beta)', value: CustomApiProvider.OpenAI_Responses, outputType: 'text' },
+    { name: 'OpenAI Image (gpt-image-1, Beta)', value: CustomApiProvider.OpenAI_Image, outputType: 'text' },
+    { name: 'Image Agent (Generate + Agentic Chatbot)', value: CustomApiProvider.ImageAgent, outputType: 'text' },
+    { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic, outputType: 'text' },
+    { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock, outputType: 'text' },
+    { name: 'Google Gemini (OpenAI Format)', value: CustomApiProvider.GeminiOpenAI, outputType: 'text' },
+    { name: 'Qwen (OpenAI Format)', value: CustomApiProvider.QwenOpenAI, outputType: 'text' },
+    { name: 'VertexAI (Claude)', value: CustomApiProvider.VertexAI_Claude, outputType: 'text' },
+    { name: 'Google Gemini (Image, Beta)', value: CustomApiProvider.VertexAI_Gemini, outputType: 'text' },
+    { name: 'Google Gemini API (Deprecated)', value: CustomApiProvider.Google, outputType: 'text' },
     // Image-only providers (used via Image Agent, not as direct chatbots)
-    { name: 'Chutes AI (Image)', value: CustomApiProvider.ChutesAI },
-    { name: 'Novita AI (Image)', value: CustomApiProvider.NovitaAI },
-    { name: 'Replicate (Image)', value: CustomApiProvider.Replicate },
+    { name: 'Chutes AI (Image)', value: CustomApiProvider.ChutesAI, outputType: 'image' },
+    { name: 'Novita AI (Image)', value: CustomApiProvider.NovitaAI, outputType: 'image' },
+    { name: 'Replicate (Image)', value: CustomApiProvider.Replicate, recommended: true, outputType: 'image' },
   ]
 }

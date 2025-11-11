@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { BiPlus, BiTrash, BiEdit } from 'react-icons/bi';
 import toast from 'react-hot-toast';
 import { UserConfig, CustomApiProvider, ProviderConfig } from '~services/user-config';
+import { PROVIDER_DEFAULTS } from '~/../config/providers/provider-defaults';
+import { getApiSchemeOptions } from './api-scheme-options';
 import Button from '../Button';
 import Blockquote from './Blockquote';
 import IconSelectModal from './IconSelectModal';
 import BotIcon from '../BotIcon';
 import ProviderEditModal from './ProviderEditModal';
-import { getApiSchemeOptions } from './api-scheme-options';
 import CopyIcon from '../icons/CopyIcon';
 
 interface Props {
@@ -28,6 +29,26 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
   };
 
   const genId = () => `prov_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+  const createDefaultProvider = (
+    baseProvider: CustomApiProvider = CustomApiProvider.OpenAI,
+    name?: string,
+  ): ProviderConfig => {
+    const providerDefaults = PROVIDER_DEFAULTS[baseProvider];
+    const schemeOption = getApiSchemeOptions().find(opt => opt.value === baseProvider);
+
+    return {
+      id: genId(),
+      name: name || `Provider ${providerConfigs.length + 1}`,
+      provider: baseProvider,
+      host: providerDefaults?.host ?? '',
+      isHostFullPath: providerDefaults?.isHostFullPath ?? false,
+      apiKey: '',
+      icon: 'OpenAI.Black',
+      isAnthropicUsingAuthorizationHeader: false,
+      outputType: schemeOption?.outputType,
+    };
+  };
 
   const formRowClass = "flex flex-col gap-2";
   const labelClass = "font-medium text-sm";
@@ -59,16 +80,7 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             text={t('Add Provider')}
             icon={<BiPlus />}
             onClick={() => {
-              const defProvider: ProviderConfig = {
-                id: genId(),
-                name: `Provider ${providerConfigs.length + 1}`,
-                provider: CustomApiProvider.OpenAI,
-                host: '',
-                isHostFullPath: false,
-                apiKey: '',
-                icon: 'OpenAI.Black',
-                isAnthropicUsingAuthorizationHeader: false,
-              };
+              const defProvider = createDefaultProvider(CustomApiProvider.OpenAI);
               updateProviderConfigs([...providerConfigs, defProvider]);
             }}
             color="primary"
@@ -85,7 +97,14 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     <BotIcon iconName={prov.icon} size={32} />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium text-sm truncate">{prov.name}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-sm truncate">{prov.name}</h4>
+                      {prov.provider === CustomApiProvider.Replicate && resolveProviderMode(prov) === 'image' && (
+                        <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded whitespace-nowrap">
+                          {t('Recommended')}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs opacity-60 truncate">{getProviderScheme(prov)}</p>
                   </div>
                   <span className="text-xs font-mono opacity-40">#{pIndex + 1}</span>
@@ -95,6 +114,11 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                   <div className="truncate">Host: {prov.host || t('Not set')}</div>
                   <div className="text-primary">API Key: {prov.apiKey ? '••••••••' : t('Not set')}</div>
                   <div className="truncate">Type: {resolveProviderMode(prov) === 'image' ? t('Image Generation') : t('Chat')}</div>
+                  {prov.provider === CustomApiProvider.Replicate && resolveProviderMode(prov) === 'image' && (
+                    <div className="text-xs text-blue-600 dark:text-blue-400 pt-1">
+                      💡 {t('Easy setup with API integration - supports a wide range of models')}
+                    </div>
+                  )}
                 </div>
  
                 <div className="flex items-center justify-between">
