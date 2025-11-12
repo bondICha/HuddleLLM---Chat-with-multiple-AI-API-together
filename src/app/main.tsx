@@ -12,7 +12,6 @@ import { markOmniboxSearchAsUsed } from '../services/storage/open-times'
 import { quickCheckAnySession } from '../services/chat-history'
 import CompanyProfileModal from './components/Modals/CompanyProfileModal'
 import { useFontType } from './hooks/use-font-type'
-import { loadDynamicImageModels } from '../services/image-tool-definitions'
 
 function App() {
   const setPendingSearchQuery = useSetAtom(pendingSearchQueryAtom)
@@ -23,14 +22,6 @@ function App() {
   useFontType()
 
   useEffect(() => {
-    // Load dynamic image models on app startup
-    try {
-      loadDynamicImageModels()
-      console.log('[main.tsx] Dynamic image models loaded')
-    } catch (error) {
-      console.error('Error loading dynamic image models:', error)
-    }
-
     const loadPendingSearch = async () => {
       try {
         const result = await Browser.storage.local.get('pendingOmniboxSearch')
