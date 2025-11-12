@@ -319,6 +319,7 @@
   "Character count": "CC (Character Count)",
   "Drop files to attach": "Drop files to attach",
   "Images and text files are supported": "Images and text files are supported",
+  "releasenote_v2134_replicate_seamless_support": "## Replicate Integration Simplified: Easier and More Flexible\n\nWe've completely overhauled our Replicate integration to make setup simpler and more adaptable to new models.\n\n- **Simplified Setup**\n  No more complex Replicate-specific setup. Now you just need to provide an API key and endpoint, just like other image generation services.\n\n- **Support for Any New Model**\n  Now you can immediately use any new Replicate model just by entering its name, without waiting for HuddleLLM updates.\n\n- **Improved Stability**\n  We've implemented support for Replicate's official prediction format API, making image generation more stable and reliable.\n\nThis update makes it easier for you to leverage Replicate's powerful models, making it a more accessible and dependable tool.\n\n![Replicate Support](/release_note_assets/Replicate%20Support.gif)\n",
   "Use Individual Settings": "Use Individual Settings",
   "When off, this chatbot uses the selected API Provider reference": "When off, this chatbot uses the selected API Provider reference",
   "Provider reference": "Provider reference",

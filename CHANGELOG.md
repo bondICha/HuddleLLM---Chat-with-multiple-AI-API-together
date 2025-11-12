@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.13.4] - 2025-11-12
+
+### Added
+- Seamless Replicate support integrated into the existing Image Agent / image-api client architecture.
+- Preset entries for major Replicate image models (e.g. Google Imagen 4 / Fast, Tencent Hunyuan Image 3, ByteDance Seedream 4.0).
+- In-app Release Notes entry for v2.13.4 (`releasenote_v2134_replicate_seamless_support`), including visual highlight using `Replicate Support.gif`.
+
+### Changed
+- Unified Replicate handling to use the correct prediction-based API pattern:
+  - `POST /v1/models/{model}/predictions`
+  - `GET /v1/predictions/{id}` polling for completion
+- Simplified and cleaned up legacy / experimental Replicate-specific configuration UIs and hooks to avoid inconsistent states.
+- Improved expandable/file preview behavior via `ExpandableDialog` integration from `file-preview-fix`.
+
+### Fixed
+- Ensured file preview display in expandable areas behaves consistently with the rest of the UI.
+
+---
+
 ## [v2.13] - 2025-10-29
 
 ### Added
