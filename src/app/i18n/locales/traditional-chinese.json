@@ -318,7 +318,7 @@
   "auto": "自動",
   "releasenote_v2125_vertex_gemini_update": "## Nano Banana\n\n![Image Generation Support](/release_note_assets/image_generation_support.png)\n\n- 支援 Google Gemini 2.5 Flash Image\n- 請在 Provider 設定中選擇『Google Gemini (Image, Beta)』\n- 使用 `:generateContent` 端點（不支持Streaming）",
   "releasenote_v2126_openrouter_image_generation": "已支援 OpenRouter 圖片生成。試試看 [Gemini 2.5 Flash Image Preview](https://openrouter.ai/google/gemini-2.5-flash-image-preview)",
-  "releasenote_v2134_replicate_seamless_support": "## Replicate 集成已簡化：更簡單、更靈活\n\n我們徹底修改了與 Replicate の集成，使其設置更加簡單，對新模型の適應性也更強。\n\n- **簡化設置**\n  不再需要以往對 Replicate の複雜設置。現在，您只需提供 API 密鑰和端點，即可像其他圖像生成服務一樣進行設置。\n\n- **支援任何新模型**\n  現在，您只需輸入模型名稱，即可立即使用 Replicate の任何新模型，而無需等待 HuddleLLM の更新。\n\n- **提高了穩定性**\n  我們已實現對 Replicate 官方 prediction 形式 API の支援，使圖像生成更加穩定可靠。\n\n![Replicate Support](/release_note_assets/Replicate%20Support.gif)\n",
+  "releasenote_v2134_replicate_seamless_support": "## Replicate 連線全面煥新：更簡單、支援所有模型\n\n這次更新大幅強化了與 Replicate 的整合。只需輸入欲使用的模型名稱並點擊按鈕，繁瑣的設定將自動完成。\n\n- **一鍵完成模型設定**\n  輸入欲使用的 Replicate 模型名稱（例如：`stability-ai/sdxl`），點擊「取得 Schema」。系統會自動產生並套用該模型的 Tool Definition。\n\n- **覆蓋所有 Replicate 模型**\n  不必等待 HuddleLLM 更新，即可隨時新增並使用 Replicate 提供的任意影像生成模型。\n\n- **更可靠的影像生成**\n  直接從 API 取得為各模型最佳化的正確參數，使生成結果更能貼合預期。\n\n![Replicate Support](/release_note_assets/Replicate%20Support.gif)\n",
   "Storage cleanup available": "可以清理以前版本使用の設定",
   "Found {{count}} old/unused storage entries that can be cleaned up for better performance.": "發現{{count}}件可以清理の舊/未使用の儲存條目，以提升效能。",
   "Show details": "顯示詳情",

@@ -340,7 +340,7 @@
   "Successfully removed {{total}} old storage keys": "成功删除了{{total}}个旧存储密钥",
   "Error cleaning up old storage keys": "清理旧存储密钥时出错",
   "releasenote_v2131_enhanced_scroll_experience": "## 增强滚动体验\n\n改进了聊天滚动行为以提高可读性：\n\n- 自动滚动现在在AI响应可见85%时停止\n- 防止在长响应期间错过内容\n- 用户现在可以按照自己的节奏阅读，而不会被强制滚动\n- 智能跟踪滚动位置以优化阅读体验\n\n功能介绍视频： https://youtu.be/FkXAKiFgAuU\n\n*注*：此发布说明由GLM Coding编写。关于GLM Coding的更多信息： https://z.ai/subscribe?ic=PJ3WELGRXZ",
-  "releasenote_v2134_replicate_seamless_support": "## Replicate 无缝集成支持\n\n我们已将 Replicate 深度集成到现有的 Image Agent 图像生成架构中，作为一等公民级别的图像提供方，并全面采用 prediction-based API 流程：\n\n- 使用 `POST /v1/models/{model}/predictions` 创建预测任务\n- 使用 `GET /v1/predictions/{id}` 轮询获取结果\n- 不再使用旧的 `/generate` 接口，避免错误和不兼容行为\n- 超时与错误处理逻辑与其他提供方保持一致\n\n对用户的意义：\n\n- 只需在提供方设置中完成一次 Replicate 配置，即可在 Image Agent 类型聊天机器人中无缝使用\n- 预测创建、轮询和状态管理由系统统一处理，减少配置错误与理解成本\n\n在内置发布说明中，`releasenote_v2134_replicate_seamless_support` 将搭配 `Replicate Support.gif` 展示新的无缝集成体验。\n",
+  "releasenote_v2134_replicate_seamless_support": "## Replicate 集成焕新：更简单、支持所有模型\n\n本次更新大幅强化了与 Replicate 的联动。只需输入想用的模型名并点击按钮，复杂配置将自动完成。\n\n- **一键完成模型设置**\n  输入想用的 Replicate 模型名（例如：`stability-ai/sdxl`），点击「获取 Schema」。每个模型所需的复杂参数（Tool Definition）会自动生成并填入。\n\n- **覆盖 Replicate 全部模型**\n  无需等待 HuddleLLM 更新，随时可添加并使用 Replicate 提供的任意图像生成模型。\n\n- **更可靠的图像生成**\n  直接从 API 获取针对模型优化的正确参数，使生成结果更符合预期。\n\n![Replicate Support](/release_note_assets/Replicate%20Support.gif)\n",
   "Danger Zone": "危险区域",
   "Reset All Settings": "重置所有设置",
   "This action will permanently delete all your custom settings, API configurations, and preferences.": "此操作将永久删除所有自定义设置、API配置和个人偏好设置。",
