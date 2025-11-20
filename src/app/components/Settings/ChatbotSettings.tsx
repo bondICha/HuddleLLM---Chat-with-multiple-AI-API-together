@@ -1,4 +1,5 @@
 import { FC, useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BiPlus, BiTrash, BiHide, BiShow, BiPencil, BiChevronDown, BiExpand } from 'react-icons/bi';
 import toast from 'react-hot-toast';
@@ -19,7 +20,9 @@ import { getTemplateOptions, getActivePresets, getPresetMapping } from '~service
 import { useApiModels } from '~hooks/use-api-models';
 import type { ApiModel } from '~utils/model-fetcher';
 import { revalidateEnabledBots } from '~app/hooks/use-enabled-bots';
+import { useReplicateSettings } from '~hooks/use-replicate-settings';
 import SystemPromptEditorModal from './SystemPromptEditorModal';
+import ImageAgentSettings from './ImageAgentSettings';
 import HostSearchInput from './HostSearchInput';
 import IconSelectModal from './IconSelectModal';
 import BotIcon from '../BotIcon';
@@ -35,11 +38,6 @@ const TOOL_DEFINITION_EXPAND_OFFSET = 4000;
 const providerIsImageMode = (providerConfig?: ProviderConfig) => {
   if (!providerConfig) return false;
   return providerConfig.outputType === 'image';
-};
-
-// Helper function to filter image providers (for Image Agent).
-const getImageProviders = (providerConfigs: ProviderConfig[]) => {
-  return providerConfigs.filter(providerIsImageMode);
 };
 
 const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
@@ -60,6 +58,13 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
   const updateCustomApiConfigs = (newConfigs: CustomApiConfig[]) => {
     updateConfigValue({ customApiConfigs: newConfigs });
   };
+
+  // Replicate-specific settings
+  const { schemaLoading, handleFetchSchema } = useReplicateSettings({
+    customApiConfigs,
+    updateCustomApiConfigs,
+    userConfig
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -118,9 +123,18 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
   const handleFetchSingleModel = async (index: number) => {
     const config = customApiConfigs[index];
-    const providerRef = config.providerRefId
+
+    // For Image Agent, fetch from the Image Provider instead
+    let providerRef = config.providerRefId
       ? (userConfig.providerConfigs || []).find((p) => p.id === config.providerRefId)
       : undefined;
+
+    // If this is an Image Agent, use the imageGeneratorProviderId
+    if (config.provider === CustomApiProvider.ImageAgent && config.agenticImageBotSettings?.imageGeneratorProviderId) {
+      providerRef = (userConfig.providerConfigs || []).find(
+        (p) => p.id === config.agenticImageBotSettings?.imageGeneratorProviderId
+      );
+    }
 
     // Resolve effective settings with fallback to common settings
     const effectiveHost = (providerRef?.host && providerRef.host.trim().length > 0)
@@ -619,144 +633,35 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('Image Generation Settings')} (Beta)</p>
                         </div>
 
-                        <div className={formRowClass}>
-                          <p className={labelClass}>{t('Image Provider')}</p>
-                          <Select
-                            options={[
-                              { name: t('Select Image Provider'), value: '' },
-                              ...getImageProviders(userConfig.providerConfigs || []).map(p => ({ name: p.name, value: p.id, icon: p.icon }))
-                            ]}
-                            value={config.agenticImageBotSettings?.imageGeneratorProviderId || ''}
-                            onChange={(v) => {
-                              const u = [...customApiConfigs];
-                              u[index].agenticImageBotSettings = {
-                                ...(u[index].agenticImageBotSettings || {}),
-                                imageGeneratorProviderId: v || undefined
-                              };
-                              updateCustomApiConfigs(u);
-                            }}
-                            showIcon={true}
-                          />
-                          <span className="text-xs opacity-70">{t('Select which image generation API to use')}</span>
-                        </div>
+                        <ImageAgentSettings
+                          config={config}
+                          index={index}
+                          userConfig={userConfig}
+                          onUpdateConfig={(idx, updates) => {
+                            const u = [...customApiConfigs];
+                            u[idx] = { ...u[idx], ...updates };
+                            updateCustomApiConfigs(u);
+                          }}
+                          onFetchSchema={handleFetchSchema}
+                          schemaLoading={schemaLoading}
+                          modelsPerConfig={modelsPerConfig}
+                          onFetchSingleModel={handleFetchSingleModel}
+                          modelsLoading={modelsLoading}
+                          formRowClass={formRowClass}
+                          labelClass={labelClass}
+                          isProviderSupported={isProviderSupported}
+                        />
+                       {/* Tool Definition Editor - Hide for Replicate */}
+                        {(() => {
+                          const imageProvider = (userConfig.providerConfigs || []).find(
+                            p => p.id === config.agenticImageBotSettings?.imageGeneratorProviderId
+                          );
+                          const isReplicate = imageProvider?.provider === CustomApiProvider.Replicate || /replicate/i.test(imageProvider?.host || '');
 
-                        <div className={formRowClass}>
-                          <p className={labelClass}>{t('Prompt Generator Bot')}</p>
-                          <Select
-                            options={[
-                              { name: t('None (Use raw prompt)'), value: '-1' },
-                              ...customApiConfigs
-                                .map((c, i) => ({ name: `#${i + 1} ${c.name}`, value: String(i) }))
-                                .filter((_, optIndex) => optIndex !== index)
-                            ]}
-                            value={
-                              config.agenticImageBotSettings?.promptGeneratorBotIndex === null ||
-                              config.agenticImageBotSettings?.promptGeneratorBotIndex === undefined
-                                ? '-1'
-                                : String(config.agenticImageBotSettings.promptGeneratorBotIndex)
-                            }
-                            onChange={(v) => {
-                              const u = [...customApiConfigs];
-                              u[index].agenticImageBotSettings = {
-                                ...(u[index].agenticImageBotSettings || {}),
-                                promptGeneratorBotIndex: v === '-1' ? null : parseInt(v)
-                              };
-                              updateCustomApiConfigs(u);
-                            }}
-                          />
-                          <span className="text-xs opacity-70">{t('Chatbot to enhance/generate image prompts')}</span>
-                        </div>
+                          // Don't show Tool Definition for Replicate (auto-generated from API)
+                          if (isReplicate) return null;
 
-                        {/* Image Model Selection */}
-                        <div className={formRowClass}>
-                          <p className={labelClass}>{t('Image Model')}</p>
-                          {(() => {
-                            const imageProvider = (userConfig.providerConfigs || []).find(
-                              p => p.id === config.agenticImageBotSettings?.imageGeneratorProviderId
-                            );
-                            const isNovita = imageProvider?.provider === CustomApiProvider.NovitaAI || /novita/i.test(imageProvider?.host || '');
-                            const isReplicate = imageProvider?.provider === CustomApiProvider.Replicate || /replicate/i.test(imageProvider?.host || '');
-
-                            if (isNovita) {
-                              // Novita: Fixed list only
-                              const novitaModels = [
-                                { name: 'Qwen Image', value: 'qwen-image' },
-                                { name: 'Hunyuan Image 3', value: 'hunyuan-image-3' },
-                                { name: 'Seedream 4.0', value: 'seedream-4-0' },
-                              ];
-
-                              // Auto-set default model if not yet configured
-                              if (!config.model && novitaModels.length > 0) {
-                                const u = [...customApiConfigs];
-                                u[index].model = novitaModels[0].value;
-                                updateCustomApiConfigs(u);
-                              }
-
-                              return (
-                                <>
-                                  <Select
-                                    options={novitaModels}
-                                    value={config.model || novitaModels[0].value}
-                                    onChange={(v) => {
-                                      const u = [...customApiConfigs];
-                                      u[index].model = v;
-                                      updateCustomApiConfigs(u);
-                                    }}
-                                  />
-                                  <span className="text-xs opacity-70">{t('Select Novita model. Tool definition will be set automatically.')}</span>
-                                </>
-                              );
-                            } else if (isReplicate) {
-                              // Replicate: Fixed list (currently only Imagen 4)
-                              const replicateModels = [
-                                { name: 'Google Imagen 4', value: 'google/imagen-4' },
-                                // Future models can be added here
-                              ];
-
-                              // Auto-set default model if not yet configured
-                              if (!config.model && replicateModels.length > 0) {
-                                const u = [...customApiConfigs];
-                                u[index].model = replicateModels[0].value;
-                                updateCustomApiConfigs(u);
-                              }
-
-                              return (
-                                <>
-                                  <Select
-                                    options={replicateModels}
-                                    value={config.model || replicateModels[0].value}
-                                    onChange={(v) => {
-                                      const u = [...customApiConfigs];
-                                      u[index].model = v;
-                                      updateCustomApiConfigs(u);
-                                    }}
-                                  />
-                                  <span className="text-xs opacity-70">{t('Select Replicate model. Tool definition will be set automatically.')}</span>
-                                </>
-                              );
-                            } else {
-                              // Chutes or others: Free input with suggestions
-                              return (
-                                <>
-                                  <Input
-                                    value={config.model || ''}
-                                    onChange={(e) => {
-                                      const u = [...customApiConfigs];
-                                      u[index].model = e.currentTarget.value;
-                                      updateCustomApiConfigs(u);
-                                    }}
-                                    placeholder="chroma, FLUX.1-dev, etc."
-                                  />
-                                  <span className="text-xs opacity-70">
-                                    {t('Common models: chroma, FLUX.1-dev, FLUX.1-schnell. Tool definition will be auto-detected.')}
-                                  </span>
-                                </>
-                              );
-                            }
-                          })()}
-                        </div>
-
-                        {/* Tool Definition Editor */}
+                          return (
                         <div className={formRowClass}>
                           <div className="flex items-center justify-between">
                             <p className={labelClass}>{t('Tool Definition (Advanced)')}</p>
@@ -816,6 +721,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               : t('Auto-detected from model. Click the expand button to copy and customize.')}
                           </span>
                         </div>
+                          );
+                        })()}
                       </div>
                     )}
 

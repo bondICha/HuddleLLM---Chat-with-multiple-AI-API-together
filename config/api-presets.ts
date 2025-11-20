@@ -1,4 +1,5 @@
 import { CustomApiProvider, SystemPromptMode, CustomApiConfig } from '../src/services/user-config'
+import { PROVIDER_DEFAULTS } from './providers/provider-defaults'
 
 // CustomApiConfig をベースにプリセット型を作成（保存時にユーザが埋める項目は除外）
 type PresetFromConfig = Omit<CustomApiConfig, 'apiKey' | 'enabled' | 'webAccess' | 'id'>

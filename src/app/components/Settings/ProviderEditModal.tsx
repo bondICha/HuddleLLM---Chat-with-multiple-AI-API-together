@@ -147,6 +147,7 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
                 }
               })}
               value={editingProvider.provider || CustomApiProvider.OpenAI}
+              showRecommended={true}
               onChange={(v) => {
                 const next = { ...editingProvider, provider: v as CustomApiProvider };
 
@@ -186,6 +187,12 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
                 setEditingProvider(next);
               }}
             />
+            {editingProvider.provider === CustomApiProvider.Replicate && editingProvider.outputType === 'image' && (
+              <div className="flex items-start gap-2 text-xs text-blue-600 dark:text-blue-400 mt-1">
+                <span>💡</span>
+                <span>{t('Easy setup with API integration - supports a wide range of models')}</span>
+              </div>
+            )}
           </div>
 
           {/* Anthropic Auth Header */}

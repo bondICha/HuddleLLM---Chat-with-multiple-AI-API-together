@@ -64,14 +64,7 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
         "通义千问3-VL-235B-A22B-Instruct": { value: "qwen3-vl-235b-a22b-instruct", icon: "qianwen" },
         "Qwen-Coder-480B-A35B-Instruct": { value: "qwen3-coder-480b-a35b-instruct", icon: "qianwen" },
     },
-    // ベンダー特有のモデルIDを「Custom」カテゴリとして追加
-    "Replicate": {
-        // Image generation models
-        "Google Imagen 4": { value: "google/imagen-4", icon: "replicate" },
-        "Google Imagen 4 Fast": { value: "google/imagen-4-fast", icon: "replicate" },
-        "Tencent Hunyuan Image 3": { value: "tencent/hunyuan-image-3", icon: "replicate" },
-        "ByteDance Seedream 4.0": { value: "bytedance/seedream-4", icon: "replicate" },
-    },
+    
     "Custom": {
         // Bedrock用のGeminiモデル
         "Google Gemini 2.5 Flash": { value: "google/gemini-2.5-flash", icon: "gemini" },
@@ -85,8 +78,8 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
         "通义千问/Qwen3 VL 235B A22B Thinking": { value: "qwen/qwen3-vl-235b-a22b-thinking", icon: "qianwen" },
         "DeepSeek/DeepSeek-V3.1": { value: "deepseek-ai/DeepSeek-V3.1", icon: "deepseek" },
         "DeepSeek/DeepSeek-R1": { value: "deepseek-ai/DeepSeek-R1", icon: "deepseek" },
-        "moonshotai/Kimi-K2-Instruct": { value: "moonshotai/Kimi-K2-Instruct", icon: "kimi" },
-        "moonshotai/Kimi-K2-Instruct-0905": { value: "moonshotai/Kimi-K2-Instruct-0905", icon: "kimi" },
+        "DeepSeek/DeepSeek-V3.2-Exp": { value: "deepseek-ai/DeepSeek-V3.2-Exp", icon: "deepseek" },
+        "moonshotai/Kimi-K2-Thinking": { value: "moonshotai/Kimi-K2-Thinking", icon: "kimi" },
         // Zhipu AI (zai-org) models
         "GLM-4.6": { value: "zai-org/glm-4.6", icon: "zhipu" },
         "GLM-4.5V (Multimodal)": { value: "zai-org/glm-4.5v", icon: "zhipu" },

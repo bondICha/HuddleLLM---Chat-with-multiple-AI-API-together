@@ -15,6 +15,7 @@ export interface ModelFetchConfig {
 }
 
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
 const cache = new Map<string, { models: ApiModel[]; timestamp: number }>()
 
 function getCacheKey(config: ModelFetchConfig): string {
@@ -70,14 +71,14 @@ export async function fetchProviderModels(config: ModelFetchConfig): Promise<Api
       headers['x-api-key'] = apiKey
       headers['anthropic-version'] = '2023-06-01'
     } else {
-      // OpenAI-compatible (OpenAI, QwenOpenAI, etc.)
+      // OpenAI-compatible (OpenAI, QwenOpenAI, Replicate, etc.)
       headers['Authorization'] = `Bearer ${apiKey}`
     }
 
     return headers
   }
   
-  const isProviderSupported = (provider: CustomApiProvider): boolean => {
+  const isProviderSupported = (_provider: CustomApiProvider): boolean => {
     return true // Support all providers for now
   }
   
@@ -93,6 +94,12 @@ export async function fetchProviderModels(config: ModelFetchConfig): Promise<Api
   let lastError: Error | null = null
   const headers = getHeaders(provider, apiKey)
 
+  // Special handling for Replicate - model fetching is not supported
+  if (provider === CustomApiProvider.Replicate) {
+    throw new Error('Model fetching is not supported for Replicate. Please enter model names manually.')
+  }
+
+  // Original logic for other providers
   if (isHostFullPath) {
     // For full path, try smart URL detection
     const possibleUrls = tryModelsUrls(host)
@@ -122,13 +129,13 @@ export async function fetchProviderModels(config: ModelFetchConfig): Promise<Api
     }
     fullUrlStr = fullUrlStr.replace(/([^:]\/)\/+/g, "$1")
     fullUrlStr = fullUrlStr.replace(/\/v1\/v1\//g, "/v1/")
-    
+
     try {
       response = await fetch(fullUrlStr, {
         method: 'GET',
         headers,
       })
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
@@ -155,16 +162,16 @@ export async function fetchProviderModels(config: ModelFetchConfig): Promise<Api
 
   const data = await response.json()
   const fetchedModels: ApiModel[] = data.data || []
-  
+
   // Sort models by id for consistent ordering
   fetchedModels.sort((a, b) => a.id.localeCompare(b.id))
-  
+
   // Cache the results
   cache.set(cacheKey, {
     models: fetchedModels,
     timestamp: Date.now()
   })
-  
+
   return fetchedModels
 }
 
@@ -178,7 +185,7 @@ export async function fetchProviderModelsForConfigs(
   }
 
   // Define isProviderSupported inside the function
-  const isProviderSupported = (provider: CustomApiProvider): boolean => {
+  const isProviderSupported = (_provider: CustomApiProvider): boolean => {
     return true // Support all providers for now
   }
 
@@ -214,3 +221,4 @@ export async function fetchProviderModelsForConfigs(
   await Promise.allSettled(fetchPromises)
   return results
 }
+
