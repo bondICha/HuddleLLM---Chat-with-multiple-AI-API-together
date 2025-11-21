@@ -40,6 +40,7 @@ import {
   activeAllInOneAtom,
   saveAllInOneConfigAtom,
   DEFAULT_PAIR_CONFIG,
+  DEFAULT_BOTS,
   AllInOnePairConfig
 } from '~app/atoms/all-in-one'
 import { getUserConfig, saveChatPair, getSavedChatPairs, deleteChatPair, updateChatPair, ChatPair } from '~services/user-config'
@@ -92,11 +93,11 @@ function Sidebar() {
   
   // 現在の設定値
   const layout = currentPairConfig.layout
-  const singlePanelBots = currentPairConfig.singlePanelBots
-  const twoPanelBots = currentPairConfig.twoPanelBots
-  const threePanelBots = currentPairConfig.threePanelBots
-  const fourPanelBots = currentPairConfig.fourPanelBots
-  const sixPanelBots = currentPairConfig.sixPanelBots
+  const singlePanelBots = currentPairConfig.singlePanelBots || (currentPairConfig.bots ? currentPairConfig.bots.slice(0, 1) : DEFAULT_BOTS.slice(0, 1))
+  const twoPanelBots = currentPairConfig.twoPanelBots || (currentPairConfig.bots ? currentPairConfig.bots.slice(0, 2) : DEFAULT_BOTS.slice(0, 2))
+  const threePanelBots = currentPairConfig.threePanelBots || (currentPairConfig.bots ? currentPairConfig.bots.slice(0, 3) : DEFAULT_BOTS.slice(0, 3))
+  const fourPanelBots = currentPairConfig.fourPanelBots || (currentPairConfig.bots ? currentPairConfig.bots.slice(0, 4) : DEFAULT_BOTS.slice(0, 4))
+  const sixPanelBots = currentPairConfig.sixPanelBots || (currentPairConfig.bots ? currentPairConfig.bots.slice(0, 6) : DEFAULT_BOTS.slice(0, 6))
   
   // 設定更新関数
   const updateCurrentPairConfig = (updates: Partial<AllInOnePairConfig>) => {
@@ -304,25 +305,51 @@ useEffect(() => {
       
       // 現在のレイアウトに応じたボット選択を取得
       let currentBots: number[] = []
-      switch (currentConfig.layout) {
-        case 'single':
-          currentBots = currentConfig.singlePanelBots
-          break
-        case 2:
-        case 'twoHorizon':
-          currentBots = currentConfig.twoPanelBots
-          break
-        case 3:
-          currentBots = currentConfig.threePanelBots
-          break
-        case 4:
-          currentBots = currentConfig.fourPanelBots
-          break
-        case 'sixGrid':
-          currentBots = currentConfig.sixPanelBots
-          break
-        default:
-          currentBots = currentConfig.twoPanelBots
+
+      // 新しい共通bots設定を使用
+      if (currentConfig.bots && currentConfig.bots.length > 0) {
+        switch (currentConfig.layout) {
+          case 'single':
+            currentBots = currentConfig.bots.slice(0, 1)
+            break
+          case 2:
+          case 'twoHorizon':
+            currentBots = currentConfig.bots.slice(0, 2)
+            break
+          case 3:
+            currentBots = currentConfig.bots.slice(0, 3)
+            break
+          case 4:
+            currentBots = currentConfig.bots.slice(0, 4)
+            break
+          case 'sixGrid':
+            currentBots = currentConfig.bots.slice(0, 6)
+            break
+          default:
+            currentBots = currentConfig.bots.slice(0, 2)
+        }
+      } else {
+        // 後方互換性：古い設定形式
+        switch (currentConfig.layout) {
+          case 'single':
+            currentBots = currentConfig.singlePanelBots || DEFAULT_BOTS.slice(0, 1)
+            break
+          case 2:
+          case 'twoHorizon':
+            currentBots = currentConfig.twoPanelBots || DEFAULT_BOTS.slice(0, 2)
+            break
+          case 3:
+            currentBots = currentConfig.threePanelBots || DEFAULT_BOTS.slice(0, 3)
+            break
+          case 4:
+            currentBots = currentConfig.fourPanelBots || DEFAULT_BOTS.slice(0, 4)
+            break
+          case 'sixGrid':
+            currentBots = currentConfig.sixPanelBots || DEFAULT_BOTS.slice(0, 6)
+            break
+          default:
+            currentBots = currentConfig.twoPanelBots || DEFAULT_BOTS.slice(0, 2)
+        }
       }
       
       // ボットインデックスを更新
