@@ -71,6 +71,10 @@
   "Got it!": "了解啦！",
   "Don't show again": "不要再顯示",
   "Your browser does not support the video tag.": "您の瀏覽器不支援影片標籤。",
+  "layout_2_vertical": "縦",
+  "layout_2_horizontal": "横",
+  "layout_decrease": "減少面板數量",
+  "layout_increase": "增加面板數量",
   "ReleaseNote-HideUntilNextVersion": "在下一個版本前不再顯示",
   "Recent Updates": "最近更新",
   "Settings": "設置",
@@ -372,6 +376,6 @@
   "Font type and startup page": "字體類型和啟動頁面",
   "Company profile status": "企業設定檔狀態",
   "Flags and display settings have been reset": "旗標和顯示設定已重置",
-  "Failed to reset flags. Please try again.": "重置旗標失敗。請重試。"
+  "Failed to reset flags. Please try again.": "重置旗標失敗。請重試。",
+  "releasenote_v2135_all_in_one_enhancement": "## All-in-One 模式更好用了！\n\n我們改進了 All-in-One 模式的操作體驗。\n\n- **更直觀的面板控制**: 您現在可以使用簡單的「+」和「-」按鈕輕鬆更改聊天面板的數量，取代了以前的圖示。\n- **您的設定將保持不變**: 更改佈局時，您選擇的 AI 模型組合將不再重置。無需在每次切換視圖時重新選擇您的機器人。\n\n本次發布說明由 Gemini 撰寫（因為 GLM 效果不佳，我們請求 Gemini 協助🫣）。"
 }
-  

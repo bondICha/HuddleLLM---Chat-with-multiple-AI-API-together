@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { cx, uuid } from '~/utils'
 import { pendingSearchQueryAtom, sessionToRestoreAtom, allInOneRestoreDataAtom } from '../state'
 import { loadHistoryMessages, setAllInOneSession, saveSessionSnapshot, ChatMessageModel } from '~services/chat-history'
+import { updateChatPair } from '~services/user-config'
 import Button from '~app/components/Button'
 import ChatMessageInput from '~app/components/Chat/ChatMessageInput'
 import LayoutSwitch from '~app/components/Chat/LayoutSwitch'
@@ -55,15 +56,58 @@ const GeneralChatPanel: FC<{
   
   // 設定更新関数
   const updateCurrentPairConfig = (updates: Partial<AllInOnePairConfig>) => {
+    const newConfig = {
+      ...currentPairConfig,
+      ...updates
+    }
+
     setAllInOnePairs(prev => ({
       ...prev,
-      [activeAllInOne]: {
-        ...currentPairConfig,
-        ...updates
-      }
+      [activeAllInOne]: newConfig
     }))
+
     // 設定を保存
     setTimeout(() => saveConfig(), 100)
+
+    // Saved chat pairが存在する場合は自動的に更新（defaultは除外）
+    if (activeAllInOne !== 'default' && !activeAllInOne.startsWith('session-')) {
+      setTimeout(async () => {
+        try {
+          // 更新後の設定から現在のボット選択を取得
+          let currentBots: number[] = []
+
+          if (newConfig.bots && newConfig.bots.length > 0) {
+            const layout = newConfig.layout
+            switch (layout) {
+              case 'single':
+                currentBots = newConfig.bots.slice(0, 1)
+                break
+              case 2:
+              case 'twoHorizon':
+                currentBots = newConfig.bots.slice(0, 2)
+                break
+              case 3:
+                currentBots = newConfig.bots.slice(0, 3)
+                break
+              case 4:
+                currentBots = newConfig.bots.slice(0, 4)
+                break
+              case 'sixGrid':
+                currentBots = newConfig.bots.slice(0, 6)
+                break
+              default:
+                currentBots = newConfig.bots.slice(0, 2)
+            }
+          }
+
+          if (currentBots.length > 0) {
+            await updateChatPair(activeAllInOne, { botIndices: currentBots })
+          }
+        } catch (error) {
+          console.error('Failed to auto-update saved chat pair:', error)
+        }
+      }, 200)
+    }
   }
   
   const setLayout = (newLayout: Layout) => {
@@ -73,22 +117,43 @@ const GeneralChatPanel: FC<{
   const [refresh, setRefresh] = useState(0) // 更新用の state を追加
   const [pendingSearchQuery, setPendingSearchQuery] = useAtom(pendingSearchQueryAtom)
   
-  // 現在のボット選択を取得
+  // 現在のボット選択を取得（共通設定から必要な数だけ取得）
   const getCurrentBotIndices = (): number[] => {
+    // 新しい共通bots設定がある場合はそれを使用
+    if (currentPairConfig.bots && currentPairConfig.bots.length > 0) {
+      const bots = currentPairConfig.bots
+      switch (layout) {
+        case 'single':
+          return bots.slice(0, 1)
+        case 2:
+        case 'twoHorizon':
+          return bots.slice(0, 2)
+        case 3:
+          return bots.slice(0, 3)
+        case 4:
+          return bots.slice(0, 4)
+        case 'sixGrid':
+          return bots.slice(0, 6)
+        default:
+          return bots.slice(0, 2)
+      }
+    }
+
+    // 後方互換性：古い設定形式の場合
     switch (layout) {
       case 'single':
-        return currentPairConfig.singlePanelBots
+        return currentPairConfig.singlePanelBots || DEFAULT_BOTS.slice(0, 1)
       case 2:
       case 'twoHorizon':
-        return currentPairConfig.twoPanelBots
+        return currentPairConfig.twoPanelBots || DEFAULT_BOTS.slice(0, 2)
       case 3:
-        return currentPairConfig.threePanelBots
+        return currentPairConfig.threePanelBots || DEFAULT_BOTS.slice(0, 3)
       case 4:
-        return currentPairConfig.fourPanelBots
+        return currentPairConfig.fourPanelBots || DEFAULT_BOTS.slice(0, 4)
       case 'sixGrid':
-        return currentPairConfig.sixPanelBots
+        return currentPairConfig.sixPanelBots || DEFAULT_BOTS.slice(0, 6)
       default:
-        return currentPairConfig.twoPanelBots
+        return currentPairConfig.twoPanelBots || DEFAULT_BOTS.slice(0, 2)
     }
   }
 
@@ -238,26 +303,33 @@ const GeneralChatPanel: FC<{
       if (!setBots) {
         return
       }
-      
+
       // 現在のチャットを取得
       const currentChat = chats[arrayIndex]
-      
+
       // 前のモデルの会話状態をリセット
       if (currentChat) {
         currentChat.resetConversation()
       }
-      
+
+      // 共通のbots配列を更新
+      const currentAllBots = currentPairConfig.bots || DEFAULT_BOTS
+      const newAllBots = [...currentAllBots]
+      newAllBots[arrayIndex] = newIndex
+
+      // 共通設定を更新
+      updateCurrentPairConfig({ bots: newAllBots })
+
+      // 各パネルから渡されたsetBots関数を使用（後方互換性のため）
       const currentBots = getCurrentBotIndices()
       const newBots = [...currentBots]
       newBots[arrayIndex] = newIndex
-      
-      // 各パネルから渡されたsetBots関数を使用
       setBots(newBots)
-      
+
       // refreshを更新して再レンダリングを促す
       setRefresh(prev => prev + 1)
     },
-    [chats, setBots, setRefresh, getCurrentBotIndices],
+    [chats, setBots, setRefresh, getCurrentBotIndices, currentPairConfig, updateCurrentPairConfig],
   )
 
   const onLayoutChange = useCallback(
@@ -343,27 +415,41 @@ const SingleBotChatPanel: FC<{
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const saveConfig = useSetAtom(saveAllInOneConfigAtom)
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
-  const bots = currentPairConfig.singlePanelBots || DEFAULT_PAIR_CONFIG.singlePanelBots
-  
+
+  // 共通bots設定から最初の1つを取得、または後方互換性のため古い設定を使用
+  const bots = currentPairConfig.bots
+    ? currentPairConfig.bots.slice(0, 1)
+    : (currentPairConfig.singlePanelBots || DEFAULT_BOTS.slice(0, 1))
+
   const setBots = (newBots: number[]) => {
+    // 共通設定を更新（後方互換性のため両方更新）
+    const currentAllBots = currentPairConfig.bots || DEFAULT_BOTS
+    const updatedAllBots = [...currentAllBots]
+    newBots.forEach((bot, index) => {
+      if (index < updatedAllBots.length) {
+        updatedAllBots[index] = bot
+      }
+    })
+
     setAllInOnePairs(prev => ({
       ...prev,
       [activeAllInOne]: {
         ...currentPairConfig,
-        singlePanelBots: newBots
+        bots: updatedAllBots,
+        singlePanelBots: newBots // 後方互換性
       }
     }))
     setTimeout(() => saveConfig(), 100)
   }
-  
+
   const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
-  
+
   // 配列が空または最初の要素がundefinedの場合の追加チェック
   const safeIndex = multiPanelBotIndices[0] ?? 0
   const chat = useChat(safeIndex)
-  
+
   const chats = useMemo(() => [chat], [chat])
-  
+
   return <GeneralChatPanel
     chats={chats}
     setBots={setBots}
@@ -381,26 +467,38 @@ const TwoBotChatPanel: FC<{
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const saveConfig = useSetAtom(saveAllInOneConfigAtom)
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
-  const bots = currentPairConfig.twoPanelBots || DEFAULT_PAIR_CONFIG.twoPanelBots
-  
+
+  const bots = currentPairConfig.bots
+    ? currentPairConfig.bots.slice(0, 2)
+    : (currentPairConfig.twoPanelBots || DEFAULT_BOTS.slice(0, 2))
+
   const setBots = (newBots: number[]) => {
+    const currentAllBots = currentPairConfig.bots || DEFAULT_BOTS
+    const updatedAllBots = [...currentAllBots]
+    newBots.forEach((bot, index) => {
+      if (index < updatedAllBots.length) {
+        updatedAllBots[index] = bot
+      }
+    })
+
     setAllInOnePairs(prev => ({
       ...prev,
       [activeAllInOne]: {
         ...currentPairConfig,
+        bots: updatedAllBots,
         twoPanelBots: newBots
       }
     }))
     setTimeout(() => saveConfig(), 100)
   }
-  
+
   const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
-  
+
   const chat1 = useChat(multiPanelBotIndices[0] ?? 0)
   const chat2 = useChat(multiPanelBotIndices[1] ?? 1)
-  
+
   const chats = useMemo(() => [chat1, chat2], [chat1, chat2])
-  
+
   return <GeneralChatPanel
     chats={chats}
     setBots={setBots}
@@ -418,26 +516,38 @@ const TwoHorizonBotChatPanel: FC<{
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const saveConfig = useSetAtom(saveAllInOneConfigAtom)
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
-  const bots = currentPairConfig.twoPanelBots || DEFAULT_PAIR_CONFIG.twoPanelBots
-  
+
+  const bots = currentPairConfig.bots
+    ? currentPairConfig.bots.slice(0, 2)
+    : (currentPairConfig.twoPanelBots || DEFAULT_BOTS.slice(0, 2))
+
   const setBots = (newBots: number[]) => {
+    const currentAllBots = currentPairConfig.bots || DEFAULT_BOTS
+    const updatedAllBots = [...currentAllBots]
+    newBots.forEach((bot, index) => {
+      if (index < updatedAllBots.length) {
+        updatedAllBots[index] = bot
+      }
+    })
+
     setAllInOnePairs(prev => ({
       ...prev,
       [activeAllInOne]: {
         ...currentPairConfig,
+        bots: updatedAllBots,
         twoPanelBots: newBots
       }
     }))
     setTimeout(() => saveConfig(), 100)
   }
-  
+
   const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
-  
+
   const chat1 = useChat(multiPanelBotIndices[0] ?? 0)
   const chat2 = useChat(multiPanelBotIndices[1] ?? 1)
-  
+
   const chats = useMemo(() => [chat1, chat2], [chat1, chat2])
-  
+
   return <GeneralChatPanel
     chats={chats}
     setBots={setBots}
@@ -455,27 +565,39 @@ const ThreeBotChatPanel: FC<{
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const saveConfig = useSetAtom(saveAllInOneConfigAtom)
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
-  const bots = currentPairConfig.threePanelBots || DEFAULT_PAIR_CONFIG.threePanelBots
-  
+
+  const bots = currentPairConfig.bots
+    ? currentPairConfig.bots.slice(0, 3)
+    : (currentPairConfig.threePanelBots || DEFAULT_BOTS.slice(0, 3))
+
   const setBots = (newBots: number[]) => {
+    const currentAllBots = currentPairConfig.bots || DEFAULT_BOTS
+    const updatedAllBots = [...currentAllBots]
+    newBots.forEach((bot, index) => {
+      if (index < updatedAllBots.length) {
+        updatedAllBots[index] = bot
+      }
+    })
+
     setAllInOnePairs(prev => ({
       ...prev,
       [activeAllInOne]: {
         ...currentPairConfig,
+        bots: updatedAllBots,
         threePanelBots: newBots
       }
     }))
     setTimeout(() => saveConfig(), 100)
   }
-  
+
   const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
-  
+
   const chat1 = useChat(multiPanelBotIndices[0] ?? 0)
   const chat2 = useChat(multiPanelBotIndices[1] ?? 1)
   const chat3 = useChat(multiPanelBotIndices[2] ?? 2)
-  
+
   const chats = useMemo(() => [chat1, chat2, chat3], [chat1, chat2, chat3])
-  
+
   return <GeneralChatPanel
     chats={chats}
     setBots={setBots}
@@ -493,28 +615,40 @@ const FourBotChatPanel: FC<{
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const saveConfig = useSetAtom(saveAllInOneConfigAtom)
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
-  const bots = currentPairConfig.fourPanelBots || DEFAULT_PAIR_CONFIG.fourPanelBots
-  
+
+  const bots = currentPairConfig.bots
+    ? currentPairConfig.bots.slice(0, 4)
+    : (currentPairConfig.fourPanelBots || DEFAULT_BOTS.slice(0, 4))
+
   const setBots = (newBots: number[]) => {
+    const currentAllBots = currentPairConfig.bots || DEFAULT_BOTS
+    const updatedAllBots = [...currentAllBots]
+    newBots.forEach((bot, index) => {
+      if (index < updatedAllBots.length) {
+        updatedAllBots[index] = bot
+      }
+    })
+
     setAllInOnePairs(prev => ({
       ...prev,
       [activeAllInOne]: {
         ...currentPairConfig,
+        bots: updatedAllBots,
         fourPanelBots: newBots
       }
     }))
     setTimeout(() => saveConfig(), 100)
   }
-  
+
   const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
-  
+
   const chat1 = useChat(multiPanelBotIndices[0] ?? 0)
   const chat2 = useChat(multiPanelBotIndices[1] ?? 1)
   const chat3 = useChat(multiPanelBotIndices[2] ?? 2)
   const chat4 = useChat(multiPanelBotIndices[3] ?? 3)
-  
+
   const chats = useMemo(() => [chat1, chat2, chat3, chat4], [chat1, chat2, chat3, chat4])
-  
+
   return <GeneralChatPanel
     chats={chats}
     setBots={setBots}
@@ -532,30 +666,42 @@ const SixBotChatPanel: FC<{
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const saveConfig = useSetAtom(saveAllInOneConfigAtom)
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
-  const bots = currentPairConfig.sixPanelBots || DEFAULT_PAIR_CONFIG.sixPanelBots
-  
+
+  const bots = currentPairConfig.bots
+    ? currentPairConfig.bots.slice(0, 6)
+    : (currentPairConfig.sixPanelBots || DEFAULT_BOTS.slice(0, 6))
+
   const setBots = (newBots: number[]) => {
+    const currentAllBots = currentPairConfig.bots || DEFAULT_BOTS
+    const updatedAllBots = [...currentAllBots]
+    newBots.forEach((bot, index) => {
+      if (index < updatedAllBots.length) {
+        updatedAllBots[index] = bot
+      }
+    })
+
     setAllInOnePairs(prev => ({
       ...prev,
       [activeAllInOne]: {
         ...currentPairConfig,
+        bots: updatedAllBots,
         sixPanelBots: newBots
       }
     }))
     setTimeout(() => saveConfig(), 100)
   }
-  
+
   const multiPanelBotIndices = useMemo(() => replaceDeprecatedBots(bots), [bots])
-  
+
   const chat1 = useChat(multiPanelBotIndices[0] ?? 0)
   const chat2 = useChat(multiPanelBotIndices[1] ?? 1)
   const chat3 = useChat(multiPanelBotIndices[2] ?? 2)
   const chat4 = useChat(multiPanelBotIndices[3] ?? 3)
   const chat5 = useChat(multiPanelBotIndices[4] ?? 4)
   const chat6 = useChat(multiPanelBotIndices[5] ?? 5)
-  
+
   const chats = useMemo(() => [chat1, chat2, chat3, chat4, chat5, chat6], [chat1, chat2, chat3, chat4, chat5, chat6])
-  
+
   return <GeneralChatPanel
     chats={chats}
     setBots={setBots}
@@ -612,8 +758,10 @@ const MultiBotChatPanel: FC = () => {
             ...DEFAULT_PAIR_CONFIG, // まずデフォルトでリセット
             layout: restoredLayout,
             pairName: pairName,
+            bots: botIndices || DEFAULT_BOTS, // 新しい共通設定
           };
 
+          // 後方互換性のため古い形式も保持
           if (botIndices) {
             if (restoredLayout === 'single') newPairConfig.singlePanelBots = botIndices;
             else if (restoredLayout === 2 || restoredLayout === 'twoHorizon') newPairConfig.twoPanelBots = botIndices;
@@ -695,8 +843,10 @@ const MultiBotChatPanel: FC = () => {
               ...DEFAULT_PAIR_CONFIG, // まずデフォルトでリセット
               layout: restoredLayout,
               pairName: pairName,
+              bots: botIndices || DEFAULT_BOTS, // 新しい共通設定
             };
 
+            // 後方互換性のため古い形式も保持
             if (botIndices) {
               if (restoredLayout === 'single') newPairConfig.singlePanelBots = botIndices;
               else if (restoredLayout === 2 || restoredLayout === 'twoHorizon') newPairConfig.twoPanelBots = botIndices;

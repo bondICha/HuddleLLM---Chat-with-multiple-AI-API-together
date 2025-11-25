@@ -72,6 +72,10 @@
   "Got it!": "知道了！",
   "Don't show again": "不再显示",
   "Your browser does not support the video tag.": "您的浏览器不支持视频标签。",
+  "layout_2_vertical": "縦",
+  "layout_2_horizontal": "横",
+  "layout_decrease": "减少面板数量",
+  "layout_increase": "增加面板数量",
   "ReleaseNote-HideUntilNextVersion": "在下一个版本前不再显示",
   "Recent Updates": "最近更新",
   "Settings": "设置",
@@ -365,5 +369,6 @@
   "Font type and startup page": "字体类型和启动页面",
   "Company profile status": "企业配置文件状态",
   "Flags and display settings have been reset": "标志和显示设置已重置",
-  "Failed to reset flags. Please try again.": "重置标志失败。请重试。"
+  "Failed to reset flags. Please try again.": "重置标志失败。请重试。",
+  "releasenote_v2135_all_in_one_enhancement": "## All-in-One 模式更好用了！\n\n我们改进了 All-in-One 模式的操作体验。\n\n- **更直观的面板控制**: 您现在可以使用简单的“+”和“-”按钮轻松更改聊天面板的数量，取代了以前的图标。\n- **您的设置将保持不变**: 更改布局时，您选择的 AI 模型组合将不再重置。无需在每次切换视图时重新选择您的机器人。\n\n本次发布说明由 Gemini 撰写（因为 GLM 效果不佳，我们请求 Gemini 协助😑）。"
 }

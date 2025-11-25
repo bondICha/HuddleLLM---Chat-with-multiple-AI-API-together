@@ -9,22 +9,27 @@ export const DEFAULT_BOTS: number[] = [0, 1, 2, 3, 4, 5]
 // All-In-Oneペア設定の型定義
 export interface AllInOnePairConfig {
   layout: Layout
-  singlePanelBots: number[]
-  twoPanelBots: number[]
-  threePanelBots: number[]
-  fourPanelBots: number[]
-  sixPanelBots: number[]
+  // 共通のボット設定（インデックス0から順に使用）
+  // 例：[0, 1, 2, 3, 4, 5] の場合
+  // - layout 1: bots[0] (1つ目のボット)
+  // - layout 2: bots[0], bots[1] (1, 2つ目のボット)
+  // - layout 3: bots[0], bots[1], bots[2] (1, 2, 3つ目のボット)
+  // - layout 4: bots[0], bots[1], bots[2], bots[3] (1, 2, 3, 4つ目のボット)
+  // - layout 6: bots[0]～bots[5] (1～6つ目のボット)
+  bots: number[]
   pairName?: string
+  // 後方互換性のため保持（廃止予定）
+  singlePanelBots?: number[]
+  twoPanelBots?: number[]
+  threePanelBots?: number[]
+  fourPanelBots?: number[]
+  sixPanelBots?: number[]
 }
 
 // デフォルトのペア設定
 export const DEFAULT_PAIR_CONFIG: AllInOnePairConfig = {
   layout: 2,
-  singlePanelBots: DEFAULT_BOTS.slice(0, 1),
-  twoPanelBots: DEFAULT_BOTS.slice(0, 2),
-  threePanelBots: DEFAULT_BOTS.slice(0, 3),
-  fourPanelBots: DEFAULT_BOTS.slice(0, 4),
-  sixPanelBots: DEFAULT_BOTS.slice(0, 6),
+  bots: DEFAULT_BOTS, // [0, 1, 2, 3, 4, 5]
 }
 
 // 初期値を取得する関数（前回のAll-in-One設定を復旧）

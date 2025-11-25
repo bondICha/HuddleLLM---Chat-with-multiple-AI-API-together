@@ -60,6 +60,10 @@
   "Got it!": "わかりました！",
   "Don't show again": "今後表示しない",
   "Your browser does not support the video tag.": "お使いのブラウザは動画タグをサポートしていません。",
+  "layout_2_vertical": "縦",
+  "layout_2_horizontal": "横",
+  "layout_decrease": "パネル数を減らす",
+  "layout_increase": "パネル数を増やす",
   "Invalid file format: \"sync\" property not found": "無効なファイル形式：\"sync\"プロパティが見つかりません",
   "Invalid file format: customApiConfigCount is 0 or not defined": "無効なファイル形式：customApiConfigCountが0または未定義です",
   "Failed to extract Custom API settings: ": "カスタムAPI設定の抽出に失敗しました：",
@@ -413,5 +417,6 @@
   "Font type and startup page": "フォントタイプと起動ページ",
   "Company profile status": "企業プロファイルの状態",
   "Flags and display settings have been reset": "フラグと表示設定をリセットしました",
-  "Failed to reset flags. Please try again.": "フラグのリセットに失敗しました。もう一度お試しください。"
+  "Failed to reset flags. Please try again.": "フラグのリセットに失敗しました。もう一度お試しください。",
+  "releasenote_v2135_all_in_one_enhancement": "## All-in-Oneモードがさらに使いやすく！\n\nAll-in-Oneモードの操作性を見直しました。\n\n- **より直感的なパネル操作**: これまでのアイコンに代わり、「＋」「－」ボタンでチャット画面の数を簡単に変更できるようになりました。\n- **設定が消えない安心感**: パネルの数を変えても、設定したAIモデルの組み合わせがリセットされなくなりました。もう、レイアウトを切り替えるたびにAIを選び直す必要はありません。\n\n今回のReleaseNoteはGeminiが担当しました（GLMがうまくいかなかった😣）。"
 }

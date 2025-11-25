@@ -1,20 +1,8 @@
 import { cx } from '~/utils'
-import { FC, useState, useEffect } from 'react'
+import { FC } from 'react'
 import { Layout } from '~app/consts'
-import layoutFourIcon from '~assets/icons/layout-four.svg'
-import layoutThreeIcon from '~assets/icons/layout-three.svg'
-import layoutTwoIcon from '~assets/icons/layout-two.svg'
-import layoutOneIcon from '~assets/icons/layout-one.svg'
-import layoutTwoHorizonIcon  from '~assets/icons/layout-two-vertical.svg'
-import layoutSixIcon from '~assets/icons/layout-six.svg'
-
-const Item: FC<{ icon: string; active: boolean; onClick: () => void }> = (props) => {
-  return (
-    <a className={cx(!!props.active && 'bg-[#00000014] dark:bg-[#ffffff26] rounded-[6px]')} onClick={props.onClick}>
-      <img src={props.icon} className="w-8 h-8 cursor-pointer" />
-    </a>
-  )
-}
+import { useTranslation } from 'react-i18next'
+import { MinusIcon, PlusIcon } from '@heroicons/react/24/outline'
 
 interface Props {
   layout: Layout
@@ -22,94 +10,104 @@ interface Props {
 }
 
 const LayoutSwitch: FC<Props> = (props) => {
-  const [isExpanded, setIsExpanded] = useState(true); // デフォルトで展開
+  const { t } = useTranslation()
 
-  // 画面幅を監視してデフォルトの展開状態を決定
-  useEffect(() => {
-    const checkScreenWidth = () => {
-      const isNarrow = window.innerWidth < 768; // md breakpoint
-      // 狭い画面では自動的に折りたたむ
-      if (isNarrow) {
-        setIsExpanded(false);
-      } else {
-        setIsExpanded(true);
-      }
-    };
+  // 利用可能なレイアウトのリスト（1, 2, 3, 4, 6）- 2の向きは別途切り替え
+  const layouts: Layout[] = ['single', 2, 3, 4, 'sixGrid']
 
-    checkScreenWidth();
-    window.addEventListener('resize', checkScreenWidth);
-    return () => window.removeEventListener('resize', checkScreenWidth);
-  }, []);
+  // 現在のレイアウトのインデックスを取得
+  const getCurrentIndex = (): number => {
+    // twoHorizonも2として扱う
+    const normalizedLayout = (props.layout === 'twoVertical' || props.layout === 'twoHorizon') ? 2 : props.layout
+    const index = layouts.findIndex(l => l === normalizedLayout)
+    return index >= 0 ? index : 1 // デフォルトは2 (index 1)
+  }
 
-  const togglePanel = () => {
-    setIsExpanded(!isExpanded);
-  };
+  // パネル数を取得
+  const getPanelCount = (layout: Layout): number => {
+    if (layout === 'single') return 1
+    if (layout === 2 || layout === 'twoVertical' || layout === 'twoHorizon') return 2
+    if (layout === 3) return 3
+    if (layout === 4) return 4
+    if (layout === 'sixGrid') return 6
+    return 2
+  }
 
-  const handleItemClick = (layout: Layout) => {
-    props.onChange(layout);
-    // 選択後は常に閉じる（水平展開の場合）
-    setIsExpanded(false);
-  };
+  // 2パネルレイアウトの向きを切り替え
+  const toggle2PanelOrientation = () => {
+    if (props.layout === 2 || props.layout === 'twoVertical') {
+      props.onChange('twoHorizon') // 縦→横
+    } else if (props.layout === 'twoHorizon') {
+      props.onChange(2) // 横→縦
+    }
+  }
 
+  // 前のレイアウトに移動（2→1は向きを保持）
+  const handlePrevious = () => {
+    const currentIndex = getCurrentIndex()
+    if (currentIndex > 0) {
+      props.onChange(layouts[currentIndex - 1])
+    }
+  }
+
+  // 次のレイアウトに移動（2→3は向きを保持）
+  const handleNext = () => {
+    const currentIndex = getCurrentIndex()
+    if (currentIndex < layouts.length - 1) {
+      props.onChange(layouts[currentIndex + 1])
+    }
+  }
+
+  const currentIndex = getCurrentIndex()
+  const panelCount = getPanelCount(props.layout)
+  const is2Panel = panelCount === 2
 
   return (
-    <div className="flex items-center gap-0 bg-primary-background rounded-2xl overflow-hidden">
-      {/* 折りたたみボタン（常に表示） */}
+    <div className="flex items-center gap-0.5 bg-primary-background rounded-2xl px-1 py-0.5">
+      {/* マイナスボタン */}
       <button
-        className="flex items-center px-2 py-1 shrink-0"
-        onClick={togglePanel}
-        title={isExpanded ? "レイアウト選択を折りたたむ" : "レイアウト選択を展開"}
+        className={cx(
+          "flex items-center justify-center w-9 h-9 rounded-lg transition-colors",
+          currentIndex > 0
+            ? "hover:bg-[#00000014] dark:hover:bg-[#ffffff26] cursor-pointer"
+            : "opacity-30 cursor-not-allowed"
+        )}
+        onClick={handlePrevious}
+        disabled={currentIndex === 0}
+        title={t('layout_decrease')}
       >
-        {/* 展開アイコン（水平方向の矢印） */}
-        <div className={cx(
-          "transition-transform duration-200",
-          isExpanded ? "rotate-180" : "rotate-0"
-        )}>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </div>
+        <MinusIcon className="w-5 h-5" />
       </button>
 
-      {/* レイアウトスイッチパネル（水平展開） */}
-      {isExpanded && (
-        <div
-          className="flex items-center gap-2 transition-all duration-200 ease-in-out overflow-hidden"
-          style={{
-            transform: 'translateX(0)',
-          }}
+      {/* 現在のパネル数表示 */}
+      <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#00000014] dark:bg-[#ffffff26] text-lg font-medium">
+        {panelCount}
+      </div>
+
+      {/* プラスボタン */}
+      <button
+        className={cx(
+          "flex items-center justify-center w-9 h-9 rounded-lg transition-colors",
+          currentIndex < layouts.length - 1
+            ? "hover:bg-[#00000014] dark:hover:bg-[#ffffff26] cursor-pointer"
+            : "opacity-30 cursor-not-allowed"
+        )}
+        onClick={handleNext}
+        disabled={currentIndex === layouts.length - 1}
+        title={t('layout_increase')}
+      >
+        <PlusIcon className="w-5 h-5" />
+      </button>
+
+      {/* 2パネルの場合のみ向き切り替えボタンを表示 */}
+      {is2Panel && (
+        <button
+          className="flex items-center justify-center px-2 h-9 rounded-lg bg-[#00000014] dark:bg-[#ffffff26] hover:opacity-80 transition-opacity text-sm font-medium cursor-pointer ml-0.5"
+          onClick={toggle2PanelOrientation}
+          title={props.layout === 'twoHorizon' ? t('layout_2_vertical') : t('layout_2_horizontal')}
         >
-        <Item
-          icon={layoutOneIcon}
-          active={props.layout === 'single'}
-          onClick={() => handleItemClick('single')}
-        />
-        <Item
-          icon={layoutTwoIcon}
-          active={props.layout === 2 || props.layout === 'twoVertical'}
-          onClick={() => handleItemClick(2)}
-        />
-        <Item 
-          icon={layoutTwoHorizonIcon} 
-          active={props.layout === 'twoHorizon'} 
-          onClick={() => handleItemClick('twoHorizon')} 
-        />
-        <Item 
-          icon={layoutThreeIcon} 
-          active={props.layout === 3} 
-          onClick={() => handleItemClick(3)} 
-        />
-        <Item 
-          icon={layoutFourIcon} 
-          active={props.layout === 4} 
-          onClick={() => handleItemClick(4)} 
-        />
-        <Item 
-          icon={layoutSixIcon} 
-          active={props.layout === 'sixGrid'} 
-          onClick={() => handleItemClick('sixGrid')} 
-        />
-        </div>
+          {props.layout === 'twoHorizon' ? t('layout_2_horizontal') : t('layout_2_vertical')}
+        </button>
       )}
     </div>
   )

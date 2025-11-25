@@ -6,6 +6,12 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.13.5',
+    notes: [
+      'releasenote_v2135_all_in_one_enhancement',
+    ],
+  },
+  {
     version: '2.13.4',
     notes: [
       'releasenote_v2134_replicate_seamless_support',
