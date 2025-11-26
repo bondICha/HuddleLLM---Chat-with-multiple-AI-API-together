@@ -418,5 +418,6 @@
   "Company profile status": "企業プロファイルの状態",
   "Flags and display settings have been reset": "フラグと表示設定をリセットしました",
   "Failed to reset flags. Please try again.": "フラグのリセットに失敗しました。もう一度お試しください。",
+  "releasenote_v2137_all_in_one_enhancement_fix_for_saved_chatbot_pair": "v2.13.5の新しいAll-in-Oneレイアウトで、Saved Chatbot Pairが正しく動作しなかった問題を修正しました。",
   "releasenote_v2135_all_in_one_enhancement": "## All-in-Oneモードがさらに使いやすく！\n\nAll-in-Oneモードの操作性を見直しました。\n\n- **より直感的なパネル操作**: これまでのアイコンに代わり、「＋」「－」ボタンでチャット画面の数を簡単に変更できるようになりました。\n- **設定が消えない安心感**: パネルの数を変えても、設定したAIモデルの組み合わせがリセットされなくなりました。もう、レイアウトを切り替えるたびにAIを選び直す必要はありません。\n\n今回のReleaseNoteはGeminiが担当しました（GLMがうまくいかなかった😣）。"
 }

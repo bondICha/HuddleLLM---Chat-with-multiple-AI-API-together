@@ -370,5 +370,6 @@
   "Company profile status": "企业配置文件状态",
   "Flags and display settings have been reset": "标志和显示设置已重置",
   "Failed to reset flags. Please try again.": "重置标志失败。请重试。",
-  "releasenote_v2135_all_in_one_enhancement": "## All-in-One 模式更好用了！\n\n我们改进了 All-in-One 模式的操作体验。\n\n- **更直观的面板控制**: 您现在可以使用简单的“+”和“-”按钮轻松更改聊天面板的数量，取代了以前的图标。\n- **您的设置将保持不变**: 更改布局时，您选择的 AI 模型组合将不再重置。无需在每次切换视图时重新选择您的机器人。\n\n本次发布说明由 Gemini 撰写（因为 GLM 效果不佳，我们请求 Gemini 协助😑）。"
+  "releasenote_v2137_all_in_one_enhancement_fix_for_saved_chatbot_pair": "修复了 v2.13.5 新 All-in-One 布局中已保存的聊天机器人对无法正常工作的问题。",
+  "releasenote_v2135_all_in_one_enhancement": "## All-in-One 模式更好用了！\n\n我们改进了 All-in-One 模式的操作体验。\n\n- **更直观的面板控制**: 您现在可以使用简单的\"+\"和\"-\"按钮轻松更改聊天面板的数量，取代了以前的图标。\n- **您的设置将保持不变**: 更改布局时，您选择的 AI 模型组合将不再重置。无需在每次切换视图时重新选择您的机器人。\n\n本次发布说明由 Gemini 撰写（因为 GLM 效果不佳，我们请求 Gemini 协助😑）。"
 }
