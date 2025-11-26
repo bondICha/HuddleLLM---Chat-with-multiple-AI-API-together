@@ -179,16 +179,21 @@ useEffect(() => {
       const newPair = await saveChatPair(botIndices)
       const pairs = await getSavedChatPairs()
       setSavedPairs(pairs)
-      
-      // 新しいペアの設定を作成
+
+      // 新しいペアの設定を作成（bots配列が存在することを保証）
+      const newConfig = {
+        ...currentPairConfig,
+        bots: currentPairConfig.bots || DEFAULT_BOTS
+      }
+
       setAllInOnePairs(prev => ({
         ...prev,
-        [newPair.id]: { ...currentPairConfig }
+        [newPair.id]: newConfig
       }))
-      
+
       // 新しく作成したAll-In-Oneをアクティブにする
       setActiveAllInOne(newPair.id)
-      
+
       // 設定を保存
       setTimeout(() => saveConfig(), 100)
     } catch (error) {
@@ -230,7 +235,15 @@ useEffect(() => {
       let newLayout: Layout = 2
       const existingConfig = allInOnePairs[pairId] || { ...DEFAULT_PAIR_CONFIG }
       const newConfig: AllInOnePairConfig = { ...existingConfig }
-      
+
+      // 統一bots配列を作成（6要素までパディング）
+      const paddedBots = [...pair.botIndices]
+      while (paddedBots.length < 6) {
+        paddedBots.push(DEFAULT_BOTS[paddedBots.length] || 0)
+      }
+      newConfig.bots = paddedBots
+
+      // 後方互換性のためにlayout-specific配列も設定
       if (botCount === 1) {
         newLayout = 'single'
         newConfig.singlePanelBots = pair.botIndices
@@ -247,18 +260,18 @@ useEffect(() => {
         newLayout = 'sixGrid'
         newConfig.sixPanelBots = pair.botIndices.slice(0, 6)
       }
-      
+
       newConfig.layout = newLayout
-      
+
       setAllInOnePairs(prev => ({
         ...prev,
         [pairId]: newConfig
       }))
-      
+
       // 設定を保存
       setTimeout(() => saveConfig(), 100)
     }
-    
+
     // アクティブなAll-In-Oneを切り替え
     setActiveAllInOne(pairId)
   }
