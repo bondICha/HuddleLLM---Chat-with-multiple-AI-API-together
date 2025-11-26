@@ -4,7 +4,7 @@ import { useAtom, useSetAtom, useAtomValue } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
 import { useEffect, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PencilIcon, ArrowPathIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline'
+import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline'
 import allInOneIcon from '~/assets/all-in-one.svg'
 import collapseIcon from '~/assets/icons/collapse.svg'
 import HamburgerIcon from '../icons/HamburgerIcon'
@@ -228,16 +228,20 @@ useEffect(() => {
   }
 
   // All-In-Oneを切り替え
-  const handleSwitchAllInOne = (pairId: string, pair?: ChatPair) => {
-    if (pair && pairId !== 'default') {
-      // チャットペアの設定を常に更新（ボットインデックスが変更されている可能性があるため）
-      const botCount = pair.botIndices.length
+  const handleSwitchAllInOne = async (pairId: string, pair?: ChatPair) => {
+    // Saved Pairで、まだallInOnePairsに設定がない場合のみ初期化
+    if (pairId !== 'default' && !allInOnePairs[pairId] && pair) {
+      // 最新のデータをストレージから取得
+      const latestPairs = await getSavedChatPairs()
+      const latestPair = latestPairs.find(p => p.id === pairId) || pair
+
+      // 初期設定を作成
+      const botCount = latestPair.botIndices.length
       let newLayout: Layout = 2
-      const existingConfig = allInOnePairs[pairId] || { ...DEFAULT_PAIR_CONFIG }
-      const newConfig: AllInOnePairConfig = { ...existingConfig }
+      const newConfig: AllInOnePairConfig = { ...DEFAULT_PAIR_CONFIG }
 
       // 統一bots配列を作成（6要素までパディング）
-      const paddedBots = [...pair.botIndices]
+      const paddedBots = [...latestPair.botIndices]
       while (paddedBots.length < 6) {
         paddedBots.push(DEFAULT_BOTS[paddedBots.length] || 0)
       }
@@ -246,19 +250,19 @@ useEffect(() => {
       // 後方互換性のためにlayout-specific配列も設定
       if (botCount === 1) {
         newLayout = 'single'
-        newConfig.singlePanelBots = pair.botIndices
+        newConfig.singlePanelBots = latestPair.botIndices
       } else if (botCount === 2) {
         newLayout = 2
-        newConfig.twoPanelBots = pair.botIndices
+        newConfig.twoPanelBots = latestPair.botIndices
       } else if (botCount === 3) {
         newLayout = 3
-        newConfig.threePanelBots = pair.botIndices
+        newConfig.threePanelBots = latestPair.botIndices
       } else if (botCount === 4) {
         newLayout = 4
-        newConfig.fourPanelBots = pair.botIndices
+        newConfig.fourPanelBots = latestPair.botIndices
       } else if (botCount >= 6) {
         newLayout = 'sixGrid'
-        newConfig.sixPanelBots = pair.botIndices.slice(0, 6)
+        newConfig.sixPanelBots = latestPair.botIndices.slice(0, 6)
       }
 
       newConfig.layout = newLayout
@@ -304,77 +308,6 @@ useEffect(() => {
   const handleCancelEditName = () => {
     setEditingPairId(null)
     setEditingName('')
-  }
-
-  // アイコンを現在の選択ボットに更新
-  const handleUpdateIcon = async (pairId: string) => {
-    const pair = savedPairs.find(p => p.id === pairId)
-    if (!pair) return
-    
-    try {
-      // 現在のペア設定から最新のボット選択を取得
-      const currentConfig = allInOnePairs[pairId]
-      if (!currentConfig) return
-      
-      // 現在のレイアウトに応じたボット選択を取得
-      let currentBots: number[] = []
-
-      // 新しい共通bots設定を使用
-      if (currentConfig.bots && currentConfig.bots.length > 0) {
-        switch (currentConfig.layout) {
-          case 'single':
-            currentBots = currentConfig.bots.slice(0, 1)
-            break
-          case 2:
-          case 'twoHorizon':
-            currentBots = currentConfig.bots.slice(0, 2)
-            break
-          case 3:
-            currentBots = currentConfig.bots.slice(0, 3)
-            break
-          case 4:
-            currentBots = currentConfig.bots.slice(0, 4)
-            break
-          case 'sixGrid':
-            currentBots = currentConfig.bots.slice(0, 6)
-            break
-          default:
-            currentBots = currentConfig.bots.slice(0, 2)
-        }
-      } else {
-        // 後方互換性：古い設定形式
-        switch (currentConfig.layout) {
-          case 'single':
-            currentBots = currentConfig.singlePanelBots || DEFAULT_BOTS.slice(0, 1)
-            break
-          case 2:
-          case 'twoHorizon':
-            currentBots = currentConfig.twoPanelBots || DEFAULT_BOTS.slice(0, 2)
-            break
-          case 3:
-            currentBots = currentConfig.threePanelBots || DEFAULT_BOTS.slice(0, 3)
-            break
-          case 4:
-            currentBots = currentConfig.fourPanelBots || DEFAULT_BOTS.slice(0, 4)
-            break
-          case 'sixGrid':
-            currentBots = currentConfig.sixPanelBots || DEFAULT_BOTS.slice(0, 6)
-            break
-          default:
-            currentBots = currentConfig.twoPanelBots || DEFAULT_BOTS.slice(0, 2)
-        }
-      }
-      
-      // ボットインデックスを更新
-      await updateChatPair(pairId, { botIndices: currentBots })
-      setSavedPairs(pairs => pairs.map(p => 
-        p.id === pairId 
-          ? { ...p, botIndices: currentBots }
-          : p
-      ))
-    } catch (error) {
-      console.error('Failed to update pair icon:', error)
-    }
   }
 
 
@@ -735,20 +668,7 @@ useEffect(() => {
                     <PencilIcon className="w-4 h-4" />
                   </button>
                 </Tooltip>
-                
-                <Tooltip content={t('update_icon')}>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      handleUpdateIcon(pair.id)
-                    }}
-                    className="p-1 hover:bg-green-500 hover:bg-opacity-20 rounded"
-                  >
-                    <ArrowPathIcon className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-                
+
                 <Tooltip content={t('delete')}>
                   <button
                     onClick={(e) => {
