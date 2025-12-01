@@ -61,7 +61,6 @@
   "ReleaseNote-Close": "Close",
   "ReleaseNote-ShowAgain": "Show again next time",
   "rename": "Rename",
-  "update_icon": "Update Icon",
   "delete": "Delete",
   "Font Type": "Font Type",
   "Sans-serif (Gothic)": "Sans-serif (Gothic)",
@@ -408,5 +407,6 @@
   "Company profile status": "Company profile status",
   "Flags and display settings have been reset": "Flags and display settings have been reset",
   "Failed to reset flags. Please try again.": "Failed to reset flags. Please try again.",
+  "releasenote_v2137_all_in_one_enhancement_fix_for_saved_chatbot_pair": "Fixed an issue from v2.13.5 where saved chatbot pairs weren't working correctly with the new All-in-One layout system.",
   "releasenote_v2135_all_in_one_enhancement": "## All-in-One Mode is Now Even Easier to Use!\n\nWe've revamped the All-in-One mode for a better user experience.\n\n- **More Intuitive Panel Controls**: Instead of icons, you can now easily change the number of chat panels with simple \"+\" and \"-\" buttons.\n- **Your Settings are Safe**: Your selected AI model combinations will no longer reset when you change the layout. No more re-selecting your bots every time you switch views.\n\nThis release note was written by Gemini (As GLM failed😞)."
 }

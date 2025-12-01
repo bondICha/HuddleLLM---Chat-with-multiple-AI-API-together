@@ -60,7 +60,6 @@
   "ReleaseNote-Close": "關閉",
   "ReleaseNote-ShowAgain": "下次啟動時再次顯示",
   "rename": "重新命名",
-  "update_icon": "更新圖示",
   "delete": "刪除",
   "create_new_all_in_one": "保存當前聊天機器人對",
   "Font Type": "字體類型",
@@ -377,5 +376,6 @@
   "Company profile status": "企業設定檔狀態",
   "Flags and display settings have been reset": "旗標和顯示設定已重置",
   "Failed to reset flags. Please try again.": "重置旗標失敗。請重試。",
-  "releasenote_v2135_all_in_one_enhancement": "## All-in-One 模式更好用了！\n\n我們改進了 All-in-One 模式的操作體驗。\n\n- **更直觀的面板控制**: 您現在可以使用簡單的「+」和「-」按鈕輕鬆更改聊天面板的數量，取代了以前的圖示。\n- **您的設定將保持不變**: 更改佈局時，您選擇的 AI 模型組合將不再重置。無需在每次切換視圖時重新選擇您的機器人。\n\n本次發布說明由 Gemini 撰寫（因為 GLM 效果不佳，我們請求 Gemini 協助🫣）。"
+  "releasenote_v2137_all_in_one_enhancement_fix_for_saved_chatbot_pair": "修復了 v2.13.5 新 All-in-One 佈局中已保存的聊天機器人對無法正常工作的問題。",
+  "releasenote_v2135_all_in_one_enhancement": "## All-in-One 模式更好用了！\n\n我們改進了 All-in-One 模式的操作體驗。\n\n- **更直觀的面板控制**: 您現在可以使用簡單的\"+\"和\"-\"按鈕輕鬆更改聊天面板的數量，取代了以前的圖示。\n- **您的設定將保持不變**: 更改佈局時，您選擇的 AI 模型組合將不再重置。無需在每次切換視圖時重新選擇您的機器人。\n\n本次發布說明由 Gemini 撰寫（因為 GLM 效果不佳，我們請求 Gemini 協助🫣）。"
 }

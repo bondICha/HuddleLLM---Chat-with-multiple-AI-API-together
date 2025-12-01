@@ -6,6 +6,12 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.13.7',
+    notes: [
+      'releasenote_v2137_all_in_one_enhancement_fix_for_saved_chatbot_pair',
+    ],
+  },
+  {
     version: '2.13.5',
     notes: [
       'releasenote_v2135_all_in_one_enhancement',
