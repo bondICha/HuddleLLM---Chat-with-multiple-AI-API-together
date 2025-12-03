@@ -21,6 +21,10 @@
 ## Development Environment
 - Use i18n translator and update all 4 localization file without missing.
 
+## UI
+ - Use unified style among all application element.
+ - Do not use Emoji as a UI element or icons. 
+
 ## File Structure
 - Chrome Extension structure with `manifest.config.ts`
 - React components in `src/app/components/`

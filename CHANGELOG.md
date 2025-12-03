@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.13.6] - 2025-12-02
+
+### Added
+- Enhanced Company Profile update logic with smart diff detection and preview.
+- Support for tracking previous bot names to handle renames/model updates gracefully.
+- Detailed JSON diff view for inspecting changes before import.
+- Protection for existing API keys during provider updates.
+
+### Changed
+- Improved import matching logic to prevent duplicate bot entries.
+- Updated UI for import panel with better visibility of changes.
+
+## [v2.13.5] - 2025-11-20
+
+### Changed
+- Improved All-in-One mode panel controls with +/- buttons.
+- Fixed issue where AI model settings were reset when changing panel count.
+
 ## [v2.13.4] - 2025-11-12
 
 ### Added
