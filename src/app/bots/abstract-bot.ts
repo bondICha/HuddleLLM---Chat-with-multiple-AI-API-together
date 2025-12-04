@@ -11,6 +11,10 @@ export type AnwserPayload = {
   text: string;
   thinking?: string;
   searchResults?: SearchResultItem[];
+  /**
+   * Reference URLs extracted from model-native web tools (e.g. OpenAI Responses url_citation)
+   */
+  referenceUrls?: { url: string; title?: string }[];
 };
 
 export type Event =

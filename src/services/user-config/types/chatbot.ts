@@ -41,6 +41,15 @@ export interface CustomApiConfig {
   /** Agentic image generation settings (for ImageAgent) */
   agenticImageBotSettings?: AgenticImageBotSettings;
 
+  /**
+   * Unified toggle for native Web tool support (OpenAI Responses web_search_preview, Claude web_search_20250305, etc.)
+   *
+   * - When explicitly set to true/false, this flag takes precedence over provider-specific defaults.
+   * - When undefined, provider-specific logic (responsesWebSearch, webAccess, etc.) is used as a fallback
+   *   for backward compatibility.
+   */
+  webToolSupport?: boolean;
+
   /** Tool definition for image generation (used with Image Agent) */
   toolDefinition?: ToolDefinition;
 

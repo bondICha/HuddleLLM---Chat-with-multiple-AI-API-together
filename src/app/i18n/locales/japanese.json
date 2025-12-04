@@ -190,6 +190,7 @@
   "Clear history messages": "履歴メッセージをクリアする",
   "Use / to select prompts, Shift+Enter to add new line": "プロンプトを選択するには/を使用し、Shift+Enterで新しい行を追加します",
   "Use / to select prompts, @URL to fetch content, Shift+Enter to add new line": "プロンプトを選択するには/を使用し、@URLでコンテンツを取得し、Shift+Enterで新しい行を追加します",
+  "Reference Sites": "参考サイト",
   "Propaganda action is irreversible.\nClick again to confirm.": "一度実行したプロパガンダは取り消しできません。\nもう一度クリックして確認してください。",
   "Propaganda👊": "プロパガンダ👊",
   "Image Size": "画像サイズ",

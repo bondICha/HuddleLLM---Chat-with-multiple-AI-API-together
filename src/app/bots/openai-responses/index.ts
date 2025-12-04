@@ -171,15 +171,39 @@ export class OpenAIResponsesBot extends AbstractBot {
           const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png'
           if (b64) {
             imageMarkdown = `\n\n![image](data:${mime};base64,${b64})`
-            const display = (resultText + imageMarkdown).trim()
-            this.emitUpdateAnswer(params, { text: display, thinking: reasoningSummary })
           }
           const revised = imgItem?.revised_prompt
+          let tip = ''
           if (revised) {
-            const tip = `\n\n_Revised prompt:_\n${revised}`
-            const display = (resultText + imageMarkdown + tip).trim()
-            this.emitUpdateAnswer(params, { text: display, thinking: reasoningSummary })
+            tip = `\n\n_Revised prompt:_\n${revised}`
           }
+
+          // Collect reference URLs from url_citation annotations
+          const referenceUrlMap = new Map<string, { url: string; title?: string }>()
+          const outputItems = Array.isArray(response?.output) ? response.output : []
+          for (const item of outputItems) {
+            if (item?.type !== 'message') continue
+            const contents = Array.isArray(item.content) ? item.content : []
+            for (const c of contents) {
+              if (!c || c.type !== 'output_text') continue
+              const annotations = Array.isArray(c.annotations) ? c.annotations : []
+              for (const ann of annotations) {
+                if (ann && ann.type === 'url_citation' && typeof ann.url === 'string') {
+                  if (!referenceUrlMap.has(ann.url)) {
+                    referenceUrlMap.set(ann.url, { url: ann.url, title: ann.title })
+                  }
+                }
+              }
+            }
+          }
+          const referenceUrls = Array.from(referenceUrlMap.values())
+
+          const display = (resultText + imageMarkdown + tip).trim()
+          this.emitUpdateAnswer(params, {
+            text: display,
+            thinking: reasoningSummary,
+            referenceUrls: referenceUrls.length > 0 ? referenceUrls : undefined,
+          })
         },
         onCompleted: () => finish(),
         onIncomplete: () => finish(),

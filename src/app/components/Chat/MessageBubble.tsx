@@ -3,7 +3,7 @@ import { FC, PropsWithChildren, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Atom, Globe } from 'lucide-react'
 import Expandable from '../common/Expandable'
-import type { FetchedUrlContent } from '~types/chat'
+import type { FetchedUrlContent, ReferenceUrl } from '~types/chat'
 
 interface Props {
   color: 'primary' | 'flat'
@@ -12,6 +12,7 @@ interface Props {
   isUserMessage?: boolean
   searchResults?: any[];
   fetchedUrls?: FetchedUrlContent[];
+  referenceUrls?: ReferenceUrl[];
 }
 
 const MessageBubble: FC<PropsWithChildren<Props>> = (props) => {
@@ -71,6 +72,37 @@ const MessageBubble: FC<PropsWithChildren<Props>> = (props) => {
     ));
   };
 
+  const renderReferenceUrls = () => {
+    if (!props.referenceUrls || props.referenceUrls.length === 0) return null;
+
+    return (
+      <Expandable
+        header={
+          <>
+            <Globe size={14} className="mr-1.5 text-text-secondary" />
+            {t('Reference Sites')}
+          </>
+        }
+        initiallyExpanded={false}
+      >
+        <ul className="space-y-1 pl-4">
+          {props.referenceUrls.map((ref, index) => (
+            <li key={`${ref.url}-${index}`}>
+              <a
+                href={ref.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline"
+              >
+                {ref.title || ref.url}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </Expandable>
+    );
+  };
+
   return (
     <div
       className={cx(
@@ -104,6 +136,7 @@ const MessageBubble: FC<PropsWithChildren<Props>> = (props) => {
             {renderSearchResults()}
           </Expandable>
       )}
+      {renderReferenceUrls()}
       {renderFetchedUrls()}
       {props.children}
     </div>

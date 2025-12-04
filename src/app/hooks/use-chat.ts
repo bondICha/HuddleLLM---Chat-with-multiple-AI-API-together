@@ -198,6 +198,9 @@ export function useChat(index: number) {
             if (answer.searchResults) {
               message.searchResults = answer.searchResults;
             }
+            if (answer.referenceUrls) {
+              message.referenceUrls = answer.referenceUrls;
+            }
           });
         }
       } catch (err: unknown) {

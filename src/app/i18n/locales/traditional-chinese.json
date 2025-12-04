@@ -180,6 +180,7 @@
   "Clear history messages": "清空消息",
   "Use / to select prompts, Shift+Enter to add new line": "使用 / 選擇提示詞，Shift+Enter添加換行",
   "Use / to select prompts, @URL to fetch content, Shift+Enter to add new line": "使用 / 選擇提示詞，@URL獲取內容，Shift+Enter添加換行",
+  "Reference Sites": "參考網站",
   "Propaganda action is irreversible.\nClick again to confirm.": "宣傳行為不可逆，再次點擊以確認。",
   "Propaganda👊": "宣傳👊",
   "This usually mean you need to add a payment method to your OpenAI account, checkout: ": "這通常意味着您需要在OpenAI賬戶中添加付款方式，請查看：",

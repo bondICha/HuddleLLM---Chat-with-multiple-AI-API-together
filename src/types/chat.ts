@@ -6,6 +6,11 @@ export interface FetchedUrlContent {
   content: string
 }
 
+export interface ReferenceUrl {
+  url: string
+  title?: string
+}
+
 export interface TextAttachment {
   name: string;
   content: string;
@@ -21,6 +26,7 @@ export interface ChatMessageModel {
   thinking?: string
   fetchedUrls?: FetchedUrlContent[];
   searchResults?: SearchResultItem[];
+  referenceUrls?: ReferenceUrl[];
 }
 
 export interface ConversationModel {

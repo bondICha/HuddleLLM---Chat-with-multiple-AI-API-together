@@ -135,6 +135,7 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
     let done = false
     const result: ChatMessage = { role: 'assistant', content: '' }
     let thinkingContent = '';
+    const referenceUrlMap = new Map<string, { url: string; title?: string }>()
 
     const finish = () => {
       done = true
@@ -167,6 +168,32 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
             id: data.content_block.id,
             name: data.content_block.name,
             input: '',
+          }
+        } else if (data.type === 'content_block_start' && data.content_block?.type === 'web_search_tool_result') {
+          // Collect reference URLs from web_search_tool_result content blocks
+          const contents = Array.isArray(data.content_block.content) ? data.content_block.content : []
+          for (const c of contents) {
+            if (c && c.type === 'web_search_result' && typeof c.url === 'string') {
+              if (!referenceUrlMap.has(c.url)) {
+                referenceUrlMap.set(c.url, { url: c.url, title: c.title })
+              }
+            }
+          }
+        } else if (data.type === 'content_block_start' && data.content_block?.type === 'text') {
+          // Collect reference URLs from citations on text blocks
+          const citations = Array.isArray((data.content_block as any).citations)
+            ? (data.content_block as any).citations
+            : []
+          for (const cit of citations) {
+            if (
+              cit &&
+              (cit.type === 'web_search_result_location' || cit.type === 'citations') &&
+              typeof cit.url === 'string'
+            ) {
+              if (!referenceUrlMap.has(cit.url)) {
+                referenceUrlMap.set(cit.url, { url: cit.url, title: cit.title })
+              }
+            }
           }
         } else if (data.type === 'content_block_delta' && data.delta?.type === 'input_json_delta') {
           // Tool use input delta
@@ -217,8 +244,11 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
             params.onEvent({
               type: 'UPDATE_ANSWER',
               data: {
-                text: typeof result.content === 'string' ? result.content : result.content.find((b: any) => b.type === 'text')?.text || '',
+                text: typeof result.content === 'string'
+                  ? result.content
+                  : result.content.find((b: any) => b.type === 'text')?.text || '',
                 thinking: thinkingContent || undefined,
+                referenceUrls: referenceUrlMap.size > 0 ? Array.from(referenceUrlMap.values()) : undefined,
               },
             });
           }

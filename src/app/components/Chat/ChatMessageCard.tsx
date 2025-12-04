@@ -196,12 +196,13 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
       )}
     >
       <div ref={messageRef} className="flex flex-col max-w-fit items-start gap-2 min-w-0">
-        <MessageBubble 
+        <MessageBubble
           color={message.author === 'user' ? 'primary' : 'flat'}
           thinking={message.thinking}
           searchResults={message.searchResults}
           isUserMessage={message.author === 'user'}
           fetchedUrls={message.fetchedUrls}
+          referenceUrls={message.referenceUrls}
         >
           {imageUrls.length > 0 && (
             <div className="flex flex-wrap gap-2 my-2">
