@@ -46,10 +46,11 @@ export const COMPANY_PROFILE_CONFIGS: CompanyProfilePreset[] = [
           "host": "https://mycompany.ai_api/gemini/v1/",
           "id": 3,
           "isHostFullPath": false,
-          "model": "google/gemini-2.5-pro",
-          "name": "Gemini 2.5 Pro",
+          "model": "google/gemini-3-pro-preview",
+          "name": "Gemini 3 Pro",
+          "previousNames": ["Gemini 2.5 Pro"], // Previous name to be updated
           "provider": "openai",
-          "shortName": "GemPr",
+          "shortName": "G Pro",
           "systemMessage": "",
           "temperature": 1,
           "apiKey": ""

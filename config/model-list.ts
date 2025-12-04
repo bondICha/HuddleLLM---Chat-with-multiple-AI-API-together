@@ -3,18 +3,24 @@ import { ModelInfo } from '../src/services/user-config'
 // モデルリストをプロバイダーごとに階層化
 export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
     "OpenAI": {
+        "GPT-5.1": "gpt-5.1",
+        "GPT-5.1 Chat": "gpt-5.1-chat-latest",
         "GPT-5": "gpt-5",
         "GPT-5 Chat": "gpt-5-chat-latest",
         "GPT-4.1": "gpt-4.1",
-        "GPT-4.1 mini": "gpt-4.1-mini",
+        "GPT-5 mini": "gpt-5-mini",
     },
     "Anthropic": {
         "Claude Sonnet 4.5": "claude-sonnet-4-5",
-        "Claude Opus 4.1": "claude-opus-4-1",
-        "Claude Haiku 3.5": "claude-haiku-4-5",
+        "Claude Opus 4.5": "claude-opus-4-5",
+        "Claude Haiku 4.5": "claude-haiku-4-5",
     },
     "Google": {
         "Gemini 2.5 Pro": "gemini-2.5-pro",
+        "Gemini 3 Pro": "gemini-3-pro-preview",
+        "Gemini 3 Pro Publish": "gemini-3-pro",
+        "Gemini 3 Pro Image": "gemini-3-pro-image-preview",
+        "Gemini 3 Pro Image Publish": "gemini-3-pro-image",
         "Gemini 2.5 Flash": "gemini-2.5-flash",
         "Nano Banana": "gemini-2.5-flash-image",
     },
@@ -69,6 +75,7 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
         // Bedrock用のGeminiモデル
         "Google Gemini 2.5 Flash": { value: "google/gemini-2.5-flash", icon: "gemini" },
         "Google Gemini 2.5 Pro": { value: "google/gemini-2.5-pro", icon: "gemini" },
+        "Google Gemini 3 Pro": { value: "google/gemini-3-pro-preview", icon: "gemini" },
         "OpenAI/GPT-OSS-120b": { value: "openai/gpt-oss-120b", icon: "openai" },
         "OpenAI/GPT-OSS-20b": { value: "openai/gpt-oss-20b", icon: "openai" },
         "通义千问/Qwen3-Coder-480B-A35B-Instruct": { value: "Qwen/Qwen3-Coder-480B-A35B-Instruct", icon: "qianwen" },
