@@ -20,6 +20,10 @@ export const PROVIDER_DEFAULTS: Partial<Record<CustomApiProvider, ProviderDefaul
     host: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
     isHostFullPath: true,
   },
+  [CustomApiProvider.Google]: {
+    host: 'https://generativelanguage.googleapis.com',
+    isHostFullPath: false,
+  },
   [CustomApiProvider.QwenOpenAI]: {
     host: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     isHostFullPath: false,

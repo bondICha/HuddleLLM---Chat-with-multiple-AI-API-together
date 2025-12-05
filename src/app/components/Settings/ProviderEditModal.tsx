@@ -231,6 +231,22 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
             </div>
           )}
 
+          {/* Gemini Vertex AI Mode */}
+          {editingProvider.provider === CustomApiProvider.Google && (
+            <div className={formRowClass}>
+              <p className={labelClass}>{t('Vertex AI Mode')}</p>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={editingProvider.VertexMode ?? false}
+                  onChange={(checked) => setEditingProvider({ ...editingProvider, VertexMode: checked })}
+                />
+                <p className="text-xs opacity-70">
+                  {t('Enable for Vertex AI endpoints and Rakuten AI Gateway (requires vertexai=True in SDK)')}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* API Host */}
           <div className={formRowClass}>
             <div className="flex items-center justify-between">
@@ -257,7 +273,7 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
                   editingProvider.provider === CustomApiProvider.ChutesAI ? "https://image.chutes.ai" :
                   editingProvider.provider === CustomApiProvider.Replicate ? "https://api.replicate.com/v1/models/%model/predictions" :
                   editingProvider.provider === CustomApiProvider.OpenRouter ? "https://openrouter.ai/api" :
-                  editingProvider.provider === CustomApiProvider.Google ? t("Not applicable for Google Gemini") :
+                  editingProvider.provider === CustomApiProvider.Google ? "https://generativelanguage.googleapis.com" :
                   editingProvider.provider === CustomApiProvider.GeminiOpenAI ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions" :
                   editingProvider.provider === CustomApiProvider.VertexAI_Gemini ? "https://api-provider.com/google-vertexai/v1/publishers/google/models/%model:generateContent" :
                   editingProvider.provider === CustomApiProvider.QwenOpenAI ? "https://dashscope.aliyuncs.com/compatible-mode/v1" :
@@ -272,7 +288,6 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
                   onChange={(value) => {
                     setEditingProvider({ ...editingProvider, host: value });
                   }}
-                  disabled={editingProvider.provider === CustomApiProvider.Google}
                 />
                 {(editingProvider.provider === CustomApiProvider.VertexAI_Gemini || editingProvider.provider === CustomApiProvider.VertexAI_Claude) && (
                   <>

@@ -65,6 +65,7 @@ export const THINKING_BUDGET_PROVIDERS = [
   CustomApiProvider.Bedrock,
   CustomApiProvider.Anthropic_CustomAuth,
   CustomApiProvider.VertexAI_Claude,
+  CustomApiProvider.Google,
   CustomApiProvider.VertexAI_Gemini,
   CustomApiProvider.GeminiOpenAI,
   CustomApiProvider.QwenOpenAI,

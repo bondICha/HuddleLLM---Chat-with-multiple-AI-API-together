@@ -22,13 +22,16 @@ export interface CustomApiConfig {
   avatar: string;
   apiKey: string;
   thinkingMode?: boolean; // Thinking mode (or Reasoning)
-  thinkingBudget?: number; // Anthropic thinking budget
+  thinkingBudget?: number; // Anthropic/Gemini 2.5 thinking budget
+  thinkingLevel?: 'low' | 'high'; // Gemini 3+ thinking level
   reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
   provider: CustomApiProvider;
   webAccess?: boolean;
   isAnthropicUsingAuthorizationHeader?: boolean;
   /** Gemini auth mode: 'header' | 'query' (for individual settings) */
   geminiAuthMode?: 'header' | 'query';
+  /** Gemini Vertex AI mode (required for Rakuten AI Gateway and Vertex AI endpoints) */
+  geminiVertexMode?: boolean;
   enabled?: boolean; // Enable/disable state
   isHostFullPath?: boolean; // Whether host is a full path (default: false)
   advancedConfig?: AdvancedConfig;

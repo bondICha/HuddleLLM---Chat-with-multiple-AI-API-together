@@ -1,4 +1,4 @@
-import { GoogleGenAI, Content, Part, GenerationConfig } from '@google/genai'
+import { GoogleGenAI, Content, Part, GenerateContentConfig, HttpOptions } from '@google/genai'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract-bot'
 import { file2base64 } from '~app/utils/file-utils'
@@ -14,6 +14,20 @@ interface GeminiApiBotOptions {
   geminiApiSystemMessage?: string;
   geminiApiTemperature?: number;
   webAccess?: boolean;
+  /** Optional custom base URL for advanced routing (e.g., gateways) */
+  baseUrl?: string;
+  /** Optional API version override when using custom baseUrl */
+  apiVersion?: string;
+  /** Optional extra HTTP headers (e.g., Authorization for gateways) */
+  extraHeaders?: Record<string, string>;
+  /** Enable Vertex AI mode (required for Rakuten AI Gateway and other Vertex AI gateways) */
+  vertexai?: boolean;
+  /** Enable thinking mode (Gemini 2.5+/3+ models) */
+  thinkingMode?: boolean;
+  /** Thinking budget (Gemini 2.5 models: token count, -1 for dynamic) */
+  thinkingBudget?: number;
+  /** Thinking level (Gemini 3+ models: 'low' or 'high') */
+  thinkingLevel?: 'low' | 'high';
 }
 
 interface ConversationContext {
@@ -29,6 +43,27 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
   constructor(genAI: GoogleGenAI) {
     super()
     this.genAI = genAI
+  }
+
+  // Subclasses can override this to enable native web tools (e.g., google_search)
+  // based on their own configuration.
+  protected getWebAccessEnabled(): boolean {
+    return false
+  }
+
+  // Subclasses can override this to enable thinking mode
+  protected getThinkingModeEnabled(): boolean {
+    return false
+  }
+
+  // Subclasses can override to provide thinking level (Gemini 3+)
+  protected getThinkingLevel(): 'low' | 'high' | undefined {
+    return undefined
+  }
+
+  // Subclasses can override to provide thinking budget (Gemini 2.5)
+  protected getThinkingBudget(): number | undefined {
+    return undefined
   }
 
   // ConversationHistoryインターフェースの実装
@@ -100,7 +135,7 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
   }
 
   abstract getSystemInstruction(): Content | undefined
-  abstract getGenerationConfig(): GenerationConfig
+  abstract getGenerationConfig(): GenerateContentConfig
   abstract getModelName(): string
 
   async doSendMessage(params: SendMessageParams) {
@@ -114,17 +149,50 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
     const contents = [...history, userMessage];
 
     try {
-      const systemInstruction = this.getSystemInstruction();
-      const generationConfig = this.getGenerationConfig();
+      const systemInstruction = this.getSystemInstruction()
+      const config: GenerateContentConfig = this.getGenerationConfig() || {}
 
-      const requestParams: any = {
+      if (systemInstruction) {
+        config.systemInstruction = systemInstruction
+      }
+
+      // Enable Google Search grounding when native API web search is ON
+      if (this.getWebAccessEnabled()) {
+        const existingTools = Array.isArray((config as any).tools) ? (config as any).tools : []
+        const hasGoogleSearch = existingTools.some((t: any) => t?.googleSearch !== undefined)
+        if (!hasGoogleSearch) {
+          ;(config as any).tools = [...existingTools, { googleSearch: {} }]
+        } else {
+          ;(config as any).tools = existingTools
+        }
+      }
+
+      // Enable thinking mode with thoughts output (only when thinking mode is enabled)
+      if (this.getThinkingModeEnabled()) {
+        const thinkingConfig: any = { includeThoughts: true }
+
+        // Determine if model is Gemini 3 (uses thinkingLevel) or Gemini 2.5 (uses thinkingBudget)
+        const modelName = this.getModelName()
+        const isGemini3 = modelName.includes('gemini-3')
+
+        if (isGemini3) {
+          // Gemini 3+: use thinkingLevel (default: 'high')
+          thinkingConfig.thinkingLevel = this.getThinkingLevel() || 'high'
+        } else {
+          // Gemini 2.5: use thinkingBudget (if specified)
+          const budget = this.getThinkingBudget()
+          if (budget !== undefined) {
+            thinkingConfig.thinkingBudget = budget
+          }
+        }
+
+        ;(config as any).thinkingConfig = thinkingConfig
+      }
+
+      const requestParams = {
         model: this.getModelName(),
         contents,
-        generationConfig,
-      };
-
-      if (systemInstruction?.parts?.[0]?.text) {
-        requestParams.systemInstruction = systemInstruction.parts[0].text;
+        config,
       }
 
       const result = await this.genAI.models.generateContentStream(requestParams);
@@ -132,14 +200,63 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
       this.conversationContext.messages.push(userMessage);
 
       let responseText = '';
+      let thinkingText = '';
+      let lastChunk: any = null;
       for await (const chunk of result) {
-        const chunkText = chunk.text
-        console.debug('gemini stream', chunkText)
-        responseText += chunkText
-        params.onEvent({ type: 'UPDATE_ANSWER', data: { text: responseText } })
+        lastChunk = chunk
+        // Process all parts in the chunk to separate thoughts from answer
+        const candidates = (chunk as any).candidates || []
+        const parts = candidates[0]?.content?.parts || []
+
+        for (const part of parts) {
+          if (part.thought) {
+            // This is thinking content
+            thinkingText += part.text || ''
+          } else if (part.text) {
+            // This is answer content
+            responseText += part.text
+          }
+        }
+
+        params.onEvent({
+          type: 'UPDATE_ANSWER',
+          data: {
+            text: responseText,
+            thinking: thinkingText || undefined
+          }
+        })
       }
 
-      if (!responseText) {
+      // After streaming completes, attempt to extract any inline image data
+      let imageMarkdown = ''
+      try {
+        const cand = (lastChunk?.candidates && Array.isArray((lastChunk as any).candidates))
+          ? (lastChunk as any).candidates[0]
+          : undefined
+        const parts = cand?.content?.parts || []
+        const imgBuf: string[] = []
+        for (const p of parts as any[]) {
+          if (p?.inlineData?.data) {
+            const mime = p?.inlineData?.mimeType || 'image/png'
+            const b64 = String(p.inlineData.data)
+            imgBuf.push(`![image](data:${mime};base64,${b64})`)
+          }
+        }
+        if (imgBuf.length) {
+          imageMarkdown = `\n\n${imgBuf.join('\n\n')}`
+        }
+      } catch {
+        // ignore image parsing errors; text fallback will still work
+      }
+
+      if (imageMarkdown) {
+        if (!responseText) {
+          responseText = i18n.t('image_only_response')
+        }
+        const finalText = (responseText + imageMarkdown).trim()
+        params.onEvent({ type: 'UPDATE_ANSWER', data: { text: finalText } })
+      } else if (!responseText) {
+        // Pure image with no detectable data, or completely empty response
         params.onEvent({ type: 'UPDATE_ANSWER', data: { text: i18n.t('image_only_response') } })
       }
 
@@ -192,9 +309,58 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
   private config: GeminiApiBotOptions;
 
   constructor(options: GeminiApiBotOptions) {
-    const genAI = new GoogleGenAI({ apiKey: options.geminiApiKey });
+    const httpOptions: HttpOptions | undefined = (() => {
+      const headers: Record<string, string> = options.extraHeaders || {}
+      const hasBaseUrl = !!options.baseUrl && options.baseUrl.trim().length > 0
+
+      if (!hasBaseUrl && Object.keys(headers).length === 0 && !options.apiVersion) {
+        return undefined
+      }
+
+      const result: HttpOptions = {}
+      if (hasBaseUrl) {
+        result.baseUrl = options.baseUrl
+        // For Vertex AI mode, explicitly set empty api_version to prevent SDK from appending default version
+        if (options.vertexai) {
+          result.apiVersion = options.apiVersion ?? ''
+        } else if (options.apiVersion !== undefined) {
+          result.apiVersion = options.apiVersion
+        }
+      }
+      if (Object.keys(headers).length > 0) {
+        result.headers = headers
+      }
+      return result
+    })()
+
+    const genAI = new GoogleGenAI({
+      apiKey: options.geminiApiKey,
+      vertexai: options.vertexai ?? false,
+      httpOptions,
+    });
     super(genAI);
     this.config = options;
+  }
+
+  protected getWebAccessEnabled(): boolean {
+    return !!this.config.webAccess
+  }
+
+  protected getThinkingModeEnabled(): boolean {
+    return !!this.config.thinkingMode
+  }
+
+  protected getThinkingLevel(): 'low' | 'high' | undefined {
+    return this.config.thinkingLevel
+  }
+
+  protected getThinkingBudget(): number | undefined {
+    return this.config.thinkingBudget
+  }
+
+  // Called via AsyncAbstractBot.setWebAccessEnabled when Web Access is toggled at runtime
+  setWebAccessEnabled(enabled: boolean) {
+    this.config.webAccess = enabled
   }
 
   getSystemInstruction(): Content | undefined {
@@ -209,7 +375,7 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
     this.config.geminiApiSystemMessage = systemMessage
   }
 
-  getGenerationConfig(): GenerationConfig {
+  getGenerationConfig(): GenerateContentConfig {
     return {
       temperature: this.config.geminiApiTemperature ?? 0.4,
     };

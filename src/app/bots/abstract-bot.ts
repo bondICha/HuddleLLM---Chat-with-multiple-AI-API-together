@@ -357,6 +357,21 @@ export abstract class AsyncAbstractBot extends AbstractBot {
     }
   }
 
+  /**
+   * Optional hook to propagate Web Access toggle to the underlying bot
+   * (e.g., GeminiApiBot can implement setWebAccessEnabled).
+   */
+  async setWebAccessEnabled(enabled: boolean) {
+    // Wait for initialization to complete
+    while (this.#bot instanceof DummyBot && !this.#initializeError) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    if (!(this.#bot instanceof DummyBot) && typeof (this.#bot as any).setWebAccessEnabled === 'function') {
+      (this.#bot as any).setWebAccessEnabled(enabled);
+    }
+  }
+
   getSystemMessage() {
     if (!(this.#bot instanceof DummyBot) && typeof (this.#bot as any).getSystemMessage === 'function') {
       return (this.#bot as any).getSystemMessage()

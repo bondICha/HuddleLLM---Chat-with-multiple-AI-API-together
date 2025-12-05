@@ -34,6 +34,8 @@ export interface ProviderConfig {
   isAnthropicUsingAuthorizationHeader?: boolean;
   /** Auth mode: 'header' | 'query' (for Gemini API) */
   AuthMode?: 'header' | 'default';
+  /** Gemini Vertex AI mode (required for Vertex AI endpoints and gateways) */
+  VertexMode?: boolean;
   /** Advanced configuration */
   advancedConfig?: AdvancedConfig;
   /**

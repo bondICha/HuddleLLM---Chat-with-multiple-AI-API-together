@@ -17,33 +17,21 @@ import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
 /**
  * Determine whether a provider has native Web tool support
- * (e.g., OpenAI Responses web_search_preview, Claude web_search_20250305)
- * and therefore should not be wrapped by HuddleLLM's own Web tool (agent-based search).
- *
- * 判定ポリシー（最終形）:
- * 1. まず CustomApiConfig.webToolSupport を見る
- *    - true/false が明示されていれば、それを最優先で使う（プロバイダ共通の統一トグル）
- * 2. webToolSupport が undefined の場合のみ、既存の provider 別ロジックでフォールバック
- *    - OpenAI Responses: responsesWebSearch トグル
- *    - Anthropic Claude: webAccess トグル
- *    - OpenAI_Image: 常にネイティブ tool 対応
  */
 function hasNativeWebToolSupport(provider?: CustomApiProvider, config?: CustomApiConfig): boolean {
-    // 1. 明示的な webToolSupport があれば最優先
     if (typeof config?.webToolSupport === 'boolean') {
         return config.webToolSupport;
     }
 
-    // 2. 旧ロジックへのフォールバック（後方互換のため残す）
     switch (provider) {
-        case CustomApiProvider.OpenAI_Responses: {
-            const flag = config?.responsesWebSearch;
-            return flag !== false;
-        }
-        case CustomApiProvider.Anthropic: {
+        case CustomApiProvider.OpenAI_Responses:
+            return config?.responsesWebSearch !== false;
+        case CustomApiProvider.Anthropic:
+        case CustomApiProvider.VertexAI_Claude:
             return !!config?.webAccess;
-        }
         case CustomApiProvider.OpenAI_Image:
+            return true;
+        case CustomApiProvider.Google:
             return true;
         default:
             return false;
@@ -144,6 +132,10 @@ export class CustomBot extends AsyncAbstractBot {
 
         // AsyncAbstractBotのsetSystemMessageを使用
         this.setSystemMessage(processedSystemMessage);
+
+        // Also propagate Web Access toggle to underlying bot if supported (e.g., GeminiApiBot)
+        const webAccessForPrompt = !!config.webAccess;
+        await this.setWebAccessEnabled(webAccessForPrompt);
     }
 
     // setConversationHistoryはAsyncAbstractBotが処理する
@@ -157,9 +149,6 @@ export class CustomBot extends AsyncAbstractBot {
         }
         this.config = config
 
-        // 共通ロジックを使用
-        const processedSystemMessage = this.buildSystemPrompt(config, commonSystemMessage);
-
         // Resolve effective Provider/API settings based on providerRefId only
         const providerRef = (config.providerRefId)
             ? (providerConfigs || []).find((p) => p.id === config.providerRefId)
@@ -168,6 +157,10 @@ export class CustomBot extends AsyncAbstractBot {
         const effectiveProvider = providerRef?.provider ?? (config.provider || (config.model.includes('anthropic.claude') ? CustomApiProvider.Bedrock : CustomApiProvider.OpenAI));
         // Resolved Provider を config に反映しておく（Web search 判定などで使用）
         this.config.provider = effectiveProvider;
+
+        // Build system prompt AFTER resolving effectiveProvider
+        // This ensures hasNativeWebToolSupport() can correctly check config.provider
+        const processedSystemMessage = this.buildSystemPrompt(config, commonSystemMessage);
 
         const effectiveHost = (providerRef?.host && providerRef.host.trim().length > 0)
             ? providerRef.host
@@ -306,13 +299,34 @@ export class CustomBot extends AsyncAbstractBot {
                 break;
             }
             case CustomApiProvider.Google:
-                botInstance = new GeminiApiBot({
-                    geminiApiKey: effectiveApiKey,
-                    geminiApiModel: config.model,
-                    geminiApiSystemMessage: processedSystemMessage,
-                    geminiApiTemperature: config.temperature,
-                    webAccess: config.webAccess,
-                });
+                {
+                    const googleAuthMode = (providerRef?.AuthMode || 'header')
+                    const extraHeaders: Record<string, string> = {}
+                    if (googleAuthMode === 'header' && effectiveApiKey && effectiveApiKey.trim().length > 0) {
+                        // Gateway-style auth: raw key in Authorization header
+                        extraHeaders.Authorization = effectiveApiKey
+                    }
+
+                    // Resolve Vertex AI mode: Provider setting takes precedence
+                    const vertexMode = providerRef?.VertexMode ?? config.geminiVertexMode ?? false;
+
+                    botInstance = new GeminiApiBot({
+                        geminiApiKey: effectiveApiKey,
+                        geminiApiModel: config.model,
+                        geminiApiSystemMessage: processedSystemMessage,
+                        geminiApiTemperature: config.temperature,
+                        webAccess: config.webAccess,
+                        thinkingMode: config.thinkingMode,
+                        thinkingBudget: config.thinkingBudget,
+                        thinkingLevel: config.thinkingLevel,
+                        // For advanced setups, these fields allow routing via gateways
+                        // or custom endpoints using js-genai HttpOptions.
+                        baseUrl: (effectiveHost && effectiveHost.trim().length > 0) ? effectiveHost : undefined,
+                        apiVersion: undefined,
+                        extraHeaders,
+                        vertexai: vertexMode,
+                    });
+                }
                 break;
             case CustomApiProvider.OpenAI_Responses:
                 botInstance = new OpenAIResponsesBot({

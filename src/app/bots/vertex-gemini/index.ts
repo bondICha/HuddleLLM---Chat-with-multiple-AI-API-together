@@ -1,3 +1,5 @@
+/** This code is deprecated, please use gemini-api  */
+
 import { AbstractBot, SendMessageParams, ConversationHistory } from '../abstract-bot'
 // Streaming removed: use non-stream generateContent only
 import { ChatError, ErrorCode } from '~utils/errors'

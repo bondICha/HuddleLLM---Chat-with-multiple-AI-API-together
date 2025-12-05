@@ -335,6 +335,34 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
     console.log('[ClaudeApiBot] setTools called with:', tools)
   }
 
+  // Runtime toggle for native web_search_20250305 usage
+  setWebAccessEnabled(enabled: boolean) {
+    if (!this.config.advancedConfig) {
+      this.config.advancedConfig = {}
+    }
+    // Mirror CustomBot's behavior: when webAccess is enabled for Claude,
+    // we attach the native web_search_20250305 tool definition via tools.
+    if (enabled) {
+      const existingTools = Array.isArray(this.config.tools) ? this.config.tools : [];
+      const hasWebSearch = existingTools.some(t => t?.type === 'web_search_20250305');
+      if (!hasWebSearch) {
+        this.config.tools = [...existingTools, {
+          type: 'web_search_20250305',
+          name: 'web_search',
+          max_uses: 5,
+        }];
+      }
+    } else {
+      // When disabled, only clear tools if they match the auto-attached web_search tool
+      if (Array.isArray(this.config.tools)) {
+        const remaining = this.config.tools.filter(
+          (t: any) => !(t?.type === 'web_search_20250305' && t?.name === 'web_search'),
+        )
+        this.config.tools = remaining.length > 0 ? remaining : undefined
+      }
+    }
+  }
+
   async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal) {
     const hasImageInput = messages.some(
       (message) => isArray(message.content) && message.content.some((part) => part.type === 'image')
@@ -454,4 +482,3 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
     return true
   }
 }
-
