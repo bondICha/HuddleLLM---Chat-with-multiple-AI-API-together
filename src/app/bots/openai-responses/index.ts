@@ -29,7 +29,7 @@ export class OpenAIResponsesBot extends AbstractBot {
       isHostFullPath?: boolean
       webAccess?: boolean
       thinkingMode?: boolean
-      reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
+      reasoningEffort?: 'none' | 'low' | 'medium' | 'high'
       functionTools?: any[]
       extraBody?: any
     },
@@ -283,9 +283,9 @@ export class OpenAIResponsesBot extends AbstractBot {
     // Tools precedence: setTools() > explicit functionTools param > extra_body.tools > web_search_preview toggle
     if (this.tools && Array.isArray(this.tools) && this.tools.length > 0) {
       body.tools = this.tools
-    } else if (this.config.functionTools && Array.isArray(this.config.functionTools)) {
+    } else if (this.config.functionTools && Array.isArray(this.config.functionTools) && this.config.functionTools.length > 0) {
       body.tools = this.config.functionTools
-    } else if (extraBodyObj && Array.isArray((extraBodyObj as any).tools)) {
+    } else if (extraBodyObj && Array.isArray((extraBodyObj as any).tools) && (extraBodyObj as any).tools.length > 0) {
       body.tools = (extraBodyObj as any).tools
     } else if (this.config.webAccess) {
       body.tools = [{ type: 'web_search_preview' }]

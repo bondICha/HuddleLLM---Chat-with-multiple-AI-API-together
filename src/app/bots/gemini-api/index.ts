@@ -66,6 +66,11 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
     return undefined
   }
 
+  // Subclasses can override to provide custom tools for function calling
+  protected getCustomTools(): any[] | undefined {
+    return undefined
+  }
+
   // ConversationHistoryインターフェースの実装
   public async setConversationHistory(history: ConversationHistory): Promise<void> {
     if (history.messages && Array.isArray(history.messages)) {
@@ -156,15 +161,26 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
         config.systemInstruction = systemInstruction
       }
 
-      // Enable Google Search grounding when native API web search is ON
+      // Build tools array: combine custom tools (e.g., from Image Agent) + googleSearch
+      const toolsArray: any[] = []
+
+      // Add custom tools if set via setTools()
+      const customTools = this.getCustomTools()
+      if (customTools && customTools.length > 0) {
+        toolsArray.push(...customTools)
+      }
+
+      // Add Google Search if enabled
       if (this.getWebAccessEnabled()) {
-        const existingTools = Array.isArray((config as any).tools) ? (config as any).tools : []
-        const hasGoogleSearch = existingTools.some((t: any) => t?.googleSearch !== undefined)
+        const hasGoogleSearch = toolsArray.some((t: any) => t?.googleSearch !== undefined)
         if (!hasGoogleSearch) {
-          ;(config as any).tools = [...existingTools, { googleSearch: {} }]
-        } else {
-          ;(config as any).tools = existingTools
+          toolsArray.push({ googleSearch: {} })
         }
+      }
+
+      // Apply tools to config
+      if (toolsArray.length > 0) {
+        ;(config as any).tools = toolsArray
       }
 
       // Enable thinking mode with thoughts output (only when thinking mode is enabled)
@@ -227,12 +243,16 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
         })
       }
 
-      // After streaming completes, attempt to extract any inline image data
+      // After streaming completes, attempt to extract inline image data and grounding URLs
       let imageMarkdown = ''
+      const referenceUrls: { url: string; title?: string }[] = []
+
       try {
         const cand = (lastChunk?.candidates && Array.isArray((lastChunk as any).candidates))
           ? (lastChunk as any).candidates[0]
           : undefined
+
+        // Extract inline images
         const parts = cand?.content?.parts || []
         const imgBuf: string[] = []
         for (const p of parts as any[]) {
@@ -245,18 +265,35 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
         if (imgBuf.length) {
           imageMarkdown = `\n\n${imgBuf.join('\n\n')}`
         }
+
+        // Extract grounding URLs from groundingMetadata
+        const groundingMeta = cand?.groundingMetadata
+        if (groundingMeta?.groundingChunks) {
+          for (const chunk of groundingMeta.groundingChunks) {
+            if (chunk?.web?.uri) {
+              referenceUrls.push({
+                url: chunk.web.uri,
+                title: chunk.web.title || undefined
+              })
+            }
+          }
+        }
       } catch {
-        // ignore image parsing errors; text fallback will still work
+        // ignore parsing errors; text fallback will still work
       }
 
-      if (imageMarkdown) {
-        if (!responseText) {
-          responseText = i18n.t('image_only_response')
-        }
-        const finalText = (responseText + imageMarkdown).trim()
-        params.onEvent({ type: 'UPDATE_ANSWER', data: { text: finalText } })
+      if (imageMarkdown || referenceUrls.length > 0) {
+        const finalText = (responseText + imageMarkdown).trim() || i18n.t('image_only_response')
+        params.onEvent({
+          type: 'UPDATE_ANSWER',
+          data: {
+            text: finalText,
+            thinking: thinkingText || undefined,
+            referenceUrls: referenceUrls.length > 0 ? referenceUrls : undefined
+          }
+        })
       } else if (!responseText) {
-        // Pure image with no detectable data, or completely empty response
+        // Empty response
         params.onEvent({ type: 'UPDATE_ANSWER', data: { text: i18n.t('image_only_response') } })
       }
 
@@ -307,6 +344,7 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
 
 export class GeminiApiBot extends AbstractGeminiApiBot {
   private config: GeminiApiBotOptions;
+  private customTools?: any[];
 
   constructor(options: GeminiApiBotOptions) {
     const httpOptions: HttpOptions | undefined = (() => {
@@ -358,9 +396,18 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
     return this.config.thinkingBudget
   }
 
+  protected getCustomTools(): any[] | undefined {
+    return this.customTools
+  }
+
   // Called via AsyncAbstractBot.setWebAccessEnabled when Web Access is toggled at runtime
   setWebAccessEnabled(enabled: boolean) {
     this.config.webAccess = enabled
+  }
+
+  // Set custom tools for function calling (e.g., image generation tools from Image Agent)
+  setTools(tools: any[]) {
+    this.customTools = tools
   }
 
   getSystemInstruction(): Content | undefined {

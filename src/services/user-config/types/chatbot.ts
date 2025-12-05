@@ -24,7 +24,7 @@ export interface CustomApiConfig {
   thinkingMode?: boolean; // Thinking mode (or Reasoning)
   thinkingBudget?: number; // Anthropic/Gemini 2.5 thinking budget
   thinkingLevel?: 'low' | 'high'; // Gemini 3+ thinking level
-  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
+  reasoningEffort?: 'none' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
   provider: CustomApiProvider;
   webAccess?: boolean;
   isAnthropicUsingAuthorizationHeader?: boolean;

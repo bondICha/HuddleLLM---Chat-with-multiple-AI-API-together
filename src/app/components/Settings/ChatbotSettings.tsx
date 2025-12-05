@@ -909,11 +909,11 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                             <div className={inputContainerClass}>
                               <Range
-                                value={config.thinkingMode ? (config.reasoningEffort === 'minimal' ? 0 : config.reasoningEffort === 'low' ? 1 : config.reasoningEffort === 'medium' ? 2 : config.reasoningEffort === 'high' ? 3 : 2) : config.temperature}
+                                value={config.thinkingMode ? (config.reasoningEffort === 'none' ? 0 : config.reasoningEffort === 'low' ? 1 : config.reasoningEffort === 'medium' ? 2 : config.reasoningEffort === 'high' ? 3 : 2) : config.temperature}
                                 onChange={(value) => {
                                   const updatedConfigs = [...customApiConfigs];
                                   if (config.thinkingMode) {
-                                    const effortMap: Record<number, 'minimal' | 'low' | 'medium' | 'high'> = { 0: 'minimal', 1: 'low', 2: 'medium', 3: 'high' };
+                                    const effortMap: Record<number, 'none' | 'low' | 'medium' | 'high'> = { 0: 'none', 1: 'low', 2: 'medium', 3: 'high' };
                                     updatedConfigs[index].reasoningEffort = effortMap[value];
                                   } else {
                                     updatedConfigs[index].temperature = value;
@@ -927,7 +927,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               <div className="flex justify-between text-xs opacity-70 mt-1" style={{ minHeight: '16px' }}>
                                 {config.thinkingMode ? (
                                   <>
-                                    <span>{t('Minimal')}</span>
+                                    <span>{t('None')}</span>
                                     <span>{t('Low')}</span>
                                     <span>{t('Medium')}</span>
                                     <span>{t('High')}</span>

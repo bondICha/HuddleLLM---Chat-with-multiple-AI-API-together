@@ -58,6 +58,15 @@ export const CLAUDE_COMPATIBLE_PROVIDERS = [
 ] as const
 
 /**
+ * Gemini-compatible providers (use GeminiApiBot with Gemini SDK)
+ * These providers support Gemini function calling format
+ */
+export const GEMINI_COMPATIBLE_PROVIDERS = [
+  CustomApiProvider.Google,
+  CustomApiProvider.VertexAI_Gemini,
+] as const
+
+/**
  * Providers that support Extended Thinking / Thinking Budget feature
  */
 export const THINKING_BUDGET_PROVIDERS = [

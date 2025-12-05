@@ -43,6 +43,21 @@ export function convertClaudeToolToOpenAI(claudeTool: ToolDefinition): any {
 }
 
 /**
+ * Convert Claude tool format to Gemini API format
+ * Claude: { name, description, input_schema }
+ * Gemini: { functionDeclarations: [{ name, description, parameters }] }
+ */
+export function convertClaudeToolToGemini(claudeTool: ToolDefinition): any {
+  return {
+    functionDeclarations: [{
+      name: claudeTool.name,
+      description: claudeTool.description,
+      parameters: claudeTool.input_schema,
+    }]
+  }
+}
+
+/**
  * Configuration for API processing
  * Separated from Tool Call (JSON definition passed to LLM)
  */
