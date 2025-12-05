@@ -379,5 +379,7 @@
   "Flags and display settings have been reset": "标志和显示设置已重置",
   "Failed to reset flags. Please try again.": "重置标志失败。请重试。",
   "releasenote_v2137_all_in_one_enhancement_fix_for_saved_chatbot_pair": "修复了 v2.13.5 新 All-in-One 布局中已保存的聊天机器人对无法正常工作的问题。",
-  "releasenote_v2135_all_in_one_enhancement": "## All-in-One 模式更好用了！\n\n我们改进了 All-in-One 模式的操作体验。\n\n- **更直观的面板控制**: 您现在可以使用简单的\"+\"和\"-\"按钮轻松更改聊天面板的数量，取代了以前的图标。\n- **您的设置将保持不变**: 更改布局时，您选择的 AI 模型组合将不再重置。无需在每次切换视图时重新选择您的机器人。\n\n本次发布说明由 Gemini 撰写（因为 GLM 效果不佳，我们请求 Gemini 协助😑）。"
+  "releasenote_v2135_all_in_one_enhancement": "## All-in-One 模式更好用了！\n\n我们改进了 All-in-One 模式的操作体验。\n\n- **更直观的面板控制**: 您现在可以使用简单的\"+\"和\"-\"按钮轻松更改聊天面板的数量，取代了以前的图标。\n- **您的设置将保持不变**: 更改布局时，您选择的 AI 模型组合将不再重置。无需在每次切换视图时重新选择您的机器人。\n\n本次发布说明由 Gemini 撰写（因为 GLM 效果不佳，我们请求 Gemini 协助😑）。",
+  "releasenote_v2139_native_web_search_tools": "## API 联网搜索：使用原生 Web 工具\n\n现在，OpenAI Responses / Claude / Gemini 可以直接使用各自提供的原生联网工具，而不是 HuddleLLM 自带的 Web 搜索代理。\n\n- 在聊天机器人设置中新增「API Web Search」开关，可按 Bot 单独开启或关闭。\n- OpenAI Responses 使用 `web_search_preview`；Claude 使用 `web_search_20250305`；Gemini 使用 `google_search`。\n- 之前的实现会在浏览器中对搜索结果的约 10 个 URL 逐个发起 Fetch 并内联全部内容，既增加了不稳定性，也显著放大了上下文尺寸。\n- 对于没有原生联网工具的提供商，仍然使用原有的 HuddleLLM Web 搜索代理和 System Prompt 附加说明。\n\n本次发布说明由 gpt-5.1/codex 撰写。\n",
+  "releasenote_v2139_gemini_api_web_search_enhancements": "## Gemini API 与联网搜索增强\n\n我们将 Gemini 集成迁移到官方 `@google/genai` SDK，支持流式输出、thinking 内容以及图片输入。\n\n- 来自联网搜索的引用网址会以「参考网站」形式显示，方便查看 Gemini 使用了哪些来源。\n- 设置页面新增 Vertex AI 模式和 API Web Search 相关选项，让不同端点的配置更加直观。\n"
 }

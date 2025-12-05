@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.13.9] - 2025-12-05
+
+### Added
+- Native `API Web Search` toggle for OpenAI Responses, Claude, and Gemini that wires Web Search to their provider-native tools (`web_search_preview`, `web_search_20250305`, `google_search`).
+- New documentation for the unified System Prompt and Web Search design at `docs/system-prompt-and-web-search-design.md`.
+- Enhanced Gemini API integration using the official `@google/genai` SDK with streaming, image input support, and explicit thinking output.
+- Display of Gemini web search grounding URLs as "Reference Sites" links in the chat UI.
+
+### Changed
+- Updated OpenAI Responses, Claude, Gemini, and custom bot implementations to prefer native web tools when API Web Search is enabled, falling back to HuddleLLM's Web Agent only for providers without native tools.
+- Replaced the previous browser-based Fetch implementation (which fetched and inlined ~10 result URLs per query) with provider-optimized search tools to improve stability and reduce context size.
+- Improved chatbot settings UI with clearer API Web Search options, Vertex AI mode toggles, and provider defaults backed by `config/providers/provider-defaults.ts`.
+- Bumped extension manifest version to `2.13.9` and adjusted host permissions to match the current built-in providers.
+
+### Fixed
+- Corrected tool precedence and default `webAccess` behavior for OpenAI Responses so that function tools and `web_search_preview` interact predictably.
+- Refined Gemini thinking panel text formatting and error handling for nested SDK error payloads.
+
+---
+
 ## [v2.13.6] - 2025-12-02
 
 ### Added
