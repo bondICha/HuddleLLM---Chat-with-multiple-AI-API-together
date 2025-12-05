@@ -3,6 +3,7 @@ import { FC, PropsWithChildren, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Atom, Globe } from 'lucide-react'
 import Expandable from '../common/Expandable'
+import Markdown from '../Markdown'
 import type { FetchedUrlContent, ReferenceUrl } from '~types/chat'
 
 interface Props {
@@ -121,7 +122,7 @@ const MessageBubble: FC<PropsWithChildren<Props>> = (props) => {
             }
             initiallyExpanded={false}
           >
-            {props.thinking}
+            <Markdown>{props.thinking}</Markdown>
           </Expandable>
       )}
       {props.searchResults && props.searchResults.length > 0 && (
