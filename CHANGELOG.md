@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.14.0] - 2025-12-17
+
+### Added
+- **Audio File Support**: Upload and process audio files (WAV, MP3, OGG, etc.).
+- **Native Gemini Audio**: Direct audio input support for Gemini 1.5 Pro/Flash.
+- **Speech-to-Text (SST)**: "Transcribe" feature for non-audio models (Claude, GPT-4o, etc.), powered by OpenAI Whisper or Gemini.
+- **Audio Player**: Inline audio playback in chat history and preview modals.
+
+### Changed
+- Updated `file-processor` to support audio MIME types.
+- Enhanced file attachment UI to handle audio files with a specialized player view.
+
+---
+
 ## [v2.13.9] - 2025-12-05
 
 ### Added
