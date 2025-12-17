@@ -78,6 +78,10 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
     return message.images ? message.images.map(img => URL.createObjectURL(img)) : []
   }, [message.images])
 
+  const audioUrls = useMemo(() => {
+    return message.audioFiles ? message.audioFiles.map(file => ({ url: URL.createObjectURL(file), name: file.name })) : []
+  }, [message.audioFiles])
+
   const copyText = useMemo(() => {
     if (message.text) {
       return message.text
@@ -211,6 +215,16 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
               ))}
             </div>
           )}
+          {audioUrls.length > 0 && (
+            <div className="flex flex-col gap-2 my-2 w-full max-w-xs">
+              {audioUrls.map((audio, index) => (
+                <div key={index} className="flex flex-col gap-1">
+                  <span className="text-xs opacity-70 truncate">{audio.name}</span>
+                  <audio controls src={audio.url} className="w-full h-8" />
+                </div>
+              ))}
+            </div>
+          )}
           {message.text ? (
             message.author === 'user' ? (
               <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{message.text}</div>
@@ -219,7 +233,9 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
             )
           ) : (
             !message.error && (
-              <BeatLoader size={10} className="leading-tight" color="rgb(var(--primary-text))" />
+              <div className="flex items-center justify-center py-1">
+                <BeatLoader size={10} color="rgb(var(--color-primary-blue))" />
+              </div>
             )
           )}
           {message.author === 'user' && message.attachments && message.attachments.length > 0 && (

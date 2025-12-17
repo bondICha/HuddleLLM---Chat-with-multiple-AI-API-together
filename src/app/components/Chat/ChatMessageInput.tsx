@@ -15,7 +15,7 @@ import { fileOpen } from 'browser-fs-access'
 import { cx } from '~/utils'
 import { ClipboardEventHandler, FC, ReactNode, memo, useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GoBook, GoImage, GoPaperclip, GoFile } from 'react-icons/go'
+import { GoBook, GoImage, GoPaperclip, GoFile, GoFileMedia } from 'react-icons/go'
 import { BiExpand } from 'react-icons/bi'
 import { RiDeleteBackLine } from 'react-icons/ri'
 import { Prompt } from '~services/prompts'
@@ -25,23 +25,29 @@ import PromptLibraryDialog from '../PromptLibrary/Dialog'
 import ExpandableDialog from '../ExpandableDialog'
 import TextInput from './TextInput';
 import { processFile } from '~app/utils/file-processor';
+import TranscribeModal from './TranscribeModal';
+import { transcribeWithOpenAI, transcribeWithGemini } from '~services/sst-service';
+import { getUserConfig } from '~services/user-config';
+import toast from 'react-hot-toast';
 
 interface Attachment {
   id: string;
   file: File;
-  type: 'image' | 'text';
+  type: 'image' | 'text' | 'audio';
   content?: string;
+  transcribedText?: string; // For audio files
 }
 
 interface Props {
   mode: 'full' | 'compact'
-  onSubmit: (value: string, images?: File[], attachments?: { name: string; content: string }[]) => void
+  onSubmit: (value: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[]) => void
   className?: string
   disabled?: boolean
   placeholder?: string
   actionButton?: ReactNode | null
   autoFocus?: boolean
   supportImageInput?: boolean
+  supportAudioInput?: boolean // New prop
   maxRows?: number
   fullHeight?: boolean
   onHeightChange?: (height: number) => void
@@ -68,12 +74,21 @@ const ChatMessageInput: FC<Props> = (props) => {
   const [isFocused, setIsFocused] = useState(false)
   const [isDragging, setIsDragging] = useState(false);
  
-   const [activeIndex, setActiveIndex] = useState<number | null>(null)
-   const [isComboboxOpen, setIsComboboxOpen] = useState(false)
+         const [activeIndex, setActiveIndex] = useState<number | null>(null)
+ 
+         const [isComboboxOpen, setIsComboboxOpen] = useState(false)
+ 
+         const [transcribeFile, setTranscribeFile] = useState<File | null>(null);
 
-  const { refs, floatingStyles, context } = useFloating({
-    whileElementsMounted: autoUpdate,
-    middleware: [offset(15), flip(), shift()],
+         const [isTranscribeModalOpen, setIsTranscribeModalOpen] = useState(false);
+
+         const [transcribingFileId, setTranscribingFileId] = useState<string | null>(null);
+
+
+
+         const { refs, floatingStyles, context} = useFloating({
+ 
+         whileElementsMounted: autoUpdate,    middleware: [offset(15), flip(), shift()],
     placement: 'top-start',
     open: isComboboxOpen,
     onOpenChange: setIsComboboxOpen,
@@ -125,23 +140,103 @@ const ChatMessageInput: FC<Props> = (props) => {
     [activeIndex, getItemProps, handleSelect],
   )
 
-  const onFormSubmit = useCallback(
-    (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const textAttachments = attachments
-        .filter(a => a.type === 'text')
-        .map(a => ({ name: a.file.name, content: a.content || '' }));
-      const images = attachments.filter(a => a.type === 'image').map(a => a.file);
+  const handleTranscribe = useCallback(async (provider: 'openai' | 'gemini' | 'none', modelOrBotId: string, providerIdOrBotIndex: string) => {
+    if (!transcribeFile) return;
 
-      if (value.trim() || images.length > 0 || textAttachments.length > 0) {
-        props.onSubmit(value, images, textAttachments);
-        setValue('');
-        setAttachments([]);
+    const tempId = `${transcribeFile.name}-${transcribeFile.lastModified}-${Math.random()}`;
+
+    // If provider is 'none', just add audio without transcription
+    if (provider === 'none') {
+      setAttachments(prev => [...prev, {
+        id: tempId,
+        file: transcribeFile,
+        type: 'audio',
+        transcribedText: undefined  // No transcription
+      }]);
+      setTranscribeFile(null);
+      toast.success(t('Audio file attached without transcription'), { duration: 3000 });
+      return;
+    }
+
+    try {
+      // Add temporary attachment with loading state
+      setAttachments(prev => [...prev, {
+        id: tempId,
+        file: transcribeFile,
+        type: 'audio',
+        transcribedText: ''
+      }]);
+      setTranscribingFileId(tempId);
+
+      toast.loading(t('Transcribing audio...'), { id: 'transcribing' });
+      let result;
+
+      if (provider === 'openai') {
+        result = await transcribeWithOpenAI(transcribeFile, providerIdOrBotIndex, modelOrBotId as any);
+      } else {
+        const botIndex = parseInt(providerIdOrBotIndex, 10);
+        if (Number.isNaN(botIndex)) {
+          throw new Error('Invalid Gemini bot index');
+        }
+        result = await transcribeWithGemini(transcribeFile, botIndex);
       }
-    },
-    [attachments, props, value],
-  );
 
+        if (result.text) {
+          toast.success(t('Transcription complete'), { id: 'transcribing' });
+          // Update attachment with transcribed text
+          setAttachments(prev => prev.map(a =>
+            a.id === tempId ? { ...a, transcribedText: result.text } : a
+          ));
+        } else {
+          throw new Error(result.error || 'No text returned');
+        }
+      } catch (error) {
+        console.error('Transcription error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        toast.error(`${t('Transcription failed')}: ${errorMessage}`, {
+          id: 'transcribing',
+          duration: 5000  // Show error for 5 seconds
+        });
+        alert(`DEBUG: ${t('Transcription failed')}\n\nError: ${errorMessage}\n\nFile: ${transcribeFile.name}\nSize: ${(transcribeFile.size / (1024 * 1024)).toFixed(2)}MB`);
+        // Remove failed attachment
+        setAttachments(prev => prev.filter(a => a.id !== tempId));
+      } finally {
+        setTranscribingFileId(null);
+        setTranscribeFile(null);
+      }
+    }, [transcribeFile, t]);
+  
+    const onFormSubmit = useCallback(
+      (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const textAttachments = attachments
+          .filter(a => a.type === 'text')
+          .map(a => ({ name: a.file.name, content: a.content || '' }));
+        const images = attachments.filter(a => a.type === 'image').map(a => a.file);
+        
+        const audioAttachments = attachments.filter(a => a.type === 'audio');
+
+        // Always include audio files regardless of bot capability.
+        // use-chat.ts will decide whether to use them based on bot's supportsAudioInput.
+        const audioFiles: File[] = audioAttachments.map(a => a.file);
+
+        const transcriptAttachments: { name: string; content: string }[] = audioAttachments
+          .filter(a => a.transcribedText)
+          .map(a => ({
+            name: `${a.file.name} (Transcript)`,
+            content: a.transcribedText || ''
+          }));
+
+        const allTextAttachments = [...textAttachments, ...transcriptAttachments];
+
+        if (value.trim() || images.length > 0 || allTextAttachments.length > 0 || audioFiles.length > 0) {
+          props.onSubmit(value, images, allTextAttachments, audioFiles);
+          setValue('');
+          setAttachments([]);
+        }
+      },
+      [attachments, props, value],
+    );
   const onValueChange = useCallback((v: string) => {
     setValue(v)
     setIsComboboxOpen(v === '/')
@@ -152,9 +247,23 @@ const ChatMessageInput: FC<Props> = (props) => {
       .filter(a => a.type === 'text')
       .map(a => ({ name: a.file.name, content: a.content || '' }));
     const images = attachments.filter(a => a.type === 'image').map(a => a.file);
+    
+    const audioAttachments = attachments.filter(a => a.type === 'audio');
 
-    if (value.trim() || images.length > 0 || textAttachments.length > 0) {
-      props.onSubmit(value, images, textAttachments);
+    // Always include audio files regardless of bot capability.
+    const audioFiles: File[] = audioAttachments.map(a => a.file);
+
+    const transcriptAttachments: { name: string; content: string }[] = audioAttachments
+      .filter(a => a.transcribedText)
+      .map(a => ({
+        name: `${a.file.name} (Transcript)`,
+        content: a.transcribedText || ''
+      }));
+
+    const allTextAttachments = [...textAttachments, ...transcriptAttachments];
+
+    if (value.trim() || images.length > 0 || allTextAttachments.length > 0 || audioFiles.length > 0) {
+      props.onSubmit(value, images, allTextAttachments, audioFiles);
       setValue('');
       setAttachments([]);
     }
@@ -164,7 +273,7 @@ const ChatMessageInput: FC<Props> = (props) => {
     setTimeout(() => {
       inputRef.current?.focus()
     }, 100)
-  }, [value, attachments, props.onSubmit])
+  }, [value, attachments, props.onSubmit, props.supportAudioInput])
 
   const insertTextAtCursor = useCallback(
     (text: string) => {
@@ -191,6 +300,25 @@ const ChatMessageInput: FC<Props> = (props) => {
         case 'image':
           setAttachments(prev => [...prev, { id, file, type: 'image' }]);
           break;
+        case 'audio':
+          const maxSize = 20 * 1024 * 1024; // 20MB
+          if (file.size > maxSize) {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            alert(`DEBUG: Audio file too large: ${file.name} (${sizeMB}MB / 20MB limit)`);
+            break;
+          }
+          const existingAudio = attachments.find(a => a.type === 'audio');
+          if (existingAudio) {
+            alert(`DEBUG: Only one audio file allowed per message`);
+            break;
+          }
+
+          // Always trigger transcribe workflow for audio files
+          // Transcribed text will be used for non-audio-supporting bots,
+          // while audio file will be sent directly to audio-supporting bots
+          setTranscribeFile(file);
+          setIsTranscribeModalOpen(true);
+          break;
         case 'text':
           setAttachments(prev => [...prev, { id, file, type: result.type, content: result.content }]);
           break;
@@ -200,7 +328,7 @@ const ChatMessageInput: FC<Props> = (props) => {
       }
     }
     inputRef.current?.focus();
-  }, []);
+  }, [attachments]);
 
   const selectImage = useCallback(async () => {
     const files = await fileOpen({
@@ -409,10 +537,19 @@ const ChatMessageInput: FC<Props> = (props) => {
               <div
                 key={att.id}
                 className="flex items-center gap-1 bg-primary-border dark:bg-secondary rounded-full px-2 py-1 border border-primary-border cursor-pointer"
-                onClick={() => att.type === 'text' && setEditingAttachment(att)}
+                onClick={() => (att.type === 'text' || (att.type === 'audio' && att.transcribedText)) && setEditingAttachment(att)}
               >
                 {att.type === 'image' && <GoImage size={12} className="text-secondary-text" />}
                 {att.type === 'text' && <GoFile size={12} className="text-secondary-text" />}
+                {att.type === 'audio' && (
+                  transcribingFileId === att.id ? (
+                    <div className="animate-spin">
+                      <GoFileMedia size={12} className="text-blue-500 dark:text-blue-400" />
+                    </div>
+                  ) : (
+                    <GoFileMedia size={12} className="text-secondary-text" />
+                  )
+                )}
                 <span className="text-xs text-primary-text font-semibold cursor-default truncate max-w-[100px] ml-1">
                   {att.file.name}
                 </span>
@@ -498,11 +635,20 @@ const ChatMessageInput: FC<Props> = (props) => {
           size="2xl"
           className="flex flex-col"
         >
-          <div className="flex-grow p-4">
+          <div className="flex-grow p-4 flex flex-col gap-4">
+            {editingAttachment.type === 'audio' && (
+              <audio controls src={URL.createObjectURL(editingAttachment.file)} className="w-full" />
+            )}
             <TextInput
-              value={editingAttachment.content || ''}
+              value={editingAttachment.content || editingAttachment.transcribedText || ''}
               onValueChange={(newContent) => {
-                setEditingAttachment(prev => prev ? { ...prev, content: newContent } : null);
+                setEditingAttachment(prev => {
+                  if (!prev) return null;
+                  if (prev.type === 'audio') {
+                    return { ...prev, transcribedText: newContent };
+                  }
+                  return { ...prev, content: newContent };
+                });
               }}
               placeholder={t('Edit file content...')}
               className="w-full h-full resize-none outline-none bg-transparent text-base"
@@ -512,7 +658,7 @@ const ChatMessageInput: FC<Props> = (props) => {
           </div>
           <div className="flex justify-between items-center p-4 border-t border-primary-border">
             <span className="text-sm text-secondary-text">
-              {t('Character count')}: {editingAttachment.content?.length || 0}
+              {t('Character count')}: {(editingAttachment.content || editingAttachment.transcribedText)?.length || 0}
             </span>
             <Button
               text={t('Save')}
@@ -526,6 +672,16 @@ const ChatMessageInput: FC<Props> = (props) => {
             />
           </div>
         </ExpandableDialog>
+      )}
+      {isTranscribeModalOpen && (
+        <TranscribeModal
+          isOpen={isTranscribeModalOpen}
+          onClose={() => {
+            setIsTranscribeModalOpen(false);
+            setTranscribeFile(null);
+          }}
+          onTranscribe={handleTranscribe}
+        />
       )}
     </form>
   )

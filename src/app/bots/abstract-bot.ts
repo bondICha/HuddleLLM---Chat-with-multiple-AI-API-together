@@ -42,6 +42,7 @@ export interface MessageParams {
   prompt: string
   rawUserInput?: string
   images?: File[]
+  audioFiles?: File[]
   signal?: AbortSignal
 }
 
@@ -169,6 +170,7 @@ export abstract class AbstractBot {
           prompt: params.prompt,
           rawUserInput: params.rawUserInput,
           images: params.images,
+          audioFiles: params.audioFiles,
           signal: params.signal,
           onEvent(event) {
             if (event.type === 'UPDATE_ANSWER') {
@@ -210,6 +212,10 @@ export abstract class AbstractBot {
   }
 
   get supportsImageInput() {
+    return false
+  }
+
+  get supportsAudioInput() {
     return false
   }
 
@@ -343,6 +349,10 @@ export abstract class AsyncAbstractBot extends AbstractBot {
 
   get supportsImageInput() {
     return this.#bot.supportsImageInput
+  }
+
+  get supportsAudioInput() {
+    return this.#bot.supportsAudioInput
   }
 
   // System message setter for dynamic updates

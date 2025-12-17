@@ -120,7 +120,7 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
     return { messages };
   }
 
-  private async buildUserContent(prompt: string, images?: File[]): Promise<Content> {
+  private async buildUserContent(prompt: string, images?: File[], audioFiles?: File[]): Promise<Content> {
     const parts: Part[] = [];
     
     if (images && images.length > 0) {
@@ -133,6 +133,18 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
                 },
             });
         }
+    }
+
+    if (audioFiles && audioFiles.length > 0) {
+      for (const audio of audioFiles) {
+        const base64data = await file2base64(audio);
+        parts.push({
+          inlineData: {
+            data: base64data.replace(/^data:.+;base64,/, ''),
+            mimeType: audio.type,
+          },
+        });
+      }
     }
 
     parts.push({ text: prompt });
@@ -148,7 +160,7 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
       this.conversationContext = { messages: [] }
     }
 
-    const userMessage = await this.buildUserContent(params.rawUserInput || params.prompt, params.images);
+    const userMessage = await this.buildUserContent(params.rawUserInput || params.prompt, params.images, params.audioFiles);
     
     const history = this.conversationContext.messages.slice(-CONTEXT_SIZE);
     const contents = [...history, userMessage];
@@ -441,6 +453,10 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
   }
 
   get supportsImageInput() {
+    return true;
+  }
+
+  get supportsAudioInput() {
     return true;
   }
 }

@@ -22,6 +22,7 @@ export interface ChatMessageModel {
   text: string
   images?: File[]
   attachments?: TextAttachment[]  // UI表示用のテキスト添付（履歴には保存しない）
+  audioFiles?: File[]  // Audio attachments (not persisted to storage)
   error?: ChatError
   thinking?: string
   fetchedUrls?: FetchedUrlContent[];
