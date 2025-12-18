@@ -183,7 +183,17 @@ const TranscribeModal: FC<Props> = ({ isOpen, onClose, onTranscribe }) => {
               )}
               onClick={() => setProvider('gemini')}
             >
-              Gemini
+              <div className="flex items-center justify-center gap-2">
+                <span>Gemini</span>
+                <span className={cx(
+                  "text-xs font-semibold px-2 py-0.5 rounded-full",
+                  provider === 'gemini'
+                    ? "bg-white/20 text-white"
+                    : "bg-primary-blue/10 text-primary-blue border border-primary-blue/30"
+                )}>
+                  {t('Recommended')}
+                </span>
+              </div>
             </button>
             <button
               className={cx(
