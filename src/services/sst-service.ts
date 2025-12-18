@@ -86,7 +86,6 @@ export async function transcribeWithGemini(
       customApiKey,
       customApiHost,
       customApiConfigs,
-      isCustomApiHostFullPath,
       providerConfigs,
     } = await getUserConfig();
 
@@ -119,12 +118,6 @@ export async function transcribeWithGemini(
           ? config.host
           : customApiHost;
 
-    const effectiveIsHostFullPath = providerRef
-      ? (providerRef.isHostFullPath ?? false)
-      : (config.host && config.host.trim().length > 0)
-        ? (config.isHostFullPath ?? false)
-        : isCustomApiHostFullPath;
-
     const effectiveApiKey =
       (providerRef?.apiKey && providerRef.apiKey.trim().length > 0)
         ? providerRef.apiKey
@@ -153,10 +146,10 @@ export async function transcribeWithGemini(
     // Create a temporary bot instance
     const bot = new GeminiApiBot({
       geminiApiKey: effectiveApiKey,
-      geminiApiModel: config.model || 'gemini-1.5-flash', // Default to flash for speed
+      geminiApiModel: config.model,
       geminiApiTemperature: 0,
       vertexai: vertexMode,
-      baseUrl: effectiveIsHostFullPath ? baseUrl : baseUrl, // Respect custom endpoints; SDK handles full paths
+      baseUrl,  // SDK handles both full paths and base URLs
       extraHeaders,
     });
 
@@ -166,7 +159,40 @@ export async function transcribeWithGemini(
     
     // Use the bot's sendMessage capability
     const stream = bot.sendMessage({
-      prompt: "Please transcribe this audio file accurately. Output ONLY the transcribed text, without any introductory or concluding remarks.",
+      prompt: `Analyze and transcribe this audio/video file. Provide TWO sections:
+
+## Audio Overview
+Describe the overall characteristics of the audio:
+- Type of content (meeting, lecture, conversation, podcast, etc.)
+- Number of speakers and their characteristics (if identifiable)
+- Audio quality and recording environment
+- Background sounds or ambient noise
+- Language(s) spoken
+- Tone and atmosphere
+- Duration estimate if relevant
+
+## Transcription
+Provide detailed transcription with these requirements:
+
+CRITICAL: TRANSCRIBE IN ORIGINAL LANGUAGE(S) ONLY
+1. Language: Write EXACTLY what is spoken in its ORIGINAL language
+   - Keep each sentence/phrase in the language it was spoken
+   - If multiple languages are used, preserve each in its original form
+   - NEVER add translations, explanations, or parenthetical notes from your understanding other than what is spoken
+   - NEVER add "(Translation:" or "Translation context" annotations
+   - NEVER convert or translate ANY spoken content
+
+2. Content: Include all spoken dialogue verbatim (word-for-word)
+3. Speakers: Label speakers (e.g., "Speaker 1:", "Speaker 2:", or use names/roles if mentioned)
+4. Non-speech: Include relevant sound effects or background noises in [brackets]
+5. Timestamps: Add timestamps (MM:SS format) for longer content or when helpful for context
+6. Video: If video file, note important visual elements at relevant timestamps
+
+Output format:
+- Use exactly these two section headers: "## Audio Overview" and "## Transcription"
+- Start directly with content, no introductory remarks
+- Use clear formatting with line breaks between speakers or topics
+- ABSOLUTELY NO TRANSLATIONS OR LANGUAGE CONVERSIONS`,
       audioFiles: [file],
       signal: controller.signal
     });

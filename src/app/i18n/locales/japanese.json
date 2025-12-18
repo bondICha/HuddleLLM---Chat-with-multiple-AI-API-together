@@ -448,5 +448,6 @@
   "Without transcription, the audio file will only be sent to audio-capable AIs (e.g., Gemini). Other AIs (Claude, GPT, etc.) will not receive the audio content.": "文字起こしなしの場合、音声ファイルは音声対応AI（Geminiなど）にのみ送信されます。その他のAI（Claude、GPTなど）は音声コンテンツを受け取りません。",
   "Attach without transcription": "文字起こしなしで添付",
   "Audio file attached without transcription": "音声ファイルを文字起こしなしで添付しました",
-  "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).": "音声対応AI（Geminiなど）には音声ファイルが直接送信されます。文字起こしテキストはその他のAI（Claude、GPTなど）に送信されます。"
+  "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).": "音声対応AI（Geminiなど）には音声ファイルが直接送信されます。文字起こしテキストはその他のAI（Claude、GPTなど）に送信されます。",
+  "releasenote_v2140_audio_support": "## 音声ファイル対応 & 自動文字起こし\\n\\n- **Gemini ネイティブ音声入力**: **Gemini 3 Pro Preview** モデルに音声ファイルを直接アップロードできるようになりました。\\n- **その他のモデルでも安心**: 音声入力に非対応のモデル（Claude, GPT-5など）でも、「文字起こし」機能を使ってテキストに変換してから送信できます。\\n- **オーディオプレイヤー**: チャット履歴内で音声ファイルを再生できるプレイヤーが表示されるようになりました。"
 }

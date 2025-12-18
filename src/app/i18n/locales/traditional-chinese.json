@@ -408,5 +408,6 @@
   "Without transcription, the audio file will only be sent to audio-capable AIs (e.g., Gemini). Other AIs (Claude, GPT, etc.) will not receive the audio content.": "不進行轉錄時，音訊檔案只會發送給支援音訊的AI（如Gemini）。其他AI（Claude、GPT等）將無法接收音訊內容。",
   "Attach without transcription": "不轉錄直接附加",
   "Audio file attached without transcription": "已附加音訊檔案（未轉錄）",
-  "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).": "支援音訊的AI（如Gemini）將直接接收音訊檔案。轉錄文字將發送給其他AI（Claude、GPT等）。"
+  "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).": "支援音訊的AI（如Gemini）將直接接收音訊檔案。轉錄文字將發送給其他AI（Claude、GPT等）。",
+  "releasenote_v2140_audio_support": "## 音訊支援 & 語音轉文字\\n\\n- **原生音訊輸入**: 現在可以直接上傳音訊檔案到 **Gemini 3 Pro Preview** 模型。\\n- **通用音訊支援**: 對於不支援原生音訊的模型（如 Claude, GPT-5．2），可以使用「轉寫」功能將音訊轉換為文字後發送。\\n- **音訊播放器**: 上傳的音訊檔案將在聊天記錄中顯示為內嵌播放器。"
 }

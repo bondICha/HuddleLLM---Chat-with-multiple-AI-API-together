@@ -439,5 +439,6 @@
   "Without transcription, the audio file will only be sent to audio-capable AIs (e.g., Gemini). Other AIs (Claude, GPT, etc.) will not receive the audio content.": "Without transcription, the audio file will only be sent to audio-capable AIs (e.g., Gemini). Other AIs (Claude, GPT, etc.) will not receive the audio content.",
   "Attach without transcription": "Attach without transcription",
   "Audio file attached without transcription": "Audio file attached without transcription",
-  "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).": "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.)."
+  "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).": "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).",
+  "releasenote_v2140_audio_support": "## Audio Support & Speech-to-Text\\n\\n- **Native Audio Input**: You can now upload audio files directly to **Gemini 3 Pro Preview** models.\\n- **Universal Audio Support**: For models that don't support audio natively (like Claude, GPT-5.2), a \\Transcribe\\ feature allows you to convert audio to text before sending.\\n- **Audio Player**: Uploaded audio files are displayed with an inline player in the chat history."
 }
