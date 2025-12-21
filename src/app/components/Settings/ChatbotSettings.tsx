@@ -407,6 +407,9 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             const showOpenRouterMode = isOpenRouter;
             const showDeveloperOptions = [CustomApiProvider.OpenAI, CustomApiProvider.Anthropic, CustomApiProvider.VertexAI_Claude, CustomApiProvider.OpenRouter].includes(effectiveProvider);
             const showOpenAIResponsesOptions = isOpenAIResponses;
+            const showClaudeOptions = isAnthropic;
+            const showGeminiApiWebOptions = effectiveProvider === CustomApiProvider.Google;
+            const showGeminiVertexMode = !config.providerRefId && effectiveProvider === CustomApiProvider.Google;
             // ========== End Conditional Flags ==========
 
             const linkedImageProvider = (userConfig.providerConfigs || []).find(
@@ -847,11 +850,38 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                             <div className={inputContainerClass}>
                               {config.thinkingMode ? (
-                                <Range value={config.thinkingBudget ?? 2000} onChange={(value) => { const u = [...customApiConfigs]; u[index].thinkingBudget = value; updateCustomApiConfigs(u); }} min={2000} max={32000} step={1000} />
+                                <>
+                                  {/* Gemini 2.5: Show Thinking Budget slider */}
+                                  {(effectiveProvider === CustomApiProvider.Google || effectiveProvider === CustomApiProvider.VertexAI_Gemini) && config.model?.includes('gemini-2') ? (
+                                    <>
+                                      <Range value={config.thinkingBudget ?? 8192} onChange={(value) => { const u = [...customApiConfigs]; u[index].thinkingBudget = value; updateCustomApiConfigs(u); }} min={-1} max={32768} step={512} />
+                                      <div className="text-sm text-right mt-1">{config.thinkingBudget === -1 ? 'Dynamic (Auto)' : `${config.thinkingBudget} tokens`}</div>
+                                    </>
+                                  ) : (effectiveProvider === CustomApiProvider.Google || effectiveProvider === CustomApiProvider.VertexAI_Gemini) ? (
+                                    // Gemini 3+: Show Thinking Level selector (default for future models)
+                                    <Select
+                                      options={[
+                                        { name: 'Low (Faster, less reasoning)', value: 'low' },
+                                        { name: 'High (Slower, more reasoning)', value: 'high' },
+                                      ]}
+                                      value={config.thinkingLevel || 'high'}
+                                      onChange={(v) => {
+                                        const u = [...customApiConfigs];
+                                        u[index].thinkingLevel = v as 'low' | 'high';
+                                        updateCustomApiConfigs(u);
+                                      }}
+                                    />
+                                  ) : (
+                                    // Anthropic/Claude: Show Thinking Budget slider
+                                    <>
+                                      <Range value={config.thinkingBudget ?? 2000} onChange={(value) => { const u = [...customApiConfigs]; u[index].thinkingBudget = value; updateCustomApiConfigs(u); }} min={2000} max={32000} step={1000} />
+                                      <div className="text-sm text-right mt-1">{config.thinkingBudget} tokens</div>
+                                    </>
+                                  )}
+                                </>
                               ) : (
                                 <Range value={config.temperature} onChange={(value) => { const u = [...customApiConfigs]; u[index].temperature = value; updateCustomApiConfigs(u); }} min={0} max={2} step={0.1} />
                               )}
-                              {config.thinkingMode && <div className="text-sm text-right mt-1">{config.thinkingBudget} tokens</div>}
                             </div>
                           </div>
                         )}
@@ -879,11 +909,11 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                             <div className={inputContainerClass}>
                               <Range
-                                value={config.thinkingMode ? (config.reasoningEffort === 'minimal' ? 0 : config.reasoningEffort === 'low' ? 1 : config.reasoningEffort === 'medium' ? 2 : config.reasoningEffort === 'high' ? 3 : 2) : config.temperature}
+                                value={config.thinkingMode ? (config.reasoningEffort === 'none' ? 0 : config.reasoningEffort === 'low' ? 1 : config.reasoningEffort === 'medium' ? 2 : config.reasoningEffort === 'high' ? 3 : 2) : config.temperature}
                                 onChange={(value) => {
                                   const updatedConfigs = [...customApiConfigs];
                                   if (config.thinkingMode) {
-                                    const effortMap: Record<number, 'minimal' | 'low' | 'medium' | 'high'> = { 0: 'minimal', 1: 'low', 2: 'medium', 3: 'high' };
+                                    const effortMap: Record<number, 'none' | 'low' | 'medium' | 'high'> = { 0: 'none', 1: 'low', 2: 'medium', 3: 'high' };
                                     updatedConfigs[index].reasoningEffort = effortMap[value];
                                   } else {
                                     updatedConfigs[index].temperature = value;
@@ -897,7 +927,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               <div className="flex justify-between text-xs opacity-70 mt-1" style={{ minHeight: '16px' }}>
                                 {config.thinkingMode ? (
                                   <>
-                                    <span>{t('Minimal')}</span>
+                                    <span>{t('None')}</span>
                                     <span>{t('Low')}</span>
                                     <span>{t('Medium')}</span>
                                     <span>{t('High')}</span>
@@ -950,6 +980,9 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                   updateCustomApiConfigs(updatedConfigs);
                                 }}
                               />
+                              <p className="text-xs opacity-70 mt-1">
+                                {t('When Web Access is enabled, Anthropic Claude uses its native web_search_20250305 tool instead of HuddleLLM Web Access.')}
+                              </p>
                             </div>
                           </div>
                         )}
@@ -966,6 +999,24 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                   updateCustomApiConfigs(updatedConfigs);
                                 }}
                               />
+                            </div>
+                          </div>
+                        )}
+                        {showGeminiVertexMode && (
+                          <div className={formRowClass}>
+                            <p className={labelClass}>{t('Vertex AI Mode')}</p>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={config.geminiVertexMode ?? false}
+                                onChange={(checked) => {
+                                  const updatedConfigs = [...customApiConfigs];
+                                  updatedConfigs[index].geminiVertexMode = checked;
+                                  updateCustomApiConfigs(updatedConfigs);
+                                }}
+                              />
+                              <p className="text-xs opacity-70">
+                                {t('Enable for Vertex AI endpoints and Rakuten AI Gateway')}
+                              </p>
                             </div>
                           </div>
                         )}
@@ -1078,36 +1129,32 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                               </div>
                             </div>
                         )}
-                        {showDeveloperOptions && (
-                            <DeveloperOptionsPanel
-                              config={config}
-                              index={index}
-                              expandedSections={expandedSections}
-                              toggleSection={toggleSection}
-                              updateConfig={(updatedConfig: CustomApiConfig) => {
-                                const updatedConfigs = [...customApiConfigs];
-                                updatedConfigs[index] = updatedConfig;
-                                updateCustomApiConfigs(updatedConfigs);
-                              }}
-                              effectiveProvider={effectiveProvider}
-                            />
-                        )}
                         {showOpenAIResponsesOptions && (
                             <div className="space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
-                                  <p className={labelClass}>Web Search</p>
+                                  <p className={labelClass}>{t('API Web Search')}</p>
                                 </div>
                                 <div className={inputContainerClass}>
                                   <Switch
-                                    checked={!!config.responsesWebSearch}
+                                    checked={
+                                      config.webToolSupport !== undefined
+                                        ? config.webToolSupport
+                                        : config.responsesWebSearch !== undefined
+                                          ? !!config.responsesWebSearch
+                                          : true
+                                    }
                                     onChange={(checked) => {
                                       const u = [...customApiConfigs];
+                                      u[index].webToolSupport = checked;
+                                      // Keep backward compatibility
                                       u[index].responsesWebSearch = checked;
                                       updateCustomApiConfigs(u);
                                     }}
                                   />
-                                  <p className="text-xs opacity-70 mt-1">Use web_search_preview tool with Responses API.</p>
+                                  <p className="text-xs opacity-70 mt-1">
+                                    {t('Use OpenAI Responses web_search_preview tool instead of HuddleLLM Web Access.')}
+                                  </p>
                                 </div>
                               </div>
                               <div className={formRowClass}>
@@ -1126,6 +1173,80 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 <p className="text-xs opacity-70 mt-1">Optional. Raw JSON array for Responses API tools. If set, overrides the simple Web Search toggle.</p>
                               </div>
                             </div>
+                        )}
+                        {showClaudeOptions && (
+                            <div className="space-y-4">
+                              <div className={formRowClass}>
+                                <div className="flex items-center gap-2">
+                                  <p className={labelClass}>{t('API Web Search')}</p>
+                                </div>
+                                <div className={inputContainerClass}>
+                                  <Switch
+                                    checked={
+                                      config.webToolSupport !== undefined
+                                        ? config.webToolSupport
+                                        : config.webAccess !== undefined
+                                          ? !!config.webAccess
+                                          : true
+                                    }
+                                    onChange={(checked) => {
+                                      const u = [...customApiConfigs];
+                                      u[index].webToolSupport = checked;
+                                      // Keep backward compatibility
+                                      u[index].webAccess = checked;
+                                      updateCustomApiConfigs(u);
+                                    }}
+                                  />
+                                  <p className="text-xs opacity-70 mt-1">
+                                    {t('Use Claude native web_search tool instead of HuddleLLM Web Access.')}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                        )}
+                        {showGeminiApiWebOptions && (
+                            <div className="space-y-4">
+                              <div className={formRowClass}>
+                                <div className="flex items-center gap-2">
+                                  <p className={labelClass}>{t('API Web Search')}</p>
+                                </div>
+                                <div className={inputContainerClass}>
+                                  <Switch
+                                    checked={
+                                      config.webToolSupport !== undefined
+                                        ? config.webToolSupport
+                                        : config.webAccess !== undefined
+                                          ? !!config.webAccess
+                                          : true
+                                    }
+                                    onChange={(checked) => {
+                                      const u = [...customApiConfigs];
+                                      u[index].webToolSupport = checked;
+                                      // Keep backward compatibility with existing webAccess semantics
+                                      u[index].webAccess = checked;
+                                      updateCustomApiConfigs(u);
+                                    }}
+                                  />
+                                  <p className="text-xs opacity-70 mt-1">
+                                    {t('Use Gemini google_search tool instead of HuddleLLM Web Access.')}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                        )}
+                        {showDeveloperOptions && (
+                            <DeveloperOptionsPanel
+                              config={config}
+                              index={index}
+                              expandedSections={expandedSections}
+                              toggleSection={toggleSection}
+                              updateConfig={(updatedConfig: CustomApiConfig) => {
+                                const updatedConfigs = [...customApiConfigs];
+                                updatedConfigs[index] = updatedConfig;
+                                updateCustomApiConfigs(updatedConfigs);
+                              }}
+                              effectiveProvider={effectiveProvider}
+                            />
                         )}
                         {/* Image Agent Settings */}
                         {isImageAgent && (

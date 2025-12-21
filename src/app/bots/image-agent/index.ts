@@ -1,7 +1,7 @@
 import { AbstractBot, SendMessageParams, ConversationHistory, Event } from '../abstract-bot'
 import { ChatError, ErrorCode } from '~utils/errors'
-import { getUserConfig, OPENAI_COMPATIBLE_PROVIDERS, CLAUDE_COMPATIBLE_PROVIDERS } from '~services/user-config'
-import { getDefaultImageModel, convertClaudeToolToOpenAI } from '~services/image-tool-definitions'
+import { getUserConfig, OPENAI_COMPATIBLE_PROVIDERS, CLAUDE_COMPATIBLE_PROVIDERS, GEMINI_COMPATIBLE_PROVIDERS } from '~services/user-config'
+import { getDefaultImageModel, convertClaudeToolToOpenAI, convertClaudeToolToGemini } from '~services/image-tool-definitions'
 import { generateImage } from '~services/image-api-client'
 import { createBotInstance } from '..'
 import { file2base64 } from '~app/utils/file-utils'
@@ -106,17 +106,26 @@ export class ImageAgentBot extends AbstractBot {
       // Check if provider is supported (using constants for maintainability)
       const isClaudeProvider = CLAUDE_COMPATIBLE_PROVIDERS.includes(effectiveProvider as any)
       const isOpenAIProvider = OPENAI_COMPATIBLE_PROVIDERS.includes(effectiveProvider as any)
+      const isGeminiProvider = GEMINI_COMPATIBLE_PROVIDERS.includes(effectiveProvider as any)
 
-      if (!isClaudeProvider && !isOpenAIProvider) {
-        throw new ChatError('Image Agent currently only supports Claude or OpenAI-compatible providers as Prompt Generator Bot', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
+      if (!isClaudeProvider && !isOpenAIProvider && !isGeminiProvider) {
+        throw new ChatError('Image Agent currently only supports Claude, OpenAI-compatible, or Gemini-compatible providers as Prompt Generator Bot', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
       }
 
       // Inject tool definition into the bot (await for initialization to complete)
-      // Convert to OpenAI format if needed
+      // Convert tool format based on provider
       if (typeof (promptBot as any).setTools === 'function') {
-        const toolToInject = isOpenAIProvider
-          ? convertClaudeToolToOpenAI(imageModelConfig.toolDefinition)
-          : imageModelConfig.toolDefinition
+        let toolToInject: any
+        if (GEMINI_COMPATIBLE_PROVIDERS.includes(promptBotConfig.provider as any)) {
+          // Gemini format: { functionDeclarations: [...] }
+          toolToInject = convertClaudeToolToGemini(imageModelConfig.toolDefinition)
+        } else if (isOpenAIProvider) {
+          // OpenAI format: { type: 'function', function: {...} }
+          toolToInject = convertClaudeToolToOpenAI(imageModelConfig.toolDefinition)
+        } else {
+          // Claude format: use as-is
+          toolToInject = imageModelConfig.toolDefinition
+        }
 
         await (promptBot as any).setTools([toolToInject])
       }

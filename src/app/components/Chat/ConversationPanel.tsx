@@ -24,7 +24,7 @@ interface Props {
   index: number
   bot: BotInstance
   messages: ChatMessageModel[]
-  onUserSendMessage: (input: string, images?: File[], attachments?: { name: string; content: string }[]) => void
+  onUserSendMessage: (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[]) => void
   resetConversation: () => void
   generating: boolean
   stopGenerating: () => void
@@ -75,8 +75,8 @@ const ConversationPanel: FC<Props> = (props) => {
   }, [props.resetConversation])
 
   const onSubmit = useCallback(
-    async (input: string, images?: File[], attachments?: { name: string; content: string }[]) => {
-      props.onUserSendMessage(input, images, attachments)
+    async (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[]) => {
+      props.onUserSendMessage(input, images, attachments, audioFiles)
     },
     [props],
   )
@@ -247,7 +247,8 @@ const ConversationPanel: FC<Props> = (props) => {
             }
             onSubmit={onSubmit}
             autoFocus={mode === 'full'}
-            supportImageInput={true || props.bot.supportsImageInput}  // 現在画像サポート有無を設定画面で確認していないため、暫定的に常にtrue
+            supportImageInput={true || props.bot.supportsImageInput}
+            supportAudioInput={props.bot.supportsAudioInput}
             actionButton={inputActionButton}
             onVisibilityChange={mode === 'compact' ? setIsInputVisible : undefined}
             className={cx(

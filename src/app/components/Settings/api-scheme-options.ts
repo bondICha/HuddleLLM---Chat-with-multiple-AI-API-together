@@ -18,9 +18,9 @@ export function getApiSchemeOptions(): ApiSchemeOption[] {
     { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock, outputType: 'text' },
     { name: 'Google Gemini (OpenAI Format)', value: CustomApiProvider.GeminiOpenAI, outputType: 'text' },
     { name: 'Qwen (OpenAI Format)', value: CustomApiProvider.QwenOpenAI, outputType: 'text' },
+    { name: 'Google Gemini API', value: CustomApiProvider.Google, recommended: true, outputType: 'text' },
     { name: 'VertexAI (Claude)', value: CustomApiProvider.VertexAI_Claude, outputType: 'text' },
-    { name: 'Google Gemini (Image, Beta)', value: CustomApiProvider.VertexAI_Gemini, outputType: 'text' },
-    { name: 'Google Gemini API (Deprecated)', value: CustomApiProvider.Google, outputType: 'text' },
+    { name: 'VertexAI (Gemini, Deprecated - Use Google Gemini API)', value: CustomApiProvider.VertexAI_Gemini, outputType: 'text' },
     // Image-only providers (used via Image Agent, not as direct chatbots)
     { name: 'Chutes AI (Image)', value: CustomApiProvider.ChutesAI, outputType: 'image' },
     { name: 'Novita AI (Image)', value: CustomApiProvider.NovitaAI, outputType: 'image' },

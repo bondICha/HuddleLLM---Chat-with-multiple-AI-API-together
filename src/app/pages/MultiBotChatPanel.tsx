@@ -229,21 +229,21 @@ const GeneralChatPanel: FC<{
   }, [chats.length, supportImageInput])
 
   const sendSingleMessage = useCallback(
-   (input: string, index: number, images?: File[], attachments?: { name: string; content: string }[]) => {
+   (input: string, index: number, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[]) => {
      const chat = chats.find((c) => c.index === index);
      if (chat) {
-       chat.sendMessage(input, images, attachments);
+       chat.sendMessage(input, images, attachments, audioFiles);
      }
    },
    [chats],
  );
 
   const sendAllMessage = useCallback(
-    (input: string, images?: File[], attachments?: { name: string; content: string }[]) => {
-      if (!input?.trim() && !images?.length && !attachments?.length) return;
+    (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[]) => {
+      if (!input?.trim() && !images?.length && !attachments?.length && !audioFiles?.length) return;
 
       // まずメッセージを送信
-      uniqBy(chats, (c) => c.index).forEach((c) => c.sendMessage(input, images, attachments));
+      uniqBy(chats, (c) => c.index).forEach((c) => c.sendMessage(input, images, attachments, audioFiles));
     },
     [chats],
   )
@@ -362,7 +362,7 @@ const GeneralChatPanel: FC<{
             index={chat.index}
             bot={chat.bot}
             messages={chat.messages}
-            onUserSendMessage={(input, images, attachments) => sendSingleMessage(input, chat.index, images, attachments)}
+            onUserSendMessage={(input, images, attachments, audioFiles) => sendSingleMessage(input, chat.index, images, attachments, audioFiles)}
             generating={chat.generating}
             stopGenerating={chat.stopGenerating}
             mode="compact"

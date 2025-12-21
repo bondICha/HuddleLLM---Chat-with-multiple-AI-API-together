@@ -11,6 +11,10 @@ export type AnwserPayload = {
   text: string;
   thinking?: string;
   searchResults?: SearchResultItem[];
+  /**
+   * Reference URLs extracted from model-native web tools (e.g. OpenAI Responses url_citation)
+   */
+  referenceUrls?: { url: string; title?: string }[];
 };
 
 export type Event =
@@ -38,6 +42,7 @@ export interface MessageParams {
   prompt: string
   rawUserInput?: string
   images?: File[]
+  audioFiles?: File[]
   signal?: AbortSignal
 }
 
@@ -165,6 +170,7 @@ export abstract class AbstractBot {
           prompt: params.prompt,
           rawUserInput: params.rawUserInput,
           images: params.images,
+          audioFiles: params.audioFiles,
           signal: params.signal,
           onEvent(event) {
             if (event.type === 'UPDATE_ANSWER') {
@@ -206,6 +212,10 @@ export abstract class AbstractBot {
   }
 
   get supportsImageInput() {
+    return false
+  }
+
+  get supportsAudioInput() {
     return false
   }
 
@@ -341,6 +351,10 @@ export abstract class AsyncAbstractBot extends AbstractBot {
     return this.#bot.supportsImageInput
   }
 
+  get supportsAudioInput() {
+    return this.#bot.supportsAudioInput
+  }
+
   // System message setter for dynamic updates
   async setSystemMessage(systemMessage: string) {
     // Wait for initialization to complete
@@ -350,6 +364,21 @@ export abstract class AsyncAbstractBot extends AbstractBot {
 
     if (!(this.#bot instanceof DummyBot) && this.#bot.setSystemMessage) {
       this.#bot.setSystemMessage(systemMessage);
+    }
+  }
+
+  /**
+   * Optional hook to propagate Web Access toggle to the underlying bot
+   * (e.g., GeminiApiBot can implement setWebAccessEnabled).
+   */
+  async setWebAccessEnabled(enabled: boolean) {
+    // Wait for initialization to complete
+    while (this.#bot instanceof DummyBot && !this.#initializeError) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    if (!(this.#bot instanceof DummyBot) && typeof (this.#bot as any).setWebAccessEnabled === 'function') {
+      (this.#bot as any).setWebAccessEnabled(enabled);
     }
   }
 

@@ -103,7 +103,7 @@ export const code: React.ElementType = memo(({ className, children }: TCodeProps
 const importThemeCSS = async (themeMode: ThemeMode) => {
   // テーマに応じてダークモードかどうか判定
   let shouldUseDark = false;
-  
+
   if (themeMode === ThemeMode.Dark) {
     shouldUseDark = true;
   } else if (themeMode === ThemeMode.Auto) {
@@ -111,11 +111,11 @@ const importThemeCSS = async (themeMode: ThemeMode) => {
     shouldUseDark = document.documentElement.classList.contains('dark') || isSystemDarkMode();
   }
   // Light の場合は shouldUseDark = false のまま
-  
+
   // 既存のGitHub Markdown CSSを削除
   const existingStyles = document.querySelectorAll('link[data-github-markdown]');
   existingStyles.forEach(style => style.remove());
-  
+
   // 新しいCSSを動的インポート
   try {
     if (shouldUseDark) {
@@ -173,11 +173,12 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
   );
   return (
     <CodeBlockProvider>
+    <div className={`markdown-body markdown-custom-styles code-block-no-margin !text-base font-normal`}>
     <ReactMarkdown
       /** @ts-ignore */
       remarkPlugins={
         // [[remarkMath, { singleDollarTextMath: true }],remarkBreaks, remarkGfm]
-        
+
         remarkPlugins
       }
       rehypePlugins={allowHtml
@@ -192,7 +193,6 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
           ]
       }
       {...({ urlTransform: (url: string) => url } as any)}
-      className={`markdown-body markdown-custom-styles code-block-no-margin !text-base font-normal`}
       // linkTarget="_blank" // Deprecated at markdown 9.0.0
       components={{
         a: ({ node, ...props }) => {
@@ -245,6 +245,7 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
     >
       {children}
     </ReactMarkdown>
+    </div>
     </CodeBlockProvider>
   )
 }

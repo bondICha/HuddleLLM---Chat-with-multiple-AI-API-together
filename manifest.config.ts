@@ -6,7 +6,7 @@ export default defineManifest(async () => {
     name: '__MSG_appName__',
     description: '__MSG_appDesc__',
     default_locale: 'en',
-    version: '2.13.8',
+    version: '2.14.0',
     icons: {
       '16': 'src/assets/icon.png',
       '32': 'src/assets/icon.png',
@@ -21,10 +21,8 @@ export default defineManifest(async () => {
     host_permissions: [
       "https://api.openai.com/*",
       "https://api.anthropic.com/*",
-      "https://api.cohere.ai/*",
       "https://generativelanguage.googleapis.com/*",
       "https://global.rakuten.com/*",
-      "https://api.mistral.ai/*"
     ],
     optional_host_permissions: ['https://*/*', 'http://*/*', 'wss://*/*'],
     permissions: ['storage', 'unlimitedStorage', 'sidePanel', 'scripting', 'offscreen', 'declarativeNetRequestWithHostAccess'],

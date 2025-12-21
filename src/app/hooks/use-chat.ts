@@ -41,7 +41,7 @@ export function useChat(index: number) {
   )
 
   const sendMessage = useCallback(
-    async (input: string, images?: File[], attachments?: { name: string; content: string }[]) => {
+    async (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[]) => {
       // URL処理
       const urlPattern = /@(https?:\/\/[^\s]+)/g
       const matches = [...input.matchAll(urlPattern)]
@@ -154,6 +154,7 @@ export function useChat(index: number) {
             text: input, // 画面表示用にそのまま保持（ただし履歴保存時にattachmentsは落とす）
             images,
             attachments: attachments && attachments.length ? attachments : undefined,
+            audioFiles: audioFiles && audioFiles.length ? audioFiles : undefined,
             author: 'user',
             fetchedUrls: fetchedUrls.length > 0 ? fetchedUrls : undefined
           },
@@ -163,11 +164,33 @@ export function useChat(index: number) {
       
       // API へ渡す最終メッセージは、ユーザ本文 + 取得URL + 添付を末尾に付加
       let finalMessage = cleanInput.trim() + (fetchedContent ? '\n\n' + fetchedContent : '')
+
+      // Wait for bot initialization if needed, then check audio capability
+      let audioCapable = false;
+      if ('isInitialized' in chatState.bot) {
+        // Wait for AsyncAbstractBot initialization
+        while (!(chatState.bot as any).isInitialized) {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+      }
+      if ('supportsAudioInput' in chatState.bot) {
+        audioCapable = (chatState.bot as any).supportsAudioInput;
+      }
+
       if (attachments && attachments.length) {
-        const attachmentSection = attachments
-          .map(att => `<${att.name}>\n${att.content}\n</${att.name}>`)
-          .join('\n\n')
-        finalMessage = `${finalMessage}\n\n---\n\n<Attachment>\n\n${attachmentSection}\n\n</Attachment>`
+        // For audio-capable bots with audio files, exclude transcript from prompt.
+        // Transcript is kept in message.attachments for UI display only.
+        const effectiveAttachments =
+          audioCapable && audioFiles && audioFiles.length > 0
+            ? attachments.filter(att => !att.name.endsWith(' (Transcript)'))
+            : attachments;
+
+        if (effectiveAttachments.length > 0) {
+          const attachmentSection = effectiveAttachments
+            .map(att => `<${att.name}>\n${att.content}\n</${att.name}>`)
+            .join('\n\n')
+          finalMessage = `${finalMessage}\n\n---\n\n<Attachment>\n\n${attachmentSection}\n\n</Attachment>`
+        }
       }
 
       const abortController = new AbortController()
@@ -185,6 +208,7 @@ export function useChat(index: number) {
       const resp = chatState.bot.sendMessage({
         prompt: finalMessage,
         images: compressedImages,
+        audioFiles: audioFiles,
         signal: abortController.signal,
       });
 
@@ -197,6 +221,9 @@ export function useChat(index: number) {
             }
             if (answer.searchResults) {
               message.searchResults = answer.searchResults;
+            }
+            if (answer.referenceUrls) {
+              message.referenceUrls = answer.referenceUrls;
             }
           });
         }
@@ -350,8 +377,8 @@ export function useChat(index: number) {
 
   useEffect(() => {
     if (chatState.messages.length) {
-      // 履歴保存時に添付を除去（画像同様、添付テキストは残さない）
-      const sanitized = chatState.messages.map(({ attachments, ...rest }) => rest)
+      // 履歴保存時に添付とオーディオを除去（画像同様、添付テキストは残さない）
+      const sanitized = chatState.messages.map(({ attachments, audioFiles, ...rest }) => rest)
       setConversationMessages(index, chatState.conversationId, sanitized as ChatMessageModel[])
     }
   }, [index, chatState.conversationId, chatState.messages])

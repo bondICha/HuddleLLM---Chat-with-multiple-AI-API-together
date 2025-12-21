@@ -266,7 +266,7 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       webAccess?: boolean;
       thinkingMode?: boolean;
       botIndex?: number; // CustomBotからのインデックス
-      reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
+      reasoningEffort?: 'none' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
       advancedConfig?: any; // To pass OpenRouter provider options
       extraBody?: any; // Extra body parameters for compatible APIs
     },
