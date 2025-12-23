@@ -166,6 +166,22 @@ export class OpenAIResponsesBot extends AbstractBot {
           const display = (resultText + imageMarkdown).trim()
           this.emitUpdateAnswer(params, { text: display, thinking: reasoningSummary })
         },
+        onFunctionCall: (functionCall) => {
+          // Emit TOOL_CALL event for Image Agent integration
+          try {
+            const args = JSON.parse(functionCall.arguments)
+            params.onEvent({
+              type: 'TOOL_CALL',
+              data: {
+                id: functionCall.id,
+                name: functionCall.name,
+                arguments: args
+              }
+            })
+          } catch (error) {
+            console.error('Failed to parse function call arguments:', error)
+          }
+        },
         onCompletedResponse: (response) => {
           // If an image tool was used but streaming events weren't emitted, append the final image from response
           const imgItem = (response?.output || []).find((it: any) => it?.type === 'image_generation_call')

@@ -402,5 +402,6 @@
   "Attach without transcription": "不转录直接附加",
   "Audio file attached without transcription": "已附加音频文件（未转录）",
   "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).": "支持音频的AI（如Gemini）将直接接收音频文件。转录文本将发送给其他AI（Claude、GPT等）。",
-  "releasenote_v2140_audio_support": "## 音频支持 & 语音转文字\\n\\n- **原生音频输入**: 现在可以直接上传音频文件到 **Gemini 3 Pro Preview** 模型。\\n- **通用音频支持**: 对于不支持原生音频的模型（如 Claude, GPT-5．2），可以使用“转写”功能将音频转换为文本后发送。\\n- **音频播放器**: 上传的音频文件将在聊天记录中显示为内联播放器。"
+  "releasenote_v2140_audio_support": "## 音频支持 & 语音转文字\n\n- **原生音频输入**: 现在可以直接上传音频文件到 **Gemini 3 Pro Preview** 模型。\n- **通用音频支持**: 对于不支持原生音频的模型（如 Claude, GPT-5.2），可以使用“转写”功能将音频转换为文本后发送。\n- **音频播放器**: 上传的音频文件将在聊天记录中显示为内联播放器。",
+  "releasenote_v2141_replicate_gemini_fix": "## Replicate 与 Gemini 兼容性修复\n\n- **Replicate URL 修复**: 修复了在 Replicate 上使用 Seedream 模型时误用 Novita 特定 API 路径的错误。\n- **Gemini 工具架构**: 改进了 Gemini 的工具定义兼容性，移出的 `x-order` 和 `title` 等不支持的架构字段。\n- **GPT-5 Ready**: 增加了对某些实验性 GPT-5 兼容端点使用的全新扁平化工具调用结构的支持。"
 }
