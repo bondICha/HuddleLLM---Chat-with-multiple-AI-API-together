@@ -6,6 +6,12 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.14.1',
+    notes: [
+      'releasenote_v2141_replicate_gemini_fix',
+    ],
+  },
+  {
     version: '2.14.0',
     notes: [
       'releasenote_v2140_audio_support',
@@ -265,10 +271,13 @@ export async function checkReleaseNotes(): Promise<{version: string, notes: stri
   const { lastCheckReleaseNotesVersion } = await Browser.storage.sync.get('lastCheckReleaseNotesVersion')
   // バージョン記録の更新は行わない（markCurrentVersionAsRead関数に移動）
   if (!lastCheckReleaseNotesVersion) {
-    return []
+    // 初回ユーザー: 最新3バージョンのリリースノートを表示
+    const initial = RELEASE_NOTES.slice(0, 3);
+    return initial;
   }
-  return RELEASE_NOTES
-    .filter(({ version: v }) => compareVersions(v, lastCheckReleaseNotesVersion) > 0)
+  const filtered = RELEASE_NOTES
+  .filter(({ version: v }) => compareVersions(v, lastCheckReleaseNotesVersion) > 0)
+  return filtered;
 }
 
 // 手動でリリースノートを表示するための関数（すべてのバージョンを返す）

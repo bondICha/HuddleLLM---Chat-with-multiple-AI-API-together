@@ -348,12 +348,11 @@ useEffect(() => {
       try {
         const configs = await getCompanyProfileConfigs();
         for (const preset of configs) {
-          // Check if we should perform the company profile check based on app usage
           const shouldCheck = await shouldCheckCompanyProfile(preset);
           if (!shouldCheck) {
             continue; // Skip checking this company profile
           }
-          
+
           const isCompanyEnvironment = await checkCompanyProfile(preset.checkUrl);
           
           // Update check count regardless of result
@@ -362,13 +361,13 @@ useEffect(() => {
           // Keep the previously saved version so we can detect future upgrades correctly.
           const newState = {
             companyName: preset.companyName,
-            version: currentState?.version || preset.version, // initialize only on first run
+            version: currentState?.version || preset.version,
             status: currentState?.status || CompanyProfileStatus.UNCONFIRMED,
             lastChecked: Date.now(),
             checkCount: (currentState?.checkCount || 0) + 1
           };
           await setCompanyProfileState(newState);
-          
+
           if (isCompanyEnvironment) {
             const shouldShow = await shouldShowProfilePrompt(preset);
             if (shouldShow) {

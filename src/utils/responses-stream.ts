@@ -5,6 +5,7 @@ export type ResponsesStreamCallbacks = {
   onReasoningFinal?: (text: string) => void
   onImagePartial?: (b64: string) => void
   onImageDone?: (b64: string) => void
+  onFunctionCall?: (functionCall: { id: string; name: string; arguments: string; call_id: string }) => void
   onCompleted?: () => void
   onCompletedResponse?: (response: any) => void
   onIncomplete?: () => void
@@ -77,6 +78,19 @@ export function handleResponsesEvent(data: any, eventName: string | undefined, c
     case 'image_generation.completed': {
       const b64 = data.result || data.image_b64 || data.image_base64 || data.b64_json
       if (b64) cb.onImageDone?.(b64)
+      return
+    }
+    case 'response.output_item.done': {
+      // Handle function calls (for Image Agent integration)
+      const item = data.item
+      if (item && item.type === 'function_call' && item.status === 'completed') {
+        cb.onFunctionCall?.({
+          id: item.id,
+          name: item.name,
+          arguments: item.arguments,
+          call_id: item.call_id
+        })
+      }
       return
     }
     default:

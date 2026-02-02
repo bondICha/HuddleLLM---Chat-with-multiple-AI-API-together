@@ -1,7 +1,7 @@
 import { AbstractBot, SendMessageParams, ConversationHistory, Event } from '../abstract-bot'
 import { ChatError, ErrorCode } from '~utils/errors'
-import { getUserConfig, OPENAI_COMPATIBLE_PROVIDERS, CLAUDE_COMPATIBLE_PROVIDERS, GEMINI_COMPATIBLE_PROVIDERS } from '~services/user-config'
-import { getDefaultImageModel, convertClaudeToolToOpenAI, convertClaudeToolToGemini } from '~services/image-tool-definitions'
+import { getUserConfig, OPENAI_COMPATIBLE_PROVIDERS, CLAUDE_COMPATIBLE_PROVIDERS, GEMINI_COMPATIBLE_PROVIDERS, CustomApiProvider } from '~services/user-config'
+import { getDefaultImageModel, convertClaudeToolToOpenAI, convertClaudeToolToOpenAIResponses, convertClaudeToolToGemini } from '~services/image-tool-definitions'
 import { generateImage } from '~services/image-api-client'
 import { createBotInstance } from '..'
 import { file2base64 } from '~app/utils/file-utils'
@@ -96,6 +96,13 @@ export class ImageAgentBot extends AbstractBot {
         throw new ChatError('Failed to create Prompt Generator Bot', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
       }
 
+      // Apply Image Agent's webAccess setting to Prompt Generator Bot
+      // This ensures the UI toggle on Image Agent is respected
+      // Note: Gemini API does not support mixing function calling tools with Google Search
+      if (typeof (promptBot as any).setWebAccessEnabled === 'function') {
+        await (promptBot as any).setWebAccessEnabled(!!custom.webAccess)
+      }
+
       // Determine Prompt Bot provider
       const promptBotConfig = cfg.customApiConfigs[promptGenIndex]
       const providerRef = promptBotConfig.providerRefId
@@ -119,8 +126,11 @@ export class ImageAgentBot extends AbstractBot {
         if (GEMINI_COMPATIBLE_PROVIDERS.includes(promptBotConfig.provider as any)) {
           // Gemini format: { functionDeclarations: [...] }
           toolToInject = convertClaudeToolToGemini(imageModelConfig.toolDefinition)
+        } else if (effectiveProvider === CustomApiProvider.OpenAI_Responses) {
+          // OpenAI Responses API format (flat): { type: 'function', name, description, parameters }
+          toolToInject = convertClaudeToolToOpenAIResponses(imageModelConfig.toolDefinition)
         } else if (isOpenAIProvider) {
-          // OpenAI format: { type: 'function', function: {...} }
+          // OpenAI Chat Completions API format (nested): { type: 'function', function: {...} }
           toolToInject = convertClaudeToolToOpenAI(imageModelConfig.toolDefinition)
         } else {
           // Claude format: use as-is
@@ -159,6 +169,7 @@ export class ImageAgentBot extends AbstractBot {
 
       let toolCallDetected = false
       let lastTextUpdate = ''
+      let lastThinking = '' // Preserve thinking text from Gemini
 
       const wrappedParams: SendMessageParams = {
         ...params,
@@ -229,7 +240,10 @@ export class ImageAgentBot extends AbstractBot {
 
               params.onEvent({
                 type: 'UPDATE_ANSWER',
-                data: { text: generatingText },
+                data: {
+                  text: generatingText,
+                  thinking: lastThinking || undefined // Preserve thinking from Gemini
+                },
               })
 
               // Determine endpoint based on whether images are present
@@ -273,7 +287,10 @@ export class ImageAgentBot extends AbstractBot {
 
               params.onEvent({
                 type: 'UPDATE_ANSWER',
-                data: { text: finalText },
+                data: {
+                  text: finalText,
+                  thinking: lastThinking || undefined // Preserve thinking from Gemini
+                },
               })
 
               params.onEvent({ type: 'DONE' })
@@ -284,8 +301,9 @@ export class ImageAgentBot extends AbstractBot {
               })
             }
           } else if (event.type === 'UPDATE_ANSWER') {
-            // Store text updates in case there's text before tool call
+            // Store text and thinking updates in case there's content before tool call
             lastTextUpdate = event.data.text || ''
+            lastThinking = event.data.thinking || ''
             // Forward text updates
             params.onEvent(event)
           } else if (event.type === 'DONE') {

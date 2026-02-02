@@ -230,6 +230,7 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
       let responseText = '';
       let thinkingText = '';
       let lastChunk: any = null;
+      let hasFunctionCall = false; // Track if function call was detected
       for await (const chunk of result) {
         lastChunk = chunk
         // Process all parts in the chunk to separate thoughts from answer
@@ -240,19 +241,34 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
           if (part.thought) {
             // This is thinking content
             thinkingText += part.text || ''
+          } else if (part.functionCall) {
+            // Function call detected - emit TOOL_CALL event for Image Agent integration
+            hasFunctionCall = true
+            params.onEvent({
+              type: 'TOOL_CALL',
+              data: {
+                id: (part as any).functionCall.id || crypto.randomUUID(),
+                name: (part as any).functionCall.name,
+                arguments: (part as any).functionCall.args
+              }
+            })
           } else if (part.text) {
             // This is answer content
             responseText += part.text
           }
         }
 
-        params.onEvent({
-          type: 'UPDATE_ANSWER',
-          data: {
-            text: responseText,
-            thinking: thinkingText || undefined
-          }
-        })
+        // Don't send UPDATE_ANSWER after function call is detected
+        // Let Image Agent handle the display with JSON parameters
+        if (!hasFunctionCall) {
+          params.onEvent({
+            type: 'UPDATE_ANSWER',
+            data: {
+              text: responseText,
+              thinking: thinkingText || undefined
+            }
+          })
+        }
       }
 
       // After streaming completes, attempt to extract inline image data and grounding URLs
@@ -304,12 +320,15 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
             referenceUrls: referenceUrls.length > 0 ? referenceUrls : undefined
           }
         })
-      } else if (!responseText) {
-        // Empty response
+      } else if (!responseText && !hasFunctionCall) {
+        // Empty response (and no function call)
         params.onEvent({ type: 'UPDATE_ANSWER', data: { text: i18n.t('image_only_response') } })
       }
 
-      params.onEvent({ type: 'DONE' })
+      // Don't emit DONE if function call was detected - let Image Agent handle it
+      if (!hasFunctionCall) {
+        params.onEvent({ type: 'DONE' })
+      }
       this.conversationContext.messages.push({ role: 'model', parts: [{ text: responseText }] })
 
     } catch (error) {

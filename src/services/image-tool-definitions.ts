@@ -12,7 +12,48 @@ import { ToolDefinition } from './user-config'
  */
 
 /**
- * Convert Claude Tool Use format to OpenAI Function Calling format
+ * Clean schema by removing unsupported custom fields (e.g., x-order, x-*, title, etc.)
+ * Only keeps standard JSON Schema fields supported by AI APIs
+ */
+function cleanSchema(schema: any): any {
+  if (!schema || typeof schema !== 'object') {
+    return schema
+  }
+
+  if (Array.isArray(schema)) {
+    return schema.map(cleanSchema)
+  }
+
+  const cleaned: any = {}
+  // Standard JSON Schema fields supported by most AI APIs
+  const allowedFields = [
+    'type', 'description', 'properties', 'required', 'enum',
+    'items', 'minimum', 'maximum', 'default', 'format',
+    'minItems', 'maxItems', 'minLength', 'maxLength'
+  ]
+
+  for (const key of allowedFields) {
+    if (key in schema) {
+      if (key === 'properties' && typeof schema[key] === 'object') {
+        // Recursively clean nested properties
+        cleaned[key] = {}
+        for (const propKey in schema[key]) {
+          cleaned[key][propKey] = cleanSchema(schema[key][propKey])
+        }
+      } else if (key === 'items' && typeof schema[key] === 'object') {
+        // Recursively clean array items schema
+        cleaned[key] = cleanSchema(schema[key])
+      } else {
+        cleaned[key] = schema[key]
+      }
+    }
+  }
+
+  return cleaned
+}
+
+/**
+ * Convert Claude Tool Use format to OpenAI Chat Completions API format
  *
  * Claude format:
  * {
@@ -21,7 +62,7 @@ import { ToolDefinition } from './user-config'
  *   input_schema: { type: "object", properties: {...}, required: [...] }
  * }
  *
- * OpenAI format:
+ * OpenAI Chat Completions API format (nested structure):
  * {
  *   type: "function",
  *   function: {
@@ -30,6 +71,9 @@ import { ToolDefinition } from './user-config'
  *     parameters: { type: "object", properties: {...}, required: [...] }
  *   }
  * }
+ *
+ * Note: This is for the standard Chat Completions API (/v1/chat/completions).
+ * For Responses API, use convertClaudeToolToOpenAIResponses instead.
  */
 export function convertClaudeToolToOpenAI(claudeTool: ToolDefinition): any {
   return {
@@ -37,8 +81,31 @@ export function convertClaudeToolToOpenAI(claudeTool: ToolDefinition): any {
     function: {
       name: claudeTool.name,
       description: claudeTool.description,
-      parameters: claudeTool.input_schema,
-    },
+      parameters: cleanSchema(claudeTool.input_schema),
+    }
+  }
+}
+
+/**
+ * Convert Claude Tool Use format to OpenAI Responses API format
+ *
+ * OpenAI Responses API format (flat structure):
+ * {
+ *   type: "function",
+ *   name: "...",
+ *   description: "...",
+ *   parameters: { type: "object", properties: {...}, required: [...] }
+ * }
+ *
+ * Note: This is specifically for the Responses API (/v1/responses).
+ * For standard Chat Completions API, use convertClaudeToolToOpenAI instead.
+ */
+export function convertClaudeToolToOpenAIResponses(claudeTool: ToolDefinition): any {
+  return {
+    type: 'function',
+    name: claudeTool.name,
+    description: claudeTool.description,
+    parameters: cleanSchema(claudeTool.input_schema),
   }
 }
 
@@ -46,13 +113,15 @@ export function convertClaudeToolToOpenAI(claudeTool: ToolDefinition): any {
  * Convert Claude tool format to Gemini API format
  * Claude: { name, description, input_schema }
  * Gemini: { functionDeclarations: [{ name, description, parameters }] }
+ *
+ * Gemini API only supports standard JSON Schema fields and rejects custom fields like x-order
  */
 export function convertClaudeToolToGemini(claudeTool: ToolDefinition): any {
   return {
     functionDeclarations: [{
       name: claudeTool.name,
       description: claudeTool.description,
-      parameters: claudeTool.input_schema,
+      parameters: cleanSchema(claudeTool.input_schema),
     }]
   }
 }
@@ -289,6 +358,48 @@ export const MODEL_NOVITA_SEEDREAM: ImageModelConfig = {
   },
 }
 
+/**
+ * 5. Replicate - Generic / Seedream
+ * Endpoint: Uses the baseHost directly (configured in settings as .../predictions)
+ */
+export const MODEL_REPLICATE_GENERIC: ImageModelConfig = {
+  // 基本上用replicate时候用户fetch API scheme所以这个generic Config是不会实际用的
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate an image using the specified model.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'A detailed description of the image to generate.',
+        },
+        width: {
+          type: 'number',
+          description: 'Image width in pixels',
+          default: 1024,
+        },
+        height: {
+          type: 'number',
+          description: 'Image height in pixels',
+          default: 1024,
+        },
+        num_inference_steps: {
+          type: 'number',
+          description: 'Number of inference steps',
+          default: 50,
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    endpoint: (_: boolean, baseHost: string) => baseHost,
+    isAsync: true, 
+    supportsEdit: false,
+  },
+}
+
 
 /**
  * Registry of all available image model configurations
@@ -340,10 +451,19 @@ export function getDefaultImageModel(model: string, provider?: string): ImageMod
     return MODEL_NOVITA_HUNYUAN
   }
   if (modelLower.includes('seedream')) {
+    // Novita 以外（Replicateなど）の場合は汎用設定を優先
+    if (providerLower && !providerLower.includes('novita')) {
+      return MODEL_REPLICATE_GENERIC
+    }
     return MODEL_NOVITA_SEEDREAM
   }
   if (modelLower.includes('flux')) {
     return MODEL_CHUTES_CHROMA
+  }
+
+  // Replicate の場合はモデル名が不明でも汎用設定で通す
+  if (providerLower.includes('replicate')) {
+    return MODEL_REPLICATE_GENERIC
   }
 
   // No model found - throw error instead of returning arbitrary default
