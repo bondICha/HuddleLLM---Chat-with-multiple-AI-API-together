@@ -274,6 +274,8 @@
   "Failed to restore session.": "恢复会话失败。",
   "Use ↑↓ keys to navigate, Enter to select, Esc to close": "使用↑↓键导航，Enter选择，Esc关闭",
   "Loading sessions...": "正在加载会话...",
+  "Load 100 more": "再加载100条",
+  "Load 500 more": "再加载500条",
   "Start New Session": "开始新会话",
   "Begin a fresh conversation": "开始新的对话",
   "No previous sessions found": "未找到之前的会话",

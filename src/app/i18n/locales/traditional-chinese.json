@@ -266,6 +266,8 @@
   "Failed to restore session.": "恢復工作階段失敗。",
   "Use ↑↓ keys to navigate, Enter to select, Esc to close": "使用↑↓鍵導覽，Enter選擇，Esc關閉",
   "Loading sessions...": "正在載入工作階段...",
+  "Load 100 more": "再載入100筆",
+  "Load 500 more": "再載入500筆",
   "Start New Session": "開始新工作階段",
   "Begin a fresh conversation": "開始新の對話",
   "No previous sessions found": "未找到先前の工作階段",

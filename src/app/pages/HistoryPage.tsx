@@ -66,6 +66,7 @@ const HistoryPage: FC = () => {
   const [loadingSessions, setLoadingSessions] = useState(false)
   const [sessions, setSessions] = useState<SessionListItem[]>([])
   const [sessionSearch, setSessionSearch] = useState('')
+  const [sessionVisibleCount, setSessionVisibleCount] = useState(100)
 
   const [botOptions, setBotOptions] = useState<{ name: string; value: string }[]>([])
 
@@ -160,6 +161,11 @@ const HistoryPage: FC = () => {
     loadSessionsData()
   }, [activeTab, loadSessionsData])
 
+  useEffect(() => {
+    if (activeTab !== 'sessions') return
+    setSessionVisibleCount(100)
+  }, [activeTab, sessionSearch])
+
   const filteredSessions = useMemo(() => {
     if (!sessionSearch.trim()) return sessions
     const q = sessionSearch.toLowerCase()
@@ -170,6 +176,24 @@ const HistoryPage: FC = () => {
       return names.includes(q) || firstMsg.includes(q) || pairName.includes(q)
     })
   }, [sessions, sessionSearch])
+
+  const visibleSessions = useMemo(() => {
+    if (sessionSearch.trim()) return filteredSessions
+    return filteredSessions.slice(0, sessionVisibleCount)
+  }, [filteredSessions, sessionSearch, sessionVisibleCount])
+
+  const canLoadMoreSessions = useMemo(() => {
+    if (loadingSessions) return false
+    if (sessionSearch.trim()) return false
+    return sessionVisibleCount < filteredSessions.length
+  }, [filteredSessions.length, loadingSessions, sessionSearch, sessionVisibleCount])
+
+  const loadMoreSessions = useCallback(
+    (count: number) => {
+      setSessionVisibleCount((prev) => Math.min(prev + count, filteredSessions.length))
+    },
+    [filteredSessions.length],
+  )
 
   const openAppTab = useCallback(async (hashPath: string) => {
     const url = `${Browser.runtime.getURL('app.html')}${hashPath}`
@@ -238,7 +262,7 @@ const HistoryPage: FC = () => {
             {!loadingSessions && filteredSessions.length === 0 && (
               <div className="text-sm opacity-70">{t('No sessions found.')}</div>
             )}
-            {filteredSessions.map((s) => (
+            {visibleSessions.map((s) => (
               <div
                 key={s.type === 'sessionSnapshot' ? `snap:${s.sessionUUID}` : `single:${s.botIndex}:${s.conversationId}`}
                 className="border border-primary-border rounded-2xl p-4 bg-primary-background/40 hover:bg-secondary/30 transition-colors"
@@ -268,6 +292,22 @@ const HistoryPage: FC = () => {
                 </div>
               </div>
             ))}
+            {canLoadMoreSessions && (
+              <div className="flex flex-row items-center justify-center gap-3 py-4">
+                <button
+                  className="px-3 py-2 rounded-xl text-sm border border-primary-border hover:bg-secondary/50"
+                  onClick={() => loadMoreSessions(100)}
+                >
+                  {t('Load 100 more')}
+                </button>
+                <button
+                  className="px-3 py-2 rounded-xl text-sm border border-primary-border hover:bg-secondary/50"
+                  onClick={() => loadMoreSessions(500)}
+                >
+                  {t('Load 500 more')}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

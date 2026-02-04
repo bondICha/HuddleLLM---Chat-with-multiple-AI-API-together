@@ -84,6 +84,8 @@
   "Failed to restore session.": "Failed to restore session.",
   "Use ↑↓ keys to navigate, Enter to select, Esc to start new session": "Use ↑↓ keys to navigate, Enter to select, Esc to start new session",
   "Loading sessions...": "Loading sessions...",
+  "Load 100 more": "Load 100 more",
+  "Load 500 more": "Load 500 more",
   "Start New Session": "Start New Session",
   "Begin a fresh conversation": "Begin a fresh conversation",
   "No previous sessions found": "No previous sessions found",
