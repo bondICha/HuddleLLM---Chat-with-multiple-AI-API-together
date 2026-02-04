@@ -62,6 +62,7 @@ const HistoryPage: FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('sessions')
   const [botIndex, setBotIndex] = useState('0')
   const [keyword, setKeyword] = useState('')
+  const [selectedSessionKey, setSelectedSessionKey] = useState<string | null>(null)
 
   const [loadingSessions, setLoadingSessions] = useState(false)
   const [sessions, setSessions] = useState<SessionListItem[]>([])
@@ -164,6 +165,7 @@ const HistoryPage: FC = () => {
   useEffect(() => {
     if (activeTab !== 'sessions') return
     setSessionVisibleCount(100)
+    setSelectedSessionKey(null)
   }, [activeTab, sessionSearch])
 
   const filteredSessions = useMemo(() => {
@@ -223,6 +225,10 @@ const HistoryPage: FC = () => {
     navigate({ to: '/' })
   }, [navigate])
 
+  const getSessionKey = useCallback((s: SessionListItem) => {
+    return s.type === 'sessionSnapshot' ? `snap:${s.sessionUUID}` : `single:${s.botIndex}:${s.conversationId}`
+  }, [])
+
   return (
     <PagePanel title={t('View history') as string}>
       <div className="mx-10 my-4 flex flex-row items-center justify-between gap-3">
@@ -247,7 +253,7 @@ const HistoryPage: FC = () => {
           </button>
         </div>
         <button className="text-sm underline opacity-80 hover:opacity-100" onClick={goToChat}>
-          All-In-One
+          {t('Back to All-In-One')}
         </button>
       </div>
 
@@ -264,8 +270,14 @@ const HistoryPage: FC = () => {
             )}
             {visibleSessions.map((s) => (
               <div
-                key={s.type === 'sessionSnapshot' ? `snap:${s.sessionUUID}` : `single:${s.botIndex}:${s.conversationId}`}
-                className="border border-primary-border rounded-2xl p-4 bg-primary-background/40 hover:bg-secondary/30 transition-colors"
+                key={getSessionKey(s)}
+                className={cx(
+                  'border border-primary-border rounded-2xl p-4 bg-primary-background/40 hover:bg-secondary/30 transition-colors cursor-pointer',
+                  selectedSessionKey === getSessionKey(s) && 'bg-secondary/30',
+                )}
+                onClick={() =>
+                  setSelectedSessionKey((prev) => (prev === getSessionKey(s) ? null : getSessionKey(s)))
+                }
               >
                 <div className="flex flex-row items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -277,13 +289,32 @@ const HistoryPage: FC = () => {
                     <div className="text-xs opacity-70 mt-1">
                       {dayjs(s.lastUpdated).format('YYYY-MM-DD HH:mm')} · {s.messageCount} msgs
                     </div>
-                    {s.firstMessage && <div className="text-xs opacity-80 mt-2 break-words">{s.firstMessage}</div>}
+                    {s.firstMessage && (
+                      <div className="text-xs opacity-80 mt-2 break-words whitespace-pre-wrap">
+                        {selectedSessionKey === getSessionKey(s) ? s.firstMessage.slice(0, 450) : s.firstMessage.slice(0, 140)}
+                        {selectedSessionKey === getSessionKey(s) && s.firstMessage.length > 450 ? '…' : ''}
+                        {selectedSessionKey !== getSessionKey(s) && s.firstMessage.length > 140 ? '…' : ''}
+                      </div>
+                    )}
+                    {selectedSessionKey === getSessionKey(s) && s.botNames && s.botNames.length > 0 && (
+                      <div className="text-xs opacity-70 mt-2 break-words">
+                        {s.botNames.join(' / ')}
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-row items-center gap-2 shrink-0">
                     <Tooltip content={t('Restore Session')}>
                       <button
-                        className="px-3 py-2 rounded-xl text-sm bg-blue-600 text-white hover:bg-blue-700"
-                        onClick={() => restoreSession(s)}
+                        className={cx(
+                          'rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all',
+                          selectedSessionKey === getSessionKey(s)
+                            ? 'px-4 py-2.5 text-base shadow-md'
+                            : 'px-3 py-2 text-sm',
+                        )}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          restoreSession(s)
+                        }}
                       >
                         {t('Restore Session')}
                       </button>
