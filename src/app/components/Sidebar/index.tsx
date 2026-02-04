@@ -713,8 +713,35 @@ useEffect(() => {
           )
         })}
       </div>
+
+      {/* Separator line (same style as All-In-One ↔ Each Chatbot) */}
+      {(shouldShowAsHamburger || !collapsed) && <div className="border-t border-gray-400 dark:border-gray-500 mx-2 my-2" />}
+
+      {/* History */}
+      <div
+        className={cx(
+          'rounded-[10px] w-full cursor-pointer bg-secondary bg-opacity-20 hover:opacity-100 flex items-center shrink-0',
+          (shouldShowAsHamburger || !collapsed) ? 'flex-row gap-3 px-3 py-[11px]' : 'flex-col justify-center items-center gap-1 px-1 py-[8px] min-h-[56px]',
+        )}
+        onClick={openHistoryInNewTab}
+      >
+        <div className="flex items-center justify-center">
+          <div className="rounded-full border border-white overflow-hidden w-6 h-6 flex items-center justify-center bg-primary-background bg-opacity-20">
+            <img src={historyIcon} className="w-4 h-4" />
+          </div>
+        </div>
+        <span
+          className={cx(
+            'font-medium text-sm',
+            !shouldShowAsHamburger && collapsed && 'overflow-hidden text-ellipsis leading-tight text-center break-words w-full',
+          )}
+        >
+          {shouldShowAsHamburger || !collapsed ? t('View history') : 'History'}
+        </span>
+      </div>
+
       <div className="mt-auto pt-2">
-        {(shouldShowAsHamburger || !collapsed) && <hr className="border-[#ffffff4d]" />}
+        {(shouldShowAsHamburger || !collapsed) && <div className="border-t border-gray-400 dark:border-gray-500 mx-2 my-2" />}
         <div className={cx('flex mt-5 gap-[10px] mb-4', (shouldShowAsHamburger || !collapsed) ? 'flex-row' : 'flex-col')}>
           {(shouldShowAsHamburger || !collapsed) && (
             <Tooltip content={t('GitHub')}>
@@ -735,13 +762,6 @@ useEffect(() => {
               <a onClick={() => setThemeSettingModalOpen(true)}>
                 <IconButton icon={themeIcon} />
               </a>
-            </Tooltip>
-          )}
-          {(shouldShowAsHamburger || !collapsed) && (
-            <Tooltip content={t('View history')}>
-              <div onClick={openHistoryInNewTab}>
-                <IconButton icon={historyIcon} />
-              </div>
             </Tooltip>
           )}
           <Tooltip content={t('Settings')}>
