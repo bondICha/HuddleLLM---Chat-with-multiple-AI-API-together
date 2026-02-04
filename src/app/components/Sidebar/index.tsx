@@ -5,7 +5,6 @@ import { atomWithStorage } from 'jotai/utils'
 import { useEffect, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline'
-import Browser from 'webextension-polyfill'
 import allInOneIcon from '~/assets/all-in-one.svg'
 import collapseIcon from '~/assets/icons/collapse.svg'
 import historyIcon from '~/assets/icons/history.svg'
@@ -136,11 +135,6 @@ useEffect(() => {
   initializeConfig();
 
 }, []);
-
-  const openHistoryInNewTab = async () => {
-    const url = `${Browser.runtime.getURL('app.html')}#/history`
-    await Browser.tabs.create({ url })
-  }
 
   // 保存されたPairを読み込む
   useEffect(() => {
@@ -718,12 +712,14 @@ useEffect(() => {
       {(shouldShowAsHamburger || !collapsed) && <div className="border-t border-gray-400 dark:border-gray-500 mx-2 my-2" />}
 
       {/* History */}
-      <div
+      <Link
+        to="/history"
         className={cx(
-          'rounded-[10px] w-full cursor-pointer bg-secondary bg-opacity-20 hover:opacity-100 flex items-center shrink-0',
-          (shouldShowAsHamburger || !collapsed) ? 'flex-row gap-3 px-3 py-[11px]' : 'flex-col justify-center items-center gap-1 px-1 py-[8px] min-h-[56px]',
+          'rounded-[10px] w-full bg-secondary bg-opacity-20 hover:opacity-100 flex items-center shrink-0 cursor-pointer',
+          (shouldShowAsHamburger || !collapsed)
+            ? 'flex-row gap-3 px-3 py-[11px]'
+            : 'flex-col justify-center items-center gap-1 px-1 py-[8px] min-h-[56px]',
         )}
-        onClick={openHistoryInNewTab}
       >
         <div className="flex items-center justify-center">
           <div className="rounded-full border border-white overflow-hidden w-6 h-6 flex items-center justify-center bg-primary-background bg-opacity-20">
@@ -738,7 +734,7 @@ useEffect(() => {
         >
           {shouldShowAsHamburger || !collapsed ? t('View history') : 'History'}
         </span>
-      </div>
+      </Link>
 
       <div className="mt-auto pt-2">
         {(shouldShowAsHamburger || !collapsed) && <div className="border-t border-gray-400 dark:border-gray-500 mx-2 my-2" />}

@@ -9,7 +9,6 @@ import { cx } from '~/utils'
 import { ConversationContext, ConversationContextValue } from '~app/context'
 import { ChatMessageModel } from '~types'
 import { BotInstance } from '../../bots'
-import Browser from 'webextension-polyfill'
 import Button from '../Button'
 import BotIcon from '../BotIcon'
 import ShareDialog from '../Share/Dialog'
@@ -130,9 +129,8 @@ const ConversationPanel: FC<Props> = (props) => {
     }
   }, [props])
 
-  const openHistoryInNewTab = useCallback(async () => {
-    const url = `${Browser.runtime.getURL('app.html')}#/history?botIndex=${props.index}`
-    await Browser.tabs.create({ url })
+  const openHistory = useCallback(() => {
+    window.location.hash = `#/history?botIndex=${props.index}`
   }, [props.index])
 
   const openShareDialog = useCallback(() => {
@@ -206,7 +204,7 @@ const ConversationPanel: FC<Props> = (props) => {
               <motion.img
                 src={historyIcon}
                 className="w-5 h-5 cursor-pointer"
-                onClick={openHistoryInNewTab}
+                onClick={openHistory}
                 whileHover={{ scale: 1.1 }}
               />
             </Tooltip>
