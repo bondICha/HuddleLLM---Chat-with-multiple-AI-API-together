@@ -233,6 +233,14 @@ const HistoryPage: FC = () => {
     return sessionVisibleCount < filteredSessions.length
   }, [filteredSessions.length, loadingSessions, sessionSearch, sessionVisibleCount])
 
+  const sessionStatsText = useMemo(() => {
+    return t('History sessions stats', {
+      loaded: sessions.length,
+      matched: filteredSessions.length,
+      shown: visibleSessions.length,
+    })
+  }, [filteredSessions.length, sessions.length, t, visibleSessions.length])
+
   const loadMoreSessions = useCallback(
     (count: number) => {
       setSessionVisibleCount((prev) => Math.min(prev + count, filteredSessions.length))
@@ -279,6 +287,7 @@ const HistoryPage: FC = () => {
           )}
           <SearchInput value={sessionSearch} onChange={setSessionSearch} />
         </div>
+        <div className="text-xs opacity-70 mb-3">{sessionStatsText}</div>
 
         <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar max-h-[calc(100vh-220px)] pr-1">
           {loadingSessions && <div className="text-sm opacity-70">{t('Loading sessions...')}</div>}

@@ -274,6 +274,7 @@
   "No sessions found.": "未找到工作階段。",
   "All chatbots": "全部聊天機器人",
   "Invalid bot filter.": "無效的機器人篩選。",
+  "History sessions stats": "已取得：{{loaded}} · 符合：{{matched}} · 顯示：{{shown}}",
   "Click outside or press Esc to close": "點擊外部或按Esc關閉",
   "agent_search_thinking": "正在搜尋\"{{query}}\"",
   "agent_empty_search_results": "搜尋結果為空\n⚠️ 未找到搜尋結果。\n查詢: \"{{query}}\"\n提供商: {{provider}}\n\n搜尋引擎可能未返回結果。",
