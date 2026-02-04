@@ -4,6 +4,7 @@ import MultiBotChatPanel from './pages/MultiBotChatPanel'
 import SettingPage from './pages/SettingPage'
 import SingleBotChatPanel from './pages/SingleBotChatPanel'
 import WelcomePage from './pages/WelcomePage'
+import HistoryPage from './pages/HistoryPage'
 // SearchQueryHandler のインポートは不要になります
 
 const rootRoute = createRootRoute()
@@ -43,10 +44,18 @@ const welcomeRoute = createRoute({
   component: WelcomePage,
 })
 
+const historyRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: 'history',
+  component: HistoryPage,
+})
+
 // searchRoute の定義を削除 コメントは不要なので削除
 // const searchRoute = createRoute({ ... })
 
-const routeTree = rootRoute.addChildren([layoutRoute.addChildren([indexRoute, customChatRoute, settingRoute, welcomeRoute])])
+const routeTree = rootRoute.addChildren([
+  layoutRoute.addChildren([indexRoute, customChatRoute, settingRoute, welcomeRoute, historyRoute]),
+])
 
 const hashHistory = createHashHistory()
 const router = createRouter({ routeTree, history: hashHistory })

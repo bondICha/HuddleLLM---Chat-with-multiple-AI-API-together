@@ -9,9 +9,9 @@ import { cx } from '~/utils'
 import { ConversationContext, ConversationContextValue } from '~app/context'
 import { ChatMessageModel } from '~types'
 import { BotInstance } from '../../bots'
+import Browser from 'webextension-polyfill'
 import Button from '../Button'
 import BotIcon from '../BotIcon'
-import HistoryDialog from '../History/Dialog'
 import ShareDialog from '../Share/Dialog'
 import Tooltip from '../Tooltip'
 import ChatMessageInput from './ChatMessageInput'
@@ -39,7 +39,6 @@ const ConversationPanel: FC<Props> = (props) => {
   const { t } = useTranslation()
   const mode = props.mode || 'full'
   const marginClass = 'mx-3'
-  const [showHistory, setShowHistory] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
   // ボット名とアバターを保持するための状態を追加
   const [botName, setBotName] = useState<string>('Custom Bot')
@@ -131,8 +130,9 @@ const ConversationPanel: FC<Props> = (props) => {
     }
   }, [props])
 
-  const openHistoryDialog = useCallback(() => {
-    setShowHistory(true)
+  const openHistoryInNewTab = useCallback(async () => {
+    const url = `${Browser.runtime.getURL('app.html')}#/history?tab=bot&botIndex=${props.index}`
+    await Browser.tabs.create({ url })
   }, [props.index])
 
   const openShareDialog = useCallback(() => {
@@ -206,7 +206,7 @@ const ConversationPanel: FC<Props> = (props) => {
               <motion.img
                 src={historyIcon}
                 className="w-5 h-5 cursor-pointer"
-                onClick={openHistoryDialog}
+                onClick={openHistoryInNewTab}
                 whileHover={{ scale: 1.1 }}
               />
             </Tooltip>
@@ -260,7 +260,6 @@ const ConversationPanel: FC<Props> = (props) => {
       {showShareDialog && (
         <ShareDialog open={true} onClose={() => setShowShareDialog(false)} messages={props.messages} />
       )}
-      {showHistory && <HistoryDialog index={props.index} open={true} onClose={() => setShowHistory(false)} />}
     </ConversationContext.Provider>
   )
 }

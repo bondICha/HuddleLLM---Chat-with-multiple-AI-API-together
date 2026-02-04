@@ -5,8 +5,10 @@ import { atomWithStorage } from 'jotai/utils'
 import { useEffect, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline'
+import Browser from 'webextension-polyfill'
 import allInOneIcon from '~/assets/all-in-one.svg'
 import collapseIcon from '~/assets/icons/collapse.svg'
+import historyIcon from '~/assets/icons/history.svg'
 import HamburgerIcon from '../icons/HamburgerIcon'
 import releaseNotesIcon from '~/assets/icons/release-notes.svg'
 import githubIcon from '~/assets/icons/github.svg'
@@ -18,7 +20,7 @@ import BotIcon from '../BotIcon'
 import CollapsedMosaic from './CollapsedMosaic'
 import { cx } from '~/utils'
 import { useEnabledBots } from '~app/hooks/use-enabled-bots'
-import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom, restoreOnStartupAtom } from '~app/state'
+import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom } from '~app/state'
 import { checkReleaseNotes, getAllReleaseNotes } from '~services/release-notes'
 import * as api from '~services/server-api'
 import {
@@ -80,8 +82,6 @@ function Sidebar() {
   const [editingPairId, setEditingPairId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [hasInitialized, setHasInitialized] = useState(false)
-  // 起動時に履歴再開モーダルを表示する設定（デフォルトON）
-  const [restoreOnStartup, setRestoreOnStartup] = useAtom(restoreOnStartupAtom)
 
   // アクティブなAll-In-Oneを管理
   const [activeAllInOne, setActiveAllInOne] = useAtom(activeAllInOneAtom)
@@ -136,6 +136,11 @@ useEffect(() => {
   initializeConfig();
 
 }, []);
+
+  const openHistoryInNewTab = async () => {
+    const url = `${Browser.runtime.getURL('app.html')}#/history`
+    await Browser.tabs.create({ url })
+  }
 
   // 保存されたPairを読み込む
   useEffect(() => {
@@ -708,23 +713,6 @@ useEffect(() => {
           )
         })}
       </div>
-      {/* 起動時に履歴再開表示 トグル */}
-      {(shouldShowAsHamburger || !collapsed) && (
-        <div className="mt-3 mb-1 px-1 flex items-center justify-between">
-          <span className="text-xs text-primary-text opacity-80">{t('Show session restore on startup')}</span>
-          <label className="inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              className="sr-only peer"
-              checked={restoreOnStartup}
-              onChange={(e) => setRestoreOnStartup(e.target.checked)}
-            />
-            <div className="w-10 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:bg-blue-500 relative transition-colors">
-              <span className={cx('absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-all', restoreOnStartup ? 'translate-x-5' : 'translate-x-0')} />
-            </div>
-          </label>
-        </div>
-      )}
       <div className="mt-auto pt-2">
         {(shouldShowAsHamburger || !collapsed) && <hr className="border-[#ffffff4d]" />}
         <div className={cx('flex mt-5 gap-[10px] mb-4', (shouldShowAsHamburger || !collapsed) ? 'flex-row' : 'flex-col')}>
@@ -747,6 +735,13 @@ useEffect(() => {
               <a onClick={() => setThemeSettingModalOpen(true)}>
                 <IconButton icon={themeIcon} />
               </a>
+            </Tooltip>
+          )}
+          {(shouldShowAsHamburger || !collapsed) && (
+            <Tooltip content={t('View history')}>
+              <div onClick={openHistoryInNewTab}>
+                <IconButton icon={historyIcon} />
+              </div>
             </Tooltip>
           )}
           <Tooltip content={t('Settings')}>

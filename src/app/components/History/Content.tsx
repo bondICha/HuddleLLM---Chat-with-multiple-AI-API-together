@@ -64,7 +64,7 @@ const HistoryContent: FC<{ index: number; keyword: string }> = ({ index, keyword
   }, [fuse, keyword])
 
   return (
-    <div className="flex flex-col overflow-y-auto" ref={ref}>
+    <div className="flex flex-col overflow-y-auto custom-scrollbar" ref={ref}>
       <ViewportList
         viewportRef={ref}
         items={filteredItems.length ? filteredItems : items}
