@@ -1,19 +1,15 @@
-import { FC, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { FC, useCallback, useEffect, useMemo, useState } from 'react'
+import { useLocation } from '@tanstack/react-router'
 import Browser from 'webextension-polyfill'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
-import { VscClearAll } from 'react-icons/vsc'
 import { FiSearch } from 'react-icons/fi'
 import PagePanel from '~app/components/Page'
 import Select from '~app/components/Select'
 import Tooltip from '~app/components/Tooltip'
-import { clearHistoryMessages, loadHistoryMessages, loadSessionSnapshots } from '~services/chat-history'
+import { loadHistoryMessages, loadSessionSnapshots } from '~services/chat-history'
 import { getUserConfig } from '~services/user-config'
-import HistoryContent from '~app/components/History/Content'
 import { cx } from '~utils'
-
-type ActiveTab = 'sessions' | 'bot'
 
 type SessionListItem =
   | {
@@ -57,11 +53,7 @@ const SearchInput: FC<{ value: string; onChange: (v: string) => void }> = (props
 const HistoryPage: FC = () => {
   const { t } = useTranslation()
   const location = useLocation()
-  const navigate = useNavigate()
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('sessions')
-  const [botIndex, setBotIndex] = useState('0')
-  const [keyword, setKeyword] = useState('')
   const [selectedSessionKey, setSelectedSessionKey] = useState<string | null>(null)
 
   const [loadingSessions, setLoadingSessions] = useState(false)
@@ -70,11 +62,18 @@ const HistoryPage: FC = () => {
   const [sessionVisibleCount, setSessionVisibleCount] = useState(100)
 
   const [botOptions, setBotOptions] = useState<{ name: string; value: string }[]>([])
+  const [botFilter, setBotFilter] = useState<string>('all')
+  const botFilterOptions = useMemo(() => {
+    return [{ name: t('All chatbots') as string, value: 'all' }, ...botOptions]
+  }, [botOptions, t])
 
-  const botIndexNum = useMemo(() => {
-    const n = parseInt(botIndex, 10)
-    return Number.isFinite(n) ? n : 0
-  }, [botIndex])
+  const clearHashQuery = useCallback(() => {
+    const hash = window.location.hash
+    const queryStart = hash.indexOf('?')
+    if (queryStart === -1) return
+    const newHash = hash.substring(0, queryStart)
+    window.history.replaceState({}, '', window.location.pathname + newHash)
+  }, [])
 
   useEffect(() => {
     const loadBotOptions = async () => {
@@ -82,13 +81,18 @@ const HistoryPage: FC = () => {
       const customApiConfigs = config.customApiConfigs || []
       const options = customApiConfigs.map((c, index) => ({ name: c.name || `Bot ${index + 1}`, value: index.toString() }))
       setBotOptions(options)
-      const idx = parseInt(botIndex, 10)
-      if (options.length > 0 && (!Number.isFinite(idx) || idx >= options.length)) {
-        setBotIndex('0')
+
+      if (botFilter !== 'all') {
+        const exists = options.some((o) => o.value === botFilter)
+        if (!exists) {
+          alert(`${t('View history')}: ${t('Invalid bot filter.')}`)
+          setBotFilter('all')
+          clearHashQuery()
+        }
       }
     }
     loadBotOptions()
-  }, [])
+  }, [botFilter, clearHashQuery, t])
 
   useEffect(() => {
     const hash = window.location.hash
@@ -96,14 +100,9 @@ const HistoryPage: FC = () => {
     if (queryStart === -1) return
 
     const params = new URLSearchParams(hash.substring(queryStart + 1))
-    const tab = params.get('tab')
     const idx = params.get('botIndex')
-
-    if (tab === 'bot') setActiveTab('bot')
-    if (tab === 'sessions') setActiveTab('sessions')
     if (idx && /^\d+$/.test(idx)) {
-      setBotIndex(idx)
-      setActiveTab('bot')
+      setBotFilter(idx)
     }
   }, [location.hash, location.search])
 
@@ -158,26 +157,34 @@ const HistoryPage: FC = () => {
   }, [])
 
   useEffect(() => {
-    if (activeTab !== 'sessions') return
     loadSessionsData()
-  }, [activeTab, loadSessionsData])
+  }, [loadSessionsData])
 
   useEffect(() => {
-    if (activeTab !== 'sessions') return
     setSessionVisibleCount(100)
     setSelectedSessionKey(null)
-  }, [activeTab, sessionSearch])
+  }, [sessionSearch, botFilter])
+
+  const botFilteredSessions = useMemo(() => {
+    if (botFilter === 'all') return sessions
+    const botIndex = parseInt(botFilter, 10)
+    if (!Number.isFinite(botIndex)) return sessions
+    return sessions.filter((s) => {
+      if (s.type === 'single') return s.botIndex === botIndex
+      return Array.isArray(s.botIndices) && s.botIndices.includes(botIndex)
+    })
+  }, [botFilter, sessions])
 
   const filteredSessions = useMemo(() => {
-    if (!sessionSearch.trim()) return sessions
+    if (!sessionSearch.trim()) return botFilteredSessions
     const q = sessionSearch.toLowerCase()
-    return sessions.filter((s) => {
+    return botFilteredSessions.filter((s) => {
       const names = (s.botNames || []).join(' ').toLowerCase()
       const firstMsg = (s.firstMessage || '').toLowerCase()
       const pairName = ('pairName' in s ? (s.pairName || '') : '').toLowerCase()
       return names.includes(q) || firstMsg.includes(q) || pairName.includes(q)
     })
-  }, [sessions, sessionSearch])
+  }, [botFilteredSessions, sessionSearch])
 
   const visibleSessions = useMemo(() => {
     if (sessionSearch.trim()) return filteredSessions
@@ -215,167 +222,100 @@ const HistoryPage: FC = () => {
     [openAppTab],
   )
 
-  const clearAll = useCallback(async () => {
-    if (confirm(t('Are you sure you want to clear history messages?')!)) {
-      await clearHistoryMessages(botIndexNum)
-    }
-  }, [botIndexNum, t])
-
-  const goToChat = useCallback(() => {
-    navigate({ to: '/' })
-  }, [navigate])
-
   const getSessionKey = useCallback((s: SessionListItem) => {
     return s.type === 'sessionSnapshot' ? `snap:${s.sessionUUID}` : `single:${s.botIndex}:${s.conversationId}`
   }, [])
 
   return (
     <PagePanel title={t('View history') as string}>
-      <div className="mx-10 my-4 flex flex-row items-center justify-between gap-3">
-        <div className="flex flex-row gap-2">
-          <button
-            className={cx(
-              'px-3 py-1.5 rounded-xl text-sm border border-primary-border',
-              activeTab === 'sessions' ? 'bg-secondary' : 'hover:bg-secondary/50',
-            )}
-            onClick={() => setActiveTab('sessions')}
-          >
-            {t('Restore Session')}
-          </button>
-          <button
-            className={cx(
-              'px-3 py-1.5 rounded-xl text-sm border border-primary-border',
-              activeTab === 'bot' ? 'bg-secondary' : 'hover:bg-secondary/50',
-            )}
-            onClick={() => setActiveTab('bot')}
-          >
-            {t('View history')}
-          </button>
+      <div className="px-10 pb-10">
+        <div className="flex flex-row items-center gap-3 my-4">
+          {botFilterOptions.length > 1 && (
+            <div className="w-[240px]">
+              <Select options={botFilterOptions} value={botFilter} onChange={(v) => setBotFilter(v)} />
+            </div>
+          )}
+          <SearchInput value={sessionSearch} onChange={setSessionSearch} />
         </div>
-        <button className="text-sm underline opacity-80 hover:opacity-100" onClick={goToChat}>
-          {t('Back to All-In-One')}
-        </button>
-      </div>
 
-      {activeTab === 'sessions' && (
-        <div className="px-10 pb-10">
-          <div className="flex flex-row items-center gap-3 mb-4">
-            <SearchInput value={sessionSearch} onChange={setSessionSearch} />
-          </div>
-
-          <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar max-h-[calc(100vh-220px)] pr-1">
-            {loadingSessions && <div className="text-sm opacity-70">{t('Loading sessions...')}</div>}
-            {!loadingSessions && filteredSessions.length === 0 && (
-              <div className="text-sm opacity-70">{t('No sessions found.')}</div>
-            )}
-            {visibleSessions.map((s) => (
-              <div
-                key={getSessionKey(s)}
-                className={cx(
-                  'border border-primary-border rounded-2xl p-4 bg-primary-background/40 hover:bg-secondary/30 transition-colors cursor-pointer',
-                  selectedSessionKey === getSessionKey(s) && 'bg-secondary/30',
-                )}
-                onClick={() =>
-                  setSelectedSessionKey((prev) => (prev === getSessionKey(s) ? null : getSessionKey(s)))
-                }
+        <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar max-h-[calc(100vh-220px)] pr-1">
+          {loadingSessions && <div className="text-sm opacity-70">{t('Loading sessions...')}</div>}
+          {!loadingSessions && filteredSessions.length === 0 && (
+            <div className="text-sm opacity-70">{t('No sessions found.')}</div>
+          )}
+          {visibleSessions.map((s) => (
+            <div
+              key={getSessionKey(s)}
+              className={cx(
+                'border border-primary-border rounded-2xl p-4 bg-primary-background/40 hover:bg-secondary/30 transition-colors cursor-pointer',
+                selectedSessionKey === getSessionKey(s) && 'bg-secondary/30',
+              )}
+              onClick={() =>
+                setSelectedSessionKey((prev) => (prev === getSessionKey(s) ? null : getSessionKey(s)))
+              }
+            >
+              <div className="flex flex-row items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold truncate">
+                    {s.type === 'sessionSnapshot'
+                      ? s.pairName || (s.botNames || []).join(' / ') || s.sessionUUID
+                      : (s.botNames && s.botNames[0]) || `Bot ${s.botIndex + 1}`}
+                  </div>
+                  <div className="text-xs opacity-70 mt-1">
+                    {dayjs(s.lastUpdated).format('YYYY-MM-DD HH:mm')} · {s.messageCount} msgs
+                  </div>
+                  {s.firstMessage && (
+                    <div className="text-xs opacity-80 mt-2 break-words whitespace-pre-wrap">
+                      {selectedSessionKey === getSessionKey(s) ? s.firstMessage.slice(0, 450) : s.firstMessage.slice(0, 140)}
+                      {selectedSessionKey === getSessionKey(s) && s.firstMessage.length > 450 ? '…' : ''}
+                      {selectedSessionKey !== getSessionKey(s) && s.firstMessage.length > 140 ? '…' : ''}
+                    </div>
+                  )}
+                  {selectedSessionKey === getSessionKey(s) && s.botNames && s.botNames.length > 0 && (
+                    <div className="text-xs opacity-70 mt-2 break-words">
+                      {s.botNames.join(' / ')}
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-row items-center gap-2 shrink-0">
+                  <Tooltip content={t('Restore Session')}>
+                    <button
+                      className={cx(
+                        'rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all',
+                        selectedSessionKey === getSessionKey(s)
+                          ? 'px-4 py-2.5 text-base shadow-md'
+                          : 'px-3 py-2 text-sm',
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        restoreSession(s)
+                      }}
+                    >
+                      {t('Restore Session')}
+                    </button>
+                  </Tooltip>
+                </div>
+              </div>
+            </div>
+          ))}
+          {canLoadMoreSessions && (
+            <div className="flex flex-row items-center justify-center gap-3 py-4">
+              <button
+                className="px-3 py-2 rounded-xl text-sm border border-primary-border hover:bg-secondary/50"
+                onClick={() => loadMoreSessions(100)}
               >
-                <div className="flex flex-row items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold truncate">
-                      {s.type === 'sessionSnapshot'
-                        ? s.pairName || (s.botNames || []).join(' / ') || s.sessionUUID
-                        : (s.botNames && s.botNames[0]) || `Bot ${s.botIndex + 1}`}
-                    </div>
-                    <div className="text-xs opacity-70 mt-1">
-                      {dayjs(s.lastUpdated).format('YYYY-MM-DD HH:mm')} · {s.messageCount} msgs
-                    </div>
-                    {s.firstMessage && (
-                      <div className="text-xs opacity-80 mt-2 break-words whitespace-pre-wrap">
-                        {selectedSessionKey === getSessionKey(s) ? s.firstMessage.slice(0, 450) : s.firstMessage.slice(0, 140)}
-                        {selectedSessionKey === getSessionKey(s) && s.firstMessage.length > 450 ? '…' : ''}
-                        {selectedSessionKey !== getSessionKey(s) && s.firstMessage.length > 140 ? '…' : ''}
-                      </div>
-                    )}
-                    {selectedSessionKey === getSessionKey(s) && s.botNames && s.botNames.length > 0 && (
-                      <div className="text-xs opacity-70 mt-2 break-words">
-                        {s.botNames.join(' / ')}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-row items-center gap-2 shrink-0">
-                    <Tooltip content={t('Restore Session')}>
-                      <button
-                        className={cx(
-                          'rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all',
-                          selectedSessionKey === getSessionKey(s)
-                            ? 'px-4 py-2.5 text-base shadow-md'
-                            : 'px-3 py-2 text-sm',
-                        )}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          restoreSession(s)
-                        }}
-                      >
-                        {t('Restore Session')}
-                      </button>
-                    </Tooltip>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {canLoadMoreSessions && (
-              <div className="flex flex-row items-center justify-center gap-3 py-4">
-                <button
-                  className="px-3 py-2 rounded-xl text-sm border border-primary-border hover:bg-secondary/50"
-                  onClick={() => loadMoreSessions(100)}
-                >
-                  {t('Load 100 more')}
-                </button>
-                <button
-                  className="px-3 py-2 rounded-xl text-sm border border-primary-border hover:bg-secondary/50"
-                  onClick={() => loadMoreSessions(500)}
-                >
-                  {t('Load 500 more')}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'bot' && (
-        <div className="px-10 pb-10 h-full">
-          <div className="flex flex-row items-center gap-3 mb-4">
-            {botOptions.length > 0 ? (
-              <>
-                <div className="w-[280px]">
-                  <Select
-                    options={botOptions.map((o) => ({ name: o.name, value: o.value }))}
-                    value={botIndex}
-                    onChange={(v) => setBotIndex(v as string)}
-                  />
-                </div>
-                <Tooltip content={t('Clear history messages')}>
-                  <button className="bg-secondary p-2 rounded-xl hover:opacity-90" onClick={clearAll}>
-                    <VscClearAll size={18} className="opacity-80" />
-                  </button>
-                </Tooltip>
-                <SearchInput value={keyword} onChange={setKeyword} />
-              </>
-            ) : (
-              <div className="text-sm opacity-70">{t('No chatbots configured.')}</div>
-            )}
-          </div>
-
-          {botOptions.length > 0 && (
-            <div className="border border-primary-border rounded-2xl h-[calc(100vh-220px)] overflow-hidden">
-              <Suspense fallback={<div className="p-5 text-sm opacity-70">{t('Loading sessions...')}</div>}>
-                <HistoryContent index={botIndexNum} keyword={keyword} />
-              </Suspense>
+                {t('Load 100 more')}
+              </button>
+              <button
+                className="px-3 py-2 rounded-xl text-sm border border-primary-border hover:bg-secondary/50"
+                onClick={() => loadMoreSessions(500)}
+              >
+                {t('Load 500 more')}
+              </button>
             </div>
           )}
         </div>
-      )}
+      </div>
     </PagePanel>
   )
 }

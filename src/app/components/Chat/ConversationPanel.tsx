@@ -131,7 +131,7 @@ const ConversationPanel: FC<Props> = (props) => {
   }, [props])
 
   const openHistoryInNewTab = useCallback(async () => {
-    const url = `${Browser.runtime.getURL('app.html')}#/history?tab=bot&botIndex=${props.index}`
+    const url = `${Browser.runtime.getURL('app.html')}#/history?botIndex=${props.index}`
     await Browser.tabs.create({ url })
   }, [props.index])
 
