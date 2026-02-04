@@ -7,7 +7,7 @@ import { FiSearch } from 'react-icons/fi'
 import PagePanel from '~app/components/Page'
 import Select from '~app/components/Select'
 import Tooltip from '~app/components/Tooltip'
-import { loadHistoryMessages, loadSessionSnapshots } from '~services/chat-history'
+import { loadAllInOneSessions, loadHistoryMessages, loadSessionSnapshots } from '~services/chat-history'
 import { getUserConfig } from '~services/user-config'
 import { cx } from '~utils'
 
@@ -15,6 +15,18 @@ type SessionListItem =
   | {
       type: 'sessionSnapshot'
       sessionUUID: string
+      createdAt: number
+      lastUpdated: number
+      messageCount: number
+      botIndices: number[]
+      layout: string
+      pairName?: string
+      firstMessage?: string
+      botNames?: string[]
+    }
+  | {
+      type: 'allInOneLegacy'
+      sessionId: string
       createdAt: number
       lastUpdated: number
       messageCount: number
@@ -131,6 +143,29 @@ const HistoryPage: FC = () => {
         })
       }
 
+      // Legacy All-In-One sessions (pre sessionSnapshots)
+      const legacyAllInOneSessions = await loadAllInOneSessions()
+      for (const s of legacyAllInOneSessions) {
+        const allMessages = Object.values(s.conversations || {}).flatMap((convs: any[]) =>
+          Array.isArray(convs) ? convs.flatMap((c: any) => c.messages || []) : [],
+        )
+        const firstUserMsg = allMessages.find(
+          (m: any) => m.author === 'user' && typeof m.text === 'string' && m.text.trim() !== '',
+        )
+        all.push({
+          type: 'allInOneLegacy',
+          sessionId: s.id,
+          createdAt: s.createdAt,
+          lastUpdated: s.lastUpdated,
+          messageCount: s.messageCount || 0,
+          botIndices: s.botIndices,
+          layout: s.layout,
+          pairName: s.pairName,
+          firstMessage: firstUserMsg?.text ? String(firstUserMsg.text).slice(0, 120) : undefined,
+          botNames: s.botIndices?.map((idx: number) => botNames[idx] || `Bot ${idx + 1}`),
+        })
+      }
+
       const botCount = (config.customApiConfigs || []).length
       for (let i = 0; i < botCount; i++) {
         const conversations = await loadHistoryMessages(i)
@@ -171,6 +206,7 @@ const HistoryPage: FC = () => {
     if (!Number.isFinite(botIndex)) return sessions
     return sessions.filter((s) => {
       if (s.type === 'single') return s.botIndex === botIndex
+      if (s.type === 'allInOneLegacy') return Array.isArray(s.botIndices) && s.botIndices.includes(botIndex)
       return Array.isArray(s.botIndices) && s.botIndices.includes(botIndex)
     })
   }, [botFilter, sessions])
@@ -215,6 +251,10 @@ const HistoryPage: FC = () => {
         await openAppTab(`#/?restoreSessionUUID=${encodeURIComponent(item.sessionUUID)}`)
         return
       }
+      if (item.type === 'allInOneLegacy') {
+        await openAppTab(`#/?restoreAllInOneSessionId=${encodeURIComponent(item.sessionId)}`)
+        return
+      }
       await openAppTab(
         `#/chat/custom/${item.botIndex}?restoreConversationId=${encodeURIComponent(item.conversationId)}`,
       )
@@ -223,7 +263,9 @@ const HistoryPage: FC = () => {
   )
 
   const getSessionKey = useCallback((s: SessionListItem) => {
-    return s.type === 'sessionSnapshot' ? `snap:${s.sessionUUID}` : `single:${s.botIndex}:${s.conversationId}`
+    if (s.type === 'sessionSnapshot') return `snap:${s.sessionUUID}`
+    if (s.type === 'allInOneLegacy') return `aio:${s.sessionId}`
+    return `single:${s.botIndex}:${s.conversationId}`
   }, [])
 
   return (
@@ -259,7 +301,9 @@ const HistoryPage: FC = () => {
                   <div className="text-sm font-semibold truncate">
                     {s.type === 'sessionSnapshot'
                       ? s.pairName || (s.botNames || []).join(' / ') || s.sessionUUID
-                      : (s.botNames && s.botNames[0]) || `Bot ${s.botIndex + 1}`}
+                      : s.type === 'allInOneLegacy'
+                        ? s.pairName || (s.botNames || []).join(' / ') || s.sessionId
+                        : (s.botNames && s.botNames[0]) || `Bot ${s.botIndex + 1}`}
                   </div>
                   <div className="text-xs opacity-70 mt-1">
                     {dayjs(s.lastUpdated).format('YYYY-MM-DD HH:mm')} · {s.messageCount} msgs

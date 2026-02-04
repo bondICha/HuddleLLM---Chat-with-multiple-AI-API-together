@@ -5,7 +5,7 @@ import { FC, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 
 import { useTranslation } from 'react-i18next'
 import { cx, uuid } from '~/utils'
 import { pendingSearchQueryAtom, sessionToRestoreAtom, allInOneRestoreDataAtom } from '../state'
-import { getSessionSnapshot, loadHistoryMessages, setAllInOneSession, saveSessionSnapshot, ChatMessageModel } from '~services/chat-history'
+import { getSessionSnapshot, loadAllInOneSessions, loadHistoryMessages, setAllInOneSession, saveSessionSnapshot, ChatMessageModel } from '~services/chat-history'
 import { updateChatPair } from '~services/user-config'
 import Button from '~app/components/Button'
 import ChatMessageInput from '~app/components/Chat/ChatMessageInput'
@@ -762,6 +762,47 @@ const MultiBotChatPanel: FC = () => {
           layout: snapshot.layout,
           pairName: snapshot.pairName,
           snapshotMessages: snapshot.conversations,
+        })
+        clearUrlParams()
+      } catch (error) {
+        alert(`${t('Restore Session')}: ${t('Failed to restore session.')}`)
+        clearUrlParams()
+      }
+    })()
+  }, [setSessionToRestore, t])
+
+  // URL パラメータ経由のレガシー All-In-One セッション復元
+  useEffect(() => {
+    const hash = window.location.hash
+    const queryStart = hash.indexOf('?')
+    if (queryStart === -1) return
+
+    const params = new URLSearchParams(hash.substring(queryStart + 1))
+    const restoreAllInOneSessionId = params.get('restoreAllInOneSessionId')
+    if (!restoreAllInOneSessionId) return
+
+    const clearUrlParams = () => {
+      const newHash = hash.substring(0, queryStart)
+      window.history.replaceState({}, '', window.location.pathname + newHash)
+    }
+
+    ;(async () => {
+      try {
+        const sessions = await loadAllInOneSessions()
+        const session = sessions.find(s => s.id === restoreAllInOneSessionId)
+        if (!session) {
+          alert(`${t('Restore Session')}: ${t('Failed to restore session.')}`)
+          clearUrlParams()
+          return
+        }
+
+        setSessionToRestore({
+          type: 'allInOne',
+          sessionId: session.id,
+          botIndices: session.botIndices,
+          layout: session.layout,
+          pairName: session.pairName,
+          conversations: session.conversations,
         })
         clearUrlParams()
       } catch (error) {
