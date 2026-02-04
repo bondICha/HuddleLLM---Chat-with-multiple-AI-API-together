@@ -280,8 +280,6 @@
   "Begin a fresh conversation": "开始新的对话",
   "No previous sessions found": "未找到之前的会话",
   "No sessions found.": "未找到会话。",
-  "All chatbots": "全部聊天机器人",
-  "Invalid bot filter.": "无效的机器人筛选。",
   "History sessions stats": "已获取：{{loaded}} · 匹配：{{matched}} · 显示：{{shown}}",
   "Click outside or press Esc to close": "点击外部或按Esc关闭",
   "agent_search_thinking": "正在搜索\"{{query}}\"",

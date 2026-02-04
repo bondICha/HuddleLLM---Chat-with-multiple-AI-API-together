@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
 import { FiSearch } from 'react-icons/fi'
 import PagePanel from '~app/components/Page'
-import Select from '~app/components/Select'
 import Tooltip from '~app/components/Tooltip'
 import { loadAllInOneSessions, loadHistoryMessages, loadSessionSnapshots } from '~services/chat-history'
 import { getUserConfig } from '~services/user-config'
@@ -73,12 +72,6 @@ const HistoryPage: FC = () => {
   const [sessionSearch, setSessionSearch] = useState('')
   const [sessionVisibleCount, setSessionVisibleCount] = useState(100)
 
-  const [botOptions, setBotOptions] = useState<{ name: string; value: string }[]>([])
-  const [botFilter, setBotFilter] = useState<string>('all')
-  const botFilterOptions = useMemo(() => {
-    return [{ name: t('All chatbots') as string, value: 'all' }, ...botOptions]
-  }, [botOptions, t])
-
   const clearHashQuery = useCallback(() => {
     const hash = window.location.hash
     const queryStart = hash.indexOf('?')
@@ -88,34 +81,13 @@ const HistoryPage: FC = () => {
   }, [])
 
   useEffect(() => {
-    const loadBotOptions = async () => {
-      const config = await getUserConfig()
-      const customApiConfigs = config.customApiConfigs || []
-      const options = customApiConfigs.map((c, index) => ({ name: c.name || `Bot ${index + 1}`, value: index.toString() }))
-      setBotOptions(options)
-
-      if (botFilter !== 'all') {
-        const exists = options.some((o) => o.value === botFilter)
-        if (!exists) {
-          alert(`${t('View history')}: ${t('Invalid bot filter.')}`)
-          setBotFilter('all')
-          clearHashQuery()
-        }
-      }
-    }
-    loadBotOptions()
-  }, [botFilter, clearHashQuery, t])
-
-  useEffect(() => {
     const hash = window.location.hash
     const queryStart = hash.indexOf('?')
     if (queryStart === -1) return
 
     const params = new URLSearchParams(hash.substring(queryStart + 1))
     const idx = params.get('botIndex')
-    if (idx && /^\d+$/.test(idx)) {
-      setBotFilter(idx)
-    }
+    if (idx && /^\d+$/.test(idx)) clearHashQuery()
   }, [location.hash, location.search])
 
   const loadSessionsData = useCallback(async () => {
@@ -124,11 +96,35 @@ const HistoryPage: FC = () => {
       const config = await getUserConfig()
       const botNames = (config.customApiConfigs || []).map((c, i) => c.name || `Bot ${i + 1}`)
       const all: SessionListItem[] = []
+      const excludedByBotPrefix = new Map<number, Map<string, number>>()
+
+      const upsertExclude = (botIndex: number, prefixSig: string, minLen: number) => {
+        if (!prefixSig || minLen <= 0) return
+        const botMap = excludedByBotPrefix.get(botIndex) || new Map<string, number>()
+        botMap.set(prefixSig, Math.max(botMap.get(prefixSig) || 0, minLen))
+        excludedByBotPrefix.set(botIndex, botMap)
+      }
+
+      const prefixSigOf = (messages: any[]) => {
+        if (!Array.isArray(messages) || messages.length === 0) return ''
+        const ids = messages
+          .map((m) => (m && typeof m.id === 'string' ? m.id : ''))
+          .filter(Boolean)
+          .slice(0, 3)
+        return ids.join('|')
+      }
 
       const snapshots = await loadSessionSnapshots()
       for (const s of snapshots) {
         const allMessages = Object.values(s.conversations || {}).flat()
         const firstUserMsg = allMessages.find((m: any) => m.author === 'user' && typeof m.text === 'string' && m.text.trim() !== '')
+
+        if (s.botIndices && s.conversations) {
+          for (const botIndex of s.botIndices) {
+            const msgs = (s.conversations as any)[botIndex] || []
+            upsertExclude(botIndex, prefixSigOf(msgs), Array.isArray(msgs) ? msgs.length : 0)
+          }
+        }
         all.push({
           type: 'sessionSnapshot',
           sessionUUID: s.sessionUUID,
@@ -164,12 +160,28 @@ const HistoryPage: FC = () => {
           firstMessage: firstUserMsg?.text ? String(firstUserMsg.text).slice(0, 120) : undefined,
           botNames: s.botIndices?.map((idx: number) => botNames[idx] || `Bot ${idx + 1}`),
         })
+
+        if (s.botIndices && s.conversations) {
+          for (const botIndex of s.botIndices) {
+            const targetConversationId = (s as any).conversationSnapshots?.[botIndex] || (s.conversations as any)[botIndex]?.[0]?.id
+            const convs = (s.conversations as any)[botIndex] || []
+            const target = targetConversationId ? convs.find((c: any) => c.id === targetConversationId) : convs[0]
+            if (target && Array.isArray(target.messages)) {
+              upsertExclude(botIndex, prefixSigOf(target.messages), target.messages.length)
+            }
+          }
+        }
       }
 
       const botCount = (config.customApiConfigs || []).length
       for (let i = 0; i < botCount; i++) {
         const conversations = await loadHistoryMessages(i)
         for (const c of conversations) {
+          const pfx = prefixSigOf(c.messages)
+          const minLen = excludedByBotPrefix.get(i)?.get(pfx)
+          if (minLen && Array.isArray(c.messages) && c.messages.length >= minLen) {
+            continue
+          }
           const firstUserMsg = c.messages.find((m: any) => m.author === 'user' && typeof m.text === 'string' && m.text.trim() !== '')
           all.push({
             type: 'single',
@@ -198,29 +210,18 @@ const HistoryPage: FC = () => {
   useEffect(() => {
     setSessionVisibleCount(100)
     setSelectedSessionKey(null)
-  }, [sessionSearch, botFilter])
-
-  const botFilteredSessions = useMemo(() => {
-    if (botFilter === 'all') return sessions
-    const botIndex = parseInt(botFilter, 10)
-    if (!Number.isFinite(botIndex)) return sessions
-    return sessions.filter((s) => {
-      if (s.type === 'single') return s.botIndex === botIndex
-      if (s.type === 'allInOneLegacy') return Array.isArray(s.botIndices) && s.botIndices.includes(botIndex)
-      return Array.isArray(s.botIndices) && s.botIndices.includes(botIndex)
-    })
-  }, [botFilter, sessions])
+  }, [sessionSearch])
 
   const filteredSessions = useMemo(() => {
-    if (!sessionSearch.trim()) return botFilteredSessions
+    if (!sessionSearch.trim()) return sessions
     const q = sessionSearch.toLowerCase()
-    return botFilteredSessions.filter((s) => {
+    return sessions.filter((s) => {
       const names = (s.botNames || []).join(' ').toLowerCase()
       const firstMsg = (s.firstMessage || '').toLowerCase()
       const pairName = ('pairName' in s ? (s.pairName || '') : '').toLowerCase()
       return names.includes(q) || firstMsg.includes(q) || pairName.includes(q)
     })
-  }, [botFilteredSessions, sessionSearch])
+  }, [sessions, sessionSearch])
 
   const visibleSessions = useMemo(() => {
     if (sessionSearch.trim()) return filteredSessions
@@ -280,11 +281,6 @@ const HistoryPage: FC = () => {
     <PagePanel title={t('View history') as string}>
       <div className="px-10 pb-10">
         <div className="flex flex-row items-center gap-3 my-4">
-          {botFilterOptions.length > 1 && (
-            <div className="w-[240px]">
-              <Select options={botFilterOptions} value={botFilter} onChange={(v) => setBotFilter(v)} />
-            </div>
-          )}
           <SearchInput value={sessionSearch} onChange={setSessionSearch} />
         </div>
         <div className="text-xs opacity-70 mb-3">{sessionStatsText}</div>

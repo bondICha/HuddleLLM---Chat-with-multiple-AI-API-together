@@ -130,8 +130,8 @@ const ConversationPanel: FC<Props> = (props) => {
   }, [props])
 
   const openHistory = useCallback(() => {
-    window.location.hash = `#/history?botIndex=${props.index}`
-  }, [props.index])
+    window.location.hash = '#/history'
+  }, [])
 
   const openShareDialog = useCallback(() => {
     setShowShareDialog(true)

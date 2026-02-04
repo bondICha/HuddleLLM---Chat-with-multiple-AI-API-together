@@ -272,8 +272,6 @@
   "Begin a fresh conversation": "開始新の對話",
   "No previous sessions found": "未找到先前の工作階段",
   "No sessions found.": "未找到工作階段。",
-  "All chatbots": "全部聊天機器人",
-  "Invalid bot filter.": "無效的機器人篩選。",
   "History sessions stats": "已取得：{{loaded}} · 符合：{{matched}} · 顯示：{{shown}}",
   "Click outside or press Esc to close": "點擊外部或按Esc關閉",
   "agent_search_thinking": "正在搜尋\"{{query}}\"",

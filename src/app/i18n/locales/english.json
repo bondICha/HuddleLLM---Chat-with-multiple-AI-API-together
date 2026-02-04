@@ -90,8 +90,6 @@
   "Begin a fresh conversation": "Begin a fresh conversation",
   "No previous sessions found": "No previous sessions found",
   "No sessions found.": "No sessions found.",
-  "All chatbots": "All chatbots",
-  "Invalid bot filter.": "Invalid bot filter.",
   "History sessions stats": "Loaded: {{loaded}} · Matched: {{matched}} · Showing: {{shown}}",
   "Click outside or press Esc to start new session": "Click outside or press Esc to start new session",
   "Chatbots configuration": "Chatbots configuration",
