@@ -21,6 +21,7 @@ type SessionListItem =
       layout: string
       pairName?: string
       firstMessage?: string
+      botResponses?: { botName: string; response: string }[]
       botNames?: string[]
     }
   | {
@@ -33,6 +34,7 @@ type SessionListItem =
       layout: string
       pairName?: string
       firstMessage?: string
+      botResponses?: { botName: string; response: string }[]
       botNames?: string[]
     }
   | {
@@ -43,6 +45,7 @@ type SessionListItem =
       lastUpdated: number
       messageCount: number
       firstMessage?: string
+      lastMessage?: string
       botNames?: string[]
     }
 
@@ -125,6 +128,21 @@ const HistoryPage: FC = () => {
             upsertExclude(botIndex, prefixSigOf(msgs), Array.isArray(msgs) ? msgs.length : 0)
           }
         }
+
+        const botResponses: { botName: string; response: string }[] = []
+        if (s.botIndices && s.conversations) {
+          for (const botIndex of s.botIndices) {
+            const msgs = (s.conversations as any)[botIndex] || []
+            const botName = botNames[botIndex] || `Bot ${botIndex + 1}`
+            const lastAssistant = Array.isArray(msgs)
+              ? [...msgs].reverse().find((m: any) => m && m.author !== 'user' && typeof m.text === 'string' && m.text.trim() !== '')
+              : undefined
+            if (lastAssistant?.text) {
+              botResponses.push({ botName, response: String(lastAssistant.text).slice(0, 220) })
+            }
+          }
+        }
+
         all.push({
           type: 'sessionSnapshot',
           sessionUUID: s.sessionUUID,
@@ -135,6 +153,7 @@ const HistoryPage: FC = () => {
           layout: s.layout,
           pairName: s.pairName,
           firstMessage: firstUserMsg?.text ? String(firstUserMsg.text).slice(0, 120) : undefined,
+          botResponses: botResponses.length ? botResponses : undefined,
           botNames: s.botIndices?.map((idx: number) => botNames[idx] || `Bot ${idx + 1}`),
         })
       }
@@ -162,12 +181,25 @@ const HistoryPage: FC = () => {
         })
 
         if (s.botIndices && s.conversations) {
+          const botResponses: { botName: string; response: string }[] = []
           for (const botIndex of s.botIndices) {
             const targetConversationId = (s as any).conversationSnapshots?.[botIndex] || (s.conversations as any)[botIndex]?.[0]?.id
             const convs = (s.conversations as any)[botIndex] || []
             const target = targetConversationId ? convs.find((c: any) => c.id === targetConversationId) : convs[0]
             if (target && Array.isArray(target.messages)) {
               upsertExclude(botIndex, prefixSigOf(target.messages), target.messages.length)
+              const botName = botNames[botIndex] || `Bot ${botIndex + 1}`
+              const lastAssistant = [...target.messages].reverse().find((m: any) => m && m.author !== 'user' && typeof m.text === 'string' && m.text.trim() !== '')
+              if (lastAssistant?.text) {
+                botResponses.push({ botName, response: String(lastAssistant.text).slice(0, 220) })
+              }
+            }
+          }
+
+          if (botResponses.length) {
+            all[all.length - 1] = {
+              ...(all[all.length - 1] as any),
+              botResponses,
             }
           }
         }
@@ -183,6 +215,7 @@ const HistoryPage: FC = () => {
             continue
           }
           const firstUserMsg = c.messages.find((m: any) => m.author === 'user' && typeof m.text === 'string' && m.text.trim() !== '')
+          const lastAssistant = [...c.messages].reverse().find((m: any) => m && m.author !== 'user' && typeof m.text === 'string' && m.text.trim() !== '')
           all.push({
             type: 'single',
             botIndex: i,
@@ -191,6 +224,7 @@ const HistoryPage: FC = () => {
             lastUpdated: c.createdAt,
             messageCount: c.messages.length,
             firstMessage: firstUserMsg?.text ? String(firstUserMsg.text).slice(0, 120) : undefined,
+            lastMessage: lastAssistant?.text ? String(lastAssistant.text).slice(0, 220) : undefined,
             botNames: [botNames[i] || `Bot ${i + 1}`],
           })
         }
@@ -315,14 +349,30 @@ const HistoryPage: FC = () => {
                   </div>
                   {s.firstMessage && (
                     <div className="text-xs opacity-80 mt-2 break-words whitespace-pre-wrap">
-                      {selectedSessionKey === getSessionKey(s) ? s.firstMessage.slice(0, 450) : s.firstMessage.slice(0, 140)}
-                      {selectedSessionKey === getSessionKey(s) && s.firstMessage.length > 450 ? '…' : ''}
-                      {selectedSessionKey !== getSessionKey(s) && s.firstMessage.length > 140 ? '…' : ''}
+                      {selectedSessionKey === getSessionKey(s) ? s.firstMessage.slice(0, 700) : s.firstMessage.slice(0, 180)}
+                      {selectedSessionKey === getSessionKey(s) && s.firstMessage.length > 700 ? '…' : ''}
+                      {selectedSessionKey !== getSessionKey(s) && s.firstMessage.length > 180 ? '…' : ''}
                     </div>
                   )}
-                  {selectedSessionKey === getSessionKey(s) && s.botNames && s.botNames.length > 0 && (
+                  {s.type !== 'single' && s.botNames && s.botNames.length > 0 && (
                     <div className="text-xs opacity-70 mt-2 break-words">
                       {s.botNames.join(' / ')}
+                    </div>
+                  )}
+                  {selectedSessionKey === getSessionKey(s) && s.type === 'single' && s.lastMessage && (
+                    <div className="text-xs opacity-70 mt-2 break-words whitespace-pre-wrap">
+                      {s.lastMessage}
+                    </div>
+                  )}
+                  {selectedSessionKey === getSessionKey(s) && s.type !== 'single' && s.botResponses && s.botResponses.length > 0 && (
+                    <div className="mt-2 flex flex-col gap-2">
+                      {s.botResponses.map((r) => (
+                        <div key={r.botName} className="text-xs opacity-70 break-words whitespace-pre-wrap">
+                          <span className="font-semibold opacity-90">{r.botName}</span>
+                          <span className="opacity-90">{': '}</span>
+                          <span>{r.response}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
