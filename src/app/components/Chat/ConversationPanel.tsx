@@ -218,6 +218,7 @@ const ConversationPanel: FC<Props> = (props) => {
           className={cx(marginClass)}
           onPropaganda={props.onPropaganda}
           shouldAutoScroll={props.shouldAutoScroll}
+          setAutoScroll={props.setAutoScroll}
         />
         <div
           className={cx(
