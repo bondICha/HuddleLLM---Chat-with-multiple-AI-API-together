@@ -281,6 +281,7 @@
   "No previous sessions found": "未找到之前的会话",
   "No sessions found.": "未找到会话。",
   "History sessions stats": "已获取：{{loaded}} · 匹配：{{matched}} · 显示：{{shown}}",
+  "Individual bot": "单个机器人",
   "Click outside or press Esc to close": "点击外部或按Esc关闭",
   "agent_search_thinking": "正在搜索\"{{query}}\"",
   "agent_empty_search_results": "搜索结果为空\n⚠️ 未找到搜索结果。\n查询: \"{{query}}\"\n提供商: {{provider}}\n\n搜索引擎可能未返回结果。",

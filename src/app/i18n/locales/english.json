@@ -91,6 +91,7 @@
   "No previous sessions found": "No previous sessions found",
   "No sessions found.": "No sessions found.",
   "History sessions stats": "Loaded: {{loaded}} · Matched: {{matched}} · Showing: {{shown}}",
+  "Individual bot": "Individual bot",
   "Click outside or press Esc to start new session": "Click outside or press Esc to start new session",
   "Chatbots configuration": "Chatbots configuration",
   "API Settings": "API Settings",

@@ -10,6 +10,8 @@ import { loadAllInOneSessions, loadHistoryMessages, loadSessionSnapshots } from 
 import { getUserConfig } from '~services/user-config'
 import { cx } from '~utils'
 
+type ActiveTab = 'allInOne' | 'individual'
+
 type SessionListItem =
   | {
       type: 'sessionSnapshot'
@@ -68,6 +70,7 @@ const HistoryPage: FC = () => {
   const { t } = useTranslation()
   const location = useLocation()
 
+  const [activeTab, setActiveTab] = useState<ActiveTab>('allInOne')
   const [selectedSessionKey, setSelectedSessionKey] = useState<string | null>(null)
 
   const [loadingSessions, setLoadingSessions] = useState(false)
@@ -89,6 +92,17 @@ const HistoryPage: FC = () => {
     if (queryStart === -1) return
 
     const params = new URLSearchParams(hash.substring(queryStart + 1))
+    const tab = params.get('tab')
+    if (tab === 'individual') {
+      setActiveTab('individual')
+      clearHashQuery()
+      return
+    }
+    if (tab === 'allInOne') {
+      setActiveTab('allInOne')
+      clearHashQuery()
+      return
+    }
     const idx = params.get('botIndex')
     if (idx && /^\d+$/.test(idx)) clearHashQuery()
   }, [location.hash, location.search])
@@ -244,18 +258,25 @@ const HistoryPage: FC = () => {
   useEffect(() => {
     setSessionVisibleCount(100)
     setSelectedSessionKey(null)
-  }, [sessionSearch])
+  }, [activeTab, sessionSearch])
+
+  const baseSessionsByTab = useMemo(() => {
+    const allInOne = sessions.filter((s) => s.type === 'sessionSnapshot' || s.type === 'allInOneLegacy')
+    const individual = sessions.filter((s) => s.type === 'single')
+    return activeTab === 'allInOne' ? allInOne : individual
+  }, [activeTab, sessions])
 
   const filteredSessions = useMemo(() => {
-    if (!sessionSearch.trim()) return sessions
+    if (!sessionSearch.trim()) return baseSessionsByTab
     const q = sessionSearch.toLowerCase()
-    return sessions.filter((s) => {
+    return baseSessionsByTab.filter((s) => {
       const names = (s.botNames || []).join(' ').toLowerCase()
       const firstMsg = (s.firstMessage || '').toLowerCase()
       const pairName = ('pairName' in s ? (s.pairName || '') : '').toLowerCase()
-      return names.includes(q) || firstMsg.includes(q) || pairName.includes(q)
+      const lastMsg = ('lastMessage' in s ? (s.lastMessage || '') : '').toLowerCase()
+      return names.includes(q) || firstMsg.includes(q) || pairName.includes(q) || lastMsg.includes(q)
     })
-  }, [sessions, sessionSearch])
+  }, [baseSessionsByTab, sessionSearch])
 
   const visibleSessions = useMemo(() => {
     if (sessionSearch.trim()) return filteredSessions
@@ -270,11 +291,11 @@ const HistoryPage: FC = () => {
 
   const sessionStatsText = useMemo(() => {
     return t('History sessions stats', {
-      loaded: sessions.length,
+      loaded: baseSessionsByTab.length,
       matched: filteredSessions.length,
       shown: visibleSessions.length,
     })
-  }, [filteredSessions.length, sessions.length, t, visibleSessions.length])
+  }, [baseSessionsByTab.length, filteredSessions.length, t, visibleSessions.length])
 
   const loadMoreSessions = useCallback(
     (count: number) => {
@@ -314,6 +335,28 @@ const HistoryPage: FC = () => {
   return (
     <PagePanel title={t('View history') as string}>
       <div className="px-10 pb-10">
+        <div className="flex flex-row items-center justify-between gap-3 my-4">
+          <div className="flex flex-row gap-2">
+            <button
+              className={cx(
+                'px-3 py-1.5 rounded-xl text-sm border border-primary-border',
+                activeTab === 'allInOne' ? 'bg-secondary' : 'hover:bg-secondary/50',
+              )}
+              onClick={() => setActiveTab('allInOne')}
+            >
+              All-In-One
+            </button>
+            <button
+              className={cx(
+                'px-3 py-1.5 rounded-xl text-sm border border-primary-border',
+                activeTab === 'individual' ? 'bg-secondary' : 'hover:bg-secondary/50',
+              )}
+              onClick={() => setActiveTab('individual')}
+            >
+              {t('Individual bot')}
+            </button>
+          </div>
+        </div>
         <div className="flex flex-row items-center gap-3 my-4">
           <SearchInput value={sessionSearch} onChange={setSessionSearch} />
         </div>

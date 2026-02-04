@@ -130,7 +130,7 @@ const ConversationPanel: FC<Props> = (props) => {
   }, [props])
 
   const openHistory = useCallback(() => {
-    window.location.hash = '#/history'
+    window.location.hash = '#/history?tab=individual'
   }, [])
 
   const openShareDialog = useCallback(() => {
