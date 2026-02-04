@@ -1,7 +1,23 @@
-import { fileOpen, fileSave } from 'browser-fs-access'
+import { fileOpen } from 'browser-fs-access'
 import Browser from 'webextension-polyfill'
 import { requestHostPermissions } from '~services/host-permissions'
 import { CustomApiConfig, ProviderConfig, CustomApiProvider } from '~services/user-config'
+
+/**
+ * Helper function to download a blob as a file
+ * Uses traditional <a> tag method to avoid SecurityError with showSaveFilePicker
+ */
+function downloadBlob(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = fileName
+  a.style.display = 'none'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
 
 export async function exportData() {
   const [syncData, localData] = await Promise.all([Browser.storage.sync.get(null), Browser.storage.local.get(null)])
@@ -11,7 +27,7 @@ export async function exportData() {
     localStorage: { ...localStorage },
   }
   const blob = new Blob([JSON.stringify(data)], { type: 'application/json' })
-  await fileSave(blob, { fileName: 'huddlellm.json' })
+  downloadBlob(blob, 'huddlellm.json')
 }
 
 export async function importData() {
@@ -118,5 +134,5 @@ export async function exportCustomAPITemplate() {
   // エクスポートするデータ構造は、customApiConfigsが配列であること、
   // およびcustomApiHostがトップレベルにあることを反映する
   const blob = new Blob([JSON.stringify(templateExportData)], { type: 'application/json' });
-  await fileSave(blob, { fileName: 'huddle-llm-template.json' });
+  downloadBlob(blob, 'huddlellm-template.json');
 }
