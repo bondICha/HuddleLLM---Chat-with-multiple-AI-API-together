@@ -450,5 +450,6 @@
   "Audio file attached without transcription": "音声ファイルを文字起こしなしで添付しました",
   "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).": "音声対応AI（Geminiなど）には音声ファイルが直接送信されます。文字起こしテキストはその他のAI（Claude、GPTなど）に送信されます。",
   "releasenote_v2140_audio_support": "## 音声ファイル対応 & 自動文字起こし\n\n- **Gemini ネイティブ音声入力**: **Gemini 3 Pro Preview** モデルに音声ファイルを直接アップロードできるようになりました。\n- **その他のモデルでも安心**: 音声入力に非対応のモデル（Claude, GPT-5など）でも、「文字起こし」機能を使ってテキストに変換してから送信できます。\n- **オーディオプレイヤー**: チャット履歴内で音声ファイルを再生できるプレイヤーが表示されるようになりました。",
-  "releasenote_v2141_replicate_gemini_fix": "## Replicate & Gemini 互換性修正\n\n- **ReplicateのURL修正**: ReplicateでSeedreamモデルを使用する際に、誤ってNovita用のパスが付与されてしまう問題を修正しました。\n- **Geminiツールスキーマの改善**: Gemini APIでエラー（400 Bad Request）の原因となっていた `x-order` や `title` などの非標準フィールドをツール定義から削除しました。\n- **GPT-5 Ready**: 一部の実験的なGPT-5互換エンドポイントで採用されている、新しいフラットなツール呼び出し構造に対応しました。"
+  "releasenote_v2141_replicate_gemini_fix": "## Replicate & Gemini 互換性修正\n\n- **ReplicateのURL修正**: ReplicateでSeedreamモデルを使用する際に、誤ってNovita用のパスが付与されてしまう問題を修正しました。\n- **Geminiツールスキーマの改善**: Gemini APIでエラー（400 Bad Request）の原因となっていた `x-order` や `title` などの非標準フィールドをツール定義から削除しました。\n- **GPT-5 Ready**: 一部の実験的なGPT-5互換エンドポイントで採用されている、新しいフラットなツール呼び出し構造に対応しました。",
+  "releasenote_v2144_export_fix_and_ui_improvements": "エクスポート機能の修正、入力中のスクロール最適化、会社プロファイル自動インポートの不具合修正。"
 }
