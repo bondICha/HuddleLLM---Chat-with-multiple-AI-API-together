@@ -416,5 +416,6 @@
   "Audio file attached without transcription": "已附加音訊檔案（未轉錄）",
   "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).": "支援音訊的AI（如Gemini）將直接接收音訊檔案。轉錄文字將發送給其他AI（Claude、GPT等）。",
   "releasenote_v2140_audio_support": "## 音訊支援 & 語音轉文字\n\n- **原生音訊輸入**: 現在可以直接上傳音訊檔案到 **Gemini 3 Pro Preview** 模型。\n- **通用音訊支援**: 對於不支援原生音訊的模型（如 Claude, GPT-5.2），可以使用「轉寫」功能將音訊轉換為文字後發送。\n- **音訊播放器**: 聊天歷史紀錄中現在會顯示內建音訊播放器。",
-  "releasenote_v2141_replicate_gemini_fix": "## Replicate 與 Gemini 相容性修復\n\n- **Replicate URL 修復**: 修復了在 Replicate 上使用 Seedream 模型時誤用 Novita 特定 API 路徑的錯誤。\n- **Gemini 工具結構**: 改進了 Gemini 的工具定義相容性，移除了 `x-order` 和 `title` 等不支援的結構欄位。\n- **GPT-5 Ready**: 增加了對某些實驗性 GPT-5 相容端點使用的全新扁平化工具調用結構的支持。"
+  "releasenote_v2141_replicate_gemini_fix": "## Replicate 與 Gemini 相容性修復\n\n- **Replicate URL 修復**: 修復了在 Replicate 上使用 Seedream 模型時誤用 Novita 特定 API 路徑的錯誤。\n- **Gemini 工具結構**: 改進了 Gemini 的工具定義相容性，移除了 `x-order` 和 `title` 等不支援的結構欄位。\n- **GPT-5 Ready**: 增加了對某些實驗性 GPT-5 相容端點使用的全新扁平化工具調用結構的支持。",
+  "releasenote_v2144_export_fix_and_ui_improvements": "匯出功能修復、輸入時滾動優化、公司設定檔自動匯入錯誤修復。"
 }
