@@ -5,6 +5,19 @@ import { getVersion } from '~utils'
 
 
 export const RELEASE_NOTES = [
+
+  {
+    version: '2.14.5',
+    notes: [
+      'releasenote_v2145_history_page_refactor',
+    ],
+  },
+  {
+    version: '2.14.4',
+    notes: [
+      'releasenote_v2144_export_fix_and_ui_improvements',
+    ],
+  },
   {
     version: '2.14.1',
     notes: [

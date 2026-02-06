@@ -11,7 +11,6 @@ import { ChatMessageModel } from '~types'
 import { BotInstance } from '../../bots'
 import Button from '../Button'
 import BotIcon from '../BotIcon'
-import HistoryDialog from '../History/Dialog'
 import ShareDialog from '../Share/Dialog'
 import Tooltip from '../Tooltip'
 import ChatMessageInput from './ChatMessageInput'
@@ -39,7 +38,6 @@ const ConversationPanel: FC<Props> = (props) => {
   const { t } = useTranslation()
   const mode = props.mode || 'full'
   const marginClass = 'mx-3'
-  const [showHistory, setShowHistory] = useState(false)
   const [showShareDialog, setShowShareDialog] = useState(false)
   // ボット名とアバターを保持するための状態を追加
   const [botName, setBotName] = useState<string>('Custom Bot')
@@ -131,9 +129,9 @@ const ConversationPanel: FC<Props> = (props) => {
     }
   }, [props])
 
-  const openHistoryDialog = useCallback(() => {
-    setShowHistory(true)
-  }, [props.index])
+  const openHistory = useCallback(() => {
+    window.location.hash = '#/history?tab=individual'
+  }, [])
 
   const openShareDialog = useCallback(() => {
     setShowShareDialog(true)
@@ -206,7 +204,7 @@ const ConversationPanel: FC<Props> = (props) => {
               <motion.img
                 src={historyIcon}
                 className="w-5 h-5 cursor-pointer"
-                onClick={openHistoryDialog}
+                onClick={openHistory}
                 whileHover={{ scale: 1.1 }}
               />
             </Tooltip>
@@ -218,6 +216,7 @@ const ConversationPanel: FC<Props> = (props) => {
           className={cx(marginClass)}
           onPropaganda={props.onPropaganda}
           shouldAutoScroll={props.shouldAutoScroll}
+          setAutoScroll={props.setAutoScroll}
         />
         <div
           className={cx(
@@ -260,7 +259,6 @@ const ConversationPanel: FC<Props> = (props) => {
       {showShareDialog && (
         <ShareDialog open={true} onClose={() => setShowShareDialog(false)} messages={props.messages} />
       )}
-      {showHistory && <HistoryDialog index={props.index} open={true} onClose={() => setShowHistory(false)} />}
     </ConversationContext.Provider>
   )
 }

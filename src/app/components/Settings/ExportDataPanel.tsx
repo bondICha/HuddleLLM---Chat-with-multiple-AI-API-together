@@ -5,6 +5,7 @@ import Button from '../Button'
 import React, { useEffect, useState } from 'react';
 import CustomAPITemplateImportPanel from './CustomAPITemplateImportPanel';
 import { UserConfig } from '~services/user-config';
+import { useLocation } from '@tanstack/react-router'
 
 interface Props {
   userConfig: UserConfig
@@ -13,27 +14,28 @@ interface Props {
 
 function ExportDataPanel({ userConfig, updateConfigValue }: Props) {
   const { t } = useTranslation()
+  const location = useLocation()
   const [autoImportTemplate, setAutoImportTemplate] = useState<string | undefined>(undefined)
   const [companyName, setCompanyName] = useState<string | undefined>(undefined)
 
   useEffect(() => {
-    // HashRouterのURLパラメータから自動インポート情報を取得
-    const hash = window.location.hash;
-    const queryStart = hash.indexOf('?');
-    if (queryStart !== -1) {
-      const urlParams = new URLSearchParams(hash.substring(queryStart + 1));
-      const autoImport = urlParams.get('autoImport');
-      const company = urlParams.get('company');
-      
-      if (autoImport && company) {
-        setAutoImportTemplate(autoImport);
-        setCompanyName(company);
-        // URLパラメータをクリア
-        const newHash = hash.substring(0, queryStart);
-        window.history.replaceState({}, '', window.location.pathname + newHash);
-      }
-    }
-  }, [])
+    // URLが変わっても（SettingPage上に居続けても）自動インポートを検知できるようにする
+    const hash = window.location.hash
+    const queryStart = hash.indexOf('?')
+    if (queryStart === -1) return
+
+    const urlParams = new URLSearchParams(hash.substring(queryStart + 1))
+    const autoImport = urlParams.get('autoImport')
+    const company = urlParams.get('company')
+    if (!autoImport || !company) return
+
+    setAutoImportTemplate(autoImport)
+    setCompanyName(company)
+
+    // URLパラメータをクリア（SettingPage滞在中に同じクエリを保持しない）
+    const newHash = hash.substring(0, queryStart)
+    window.history.replaceState({}, '', window.location.pathname + newHash)
+  }, [location.hash, location.search])
   return (
     <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-6 bg-slate-50 dark:bg-slate-800/50">
       <div className="flex items-center gap-3 mb-6">

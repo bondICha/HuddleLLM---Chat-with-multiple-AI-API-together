@@ -3,6 +3,9 @@ import Browser from 'webextension-polyfill'
 import { ChatMessageModel } from '~types'
 export type { ChatMessageModel }
 
+const SESSION_SNAPSHOT_LIMIT = 800
+const ALL_IN_ONE_SESSION_LIMIT = 800
+
 /**
  * conversations:$index => Conversation[]
  * conversation:$index:$cid:messages => ChatMessageModel[]
@@ -135,8 +138,7 @@ export async function saveSessionSnapshot(sessionUUID: string, botIndices: numbe
     snapshots.unshift(snapshotData)
   }
   
-  // 最新30件のみ保持
-  const trimmedSnapshots = snapshots.slice(0, 30)
+  const trimmedSnapshots = snapshots.slice(0, SESSION_SNAPSHOT_LIMIT)
   await Browser.storage.local.set({ [key]: trimmedSnapshots })
 }
 
@@ -177,8 +179,7 @@ export async function setAllInOneSession(sessionId: string, botIndices: number[]
     sessions.unshift(sessionData)
   }
   
-  // 最新20件のみ保持
-  const trimmedSessions = sessions.slice(0, 20)
+  const trimmedSessions = sessions.slice(0, ALL_IN_ONE_SESSION_LIMIT)
   await Browser.storage.local.set({ [key]: trimmedSessions })
 }
 

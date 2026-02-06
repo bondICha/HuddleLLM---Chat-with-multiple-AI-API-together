@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline'
 import allInOneIcon from '~/assets/all-in-one.svg'
 import collapseIcon from '~/assets/icons/collapse.svg'
+import historyIcon from '~/assets/icons/history.svg'
 import HamburgerIcon from '../icons/HamburgerIcon'
 import releaseNotesIcon from '~/assets/icons/release-notes.svg'
 import githubIcon from '~/assets/icons/github.svg'
@@ -18,7 +19,7 @@ import BotIcon from '../BotIcon'
 import CollapsedMosaic from './CollapsedMosaic'
 import { cx } from '~/utils'
 import { useEnabledBots } from '~app/hooks/use-enabled-bots'
-import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom, restoreOnStartupAtom } from '~app/state'
+import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom } from '~app/state'
 import { checkReleaseNotes, getAllReleaseNotes } from '~services/release-notes'
 import * as api from '~services/server-api'
 import {
@@ -80,8 +81,6 @@ function Sidebar() {
   const [editingPairId, setEditingPairId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [hasInitialized, setHasInitialized] = useState(false)
-  // 起動時に履歴再開モーダルを表示する設定（デフォルトON）
-  const [restoreOnStartup, setRestoreOnStartup] = useAtom(restoreOnStartupAtom)
 
   // アクティブなAll-In-Oneを管理
   const [activeAllInOne, setActiveAllInOne] = useAtom(activeAllInOneAtom)
@@ -708,26 +707,37 @@ useEffect(() => {
           )
         })}
       </div>
-      {/* 起動時に履歴再開表示 トグル */}
-      {(shouldShowAsHamburger || !collapsed) && (
-        <div className="mt-3 mb-1 px-1 flex items-center justify-between">
-          <span className="text-xs text-primary-text opacity-80">{t('Show session restore on startup')}</span>
-          <label className="inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              className="sr-only peer"
-              checked={restoreOnStartup}
-              onChange={(e) => setRestoreOnStartup(e.target.checked)}
-            />
-            <div className="w-10 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:bg-blue-500 relative transition-colors">
-              <span className={cx('absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-all', restoreOnStartup ? 'translate-x-5' : 'translate-x-0')} />
-            </div>
-          </label>
+
+      {/* Separator line (same style as All-In-One ↔ Each Chatbot) */}
+      {(shouldShowAsHamburger || !collapsed) && <div className="border-t border-gray-400 dark:border-gray-500 mx-2 my-2" />}
+
+      {/* History */}
+      <Link
+        to="/history"
+        className={cx(
+          'rounded-[10px] w-full bg-secondary bg-opacity-20 hover:opacity-100 flex items-center shrink-0 cursor-pointer',
+          (shouldShowAsHamburger || !collapsed)
+            ? 'flex-row gap-3 px-3 py-[11px]'
+            : 'flex-col justify-center items-center gap-1 px-1 py-[8px] min-h-[56px]',
+        )}
+      >
+        <div className="flex items-center justify-center">
+          <div className="rounded-full border border-white overflow-hidden w-6 h-6 flex items-center justify-center bg-primary-background bg-opacity-20">
+            <img src={historyIcon} className="w-4 h-4" />
+          </div>
         </div>
-      )}
-      <div className="mt-auto pt-2">
-        {(shouldShowAsHamburger || !collapsed) && <hr className="border-[#ffffff4d]" />}
-        <div className={cx('flex mt-5 gap-[10px] mb-4', (shouldShowAsHamburger || !collapsed) ? 'flex-row' : 'flex-col')}>
+        <span
+          className={cx(
+            'font-medium text-sm',
+            !shouldShowAsHamburger && collapsed && 'overflow-hidden text-ellipsis leading-tight text-center break-words w-full',
+          )}
+        >
+          {shouldShowAsHamburger || !collapsed ? t('View history') : 'History'}
+        </span>
+      </Link>
+
+      <div className="mt-auto pt-[10px]">
+        <div className={cx('flex gap-[10px] mb-4', (shouldShowAsHamburger || !collapsed) ? 'flex-row' : 'flex-col')}>
           {(shouldShowAsHamburger || !collapsed) && (
             <Tooltip content={t('GitHub')}>
               <a href="https://github.com/bondICha/HuddleLLM---Chat-with-multiple-AI-API-together" target="_blank" rel="noreferrer">
