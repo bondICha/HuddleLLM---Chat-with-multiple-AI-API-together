@@ -736,9 +736,8 @@ useEffect(() => {
         </span>
       </Link>
 
-      <div className="mt-auto pt-2">
-        {(shouldShowAsHamburger || !collapsed) && <div className="border-t border-gray-400 dark:border-gray-500 mx-2 my-2" />}
-        <div className={cx('flex mt-5 gap-[10px] mb-4', (shouldShowAsHamburger || !collapsed) ? 'flex-row' : 'flex-col')}>
+      <div className="mt-auto pt-[10px]">
+        <div className={cx('flex gap-[10px] mb-4', (shouldShowAsHamburger || !collapsed) ? 'flex-row' : 'flex-col')}>
           {(shouldShowAsHamburger || !collapsed) && (
             <Tooltip content={t('GitHub')}>
               <a href="https://github.com/bondICha/HuddleLLM---Chat-with-multiple-AI-API-together" target="_blank" rel="noreferrer">
