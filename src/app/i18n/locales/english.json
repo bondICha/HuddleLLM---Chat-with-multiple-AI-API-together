@@ -12,6 +12,7 @@
   "Auto (Dynamic based on screen size)": "Auto (based on screen width)",
   "Fixed Sidebar": "Static Sidebar",
   "Web Search Results": "Web Search Results",
+  "messages": "messages",
   "All-In-One": "All-In-One",
   "AI Response": "AI Response",
   "AI Responses": "AI Responses",
@@ -451,5 +452,6 @@
   "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).": "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).",
   "releasenote_v2140_audio_support": "## Audio Support & Speech-to-Text\n\n- **Native Audio Input**: You can now upload audio files directly to **Gemini 3 Pro Preview** models.\n- **Universal Audio Support**: For models that don't support audio natively (like Claude, GPT-5.2), a \"Transcribe\" feature allows you to convert audio to text before sending.\n- **Audio Player**: Uploaded audio files are displayed with an inline player in the chat history.",
   "releasenote_v2141_replicate_gemini_fix": "## Replicate & Gemini Compatibility Fixes\n\n- **Replicate URL Fix**: Fixed a bug where Seedream models on Replicate were using incorrect Novita-specific API paths.\n- **Gemini Tool Fix**: Improved tool definition compatibility for Gemini by removing unsupported schema fields like `x-order` and `title`.\n- **GPT-5 Ready**: Added support for new flat tool call structures used by experimental GPT-5 compatible endpoints.",
-  "releasenote_v2144_export_fix_and_ui_improvements": "Export feature fix, auto-scroll optimization when typing, and company profile auto-import bug fix."
+  "releasenote_v2144_export_fix_and_ui_improvements": "Export feature fix, auto-scroll optimization when typing, and company profile auto-import bug fix.",
+  "releasenote_v2145_history_page_refactor": "## History Page Refactor & UI Improvements\n\n- **Enhanced Session List**: Now displays AI responses and bot icons directly in the list for easier identification.\n- **Restore Session Button**: Added a button to quickly resume past conversations.\n- **Performance Boost**: Refactored the session list for significantly faster rendering, especially with large history.\n- **Increased History Limits**: Session history storage limits have been increased to **800** entries (previously 30/20)."
 }

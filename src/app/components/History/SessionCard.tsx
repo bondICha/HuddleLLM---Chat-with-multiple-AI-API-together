@@ -138,7 +138,7 @@ const SessionCard: FC<SessionCardProps> = memo(
                 {dayjs(s.lastUpdated).format('YYYY-MM-DD HH:mm')}
               </div>
               <span className="text-xs px-2 py-0.5 rounded-md bg-green-500/20 text-green-600 dark:text-green-400 font-semibold">
-                {s.messageCount} msgs
+                {s.messageCount} {t('messages')}
               </span>
               {s.type !== 'single' && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400">

@@ -14,6 +14,7 @@
   "Import ChatBot Settings": "チャットボット設定の読み込み",
   "Override Chatbot": "チャットボット設定の上書き",
   "Web Search Results": "Web検索結果",
+  "messages": "件",
   "All-In-One": "All-In-One",
   "AI Response": "AI 応答",
   "AI Responses": "AI 応答一覧",
@@ -460,5 +461,6 @@
   "Audio-capable AIs (e.g., Gemini) will receive the audio file directly. Transcribed text will be sent to other AIs (Claude, GPT, etc.).": "音声対応AI（Geminiなど）には音声ファイルが直接送信されます。文字起こしテキストはその他のAI（Claude、GPTなど）に送信されます。",
   "releasenote_v2140_audio_support": "## 音声ファイル対応 & 自動文字起こし\n\n- **Gemini ネイティブ音声入力**: **Gemini 3 Pro Preview** モデルに音声ファイルを直接アップロードできるようになりました。\n- **その他のモデルでも安心**: 音声入力に非対応のモデル（Claude, GPT-5など）でも、「文字起こし」機能を使ってテキストに変換してから送信できます。\n- **オーディオプレイヤー**: チャット履歴内で音声ファイルを再生できるプレイヤーが表示されるようになりました。",
   "releasenote_v2141_replicate_gemini_fix": "## Replicate & Gemini 互換性修正\n\n- **ReplicateのURL修正**: ReplicateでSeedreamモデルを使用する際に、誤ってNovita用のパスが付与されてしまう問題を修正しました。\n- **Geminiツールスキーマの改善**: Gemini APIでエラー（400 Bad Request）の原因となっていた `x-order` や `title` などの非標準フィールドをツール定義から削除しました。\n- **GPT-5 Ready**: 一部の実験的なGPT-5互換エンドポイントで採用されている、新しいフラットなツール呼び出し構造に対応しました。",
-  "releasenote_v2144_export_fix_and_ui_improvements": "エクスポート機能の修正、入力中のスクロール最適化、会社プロファイル自動インポートの不具合修正。"
+  "releasenote_v2144_export_fix_and_ui_improvements": "エクスポート機能の修正、入力中のスクロール最適化、会社プロファイル自動インポートの不具合修正。",
+  "releasenote_v2145_history_page_refactor": "## 履歴ページの刷新とUI改善\n\n- **セッションリストの強化**: AIの応答内容やボットアイコンがリスト上で直接確認できるようになり、目的の会話が見つけやすくなりました。\n- **セッション復元ボタン**: 過去の会話をワンクリックで再開できるボタンを追加しました。\n- **パフォーマンス向上**: リスト表示の仕組みを刷新し、大量の履歴がある場合でもスムーズに表示されるようになりました。\n- **履歴保存件数の増加**: セッション履歴の保存件数を従来の30件/20件から**800件**に大幅に拡大しました。\n"
 }
