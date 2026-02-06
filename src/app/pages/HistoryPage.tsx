@@ -1,11 +1,11 @@
-import { FC, useCallback, useEffect, useMemo, useState } from 'react'
+import { FC, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from '@tanstack/react-router'
 import Browser from 'webextension-polyfill'
 import { useTranslation } from 'react-i18next'
-import dayjs from 'dayjs'
 import { FiSearch } from 'react-icons/fi'
+import { ViewportList } from 'react-viewport-list'
 import PagePanel from '~app/components/Page'
-import Tooltip from '~app/components/Tooltip'
+import SessionCard from '~app/components/History/SessionCard'
 import { loadAllInOneSessions, loadHistoryMessages, loadSessionSnapshots } from '~services/chat-history'
 import { getUserConfig } from '~services/user-config'
 import { cx } from '~utils'
@@ -23,8 +23,12 @@ type SessionListItem =
       layout: string
       pairName?: string
       firstMessage?: string
-      botResponses?: { botName: string; response: string }[]
+      botResponses?: { botName: string; response: string; botIcon?: string }[]
       botNames?: string[]
+      botIcons?: string[]
+      // Performance optimization: pre-computed fields
+      _sessionKey: string
+      _searchString: string
     }
   | {
       type: 'allInOneLegacy'
@@ -36,8 +40,12 @@ type SessionListItem =
       layout: string
       pairName?: string
       firstMessage?: string
-      botResponses?: { botName: string; response: string }[]
+      botResponses?: { botName: string; response: string; botIcon?: string }[]
       botNames?: string[]
+      botIcons?: string[]
+      // Performance optimization: pre-computed fields
+      _sessionKey: string
+      _searchString: string
     }
   | {
       type: 'single'
@@ -49,9 +57,14 @@ type SessionListItem =
       firstMessage?: string
       lastMessage?: string
       botNames?: string[]
+      botIcons?: string[]
+      // Performance optimization: pre-computed fields
+      _sessionKey: string
+      _searchString: string
     }
 
-const SearchInput: FC<{ value: string; onChange: (v: string) => void }> = (props) => {
+
+const SearchInput: FC<{ value: string; onChange: (v: string) => void }> = memo((props) => {
   const { t } = useTranslation()
   return (
     <div className="rounded-xl bg-secondary h-9 flex flex-row items-center px-4 grow">
@@ -64,7 +77,8 @@ const SearchInput: FC<{ value: string; onChange: (v: string) => void }> = (props
       />
     </div>
   )
-}
+})
+SearchInput.displayName = 'SearchInput'
 
 const HistoryPage: FC = () => {
   const { t } = useTranslation()
@@ -77,6 +91,8 @@ const HistoryPage: FC = () => {
   const [sessions, setSessions] = useState<SessionListItem[]>([])
   const [sessionSearch, setSessionSearch] = useState('')
   const [sessionVisibleCount, setSessionVisibleCount] = useState(100)
+  const sessionCardRefs = useRef<Map<string, HTMLDivElement | null>>(new Map())
+  const sessionListRef = useRef<HTMLDivElement | null>(null)
 
   const clearHashQuery = useCallback(() => {
     const hash = window.location.hash
@@ -112,6 +128,7 @@ const HistoryPage: FC = () => {
     try {
       const config = await getUserConfig()
       const botNames = (config.customApiConfigs || []).map((c, i) => c.name || `Bot ${i + 1}`)
+      const botIcons = (config.customApiConfigs || []).map((c) => c.avatar || '')
       const all: SessionListItem[] = []
       const excludedByBotPrefix = new Map<number, Map<string, number>>()
 
@@ -143,19 +160,29 @@ const HistoryPage: FC = () => {
           }
         }
 
-        const botResponses: { botName: string; response: string }[] = []
+        const botResponses: { botName: string; response: string; botIcon?: string }[] = []
         if (s.botIndices && s.conversations) {
           for (const botIndex of s.botIndices) {
             const msgs = (s.conversations as any)[botIndex] || []
             const botName = botNames[botIndex] || `Bot ${botIndex + 1}`
+            const botIcon = botIcons[botIndex]
             const lastAssistant = Array.isArray(msgs)
-              ? [...msgs].reverse().find((m: any) => m && m.author !== 'user' && typeof m.text === 'string' && m.text.trim() !== '')
+              ? msgs.findLast((m: any) => m && m.author !== 'user' && typeof m.text === 'string' && m.text.trim() !== '')
               : undefined
             if (lastAssistant?.text) {
-              botResponses.push({ botName, response: String(lastAssistant.text).slice(0, 220) })
+              botResponses.push({ botName, response: String(lastAssistant.text), botIcon })
             }
           }
         }
+
+        const sessionKey = `snap:${s.sessionUUID}`
+        const sessionBotNames = s.botIndices?.map((idx: number) => botNames[idx] || `Bot ${idx + 1}`) || []
+        const searchString = [
+          sessionBotNames.join(' '),
+          firstUserMsg?.text ? String(firstUserMsg.text) : '',
+          s.pairName || '',
+          ...botResponses.map((r) => r.response),
+        ].join(' ').toLowerCase()
 
         all.push({
           type: 'sessionSnapshot',
@@ -166,9 +193,12 @@ const HistoryPage: FC = () => {
           botIndices: s.botIndices,
           layout: s.layout,
           pairName: s.pairName,
-          firstMessage: firstUserMsg?.text ? String(firstUserMsg.text).slice(0, 120) : undefined,
+          firstMessage: firstUserMsg?.text ? String(firstUserMsg.text) : undefined,
           botResponses: botResponses.length ? botResponses : undefined,
-          botNames: s.botIndices?.map((idx: number) => botNames[idx] || `Bot ${idx + 1}`),
+          botNames: sessionBotNames,
+          botIcons: s.botIndices?.map((idx: number) => botIcons[idx] || ''),
+          _sessionKey: sessionKey,
+          _searchString: searchString,
         })
       }
 
@@ -181,6 +211,15 @@ const HistoryPage: FC = () => {
         const firstUserMsg = allMessages.find(
           (m: any) => m.author === 'user' && typeof m.text === 'string' && m.text.trim() !== '',
         )
+
+        const sessionKey = `aio:${s.id}`
+        const sessionBotNames = s.botIndices?.map((idx: number) => botNames[idx] || `Bot ${idx + 1}`) || []
+        const searchString = [
+          sessionBotNames.join(' '),
+          firstUserMsg?.text ? String(firstUserMsg.text) : '',
+          s.pairName || '',
+        ].join(' ').toLowerCase()
+
         all.push({
           type: 'allInOneLegacy',
           sessionId: s.id,
@@ -190,12 +229,15 @@ const HistoryPage: FC = () => {
           botIndices: s.botIndices,
           layout: s.layout,
           pairName: s.pairName,
-          firstMessage: firstUserMsg?.text ? String(firstUserMsg.text).slice(0, 120) : undefined,
-          botNames: s.botIndices?.map((idx: number) => botNames[idx] || `Bot ${idx + 1}`),
+          firstMessage: firstUserMsg?.text ? String(firstUserMsg.text) : undefined,
+          botNames: sessionBotNames,
+          botIcons: s.botIndices?.map((idx: number) => botIcons[idx] || ''),
+          _sessionKey: sessionKey,
+          _searchString: searchString,
         })
 
         if (s.botIndices && s.conversations) {
-          const botResponses: { botName: string; response: string }[] = []
+          const botResponses: { botName: string; response: string; botIcon?: string }[] = []
           for (const botIndex of s.botIndices) {
             const targetConversationId = (s as any).conversationSnapshots?.[botIndex] || (s.conversations as any)[botIndex]?.[0]?.id
             const convs = (s.conversations as any)[botIndex] || []
@@ -203,17 +245,25 @@ const HistoryPage: FC = () => {
             if (target && Array.isArray(target.messages)) {
               upsertExclude(botIndex, prefixSigOf(target.messages), target.messages.length)
               const botName = botNames[botIndex] || `Bot ${botIndex + 1}`
-              const lastAssistant = [...target.messages].reverse().find((m: any) => m && m.author !== 'user' && typeof m.text === 'string' && m.text.trim() !== '')
+              const botIcon = botIcons[botIndex]
+              const lastAssistant = target.messages.findLast((m: any) => m && m.author !== 'user' && typeof m.text === 'string' && m.text.trim() !== '')
               if (lastAssistant?.text) {
-                botResponses.push({ botName, response: String(lastAssistant.text).slice(0, 220) })
+                botResponses.push({ botName, response: String(lastAssistant.text), botIcon })
               }
             }
           }
 
           if (botResponses.length) {
+            const lastSession = all[all.length - 1]
+            const updatedSearchString = [
+              lastSession._searchString,
+              ...botResponses.map((r) => r.response),
+            ].join(' ').toLowerCase()
+
             all[all.length - 1] = {
               ...(all[all.length - 1] as any),
               botResponses,
+              _searchString: updatedSearchString,
             }
           }
         }
@@ -229,7 +279,16 @@ const HistoryPage: FC = () => {
             continue
           }
           const firstUserMsg = c.messages.find((m: any) => m.author === 'user' && typeof m.text === 'string' && m.text.trim() !== '')
-          const lastAssistant = [...c.messages].reverse().find((m: any) => m && m.author !== 'user' && typeof m.text === 'string' && m.text.trim() !== '')
+          const lastAssistant = c.messages.findLast((m: any) => m && m.author !== 'user' && typeof m.text === 'string' && m.text.trim() !== '')
+
+          const sessionKey = `single:${i}:${c.id}`
+          const botName = botNames[i] || `Bot ${i + 1}`
+          const searchString = [
+            botName,
+            firstUserMsg?.text ? String(firstUserMsg.text) : '',
+            lastAssistant?.text ? String(lastAssistant.text) : '',
+          ].join(' ').toLowerCase()
+
           all.push({
             type: 'single',
             botIndex: i,
@@ -237,9 +296,12 @@ const HistoryPage: FC = () => {
             createdAt: c.createdAt,
             lastUpdated: c.createdAt,
             messageCount: c.messages.length,
-            firstMessage: firstUserMsg?.text ? String(firstUserMsg.text).slice(0, 120) : undefined,
-            lastMessage: lastAssistant?.text ? String(lastAssistant.text).slice(0, 220) : undefined,
-            botNames: [botNames[i] || `Bot ${i + 1}`],
+            firstMessage: firstUserMsg?.text ? String(firstUserMsg.text) : undefined,
+            lastMessage: lastAssistant?.text ? String(lastAssistant.text) : undefined,
+            botNames: [botName],
+            botIcons: [botIcons[i] || ''],
+            _sessionKey: sessionKey,
+            _searchString: searchString,
           })
         }
       }
@@ -260,6 +322,15 @@ const HistoryPage: FC = () => {
     setSelectedSessionKey(null)
   }, [activeTab, sessionSearch])
 
+  useEffect(() => {
+    if (!selectedSessionKey) return
+    const target = sessionCardRefs.current.get(selectedSessionKey)
+    if (!target) return
+    requestAnimationFrame(() => {
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    })
+  }, [selectedSessionKey])
+
   const baseSessionsByTab = useMemo(() => {
     const allInOne = sessions.filter((s) => s.type === 'sessionSnapshot' || s.type === 'allInOneLegacy')
     const individual = sessions.filter((s) => s.type === 'single')
@@ -269,25 +340,17 @@ const HistoryPage: FC = () => {
   const filteredSessions = useMemo(() => {
     if (!sessionSearch.trim()) return baseSessionsByTab
     const q = sessionSearch.toLowerCase()
-    return baseSessionsByTab.filter((s) => {
-      const names = (s.botNames || []).join(' ').toLowerCase()
-      const firstMsg = (s.firstMessage || '').toLowerCase()
-      const pairName = ('pairName' in s ? (s.pairName || '') : '').toLowerCase()
-      const lastMsg = ('lastMessage' in s ? (s.lastMessage || '') : '').toLowerCase()
-      return names.includes(q) || firstMsg.includes(q) || pairName.includes(q) || lastMsg.includes(q)
-    })
+    return baseSessionsByTab.filter((s) => s._searchString.includes(q))
   }, [baseSessionsByTab, sessionSearch])
 
   const visibleSessions = useMemo(() => {
-    if (sessionSearch.trim()) return filteredSessions
     return filteredSessions.slice(0, sessionVisibleCount)
-  }, [filteredSessions, sessionSearch, sessionVisibleCount])
+  }, [filteredSessions, sessionVisibleCount])
 
   const canLoadMoreSessions = useMemo(() => {
     if (loadingSessions) return false
-    if (sessionSearch.trim()) return false
     return sessionVisibleCount < filteredSessions.length
-  }, [filteredSessions.length, loadingSessions, sessionSearch, sessionVisibleCount])
+  }, [filteredSessions.length, loadingSessions, sessionVisibleCount])
 
   const sessionStatsText = useMemo(() => {
     return t('History sessions stats', {
@@ -326,30 +389,29 @@ const HistoryPage: FC = () => {
     [openAppTab],
   )
 
-  const getSessionKey = useCallback((s: SessionListItem) => {
-    if (s.type === 'sessionSnapshot') return `snap:${s.sessionUUID}`
-    if (s.type === 'allInOneLegacy') return `aio:${s.sessionId}`
-    return `single:${s.botIndex}:${s.conversationId}`
-  }, [])
 
   return (
     <PagePanel title={t('View history') as string}>
-      <div className="px-10 pb-10">
-        <div className="flex flex-row items-center justify-between gap-3 my-4">
-          <div className="flex flex-row gap-2">
+      <div className="px-10 pb-4 h-full flex flex-col">
+        <div className="flex flex-row items-center justify-between gap-3 my-2">
+          <div className="flex flex-row gap-1 bg-secondary/30 p-1 rounded-xl">
             <button
               className={cx(
-                'px-3 py-1.5 rounded-xl text-sm border border-primary-border',
-                activeTab === 'allInOne' ? 'bg-secondary' : 'hover:bg-secondary/50',
+                'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                activeTab === 'allInOne'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-primary-text/70 hover:text-primary-text hover:bg-secondary/50',
               )}
               onClick={() => setActiveTab('allInOne')}
             >
-              All-In-One
+              {t('All-In-One')}
             </button>
             <button
               className={cx(
-                'px-3 py-1.5 rounded-xl text-sm border border-primary-border',
-                activeTab === 'individual' ? 'bg-secondary' : 'hover:bg-secondary/50',
+                'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                activeTab === 'individual'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-primary-text/70 hover:text-primary-text hover:bg-secondary/50',
               )}
               onClick={() => setActiveTab('individual')}
             >
@@ -357,106 +419,73 @@ const HistoryPage: FC = () => {
             </button>
           </div>
         </div>
-        <div className="flex flex-row items-center gap-3 my-4">
+        <div className="flex flex-row items-center gap-3 my-2">
           <SearchInput value={sessionSearch} onChange={setSessionSearch} />
         </div>
-        <div className="text-xs opacity-70 mb-3">{sessionStatsText}</div>
+        <div className="text-xs text-primary-text opacity-85 mb-1 px-1 font-medium">{sessionStatsText}</div>
 
-        <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar max-h-[calc(100vh-220px)] pr-1">
-          {loadingSessions && <div className="text-sm opacity-70">{t('Loading sessions...')}</div>}
-          {!loadingSessions && filteredSessions.length === 0 && (
-            <div className="text-sm opacity-70">{t('No sessions found.')}</div>
+        {/* Scrollable session list container */}
+        <div
+          ref={sessionListRef}
+          className="overflow-y-auto custom-scrollbar flex-1 min-h-0 mb-1"
+        >
+          {loadingSessions && (
+            <div className="text-sm text-primary-text opacity-85 text-center py-8">{t('Loading sessions...')}</div>
           )}
-          {visibleSessions.map((s) => (
-            <div
-              key={getSessionKey(s)}
-              className={cx(
-                'border border-primary-border rounded-2xl p-4 bg-primary-background/40 hover:bg-secondary/30 transition-colors cursor-pointer',
-                selectedSessionKey === getSessionKey(s) && 'bg-secondary/30',
-              )}
-              onClick={() =>
-                setSelectedSessionKey((prev) => (prev === getSessionKey(s) ? null : getSessionKey(s)))
-              }
-            >
-              <div className="flex flex-row items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold truncate">
-                    {s.type === 'sessionSnapshot'
-                      ? s.pairName || (s.botNames || []).join(' / ') || s.sessionUUID
-                      : s.type === 'allInOneLegacy'
-                        ? s.pairName || (s.botNames || []).join(' / ') || s.sessionId
-                        : (s.botNames && s.botNames[0]) || `Bot ${s.botIndex + 1}`}
-                  </div>
-                  <div className="text-xs opacity-70 mt-1">
-                    {dayjs(s.lastUpdated).format('YYYY-MM-DD HH:mm')} · {s.messageCount} msgs
-                  </div>
-                  {s.firstMessage && (
-                    <div className="text-xs opacity-80 mt-2 break-words whitespace-pre-wrap">
-                      {selectedSessionKey === getSessionKey(s) ? s.firstMessage.slice(0, 700) : s.firstMessage.slice(0, 180)}
-                      {selectedSessionKey === getSessionKey(s) && s.firstMessage.length > 700 ? '…' : ''}
-                      {selectedSessionKey !== getSessionKey(s) && s.firstMessage.length > 180 ? '…' : ''}
-                    </div>
-                  )}
-                  {s.type !== 'single' && s.botNames && s.botNames.length > 0 && (
-                    <div className="text-xs opacity-70 mt-2 break-words">
-                      {s.botNames.join(' / ')}
-                    </div>
-                  )}
-                  {selectedSessionKey === getSessionKey(s) && s.type === 'single' && s.lastMessage && (
-                    <div className="text-xs opacity-70 mt-2 break-words whitespace-pre-wrap">
-                      {s.lastMessage}
-                    </div>
-                  )}
-                  {selectedSessionKey === getSessionKey(s) && s.type !== 'single' && s.botResponses && s.botResponses.length > 0 && (
-                    <div className="mt-2 flex flex-col gap-2">
-                      {s.botResponses.map((r) => (
-                        <div key={r.botName} className="text-xs opacity-70 break-words whitespace-pre-wrap">
-                          <span className="font-semibold opacity-90">{r.botName}</span>
-                          <span className="opacity-90">{': '}</span>
-                          <span>{r.response}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-row items-center gap-2 shrink-0">
-                  <Tooltip content={t('Restore Session')}>
-                    <button
-                      className={cx(
-                        'rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all',
-                        selectedSessionKey === getSessionKey(s)
-                          ? 'px-4 py-2.5 text-base shadow-md'
-                          : 'px-3 py-2 text-sm',
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        restoreSession(s)
+          {!loadingSessions && filteredSessions.length === 0 && (
+            <div className="text-sm text-primary-text opacity-85 text-center py-8 border border-dashed border-primary-border rounded-xl">
+              {t('No sessions found.')}
+            </div>
+          )}
+          {!loadingSessions && visibleSessions.length > 0 && (
+            <div className="pr-1">
+              <ViewportList
+                viewportRef={sessionListRef}
+                items={visibleSessions}
+                initialAlignToTop={true}
+              >
+                {(s) => {
+                  const sessionKey = s._sessionKey
+                  const isSelected = selectedSessionKey === sessionKey
+                  return (
+                    <div
+                      key={sessionKey}
+                      className="mb-3"
+                      ref={(node) => {
+                        sessionCardRefs.current.set(sessionKey, node)
                       }}
                     >
-                      {t('Restore Session')}
-                    </button>
-                  </Tooltip>
-                </div>
-              </div>
-            </div>
-          ))}
-          {canLoadMoreSessions && (
-            <div className="flex flex-row items-center justify-center gap-3 py-4">
-              <button
-                className="px-3 py-2 rounded-xl text-sm border border-primary-border hover:bg-secondary/50"
-                onClick={() => loadMoreSessions(100)}
-              >
-                {t('Load 100 more')}
-              </button>
-              <button
-                className="px-3 py-2 rounded-xl text-sm border border-primary-border hover:bg-secondary/50"
-                onClick={() => loadMoreSessions(500)}
-              >
-                {t('Load 500 more')}
-              </button>
+                      <SessionCard
+                        session={s}
+                        isSelected={isSelected}
+                        onToggleSelect={() => setSelectedSessionKey((prev) => (prev === sessionKey ? null : sessionKey))}
+                        onRestore={() => restoreSession(s)}
+                      />
+                    </div>
+                  )
+                }}
+              </ViewportList>
             </div>
           )}
         </div>
+
+        {/* Load more buttons outside scrollable area */}
+        {canLoadMoreSessions && (
+          <div className="flex flex-row items-center justify-center gap-2 py-2">
+            <button
+              className="px-3 py-1.5 rounded-xl text-sm font-medium border border-primary-border hover:bg-secondary/50 transition-colors"
+              onClick={() => loadMoreSessions(100)}
+            >
+              {t('Load 100 more')}
+            </button>
+            <button
+              className="px-3 py-1.5 rounded-xl text-sm font-medium border border-primary-border hover:bg-secondary/50 transition-colors"
+              onClick={() => loadMoreSessions(500)}
+            >
+              {t('Load 500 more')}
+            </button>
+          </div>
+        )}
       </div>
     </PagePanel>
   )
