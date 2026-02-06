@@ -4,7 +4,14 @@ import { sample, uniqBy } from 'lodash-es'
 import { FC, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cx, uuid } from '~/utils'
-import { pendingSearchQueryAtom, sessionToRestoreAtom, allInOneRestoreDataAtom } from '../state'
+import {
+  pendingSearchQueryAtom,
+  sessionToRestoreAtom,
+  allInOneRestoreDataAtom,
+  allInOneInputTextAtom,
+  allInOneInputAttachmentsAtom,
+  clearAllInOneInputAtom
+} from '../state'
 import { getSessionSnapshot, loadAllInOneSessions, loadHistoryMessages, setAllInOneSession, saveSessionSnapshot, ChatMessageModel } from '~services/chat-history'
 import { updateChatPair } from '~services/user-config'
 import Button from '~app/components/Button'
@@ -44,11 +51,16 @@ const GeneralChatPanel: FC<{
 }> = ({ chats, setBots, supportImageInput, currentSessionUUID, setCurrentSessionUUID }) => {
   const { t } = useTranslation()
   const generating = useMemo(() => chats.some((c) => c.generating), [chats])
-  
+
   // タブローカルatomを使用
   const [activeAllInOne] = useAtom(activeAllInOneAtom)
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const saveConfig = useSetAtom(saveAllInOneConfigAtom)
+
+  // 入力テキストと添付ファイルをatomで管理（レイアウト変更時も維持）
+  const [inputText, setInputText] = useAtom(allInOneInputTextAtom)
+  const [inputAttachments, setInputAttachments] = useAtom(allInOneInputAttachmentsAtom)
+  const clearInput = useSetAtom(clearAllInOneInputAtom)
   
   // 現在のペア設定を取得
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
@@ -244,8 +256,11 @@ const GeneralChatPanel: FC<{
 
       // まずメッセージを送信
       uniqBy(chats, (c) => c.index).forEach((c) => c.sendMessage(input, images, attachments, audioFiles));
+
+      // 送信後に入力をクリア
+      clearInput();
     },
-    [chats],
+    [chats, clearInput],
   )
 
   // 生成完了時にセッション保存
@@ -401,6 +416,10 @@ const GeneralChatPanel: FC<{
           fullHeight={hasUserResized}
           maxRows={hasUserResized ? undefined : 12}
           onHeightChange={handleAutoHeightChange}
+          controlledValue={inputText}
+          onControlledValueChange={setInputText}
+          controlledAttachments={inputAttachments}
+          onControlledAttachmentsChange={setInputAttachments}
         />
       </div>
     </div>

@@ -52,6 +52,11 @@ interface Props {
   fullHeight?: boolean
   onHeightChange?: (height: number) => void
   onVisibilityChange?: (visible: boolean) => void
+  // Controlled state props (optional - for maintaining state across layout changes)
+  controlledValue?: string
+  onControlledValueChange?: (value: string) => void
+  controlledAttachments?: Attachment[]
+  onControlledAttachmentsChange?: (attachments: Attachment[]) => void
 }
 
 const ChatMessageInput: FC<Props> = (props) => {
@@ -61,11 +66,35 @@ const ChatMessageInput: FC<Props> = (props) => {
     fullHeight = false,
     onHeightChange,
     onVisibilityChange,
+    controlledValue,
+    onControlledValueChange,
+    controlledAttachments,
+    onControlledAttachmentsChange,
     ...restProps
   } = props
 
-  const [value, setValue] = useState('')
-  const [attachments, setAttachments] = useState<Attachment[]>([])
+  // Use controlled state if provided, otherwise use local state
+  const isControlled = controlledValue !== undefined && onControlledValueChange !== undefined
+  const [localValue, setLocalValue] = useState('')
+  const [localAttachments, setLocalAttachments] = useState<Attachment[]>([])
+
+  const value = isControlled ? controlledValue : localValue
+  const setValue = isControlled ? onControlledValueChange : setLocalValue
+
+  const isAttachmentsControlled = controlledAttachments !== undefined && onControlledAttachmentsChange !== undefined
+  const attachments = isAttachmentsControlled ? controlledAttachments : localAttachments
+
+  // Wrapper for setAttachments to handle both controlled and uncontrolled cases
+  const setAttachments = useCallback((update: Attachment[] | ((prev: Attachment[]) => Attachment[])) => {
+    if (isAttachmentsControlled && onControlledAttachmentsChange) {
+      // For controlled state, compute the new value if update is a function
+      const newValue = typeof update === 'function' ? update(attachments) : update
+      onControlledAttachmentsChange(newValue)
+    } else {
+      // For uncontrolled state, just use the local setter
+      setLocalAttachments(update)
+    }
+  }, [isAttachmentsControlled, onControlledAttachmentsChange, attachments])
   const [editingAttachment, setEditingAttachment] = useState<Attachment | null>(null);
   const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
