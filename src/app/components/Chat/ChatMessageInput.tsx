@@ -1,6 +1,7 @@
 import {
   FloatingFocusManager,
   FloatingList,
+  FloatingPortal,
   autoUpdate,
   flip,
   offset,
@@ -15,11 +16,13 @@ import { fileOpen } from 'browser-fs-access'
 import { cx } from '~/utils'
 import { ClipboardEventHandler, FC, ReactNode, memo, useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GoBook, GoImage, GoPaperclip, GoFile, GoFileMedia } from 'react-icons/go'
+import { GoBook, GoImage, GoFile, GoFileMedia, GoFileCode } from 'react-icons/go'
 import { BiExpand } from 'react-icons/bi'
-import { RiDeleteBackLine } from 'react-icons/ri'
+import { RiDeleteBackLine, RiCloseLine } from 'react-icons/ri'
 import { Prompt } from '~services/prompts'
 import Button from '../Button'
+import Tooltip from '../Tooltip'
+import AudioWaveIcon from '../icons/AudioWaveIcon'
 import PromptCombobox, { ComboboxContext } from '../PromptCombobox'
 import PromptLibraryDialog from '../PromptLibrary/Dialog'
 import ExpandableDialog from '../ExpandableDialog'
@@ -102,6 +105,7 @@ const ChatMessageInput: FC<Props> = (props) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const [isDragging, setIsDragging] = useState(false);
+  const [showAttachmentPopup, setShowAttachmentPopup] = useState(true);
  
          const [activeIndex, setActiveIndex] = useState<number | null>(null)
  
@@ -116,11 +120,22 @@ const ChatMessageInput: FC<Props> = (props) => {
 
 
          const { refs, floatingStyles, context} = useFloating({
- 
+
          whileElementsMounted: autoUpdate,    middleware: [offset(15), flip(), shift()],
     placement: 'top-start',
     open: isComboboxOpen,
     onOpenChange: setIsComboboxOpen,
+  })
+
+  // Attachment popup floating
+  const {
+    refs: attachmentRefs,
+    floatingStyles: attachmentFloatingStyles
+  } = useFloating({
+    whileElementsMounted: autoUpdate,
+    middleware: [offset(12), flip(), shift()],
+    placement: 'top-start',
+    open: showAttachmentPopup,
   })
 
   const floatingListRef = useRef([])
@@ -262,6 +277,7 @@ const ChatMessageInput: FC<Props> = (props) => {
           props.onSubmit(value, images, allTextAttachments, audioFiles);
           setValue('');
           setAttachments([]);
+          setShowAttachmentPopup(false);
         }
       },
       [attachments, props, value],
@@ -295,6 +311,7 @@ const ChatMessageInput: FC<Props> = (props) => {
       props.onSubmit(value, images, allTextAttachments, audioFiles);
       setValue('');
       setAttachments([]);
+      setShowAttachmentPopup(false);
     }
     // Close modal first, then focus on main input after a delay
     setIsExpanded(false)
@@ -358,15 +375,6 @@ const ChatMessageInput: FC<Props> = (props) => {
     }
     inputRef.current?.focus();
   }, [attachments]);
-
-  const selectImage = useCallback(async () => {
-    const files = await fileOpen({
-      mimeTypes: ['image/jpg', 'image/jpeg', 'image/png', 'image/gif'],
-      extensions: ['.jpg', '.jpeg', '.png', '.gif'],
-      multiple: true,
-    });
-    handleFileSelect(files);
-  }, [handleFileSelect]);
 
   const selectAttachments = useCallback(async () => {
     const files = await fileOpen({
@@ -452,6 +460,35 @@ const ChatMessageInput: FC<Props> = (props) => {
   const isCompactMode = props.mode === 'compact'
   const hasContent = value.length > 0 || attachments.length > 0
   const shouldShowInput = !isCompactMode || (isCompactMode && (isFocused || hasContent))
+  const attachmentTooltipContent = useMemo(
+    () => (
+      <div className="attachment-tooltip">
+        <table>
+          <thead>
+            <tr>
+              <th>{t('Attachment tooltip header type')}</th>
+              <th>{t('Attachment tooltip header details')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{t('Attachment tooltip row text label')}</td>
+              <td>{t('Attachment tooltip row text detail')}</td>
+            </tr>
+            <tr>
+              <td>{t('Attachment tooltip row audio label')}</td>
+              <td>{t('Attachment tooltip row audio detail')}</td>
+            </tr>
+            <tr>
+              <td>{t('Attachment tooltip row image label')}</td>
+              <td>{t('Attachment tooltip row image detail')}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    ),
+    [t],
+  )
 
   useEffect(() => {
     if (isCompactMode) {
@@ -491,7 +528,7 @@ const ChatMessageInput: FC<Props> = (props) => {
           <div className="flex flex-row items-center justify-center gap-3 px-4 py-3 rounded-lg border-2 border-dashed border-blue-500 bg-white/70 dark:bg-black/40">
             <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
               <GoImage size={18} />
-              <GoPaperclip size={18} />
+              <GoFile size={18} />
             </div>
             <span className="text-sm font-semibold text-primary-text">{t('Drop files to attach')}</span>
             <span className="text-xs text-secondary-text">({t('Images and text files are supported')})</span>
@@ -526,20 +563,50 @@ const ChatMessageInput: FC<Props> = (props) => {
               )}
             </ComboboxContext.Provider>
             {props.supportImageInput && (
-              <>
-                <GoImage
-                  size={22}
-                  className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200"
-                  onClick={selectImage}
-                  title={t('Image input')}
-                />
-                <GoPaperclip
-                  size={22}
-                  className="cursor-pointer text-secondary-text hover:text-primary-text transition-colors duration-200"
-                  onClick={selectAttachments}
-                  title={t('Attach file (Non-binary-text)')}
-                />
-              </>
+                <Tooltip content={attachmentTooltipContent} align="start">
+                <div className="relative">
+                  <button
+                    type="button"
+                    ref={attachmentRefs.setReference}
+                    className="group flex items-center justify-center text-secondary-text hover:text-primary-text transition-colors duration-200"
+                    onClick={selectAttachments}
+                    aria-label={t('Attach files')}
+                    title={t('Attach files')}
+                  >
+                    <span className="attachment-rotator">
+                      <span className="attachment-rotator__icon attachment-rotator__icon--text">
+                        <GoFileCode size={20} />
+                      </span>
+                      <span className="attachment-rotator__icon attachment-rotator__icon--audio">
+                        <AudioWaveIcon size={20} />
+                      </span>
+                      <span className="attachment-rotator__icon attachment-rotator__icon--image">
+                        <GoImage size={20} />
+                      </span>
+                    </span>
+                  </button>
+                  {showAttachmentPopup && (
+                    <FloatingPortal>
+                      <div
+                        ref={attachmentRefs.setFloating}
+                        style={attachmentFloatingStyles}
+                        className="attachment-popup"
+                      >
+                        <button
+                          type="button"
+                          className="attachment-popup__close"
+                          onClick={() => setShowAttachmentPopup(false)}
+                          aria-label={t('Close')}
+                          title={t('Close')}
+                        >
+                          <RiCloseLine size={20} />
+                        </button>
+                        <div className="attachment-popup__text">{t('Attachment popup hint')}</div>
+                      </div>
+                    </FloatingPortal>
+                  )}
+                </div>
+              </Tooltip>
             )}
           </>
         )}
