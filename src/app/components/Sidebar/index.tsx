@@ -721,11 +721,7 @@ useEffect(() => {
             : 'flex-col justify-center items-center gap-1 px-1 py-[8px] min-h-[56px]',
         )}
       >
-        <div className="flex items-center justify-center">
-          <div className="rounded-full border border-white overflow-hidden w-6 h-6 flex items-center justify-center bg-primary-background bg-opacity-20">
-            <img src={historyIcon} className="w-4 h-4" />
-          </div>
-        </div>
+        <img src={historyIcon} className="w-6 h-6 brightness-0 invert" />
         <span
           className={cx(
             'font-medium text-sm',
