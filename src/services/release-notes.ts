@@ -7,6 +7,13 @@ import { getVersion } from '~utils'
 export const RELEASE_NOTES = [
 
   {
+    version: '2.14.6',
+    notes: [
+      'releasenote_v2146_persistent_input_state',
+      'releasenote_v2146_attachment_popup_enhancement',
+    ],
+  },
+  {
     version: '2.14.5',
     notes: [
       'releasenote_v2145_history_page_refactor',
