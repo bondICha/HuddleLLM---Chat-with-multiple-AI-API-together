@@ -6,7 +6,15 @@ import { FiSearch } from 'react-icons/fi'
 import { ViewportList } from 'react-viewport-list'
 import PagePanel from '~app/components/Page'
 import SessionCard from '~app/components/History/SessionCard'
-import { loadAllInOneSessions, loadHistoryMessages, loadSessionSnapshots } from '~services/chat-history'
+import { MigrationProgress } from '~app/components/MigrationProgress'
+import {
+  loadAllInOneSessions,
+  loadHistoryMessages,
+  loadSessionSnapshots,
+  isMigrationCompleted,
+  loadSessionIndexV2,
+  loadSessionsByIds,
+} from '~services/chat-history'
 import { getUserConfig } from '~services/user-config'
 import { cx } from '~utils'
 
@@ -392,6 +400,7 @@ const HistoryPage: FC = () => {
 
   return (
     <PagePanel title={t('View history') as string}>
+      <MigrationProgress showOnHistoryPage onMigrationComplete={loadSessionsData} />
       <div className="px-10 pb-4 h-full flex flex-col">
         <div className="flex flex-row items-center justify-between gap-3 my-2">
           <div className="flex flex-row gap-1 bg-secondary/30 p-1 rounded-xl">

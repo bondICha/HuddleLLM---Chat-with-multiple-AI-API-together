@@ -1,6 +1,6 @@
 {
-  "Storage Optimization Available": "Storage Optimization Available",
-  "We can optimize your chat history storage to improve loading speed by up to 16×. This one-time process will migrate your existing sessions to a more efficient format.": "We've upgraded our storage system to improve loading performance, especially if you have many chat sessions. This one-time migration will happen in the background and may take a few minutes. Your chat history will be preserved and remain safe.",
+  "Storage Optimization Available": "Speed Up Your Chats",
+  "We can optimize your chat history storage to improve loading speed by up to 16×. This one-time process will migrate your existing sessions to a more efficient format.": "We are updating the data format to make your chats load faster. This is a one-time process that may take a few minutes. Your entire chat history will be carried over.",
   "This may take a few minutes depending on the number of sessions you have.": "This may take a few minutes depending on the number of sessions you have.",
   "Later": "Later",
   "Optimize Now": "Optimize Now",

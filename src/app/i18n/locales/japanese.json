@@ -1,6 +1,6 @@
 {
-  "Storage Optimization Available": "ストレージの最適化が可能です",
-  "We can optimize your chat history storage to improve loading speed by up to 16×. This one-time process will migrate your existing sessions to a more efficient format.": "ストレージシステムをアップグレードし、特に多数のチャットセッションがある場合の読み込み速度を向上させました。この1回限りの移行はバックグラウンドで実行され、数分かかる場合があります。チャット履歴は保持され、安全に保たれます。",
+  "Storage Optimization Available": "チャットの読み込みを高速化",
+  "We can optimize your chat history storage to improve loading speed by up to 16×. This one-time process will migrate your existing sessions to a more efficient format.": "データの保存形式を更新して読み込み速度を向上させます。この処理は一度限りで、数分程度で完了します。現在のチャット履歴はすべてそのまま引き継がれます。",
   "This may take a few minutes depending on the number of sessions you have.": "セッション数によっては、完了まで数分かかる場合があります。",
   "Later": "後で",
   "Optimize Now": "今すぐ最適化",

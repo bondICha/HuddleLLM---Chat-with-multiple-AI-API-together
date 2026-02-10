@@ -1,6 +1,6 @@
 {
-  "Storage Optimization Available": "可最佳化儲存空間",
-  "We can optimize your chat history storage to improve loading speed by up to 16×. This one-time process will migrate your existing sessions to a more efficient format.": "我們已升級儲存系統，以提升載入效能，特別是在您擁有大量聊天工作階段時。此次一次性遷移將在背景執行，可能需要幾分鐘時間。您的聊天記錄將被保留並保持安全。",
+  "Storage Optimization Available": "提升對話載入速度",
+  "We can optimize your chat history storage to improve loading speed by up to 16×. This one-time process will migrate your existing sessions to a more efficient format.": "我們將最佳化資料的儲存方式，讓對話載入更快。這是一次性的更新，可能需要幾分鐘的時間。您的對話紀錄將被完整保留並自動轉移。",
   "This may take a few minutes depending on the number of sessions you have.": "視您的對話數量而定，這可能需要幾分鐘的時間。",
   "Later": "稍後",
   "Optimize Now": "立即最佳化",

@@ -2,7 +2,8 @@ import Browser from 'webextension-polyfill'
 import { ALL_IN_ONE_PAGE_ID } from '~app/consts'
 import { getUserConfig } from '~services/user-config'
 import { setupProxyExecutor } from '~services/proxy-fetch'
-import { decodeWithHeuristics, isProbablyBinary } from '~utils/content-extractor';
+import { decodeWithHeuristics, isProbablyBinary } from '~utils/content-extractor'
+import { StorageMigrationService } from '~services/storage-migration'
 
 /** PDF processing disabled: offscreen queue and related utilities removed */
 
@@ -31,10 +32,27 @@ Browser.action.onClicked.addListener(() => {
   openAppPage()
 })
 
-Browser.runtime.onInstalled.addListener((details) => {
+Browser.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
     // Open welcome page for first-time users
     Browser.tabs.create({ url: 'app.html#/welcome' })
+  }
+})
+
+// Resume migration if service worker was terminated during migration
+Browser.runtime.onStartup.addListener(async () => {
+  const status = await StorageMigrationService.getMigrationStatus()
+
+  if (status?.status === 'running') {
+    console.log('[Background] Detected interrupted migration. Will prompt user on next History page visit.')
+    // Reset status to idle so user can retry from UI
+    await Browser.storage.local.set({
+      'sys:migration:session:v2': {
+        ...status,
+        status: 'idle',
+        updatedAt: Date.now()
+      }
+    })
   }
 })
 
