@@ -33,6 +33,7 @@ import TranscribeModal from './TranscribeModal';
 import { transcribeWithOpenAI, transcribeWithGemini } from '~services/sst-service';
 import { getUserConfig } from '~services/user-config';
 import toast from 'react-hot-toast';
+import './ChatMessageInput.scss';
 
 interface Attachment {
   id: string;
