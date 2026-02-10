@@ -2,6 +2,7 @@ import {
   FloatingFocusManager,
   FloatingList,
   FloatingPortal,
+  arrow,
   autoUpdate,
   flip,
   offset,
@@ -155,17 +156,19 @@ const ChatMessageInput: FC<Props> = (props) => {
   })
 
   // Attachment popup floating
+  const floatingListRef = useRef([])
+  const arrowRef = useRef<HTMLDivElement>(null)
+
   const {
     refs: attachmentRefs,
-    floatingStyles: attachmentFloatingStyles
+    floatingStyles: attachmentFloatingStyles,
+    middlewareData: attachmentMiddlewareData,
   } = useFloating({
     whileElementsMounted: autoUpdate,
-    middleware: [offset(12), flip(), shift()],
+    middleware: [offset(12), flip(), shift(), arrow({ element: arrowRef })],
     placement: 'top-start',
     open: showAttachmentPopup,
   })
-
-  const floatingListRef = useRef([])
   const dragCounterRef = useRef(0)
   const dragOverTimerRef = useRef<number | null>(null)
 
@@ -638,6 +641,14 @@ const ChatMessageInput: FC<Props> = (props) => {
                           <RiCloseLine size={20} />
                         </button>
                         <div className="attachment-popup__text">{t('Attachment popup hint')}</div>
+                        <div
+                          ref={arrowRef}
+                          className="attachment-popup__arrow"
+                          style={{
+                            left: attachmentMiddlewareData.arrow?.x != null ? `${attachmentMiddlewareData.arrow.x}px` : '',
+                            top: attachmentMiddlewareData.arrow?.y != null ? `${attachmentMiddlewareData.arrow.y}px` : '',
+                          }}
+                        />
                       </div>
                     </FloatingPortal>
                   )}

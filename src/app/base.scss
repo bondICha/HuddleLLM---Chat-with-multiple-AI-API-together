@@ -159,31 +159,45 @@ body {
   width: 300px;
   padding: 14px 16px;
   border-radius: 12px;
-  border: 2px solid rgba(59, 130, 246, 0.4);
+  border: 2px solid rgba(59, 130, 246, 0.3);
   background: rgb(var(--primary-background));
-  color: rgb(var(--secondary-text));
+  color: rgb(var(--primary-text));
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08),
               0 10px 24px rgba(0, 0, 0, 0.15),
               0 0 0 1px rgba(0, 0, 0, 0.05);
   font-size: 14px;
   line-height: 1.6;
   white-space: pre-line;
-  z-index: 9999;
+  z-index: 40;
   transform-origin: bottom left;
   animation: attachment-popup-in 180ms ease-out;
 }
 
-.attachment-popup::after {
-  content: '';
+/* Dark theme */
+.dark .attachment-popup {
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5),
+              0 10px 24px rgba(0, 0, 0, 0.7),
+              0 0 0 1px rgba(255, 255, 255, 0.08),
+              0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+.attachment-popup__arrow {
   position: absolute;
-  left: 20px;
   bottom: -7px;
   width: 12px;
   height: 12px;
   background: rgb(var(--primary-background));
-  border-right: 2px solid rgba(59, 130, 246, 0.4);
-  border-bottom: 2px solid rgba(59, 130, 246, 0.4);
+  border-right: 2px solid rgba(59, 130, 246, 0.3);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
   transform: rotate(45deg);
+}
+
+/* Dark theme arrow */
+.dark .attachment-popup__arrow {
+  border-right: 2px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15);
 }
 
 .attachment-popup__close {
@@ -196,7 +210,7 @@ body {
   align-items: center;
   justify-content: center;
   background: rgb(var(--primary-background));
-  border: 2px solid rgba(59, 130, 246, 0.4);
+  border: 2px solid rgba(59, 130, 246, 0.3);
   border-radius: 50%;
   color: rgb(var(--secondary-text));
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -208,6 +222,18 @@ body {
   color: rgb(var(--primary-text));
   background: rgba(59, 130, 246, 0.1);
   transform: scale(1.1);
+}
+
+/* Dark theme close button */
+.dark .attachment-popup__close {
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.dark .attachment-popup__close:hover {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(59, 130, 246, 0.2);
 }
 
 .attachment-popup__text {
