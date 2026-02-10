@@ -427,5 +427,11 @@
   "releasenote_v2144_export_fix_and_ui_improvements": "导出功能修复、输入时滚动优化、公司配置文件自动导入错误修复。",
   "releasenote_v2145_history_page_refactor": "## 历史记录页面重构与UI改进\n\n- **增强的会话列表**: 现在直接在列表中显示AI回复和机器人图标，便于识别。\n- **恢复会话按钮**: 添加了快速恢复过去对话的按钮。\n- **性能提升**: 重构了会话列表以显著提高渲染速度，特别是在历史记录较多时。\n- **更好的导航**: 「加载更多」按钮现在更易于使用，即使在过滤时也可见。\n- **增加历史记录限制**: 会话历史存储限制已增加到 **800** 条（之前为30/20），允许您保留更多对话历史。",
   "releasenote_v2146_persistent_input_state": "All-in-One模式现在在切换布局时保留输入的文字和附件。",
-  "releasenote_v2146_attachment_popup_enhancement": "将图片附件和文件附件图标合并为一个按钮。"
+  "releasenote_v2146_attachment_popup_enhancement": "将图片附件和文件附件图标合并为一个按钮。",
+  "file_error_unsupported_audio_format": "不支持的音频格式（{{type}}）。支持：{{supported}}",
+  "file_error_pdf_not_supported": "不支持PDF文件\"{{name}}\"。",
+  "file_error_binary_not_supported": "文件\"{{name}}\"是二进制文件，无法处理。",
+  "file_error_process_failed": "无法处理文件\"{{name}}\"：{{message}}",
+  "audio_warning_uncommon_format": "非标准MIME类型：{{type}} (.{{ext}})。部分AI提供商可能不支持。",
+  "audio_warning_extension_fallback": "未检测到MIME类型。使用 .{{ext}} 扩展名回退。可靠性降低；部分AI提供商可能拒绝此文件。"
 }

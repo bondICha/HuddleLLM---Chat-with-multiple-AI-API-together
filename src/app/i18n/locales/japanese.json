@@ -475,6 +475,10 @@
   "releasenote_v2141_replicate_gemini_fix": "## Replicate & Gemini 互換性修正\n\n- **ReplicateのURL修正**: ReplicateでSeedreamモデルを使用する際に、誤ってNovita用のパスが付与されてしまう問題を修正しました。\n- **Geminiツールスキーマの改善**: Gemini APIでエラー（400 Bad Request）の原因となっていた `x-order` や `title` などの非標準フィールドをツール定義から削除しました。\n- **GPT-5 Ready**: 一部の実験的なGPT-5互換エンドポイントで採用されている、新しいフラットなツール呼び出し構造に対応しました。",
   "releasenote_v2144_export_fix_and_ui_improvements": "エクスポート機能の修正、入力中のスクロール最適化、会社プロファイル自動インポートの不具合修正。",
   "releasenote_v2145_history_page_refactor": "## 履歴ページの刷新とUI改善\n\n- **セッションリストの強化**: AIの応答内容やボットアイコンがリスト上で直接確認できるようになり、目的の会話が見つけやすくなりました。\n- **セッション復元ボタン**: 過去の会話をワンクリックで再開できるボタンを追加しました。\n- **パフォーマンス向上**: リスト表示の仕組みを刷新し、大量の履歴がある場合でもスムーズに表示されるようになりました。\n- **履歴保存件数の増加**: セッション履歴の保存件数を従来の30件/20件から**800件**に大幅に拡大しました。\n",
-  "releasenote_v2146_persistent_input_state": "All-in-Oneモードでレイアウトを切り替えた際に、入力中の文字や添付ファイルが保持されるようになりました。",
-  "releasenote_v2146_attachment_popup_enhancement": "## 添付ボタンのUI変更とヒント機能の追加\n\n添付ファイルの操作ボタンを整理し、使い方のヒントを追加しました。\n\n- **ボタンの統合**: テキスト・音声・画像の添付ボタンを1つのボタンにまとめました。\n- **ヒント表示**: ボタンにカーソルを合わせると、添付可能なファイル形式や操作方法のヒントが表示されるようになりました。\n- **アイコン表示**: 対応している形式（テキスト、音声、画像）がアイコンのアニメーションで分かりやすく表示されます。"
+  "file_error_unsupported_audio_format": "未対応の音声形式です（{{type}}）。対応形式: {{supported}}",
+  "file_error_pdf_not_supported": "PDFファイル「{{name}}」はサポートされていません。",
+  "file_error_binary_not_supported": "ファイル「{{name}}」はバイナリのためサポートされていません。",
+  "file_error_process_failed": "ファイル「{{name}}」を処理できませんでした: {{message}}",
+  "audio_warning_uncommon_format": "非標準のMIMEタイプ: {{type}} (.{{ext}})。一部のAIプロバイダーでサポートされていない可能性があります。",
+  "audio_warning_extension_fallback": "MIMEタイプを検出できませんでした。拡張子 .{{ext}} によるフォールバックを使用します。信頼性が低下しており、一部のAIプロバイダーでファイルが拒否される可能性があります。"
 }

@@ -465,5 +465,11 @@
   "releasenote_v2144_export_fix_and_ui_improvements": "Export feature fix, auto-scroll optimization when typing, and company profile auto-import bug fix.",
   "releasenote_v2145_history_page_refactor": "## History Page Refactor & UI Improvements\n\n- **Enhanced Session List**: Now displays AI responses and bot icons directly in the list for easier identification.\n- **Restore Session Button**: Added a button to quickly resume past conversations.\n- **Performance Boost**: Refactored the session list for significantly faster rendering, especially with large history.\n- **Increased History Limits**: Session history storage limits have been increased to **800** entries (previously 30/20).",
   "releasenote_v2146_persistent_input_state": "All-in-One mode now preserves text input and attachments when switching layouts.",
-  "releasenote_v2146_attachment_popup_enhancement": "Merged image and file attachment icons into a single button."
+  "releasenote_v2146_attachment_popup_enhancement": "Merged image and file attachment icons into a single button.",
+  "file_error_unsupported_audio_format": "Unsupported audio format \"{{type}}\". Supported: {{supported}}",
+  "file_error_pdf_not_supported": "PDF file \"{{name}}\" is not supported.",
+  "file_error_binary_not_supported": "File \"{{name}}\" appears to be a binary file and is not supported.",
+  "file_error_process_failed": "Could not process file \"{{name}}\": {{message}}",
+  "audio_warning_uncommon_format": "Non-standard MIME type: {{type}} (.{{ext}}). May not be supported by all AI providers.",
+  "audio_warning_extension_fallback": "MIME type undetected. Using .{{ext}} extension fallback. Reliability reduced; some AI providers may reject this file."
 }

@@ -27,7 +27,7 @@ import PromptCombobox, { ComboboxContext } from '../PromptCombobox'
 import PromptLibraryDialog from '../PromptLibrary/Dialog'
 import ExpandableDialog from '../ExpandableDialog'
 import TextInput from './TextInput';
-import { processFile } from '~app/utils/file-processor';
+import { processFile, ProcessedFileResult } from '~app/utils/file-processor';
 import TranscribeModal from './TranscribeModal';
 import { transcribeWithOpenAI, transcribeWithGemini } from '~services/sst-service';
 import { getUserConfig } from '~services/user-config';
@@ -116,6 +116,33 @@ const ChatMessageInput: FC<Props> = (props) => {
          const [isTranscribeModalOpen, setIsTranscribeModalOpen] = useState(false);
 
          const [transcribingFileId, setTranscribingFileId] = useState<string | null>(null);
+
+  const getUnsupportedFileErrorMessage = useCallback(
+    (result: Extract<ProcessedFileResult, { type: 'unsupported' }>) => {
+      switch (result.error.code) {
+        case 'unsupported_audio_format':
+          return t('file_error_unsupported_audio_format', {
+            type: result.error.info.mimeType,
+            supported: result.error.info.supported
+          });
+        case 'pdf_not_supported':
+          return t('file_error_pdf_not_supported', { name: result.file.name });
+        case 'binary_not_supported':
+          return t('file_error_binary_not_supported', { name: result.file.name });
+        case 'process_failed':
+          return t('file_error_process_failed', {
+            name: result.file.name,
+            message: result.error.info.message
+          });
+        default:
+          return t('file_error_process_failed', {
+            name: result.file.name,
+            message: 'Unknown error'
+          });
+      }
+    },
+    [t],
+  )
 
 
 
@@ -344,9 +371,15 @@ const ChatMessageInput: FC<Props> = (props) => {
 
       switch (result.type) {
         case 'image':
+          if (result.warning) {
+            toast(t(result.warning.key, result.warning.params), { duration: 8000 });
+          }
           setAttachments(prev => [...prev, { id, file, type: 'image' }]);
           break;
         case 'audio':
+          if (result.warning) {
+            toast(t(result.warning.key, result.warning.params), { duration: 8000 });
+          }
           const maxSize = 20 * 1024 * 1024; // 20MB
           if (file.size > maxSize) {
             const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
@@ -366,10 +399,13 @@ const ChatMessageInput: FC<Props> = (props) => {
           setIsTranscribeModalOpen(true);
           break;
         case 'text':
+          if (result.warning) {
+            toast(t(result.warning.key, result.warning.params), { duration: 4000 });
+          }
           setAttachments(prev => [...prev, { id, file, type: result.type, content: result.content }]);
           break;
         case 'unsupported':
-          alert(`DEBUG: Unsupported file: ${result.error}`);
+          toast.error(getUnsupportedFileErrorMessage(result));
           break; // Don't add unsupported files
       }
     }

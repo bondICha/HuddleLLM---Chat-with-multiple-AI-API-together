@@ -434,5 +434,11 @@
   "releasenote_v2144_export_fix_and_ui_improvements": "匯出功能修復、輸入時滾動優化、公司設定檔自動匯入錯誤修復。",
   "releasenote_v2145_history_page_refactor": "## 歷史記錄頁面重構與UI改進\n\n- **增強的會話列表**: 現在直接在列表中顯示AI回覆和機器人圖示，便於識別。\n- **恢復會話按鈕**: 添加了快速恢復過去對話の按鈕。\n- **性能提升**: 重構了會話列表以顯著提高渲染速度，特別是在歷史記錄較多時。\n- **更好的導航**: 「載入更多」按鈕現在更易於使用，即使在過濾時也可見。\n- **增加歷史記錄限制**: 會話歷史存儲限制已增加到 **800** 條（之前為30/20），允許您保留更多對話歷史。",
   "releasenote_v2146_persistent_input_state": "All-in-One模式現在在切換版面時保留輸入的文字和附件。",
-  "releasenote_v2146_attachment_popup_enhancement": "將圖片附件和檔案附件圖示合併為一個按鈕。"
+  "releasenote_v2146_attachment_popup_enhancement": "將圖片附件和檔案附件圖示合併為一個按鈕。",
+  "file_error_unsupported_audio_format": "不支援的音訊格式（{{type}}）。支援：{{supported}}",
+  "file_error_pdf_not_supported": "不支援 PDF 檔案「{{name}}」。",
+  "file_error_binary_not_supported": "檔案「{{name}}」為二進位檔，無法處理。",
+  "file_error_process_failed": "無法處理檔案「{{name}}」：{{message}}",
+  "audio_warning_uncommon_format": "非標準MIME類型：{{type}} (.{{ext}})。部分AI提供者可能不支援。",
+  "audio_warning_extension_fallback": "未偵測到MIME類型。使用 .{{ext}} 副檔名回退。可靠性降低；部分AI提供者可能拒絕此檔案。"
 }
