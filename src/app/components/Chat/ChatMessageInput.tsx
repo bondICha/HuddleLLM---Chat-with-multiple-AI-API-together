@@ -316,7 +316,11 @@ const ChatMessageInput: FC<Props> = (props) => {
   const onValueChange = useCallback((v: string) => {
     setValue(v)
     setIsComboboxOpen(v === '/')
-  }, [])
+    // Hide attachment popup when user starts typing
+    if (v.length > 0 && showAttachmentPopup) {
+      setShowAttachmentPopup(false)
+    }
+  }, [showAttachmentPopup])
 
   const modalSubmit = useCallback(() => {
     const textAttachments = attachments
