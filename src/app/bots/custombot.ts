@@ -336,7 +336,7 @@ export class CustomBot extends AsyncAbstractBot {
                     systemMessage: processedSystemMessage,
                     isHostFullPath: effectiveIsHostFullPath,
                     webAccess: config.responsesWebSearch === undefined
-                      ? true
+                      ? false
                       : config.responsesWebSearch,
                     thinkingMode: config.thinkingMode,
                     reasoningEffort: config.reasoningEffort,

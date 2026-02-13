@@ -149,6 +149,15 @@ export async function getUserConfig(): Promise<UserConfig> {
 
         // Note: Legacy image field migrations removed
         // Users with old OpenAI_Image settings will get defaults (acceptable per requirements)
+
+        // Migration: Ensure webAccess and responsesWebSearch are explicitly set (default: false)
+        // This ensures UI display matches internal state and API behavior
+        if (config.responsesWebSearch === undefined) {
+          config.responsesWebSearch = false;
+        }
+        if (config.webAccess === undefined) {
+          config.webAccess = false;
+        }
       });
     }
     

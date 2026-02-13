@@ -1142,7 +1142,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                         ? config.webToolSupport
                                         : config.responsesWebSearch !== undefined
                                           ? !!config.responsesWebSearch
-                                          : true
+                                          : false
                                     }
                                     onChange={(checked) => {
                                       const u = [...customApiConfigs];
@@ -1187,7 +1187,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                         ? config.webToolSupport
                                         : config.webAccess !== undefined
                                           ? !!config.webAccess
-                                          : true
+                                          : false
                                     }
                                     onChange={(checked) => {
                                       const u = [...customApiConfigs];
@@ -1217,7 +1217,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                         ? config.webToolSupport
                                         : config.webAccess !== undefined
                                           ? !!config.webAccess
-                                          : true
+                                          : false
                                     }
                                     onChange={(checked) => {
                                       const u = [...customApiConfigs];
