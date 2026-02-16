@@ -1134,7 +1134,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             <div className="space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
-                                  <p className={labelClass}>{t('Provider Web Search')}</p>
+                                  <p className={labelClass}>{t('{{provider}} Web Search', { provider: 'OpenAI' })}</p>
                                 </div>
                                 <div className={inputContainerClass}>
                                   <Switch
@@ -1146,7 +1146,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                     }}
                                   />
                                   <p className="text-xs opacity-70 mt-1">
-                                    {t('Enable provider web search (OpenAI web_search_preview, Claude web_search_20250305, Gemini google_search)')}
+                                    {t('Use {{provider}} web search (OFF: HuddleLLM Web Access)', { provider: 'OpenAI' })}
                                   </p>
                                 </div>
                               </div>
@@ -1171,7 +1171,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             <div className="space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
-                                  <p className={labelClass}>{t('API Web Search')}</p>
+                                  <p className={labelClass}>{t('{{provider}} Web Search', { provider: 'Claude' })}</p>
                                 </div>
                                 <div className={inputContainerClass}>
                                   <Switch
@@ -1183,7 +1183,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                     }}
                                   />
                                   <p className="text-xs opacity-70 mt-1">
-                                    {t('Enable provider web search (OpenAI web_search_preview, Claude web_search_20250305, Gemini google_search)')}
+                                    {t('Use {{provider}} web search (OFF: HuddleLLM Web Access)', { provider: 'Claude' })}
                                   </p>
                                 </div>
                               </div>
@@ -1193,7 +1193,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             <div className="space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
-                                  <p className={labelClass}>{t('Provider Web Search')}</p>
+                                  <p className={labelClass}>{t('{{provider}} Web Search', { provider: 'Gemini' })}</p>
                                 </div>
                                 <div className={inputContainerClass}>
                                   <Switch
@@ -1205,7 +1205,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                     }}
                                   />
                                   <p className="text-xs opacity-70 mt-1">
-                                    {t('Enable provider web search (OpenAI web_search_preview, Claude web_search_20250305, Gemini google_search)')}
+                                    {t('Use {{provider}} web search (OFF: HuddleLLM Web Access)', { provider: 'Gemini' })}
                                   </p>
                                 </div>
                               </div>
