@@ -13,6 +13,7 @@ interface GeminiApiBotOptions {
   geminiApiModel: string;
   geminiApiSystemMessage?: string;
   geminiApiTemperature?: number;
+  providerWebSearch?: boolean;
   webAccess?: boolean;
   /** Optional custom base URL for advanced routing (e.g., gateways) */
   baseUrl?: string;
@@ -412,7 +413,7 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
   }
 
   protected getWebAccessEnabled(): boolean {
-    return !!this.config.webAccess
+    return !!(this.config.providerWebSearch ?? this.config.webAccess)
   }
 
   protected getThinkingModeEnabled(): boolean {

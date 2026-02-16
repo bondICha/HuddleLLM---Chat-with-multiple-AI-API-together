@@ -324,6 +324,8 @@
   "Attachment tooltip row image label": "圖片",
   "Attachment tooltip row image detail": "會直接傳給 AI API。",
   "Attachment popup hint": "您可以透過此圖示附加文字、音訊和圖片。\n也可以直接將檔案拖放到這裡。\n您也能從剪貼簿直接貼上圖片。",
+  "Provider Web Search": "提供商網頁搜尋",
+  "Enable provider web search (OpenAI web_search_preview, Claude web_search_20250305, Gemini google_search)": "啟用提供商網頁搜尋（OpenAI web_search_preview、Claude web_search_20250305、Gemini google_search）",
   "Edit file content...": "編輯檔案內容...",
   "Close": "關閉",
   "chars": "字",

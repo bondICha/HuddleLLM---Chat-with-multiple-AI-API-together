@@ -26,6 +26,10 @@ export interface CustomApiConfig {
   thinkingLevel?: 'low' | 'high'; // Gemini 3+ thinking level
   reasoningEffort?: 'none' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
   provider: CustomApiProvider;
+  /**
+   * Enable HuddleLLM's agent.execute() for web search when provider web search is disabled
+   * Note: When providerWebSearch is true, this field is ignored
+   */
   webAccess?: boolean;
   isAnthropicUsingAuthorizationHeader?: boolean;
   /** Gemini auth mode: 'header' | 'query' (for individual settings) */
@@ -45,12 +49,14 @@ export interface CustomApiConfig {
   agenticImageBotSettings?: AgenticImageBotSettings;
 
   /**
-   * Unified toggle for native Web tool support (OpenAI Responses web_search_preview, Claude web_search_20250305, etc.)
-   *
-   * - When explicitly set to true/false, this flag takes precedence over provider-specific defaults.
-   * - When undefined, provider-specific logic (responsesWebSearch, webAccess, etc.) is used as a fallback
-   *   for backward compatibility.
+   * Unified provider Web search toggle
+   * When true, use provider's native web search (OpenAI web_search_preview, Claude web_search_20250305, Gemini google_search)
+   * When false, no provider web search is used (HuddleLLM's agent.execute() can still be used if webAccess is true)
+   * This field replaces webAccess/responsesWebSearch/webToolSupport for provider search control
    */
+  providerWebSearch?: boolean;
+
+  /** @deprecated Use providerWebSearch instead */
   webToolSupport?: boolean;
 
   /** Tool definition for image generation (used with Image Agent) */
@@ -60,6 +66,7 @@ export interface CustomApiConfig {
   imageScheme?: 'sd' | 'novita' | 'openai_responses' | 'openrouter_image' | 'qwen_openai' | 'seedream_openai' | 'custom';
 
   // OpenAI Responses API specific toggles
+  /** @deprecated Use providerWebSearch instead */
   responsesWebSearch?: boolean; // Enable web_search_preview tool
   /** JSON string for Responses API tools (function calling, web_search_preview, etc.) */
   responsesFunctionTools?: string;

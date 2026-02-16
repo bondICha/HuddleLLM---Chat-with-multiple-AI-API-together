@@ -362,6 +362,8 @@
   "Attachment tooltip row image label": "画像",
   "Attachment tooltip row image detail": "AI APIに直接送信されます。",
   "Attachment popup hint": "このアイコンから、テキスト、音声、画像を添付できます。\nファイルを直接ここにドラッグ＆ドロップすることもできます。\nクリップボードから画像を貼り付けることもできます。",
+  "Provider Web Search": "プロバイダーWeb検索",
+  "Enable provider web search (OpenAI web_search_preview, Claude web_search_20250305, Gemini google_search)": "プロバイダーのWeb検索を有効化（OpenAI web_search_preview、Claude web_search_20250305、Gemini google_search）",
   "Edit file content...": "ファイル内容を編集...",
   "Close": "閉じる",
   "chars": "字",

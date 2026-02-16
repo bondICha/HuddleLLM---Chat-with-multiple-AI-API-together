@@ -150,13 +150,26 @@ export async function getUserConfig(): Promise<UserConfig> {
         // Note: Legacy image field migrations removed
         // Users with old OpenAI_Image settings will get defaults (acceptable per requirements)
 
-        // Migration: Ensure webAccess and responsesWebSearch are explicitly set (default: false)
-        // This ensures UI display matches internal state and API behavior
-        if (config.responsesWebSearch === undefined) {
-          config.responsesWebSearch = false;
-        }
-        if (config.webAccess === undefined) {
-          config.webAccess = false;
+        // Migration: Unify web search fields into providerWebSearch
+        if (config.providerWebSearch === undefined) {
+          // Priority: webToolSupport > provider-specific fields
+          if (typeof config.webToolSupport === 'boolean') {
+            config.providerWebSearch = config.webToolSupport;
+          } else {
+            // Provider-specific logic
+            switch (config.provider) {
+              case CustomApiProvider.OpenAI_Responses:
+                config.providerWebSearch = config.responsesWebSearch !== false;
+                break;
+              case CustomApiProvider.Anthropic:
+              case CustomApiProvider.VertexAI_Claude:
+              case CustomApiProvider.Google:
+                config.providerWebSearch = !!config.webAccess;
+                break;
+              default:
+                config.providerWebSearch = false;
+            }
+          }
         }
       });
     }
