@@ -30,6 +30,8 @@
   "All-In-One": "All-In-One",
   "AI Response": "AI 応答",
   "AI Responses": "AI 応答一覧",
+  "releasenote_v2148_all_in_one_input_isolation": "## All-in-One の入力遅延（カクつき）を解消\n\nAll-in-One で発生していた入力時のカクつき／遅延を修正し、よりスムーズに入力できるようになりました。",
+  "releasenote_v2148_provider_web_search_unify": "## Provider Web Search 設定の改善\n\nProvider Web Search トグルをUI全体で統一し、デフォルト値と内部状態の不整合を修正しました。これによりWeb検索の動作がより正確になります。",
   "releasenote_v2110_file_attachment_support": "## ファイル添付機能\n\n- アタッチメントアイコンをクリックしてテキストファイルを添付できます。\n- 添付されたテキストファイルの内容が自動的にチャットに読み込まれます。\n\n[YouTubeで動画を見る](https://youtu.be/uijnZcSnBRI)",
   "releasenote_v2110_drag_and_drop_support": "## ドラッグ＆ドロップファイル添付\n\n- 入力欄にファイルをドラッグ＆ドロップするだけで添付できます。\n\n![ドラッグ＆ドロップでファイルを添付](/release_note_assets/Drag%20and%20drop.gif)",
   "releasenote_v2110_pdf_support_removed": "## PDFサポートの削除\n\n- 安定性の問題とChromiumネイティブ機能への複雑な依存関係のため、PDFファイルのサポートを削除しました。この技術的な制約により、直接のPDF入力はできません。代替策として、ユーザーは手動でPDFファイルをテキストに変換し、そのテキストファイルを添付することができます。",

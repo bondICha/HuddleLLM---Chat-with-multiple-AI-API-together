@@ -28,6 +28,8 @@
   "All-In-One": "All-In-One",
   "AI Response": "AI Response",
   "AI Responses": "AI Responses",
+  "releasenote_v2148_all_in_one_input_isolation": "## All-in-One Typing Lag Resolved\n\nWe fixed the intermittent typing stutter/lag in the All-in-One experience, so input feels smooth and responsive.",
+  "releasenote_v2148_provider_web_search_unify": "## Provider Web Search Setting Improvements\n\nUnified the Provider Web Search toggle across the UI and fixed inconsistencies between default values and internal state that could affect web search behavior.",
   "releasenote_v2110_file_attachment_support": "## File Attachment Support\n\n- You can now attach text files to your chat by clicking the attachment icon.\n- The content of the text file will be automatically loaded into the chat.\n\n[Watch video on YouTube](https://youtu.be/uijnZcSnBRI)",
   "releasenote_v2110_drag_and_drop_support": "## Drag and Drop Files\n\n- You can also attach files by simply dragging and dropping them into the input field.\n\n![Drag and Drop to attach files](/release_note_assets/Drag%20and%20drop.gif)",
   "releasenote_v2110_pdf_support_removed": "## PDF Support Removed\n\n- PDF file support has been removed due to instability and complex dependencies on native Chromium features. This technical limitation prevents direct PDF input. Alternatively, Users can convert PDF files to text manually and attach the resulting text file.",
