@@ -55,7 +55,7 @@ export class OpenAIResponsesBot extends AbstractBot {
     this.tools = tools
   }
 
-  // Runtime toggle for native web_search_preview usage
+  // Runtime toggle for provider web_search_preview usage
   setWebAccessEnabled(enabled: boolean) {
     this.config.webAccess = enabled
   }
