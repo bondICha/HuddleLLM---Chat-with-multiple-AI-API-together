@@ -5,7 +5,21 @@ import { getVersion } from '~utils'
 
 
 export const RELEASE_NOTES = [
+  {
+    version: '2.14.8',
+    notes: [
+      'releasenote_v2148_all_in_one_input_isolation',
+      'releasenote_v2148_provider_web_search_unify',
+    ],
+  },
 
+  {
+    version: '2.14.6',
+    notes: [
+      'releasenote_v2146_persistent_input_state',
+      'releasenote_v2146_attachment_popup_enhancement',
+    ],
+  },
   {
     version: '2.14.5',
     notes: [

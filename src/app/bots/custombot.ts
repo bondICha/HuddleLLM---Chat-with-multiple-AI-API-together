@@ -16,13 +16,20 @@ import { ImageAgentBot } from './image-agent';
 import { getUserLocaleInfo } from '~utils/system-prompt-variables';
 
 /**
- * Determine whether a provider has native Web tool support
+ * Determine whether a provider's web search is enabled
  */
-function hasNativeWebToolSupport(provider?: CustomApiProvider, config?: CustomApiConfig): boolean {
+function hasProviderWebSearch(provider?: CustomApiProvider, config?: CustomApiConfig): boolean {
+    // Use unified field if available
+    if (typeof config?.providerWebSearch === 'boolean') {
+        return config.providerWebSearch;
+    }
+
+    // Fallback to legacy fields for backward compatibility
     if (typeof config?.webToolSupport === 'boolean') {
         return config.webToolSupport;
     }
 
+    // Provider defaults for legacy support
     switch (provider) {
         case CustomApiProvider.OpenAI_Responses:
             return config?.responsesWebSearch !== false;
@@ -64,10 +71,9 @@ export class CustomBot extends AsyncAbstractBot {
     }
 
     sendMessage(params: MessageParams): AsyncGenerator<AnwserPayload> {
-        // When a provider has native Web tool support (based on its toggle),
-        // prefer that native mechanism over HuddleLLM's own Web tool, even if Web Access is ON.
-        // For providers without native Web tools, Web Access ON means we wrap the call with agent.execute().
-        if (this.config?.webAccess && !hasNativeWebToolSupport(this.config?.provider, this.config)) {
+        // When providerWebSearch is enabled, use provider's native web search
+        // When providerWebSearch is disabled but webAccess is enabled, use HuddleLLM's agent.execute()
+        if (this.config?.webAccess && !hasProviderWebSearch(this.config?.provider, this.config)) {
             return agent.execute(
                 params.prompt,
                 (prompt) => this.doSendMessageGenerator({ ...params, prompt }),
@@ -102,15 +108,15 @@ export class CustomBot extends AsyncAbstractBot {
         
         // Prompt for Web Access
         // NOTE:
-        // - For providers with *toggled* native web tools (OpenAI Responses / Claude / OpenAI_Image),
+        // - For providers with providerWebSearch enabled (OpenAI Responses / Claude / Gemini),
         //   we should NOT inject ANY HuddleLLM-specific web search instructions into the system prompt
         //   (including the "web search is OFF" notice).
-        //   Web access behavior is controlled entirely by the API-side tool
-        //   (web_search_preview, web_search_20250305, etc.).
-        // - For non-native providers, we continue to append HuddleLLM's own web search instructions,
-        //   and use the ON/OFF message based on config.webAccess.
+        //   Web access behavior is controlled entirely by the provider's API tool
+        //   (web_search_preview, web_search_20250305, google_search).
+        // - When providerWebSearch is disabled, we inject HuddleLLM's own web search instructions
+        //   based on config.webAccess.
         const { language } = getUserLocaleInfo();
-        if (!hasNativeWebToolSupport(config.provider, config)) {
+        if (!hasProviderWebSearch(config.provider, config)) {
             const webAccessForPrompt = !!config.webAccess;
             processedSystemMessage = this.enhanceSystemPromptWithWebSearch(processedSystemMessage, webAccessForPrompt, language);
         }
@@ -159,7 +165,7 @@ export class CustomBot extends AsyncAbstractBot {
         this.config.provider = effectiveProvider;
 
         // Build system prompt AFTER resolving effectiveProvider
-        // This ensures hasNativeWebToolSupport() can correctly check config.provider
+        // This ensures hasProviderWebSearch() can correctly check config.provider
         const processedSystemMessage = this.buildSystemPrompt(config, commonSystemMessage);
 
         const effectiveHost = (providerRef?.host && providerRef.host.trim().length > 0)
@@ -207,10 +213,10 @@ export class CustomBot extends AsyncAbstractBot {
                     isHostFullPath: effectiveIsHostFullPath,
                     webAccess: config.webAccess,
                     advancedConfig: effectiveAdvanced,
-                    // When Web Access is enabled, attach Claude's native web_search tool definition.
+                    // When providerWebSearch is enabled, attach Claude's native web_search tool definition.
                     // This will make Claude use the server-side web_search_20250305 tool instead of
                     // HuddleLLM's own web agent.
-                    tools: config.webAccess
+                    tools: (config.providerWebSearch ?? config.webAccess)
                         ? [
                             {
                                 type: 'web_search_20250305',
@@ -315,6 +321,7 @@ export class CustomBot extends AsyncAbstractBot {
                         geminiApiModel: config.model,
                         geminiApiSystemMessage: processedSystemMessage,
                         geminiApiTemperature: config.temperature,
+                        providerWebSearch: config.providerWebSearch,
                         webAccess: config.webAccess,
                         thinkingMode: config.thinkingMode,
                         thinkingBudget: config.thinkingBudget,
@@ -335,9 +342,7 @@ export class CustomBot extends AsyncAbstractBot {
                     model: config.model,
                     systemMessage: processedSystemMessage,
                     isHostFullPath: effectiveIsHostFullPath,
-                    webAccess: config.responsesWebSearch === undefined
-                      ? true
-                      : config.responsesWebSearch,
+                    webAccess: config.providerWebSearch ?? (config.responsesWebSearch ?? false),
                     thinkingMode: config.thinkingMode,
                     reasoningEffort: config.reasoningEffort,
                     functionTools: (() => {

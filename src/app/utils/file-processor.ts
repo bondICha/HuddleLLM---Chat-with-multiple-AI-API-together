@@ -1,10 +1,24 @@
 import { isProbablyBinary, decodeWithHeuristics } from '~utils/content-extractor';
 
 export type ProcessedFileResult =
-  | { type: 'text'; content: string; file: File }
-  | { type: 'image'; file: File }
-  | { type: 'audio'; file: File }
-  | { type: 'unsupported'; file: File; error: string };
+  | { type: 'text'; content: string; file: File; warning?: { key: string; params: Record<string, string> } }
+  | { type: 'image'; file: File; warning?: { key: string; params: Record<string, string> } }
+  | { type: 'audio'; file: File; warning?: { key: string; params: Record<string, string> } }
+  | { type: 'unsupported'; file: File; error: UnsupportedFileError };
+
+export type UnsupportedFileError =
+  | { code: 'unsupported_audio_format'; info: { mimeType: string; supported: string } }
+  | { code: 'pdf_not_supported' }
+  | { code: 'binary_not_supported' }
+  | { code: 'process_failed'; info: { message: string } };
+
+const supportedAudioExtensions = ['wav', 'mp3', 'aiff', 'aac', 'ogg', 'flac', 'm4a'];
+const supportedAudioMimeTypes = [
+  // Based on Gemini Support (plus common aliases)
+    'audio/wav', 'audio/mp3', 'audio/mpeg',
+    'audio/aiff', 'audio/aac', 'audio/ogg', 'audio/flac',
+    'audio/m4a', 'audio/x-m4a'
+];
 
 async function readAsArrayBuffer(file: File): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
@@ -15,30 +29,47 @@ async function readAsArrayBuffer(file: File): Promise<ArrayBuffer> {
   });
 }
 
+function getAudioExtension(filename: string): string | null {
+  const ext = filename.toLowerCase().match(/\.([^.]+)$/)?.[1];
+  return ext && supportedAudioExtensions.includes(ext) ? ext : null;
+}
 
 export async function processFile(file: File): Promise<ProcessedFileResult> {
   if (file.type.startsWith('image/')) {
     return { type: 'image', file };
   }
 
+  // Priority 1: Check MIME type if set
   if (file.type.startsWith('audio/')) {
-    const supportedFormats = [
-      // Based on Gemini Support
-      'audio/wav', 'audio/mp3', 'audio/mpeg',
-      'audio/aiff', 'audio/aac', 'audio/ogg', 'audio/flac',
-      'audio/m4a', 'audio/x-m4a'
-    ];
-    
-
-    if (!supportedFormats.some(fmt => file.type === fmt || file.type.startsWith(fmt))) {
+    const isSupportedMime = supportedAudioMimeTypes.some(fmt =>
+      file.type === fmt || file.type.startsWith(fmt)
+    );
+    if (!isSupportedMime) {
+      // Show warning but accept the file
+      const audioExt = getAudioExtension(file.name);
       return {
-        type: 'unsupported',
+        type: 'audio',
         file,
-        error: `Unsupported audio format "${file.type}". Supported: WAV, MP3, AIFF, AAC, OGG, FLAC, M4A`,
+        warning: {
+          key: 'audio_warning_uncommon_format',
+          params: { type: file.type, ext: audioExt || 'unknown' }
+        },
       };
     }
-
     return { type: 'audio', file };
+  }
+
+  // Priority 2: Fallback to extension check only if MIME type is unknown/generic
+  const audioExt = getAudioExtension(file.name);
+  if ((!file.type || file.type === 'application/octet-stream') && audioExt) {
+    return {
+      type: 'audio',
+      file,
+      warning: {
+        key: 'audio_warning_extension_fallback',
+        params: { ext: audioExt }
+      },
+    };
   }
 
   try {
@@ -48,7 +79,7 @@ export async function processFile(file: File): Promise<ProcessedFileResult> {
       return {
         type: 'unsupported',
         file,
-        error: `PDF file "${file.name}" is not supported.`,
+        error: { code: 'pdf_not_supported' },
       };
     }
 
@@ -56,7 +87,7 @@ export async function processFile(file: File): Promise<ProcessedFileResult> {
       return {
         type: 'unsupported',
         file,
-        error: `File "${file.name}" appears to be a binary file and is not supported.`,
+        error: { code: 'binary_not_supported' },
       };
     }
 
@@ -65,11 +96,10 @@ export async function processFile(file: File): Promise<ProcessedFileResult> {
     return { type: 'text', content, file };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    alert(`DEBUG: Failed to process file ${file.name}: ${message}`);
     return {
       type: 'unsupported',
       file,
-      error: `Could not process file "${file.name}": ${message}`,
+      error: { code: 'process_failed', info: { message } },
     };
   }
 }

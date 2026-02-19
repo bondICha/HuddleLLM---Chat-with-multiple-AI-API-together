@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from '@tanstack/react-router'
 import { useAtomValue } from 'jotai'
+import { Toaster } from 'react-hot-toast'
 import { followArcThemeAtom, themeColorAtom, sidebarDisplayModeAtom } from '~app/state'
 import ReleaseNotesModal from './Modals/ReleaseNotesModal'
 import Sidebar from './Sidebar'
@@ -28,6 +29,7 @@ function Layout() {
         <Outlet />
       </div>
       <ReleaseNotesModal />
+      <Toaster position="bottom-center" />
     </main>
   )
 }

@@ -4,12 +4,15 @@ import { sample, uniqBy } from 'lodash-es'
 import { FC, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cx, uuid } from '~/utils'
-import { pendingSearchQueryAtom, sessionToRestoreAtom, allInOneRestoreDataAtom } from '../state'
+import {
+  pendingSearchQueryAtom,
+  sessionToRestoreAtom,
+  allInOneRestoreDataAtom,
+  clearAllInOneInputAtom
+} from '../state'
 import { getSessionSnapshot, loadAllInOneSessions, loadHistoryMessages, setAllInOneSession, saveSessionSnapshot, ChatMessageModel } from '~services/chat-history'
 import { updateChatPair } from '~services/user-config'
-import Button from '~app/components/Button'
-import ChatMessageInput from '~app/components/Chat/ChatMessageInput'
-import LayoutSwitch from '~app/components/Chat/LayoutSwitch'
+import AllInOneInputArea from '~app/components/Chat/AllInOneInputArea'
 import { Layout } from '~app/consts'
 import { useChat } from '~app/hooks/use-chat'
 import ConversationPanel from '../components/Chat/ConversationPanel'
@@ -44,11 +47,14 @@ const GeneralChatPanel: FC<{
 }> = ({ chats, setBots, supportImageInput, currentSessionUUID, setCurrentSessionUUID }) => {
   const { t } = useTranslation()
   const generating = useMemo(() => chats.some((c) => c.generating), [chats])
-  
+
   // タブローカルatomを使用
   const [activeAllInOne] = useAtom(activeAllInOneAtom)
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const saveConfig = useSetAtom(saveAllInOneConfigAtom)
+
+  // 入力クリア用（購読しない）
+  const clearInput = useSetAtom(clearAllInOneInputAtom)
   
   // 現在のペア設定を取得
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
@@ -166,7 +172,6 @@ const GeneralChatPanel: FC<{
   const mainContainerRef = useRef<HTMLDivElement>(null)
   const gridAreaRef = useRef<HTMLDivElement>(null)
   const resizerRef = useRef<HTMLDivElement>(null)
-  const inputAreaRef = useRef<HTMLDivElement>(null)
 
   // 共通の高さ設定関数
   const updateGridAreaHeight = useCallback((newGridAreaHeight: number) => {
@@ -238,14 +243,23 @@ const GeneralChatPanel: FC<{
    [chats],
  );
 
+  // chatsをrefで保持して、sendAllMessageを安定化
+  const chatsRef = useRef(chats)
+  useEffect(() => {
+    chatsRef.current = chats
+  }, [chats])
+
   const sendAllMessage = useCallback(
     (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[]) => {
       if (!input?.trim() && !images?.length && !attachments?.length && !audioFiles?.length) return;
 
-      // まずメッセージを送信
-      uniqBy(chats, (c) => c.index).forEach((c) => c.sendMessage(input, images, attachments, audioFiles));
+      // まずメッセージを送信（refから最新のchatsを取得）
+      uniqBy(chatsRef.current, (c) => c.index).forEach((c) => c.sendMessage(input, images, attachments, audioFiles));
+
+      // 送信後に入力をクリア
+      clearInput();
     },
-    [chats],
+    [clearInput],
   )
 
   // 生成完了時にセッション保存
@@ -388,21 +402,15 @@ const GeneralChatPanel: FC<{
       </div>
 
       {/* 入力エリア */}
-      <div className="flex flex-row gap-2 flex-grow min-h-0 overflow-hidden" ref={inputAreaRef}>
-        <LayoutSwitch layout={layout} onChange={onLayoutChange} />
-        <ChatMessageInput
-          mode="full"
-          className={`rounded-2xl bg-primary-background px-4 py-2 grow ${!hasUserResized ? 'max-h-full overflow-hidden' : ''}`}
-          disabled={generating}
-          onSubmit={sendAllMessage}
-          actionButton={!generating && <Button text={t('Send')} color="primary" type="submit" />}
-          autoFocus={true}
-          supportImageInput={supportImageInput}
-          fullHeight={hasUserResized}
-          maxRows={hasUserResized ? undefined : 12}
-          onHeightChange={handleAutoHeightChange}
-        />
-      </div>
+      <AllInOneInputArea
+        layout={layout}
+        generating={generating}
+        supportImageInput={supportImageInput}
+        hasUserResized={hasUserResized}
+        onLayoutChange={onLayoutChange}
+        onSubmit={sendAllMessage}
+        onHeightChange={handleAutoHeightChange}
+      />
     </div>
   )
 }

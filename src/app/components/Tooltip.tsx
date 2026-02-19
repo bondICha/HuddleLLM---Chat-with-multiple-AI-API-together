@@ -1,8 +1,8 @@
 import * as ReactTooltip from '@radix-ui/react-tooltip'
-import { FC, PropsWithChildren } from 'react'
+import { FC, PropsWithChildren, ReactNode } from 'react'
 
 interface Props {
-  content: string
+  content: ReactNode
   align?: ReactTooltip.TooltipContentProps['align']
 }
 

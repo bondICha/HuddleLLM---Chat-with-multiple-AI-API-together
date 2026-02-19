@@ -269,6 +269,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
       thinkingBudget: 2000,
       provider: CustomApiProvider.OpenAI,
       webAccess: false,
+      providerWebSearch: false,
       enabled: true,
     };
     updateCustomApiConfigs([...customApiConfigs, newConfig]);
@@ -1133,27 +1134,19 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             <div className="space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
-                                  <p className={labelClass}>{t('API Web Search')}</p>
+                                  <p className={labelClass}>{t('{{provider}} Web Search', { provider: 'OpenAI' })}</p>
                                 </div>
                                 <div className={inputContainerClass}>
                                   <Switch
-                                    checked={
-                                      config.webToolSupport !== undefined
-                                        ? config.webToolSupport
-                                        : config.responsesWebSearch !== undefined
-                                          ? !!config.responsesWebSearch
-                                          : true
-                                    }
+                                    checked={config.providerWebSearch ?? false}
                                     onChange={(checked) => {
                                       const u = [...customApiConfigs];
-                                      u[index].webToolSupport = checked;
-                                      // Keep backward compatibility
-                                      u[index].responsesWebSearch = checked;
+                                      u[index].providerWebSearch = checked;
                                       updateCustomApiConfigs(u);
                                     }}
                                   />
                                   <p className="text-xs opacity-70 mt-1">
-                                    {t('Use OpenAI Responses web_search_preview tool instead of HuddleLLM Web Access.')}
+                                    {t('Use {{provider}} web search (OFF: HuddleLLM Web Access)', { provider: 'OpenAI' })}
                                   </p>
                                 </div>
                               </div>
@@ -1178,27 +1171,19 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             <div className="space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
-                                  <p className={labelClass}>{t('API Web Search')}</p>
+                                  <p className={labelClass}>{t('{{provider}} Web Search', { provider: 'Claude' })}</p>
                                 </div>
                                 <div className={inputContainerClass}>
                                   <Switch
-                                    checked={
-                                      config.webToolSupport !== undefined
-                                        ? config.webToolSupport
-                                        : config.webAccess !== undefined
-                                          ? !!config.webAccess
-                                          : true
-                                    }
+                                    checked={config.providerWebSearch ?? false}
                                     onChange={(checked) => {
                                       const u = [...customApiConfigs];
-                                      u[index].webToolSupport = checked;
-                                      // Keep backward compatibility
-                                      u[index].webAccess = checked;
+                                      u[index].providerWebSearch = checked;
                                       updateCustomApiConfigs(u);
                                     }}
                                   />
                                   <p className="text-xs opacity-70 mt-1">
-                                    {t('Use Claude native web_search tool instead of HuddleLLM Web Access.')}
+                                    {t('Use {{provider}} web search (OFF: HuddleLLM Web Access)', { provider: 'Claude' })}
                                   </p>
                                 </div>
                               </div>
@@ -1208,27 +1193,19 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             <div className="space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
-                                  <p className={labelClass}>{t('API Web Search')}</p>
+                                  <p className={labelClass}>{t('{{provider}} Web Search', { provider: 'Gemini' })}</p>
                                 </div>
                                 <div className={inputContainerClass}>
                                   <Switch
-                                    checked={
-                                      config.webToolSupport !== undefined
-                                        ? config.webToolSupport
-                                        : config.webAccess !== undefined
-                                          ? !!config.webAccess
-                                          : true
-                                    }
+                                    checked={config.providerWebSearch ?? false}
                                     onChange={(checked) => {
                                       const u = [...customApiConfigs];
-                                      u[index].webToolSupport = checked;
-                                      // Keep backward compatibility with existing webAccess semantics
-                                      u[index].webAccess = checked;
+                                      u[index].providerWebSearch = checked;
                                       updateCustomApiConfigs(u);
                                     }}
                                   />
                                   <p className="text-xs opacity-70 mt-1">
-                                    {t('Use Gemini google_search tool instead of HuddleLLM Web Access.')}
+                                    {t('Use {{provider}} web search (OFF: HuddleLLM Web Access)', { provider: 'Gemini' })}
                                   </p>
                                 </div>
                               </div>

@@ -55,3 +55,21 @@ export const sessionToRestoreAtom = atom<{
 
 // All-in-one複数ボット同時復元用のatom
 export const allInOneRestoreDataAtom = atom<{ [botIndex: number]: { conversationId: string; messages: any[] } } | null>(null)
+
+// All-in-oneの入力テキストを保持するatom（レイアウト変更時も維持）
+export const allInOneInputTextAtom = atom<string>('')
+
+// All-in-oneの添付ファイルを保持するatom（レイアウト変更時も維持）
+export const allInOneInputAttachmentsAtom = atom<Array<{
+  id: string;
+  file: File;
+  type: 'image' | 'text' | 'audio';
+  content?: string;
+  transcribedText?: string;
+}>>([])
+
+// 入力をクリアするための派生atom
+export const clearAllInOneInputAtom = atom(null, (get, set) => {
+  set(allInOneInputTextAtom, '')
+  set(allInOneInputAttachmentsAtom, [])
+})

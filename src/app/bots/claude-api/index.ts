@@ -335,13 +335,13 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
     console.log('[ClaudeApiBot] setTools called with:', tools)
   }
 
-  // Runtime toggle for native web_search_20250305 usage
+  // Runtime toggle for provider web_search_20250305 usage
   setWebAccessEnabled(enabled: boolean) {
     if (!this.config.advancedConfig) {
       this.config.advancedConfig = {}
     }
-    // Mirror CustomBot's behavior: when webAccess is enabled for Claude,
-    // we attach the native web_search_20250305 tool definition via tools.
+    // Mirror CustomBot's behavior: when providerWebSearch is enabled for Claude,
+    // we attach the provider web_search_20250305 tool definition via tools.
     if (enabled) {
       const existingTools = Array.isArray(this.config.tools) ? this.config.tools : [];
       const hasWebSearch = existingTools.some(t => t?.type === 'web_search_20250305');
