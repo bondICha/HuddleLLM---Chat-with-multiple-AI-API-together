@@ -28,6 +28,8 @@
   "Web Search Results": "Web検索結果",
   "messages": "件",
   "All-In-One": "All-In-One",
+  "All-in-One: Not enough enabled models": "All-in-One: 有効なモデルが不足しています。設定で少なくとも{{count}}個のモデルを有効にしてください。",
+  "All-in-One: Failed to resolve models": "All-in-One: 有効なモデルの取得に失敗しました。設定を確認してください。",
   "AI Response": "AI 応答",
   "AI Responses": "AI 応答一覧",
   "releasenote_v2148_all_in_one_input_isolation": "## All-in-One の入力遅延（カクつき）を解消\n\nAll-in-One で発生していた入力時のカクつき／遅延を修正し、よりスムーズに入力できるようになりました。",

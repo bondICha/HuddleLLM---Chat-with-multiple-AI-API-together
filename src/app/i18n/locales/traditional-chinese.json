@@ -26,6 +26,8 @@
   "Web Search Results": "網路搜尋結果",
   "messages": "則訊息",
   "All-In-One": "All-In-One",
+  "All-in-One: Not enough enabled models": "All-in-One：啟用的模型不足。請在設定中至少啟用{{count}}個模型。",
+  "All-in-One: Failed to resolve models": "All-in-One：無法取得已啟用的模型。請檢查您的設定。",
   "AI Response": "AI 回覆",
   "AI Responses": "AI 回覆列表",
   "releasenote_v2148_all_in_one_input_isolation": "## All-in-One 輸入卡頓已修復\n\n我們修復了 All-in-One 輸入時偶發的卡頓與延遲，輸入現在更順暢、更靈敏。",

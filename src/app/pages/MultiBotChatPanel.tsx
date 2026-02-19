@@ -11,21 +11,157 @@ import {
   clearAllInOneInputAtom
 } from '../state'
 import { getSessionSnapshot, loadAllInOneSessions, loadHistoryMessages, setAllInOneSession, saveSessionSnapshot, ChatMessageModel } from '~services/chat-history'
-import { updateChatPair } from '~services/user-config'
+import { updateChatPair, getUserConfig } from '~services/user-config'
 import AllInOneInputArea from '~app/components/Chat/AllInOneInputArea'
 import { Layout } from '~app/consts'
 import { useChat } from '~app/hooks/use-chat'
 import ConversationPanel from '../components/Chat/ConversationPanel'
-import { 
-  allInOnePairsAtom, 
+import {
+  allInOnePairsAtom,
   activeAllInOneAtom,
   initializeAllInOneAtom,
   saveAllInOneConfigAtom,
-  DEFAULT_BOTS, 
+  DEFAULT_BOTS,
   DEFAULT_PAIR_CONFIG,
-  AllInOnePairConfig 
+  AllInOnePairConfig
 } from '~app/atoms/all-in-one'
 
+// ========== Helper Functions ==========
+
+/**
+ * レイアウトに応じて必要なパネル数を取得
+ */
+function getPanelCount(layout: Layout): number {
+  switch (layout) {
+    case 'single':
+      return 1
+    case 2:
+    case 'twoHorizon':
+      return 2
+    case 3:
+      return 3
+    case 4:
+      return 4
+    case 'sixGrid':
+      return 6
+    default:
+      return 2
+  }
+}
+
+/**
+ * 有効な（enabled）ボットのインデックスを取得
+ */
+async function resolveEnabledBotIndices(): Promise<number[]> {
+  try {
+    const config = await getUserConfig()
+    if (!config || !Array.isArray(config.customApiConfigs)) {
+      return []
+    }
+    
+    const enabledIndices: number[] = []
+    config.customApiConfigs.forEach((customConfig, index) => {
+      if (customConfig && customConfig.enabled === true) {
+        enabledIndices.push(index)
+      }
+    })
+
+    return enabledIndices.sort((a, b) => a - b)
+  } catch (error) {
+    console.error('Failed to resolve enabled bot indices:', error)
+    return []
+  }
+}
+
+/**
+ * bots配列を正規化（重複削除、長さ調整）
+ */
+function normalizeBotsForLayout(
+  bots: number[],
+  panelCount: number,
+  enabledIndices: number[]
+): number[] {
+  const normalized: number[] = []
+  const used = new Set<number>()
+  
+  // 既存のbotsから重複なく取得
+  for (let i = 0; i < bots.length && normalized.length < panelCount; i++) {
+    const botIndex = bots[i]
+    if (
+      typeof botIndex === 'number' &&
+      botIndex >= 0 &&
+      !used.has(botIndex) &&
+      enabledIndices.includes(botIndex)
+    ) {
+      normalized.push(botIndex)
+      used.add(botIndex)
+    }
+  }
+  
+  // 不足分をenabledIndicesから補充
+  for (const enabledIndex of enabledIndices) {
+    if (normalized.length >= panelCount) break
+    if (!used.has(enabledIndex)) {
+      normalized.push(enabledIndex)
+      used.add(enabledIndex)
+    }
+  }
+  
+  return normalized
+}
+
+/**
+ * 選択パネルのモデルを優先して、重複を解消したpanelCount分のbotsを生成
+ */
+function buildBotsForSelection(
+  currentBots: number[],
+  panelCount: number,
+  enabledIndices: number[],
+  selectedIndex: number,
+  selectedPanel: number
+): number[] | null {
+  if (panelCount <= 0 || selectedPanel < 0 || selectedPanel >= panelCount) {
+    return null
+  }
+
+  const enabledSorted = [...enabledIndices].sort((a, b) => a - b)
+  if (enabledSorted.length < panelCount) {
+    return null
+  }
+
+  const enabledSet = new Set(enabledSorted)
+  const result: Array<number | undefined> = new Array(panelCount).fill(undefined)
+  const used = new Set<number>()
+
+  result[selectedPanel] = selectedIndex
+  used.add(selectedIndex)
+
+  for (let i = 0; i < panelCount; i++) {
+    if (i === selectedPanel) continue
+    const candidate = currentBots[i]
+    if (
+      typeof candidate === 'number' &&
+      enabledSet.has(candidate) &&
+      !used.has(candidate)
+    ) {
+      result[i] = candidate
+      used.add(candidate)
+    }
+  }
+
+  for (let i = 0; i < panelCount; i++) {
+    if (i === selectedPanel) continue
+    if (typeof result[i] === 'number') continue
+    const next = enabledSorted.find((index) => !used.has(index))
+    if (next === undefined) {
+      return null
+    }
+    result[i] = next
+    used.add(next)
+  }
+
+  return result as number[]
+}
 
 function replaceDeprecatedBots(bots: number[]): number[] {
   // インデックスが有効かどうかを確認（0以上の整数であること、undefinedやnullでないこと）
@@ -116,8 +252,37 @@ const GeneralChatPanel: FC<{
     }
   }
   
-  const setLayout = (newLayout: Layout) => {
-    updateCurrentPairConfig({ layout: newLayout })
+  const setLayout = async (newLayout: Layout) => {
+    // レイアウト変更時にbots配列を正規化
+    const newPanelCount = getPanelCount(newLayout)
+    const enabledIndices = await resolveEnabledBotIndices()
+    
+    if (enabledIndices.length === 0) {
+      alert(t('All-in-One: Failed to resolve models'))
+      return
+    }
+    
+    if (enabledIndices.length < newPanelCount) {
+      alert(t('All-in-One: Not enough enabled models', { count: newPanelCount }))
+      return
+    }
+    
+    // 現在のbots配列を取得
+    const currentBots = currentPairConfig.bots || DEFAULT_BOTS
+    
+    // 新しいレイアウトに合わせて正規化
+    const normalizedBots = normalizeBotsForLayout(currentBots, newPanelCount, enabledIndices)
+    
+    // 全体のbots配列を更新（既存の部分を正規化されたボットで置き換え）
+    const updatedAllBots = [...currentBots]
+    normalizedBots.forEach((botIndex, i) => {
+      updatedAllBots[i] = botIndex
+    })
+    
+    updateCurrentPairConfig({
+      layout: newLayout,
+      bots: updatedAllBots
+    })
   }
   
   const [refresh, setRefresh] = useState(0) // 更新用の state を追加
@@ -313,42 +478,79 @@ const GeneralChatPanel: FC<{
   }
 
   const onSwitchBot = useCallback(
-    (newIndex: number, arrayIndex: number) => {
+    async (newIndex: number, arrayIndex: number) => {
       if (!setBots) {
         return
       }
 
-      // 現在のチャットを取得
-      const currentChat = chats[arrayIndex]
-
-      // 前のモデルの会話状態をリセット
-      if (currentChat) {
-        currentChat.resetConversation()
+      // 有効なボットのインデックスを取得
+      const enabledIndices = await resolveEnabledBotIndices()
+      if (enabledIndices.length === 0) {
+        alert(t('All-in-One: Failed to resolve models'))
+        return
       }
 
-      // 共通のbots配列を更新
+      // 選択されたボットが有効か確認
+      if (!enabledIndices.includes(newIndex)) {
+        alert(t('All-in-One: Failed to resolve models'))
+        return
+      }
+
+      // 現在のレイアウトに基づいて必要なボット数を取得
+      const panelCount = getPanelCount(layout)
+      
+      // 必要なボット数が有効なボット数を超えていないか確認
+      if (enabledIndices.length < panelCount) {
+        alert(t('All-in-One: Not enough enabled models', { count: panelCount }))
+        return
+      }
+
+      // 共通のbots配列を取得
       const currentAllBots = currentPairConfig.bots || DEFAULT_BOTS
+
+      const currentBots = currentAllBots.slice(0, panelCount)
+      const updatedPanelBots = buildBotsForSelection(
+        currentBots,
+        panelCount,
+        enabledIndices,
+        newIndex,
+        arrayIndex
+      )
+
+      if (!updatedPanelBots) {
+        alert(t('All-in-One: Not enough enabled models', { count: panelCount }))
+        return
+      }
+
       const newAllBots = [...currentAllBots]
-      newAllBots[arrayIndex] = newIndex
+      updatedPanelBots.forEach((botIndex, i) => {
+        newAllBots[i] = botIndex
+      })
+
+      updatedPanelBots.forEach((newBotIndex, idx) => {
+        if (currentBots[idx] !== newBotIndex) {
+          const chat = chats[idx]
+          if (chat) {
+            chat.resetConversation()
+          }
+        }
+      })
 
       // 共通設定を更新
       updateCurrentPairConfig({ bots: newAllBots })
 
       // 各パネルから渡されたsetBots関数を使用（後方互換性のため）
-      const currentBots = getCurrentBotIndices()
-      const newBots = [...currentBots]
-      newBots[arrayIndex] = newIndex
-      setBots(newBots)
+      setBots(updatedPanelBots)
 
       // refreshを更新して再レンダリングを促す
       setRefresh(prev => prev + 1)
     },
-    [chats, setBots, setRefresh, getCurrentBotIndices, currentPairConfig, updateCurrentPairConfig],
+    [t, chats, setBots, setRefresh, currentPairConfig, updateCurrentPairConfig, layout],
   )
 
   const onLayoutChange = useCallback(
-    (v: Layout) => {
-      setLayout(v)
+    async (v: Layout) => {
+      await setLayout(v)
     },
     [setLayout],
   )

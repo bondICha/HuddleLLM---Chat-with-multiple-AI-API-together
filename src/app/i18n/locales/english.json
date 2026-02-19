@@ -26,6 +26,8 @@
   "Web Search Results": "Web Search Results",
   "messages": "messages",
   "All-In-One": "All-In-One",
+  "All-in-One: Not enough enabled models": "All-in-One: Not enough enabled models. Please enable at least {{count}} models in settings.",
+  "All-in-One: Failed to resolve models": "All-in-One: Failed to resolve enabled models. Please check your settings.",
   "AI Response": "AI Response",
   "AI Responses": "AI Responses",
   "releasenote_v2148_all_in_one_input_isolation": "## All-in-One Typing Lag Resolved\n\nWe fixed the intermittent typing stutter/lag in the All-in-One experience, so input feels smooth and responsive.",
