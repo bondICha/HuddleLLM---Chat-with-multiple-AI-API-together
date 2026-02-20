@@ -30,6 +30,7 @@
   "All-in-One: Failed to resolve models": "All-in-One：無法取得已啟用的模型。請檢查您的設定。",
   "AI Response": "AI 回覆",
   "AI Responses": "AI 回覆列表",
+  "releasenote_v2149_all_in_one_duplicate_fix": "## All-in-One 模型選擇修復\n\n我們修復了 All-in-One 模式中的問題，這些問題可能導致模型選擇重複，以及在多面板版面中渲染不正確。系統現在會阻止重複選擇同一模型，並能正確顯示包含四個或更多面板的版面。",
   "releasenote_v2148_all_in_one_input_isolation": "## All-in-One 輸入卡頓已修復\n\n我們修復了 All-in-One 輸入時偶發的卡頓與延遲，輸入現在更順暢、更靈敏。",
   "releasenote_v2148_provider_web_search_unify": "## Provider Web Search 設定改進\n\n統一了 Provider Web Search 切換開關，並修復了預設值與內部狀態的不一致問題，使網路搜尋行為更加準確。",
   "releasenote_v2110_file_attachment_support": "## 文件附件支持\n\n- 您現在可以透過點擊附件圖示來附加文本文件。\n- 文本文件の內容將自動加載到聊天中。\n\n<iframe width=\"100%\" style=\"aspect-ratio: 16 / 9;\" src=\"https://www.youtube.com/embed/uijnZcSnBRI\" title=\"YouTube video player\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" allowfullscreen></iframe>",
