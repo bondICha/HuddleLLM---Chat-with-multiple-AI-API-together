@@ -5,7 +5,7 @@
 {
   "name": "huddlellm-extension",
   "private": true,
-  "version": "2.14.8",
+  "version": "2.14.9",
   "type": "module",
   "scripts": {
     "dev": "vite",
