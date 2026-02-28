@@ -38,14 +38,14 @@ import './ChatMessageInput.scss';
 interface Attachment {
   id: string;
   file: File;
-  type: 'image' | 'text' | 'audio';
+  type: 'image' | 'text' | 'audio' | 'pdf';
   content?: string;
   transcribedText?: string; // For audio files
 }
 
 interface Props {
   mode: 'full' | 'compact'
-  onSubmit: (value: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[]) => void
+  onSubmit: (value: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], pdfFiles?: File[]) => void
   className?: string
   disabled?: boolean
   placeholder?: string
@@ -303,9 +303,10 @@ const ChatMessageInput: FC<Props> = (props) => {
           }));
 
         const allTextAttachments = [...textAttachments, ...transcriptAttachments];
+        const pdfFiles = attachments.filter(a => a.type === 'pdf').map(a => a.file);
 
-        if (value.trim() || images.length > 0 || allTextAttachments.length > 0 || audioFiles.length > 0) {
-          props.onSubmit(value, images, allTextAttachments, audioFiles);
+        if (value.trim() || images.length > 0 || allTextAttachments.length > 0 || audioFiles.length > 0 || pdfFiles.length > 0) {
+          props.onSubmit(value, images, allTextAttachments, audioFiles, pdfFiles);
           setValue('');
           setAttachments([]);
           setShowAttachmentPopup(false);
@@ -341,9 +342,10 @@ const ChatMessageInput: FC<Props> = (props) => {
       }));
 
     const allTextAttachments = [...textAttachments, ...transcriptAttachments];
+    const pdfFiles = attachments.filter(a => a.type === 'pdf').map(a => a.file);
 
-    if (value.trim() || images.length > 0 || allTextAttachments.length > 0 || audioFiles.length > 0) {
-      props.onSubmit(value, images, allTextAttachments, audioFiles);
+    if (value.trim() || images.length > 0 || allTextAttachments.length > 0 || audioFiles.length > 0 || pdfFiles.length > 0) {
+      props.onSubmit(value, images, allTextAttachments, audioFiles, pdfFiles);
       setValue('');
       setAttachments([]);
       setShowAttachmentPopup(false);
@@ -411,6 +413,9 @@ const ChatMessageInput: FC<Props> = (props) => {
             toast(t(result.warning.key, result.warning.params), { duration: 4000 });
           }
           setAttachments(prev => [...prev, { id, file, type: result.type, content: result.content }]);
+          break;
+        case 'pdf':
+          setAttachments(prev => [...prev, { id, file, type: 'pdf' }]);
           break;
         case 'unsupported':
           toast.error(getUnsupportedFileErrorMessage(result));
@@ -526,6 +531,10 @@ const ChatMessageInput: FC<Props> = (props) => {
             <tr>
               <td>{t('Attachment tooltip row image label')}</td>
               <td>{t('Attachment tooltip row image detail')}</td>
+            </tr>
+            <tr>
+              <td>{t('Attachment tooltip row pdf label')}</td>
+              <td>{t('Attachment tooltip row pdf detail')}</td>
             </tr>
           </tbody>
         </table>
@@ -689,6 +698,7 @@ const ChatMessageInput: FC<Props> = (props) => {
               >
                 {att.type === 'image' && <GoImage size={12} className="text-secondary-text" />}
                 {att.type === 'text' && <GoFile size={12} className="text-secondary-text" />}
+                {att.type === 'pdf' && <GoFile size={12} className="text-red-500 dark:text-red-400" />}
                 {att.type === 'audio' && (
                   transcribingFileId === att.id ? (
                     <div className="animate-spin">
