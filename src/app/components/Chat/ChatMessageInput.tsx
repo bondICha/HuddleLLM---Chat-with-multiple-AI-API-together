@@ -18,6 +18,7 @@ import { cx } from '~/utils'
 import { ClipboardEventHandler, FC, ReactNode, memo, useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GoBook, GoImage, GoFile, GoFileMedia, GoFileCode } from 'react-icons/go'
+import { AiOutlineFilePdf } from 'react-icons/ai'
 import { BiExpand } from 'react-icons/bi'
 import { RiDeleteBackLine, RiCloseLine } from 'react-icons/ri'
 import { Prompt } from '~services/prompts'
@@ -616,8 +617,8 @@ const ChatMessageInput: FC<Props> = (props) => {
               )}
             </ComboboxContext.Provider>
             {props.supportImageInput && (
+              <div className="relative">
                 <Tooltip content={attachmentTooltipContent} align="start">
-                <div className="relative">
                   <button
                     type="button"
                     ref={attachmentRefs.setReference}
@@ -636,38 +637,41 @@ const ChatMessageInput: FC<Props> = (props) => {
                       <span className="attachment-rotator__icon attachment-rotator__icon--image">
                         <GoImage size={20} />
                       </span>
+                      <span className="attachment-rotator__icon attachment-rotator__icon--pdf">
+                        <AiOutlineFilePdf size={22} className="text-red-500 dark:text-red-400" />
+                      </span>
                     </span>
                   </button>
-                  {showAttachmentPopup && (
-                    <FloatingPortal>
-                      <div
-                        ref={attachmentRefs.setFloating}
-                        style={attachmentFloatingStyles}
-                        className="attachment-popup"
+                </Tooltip>
+                {showAttachmentPopup && (
+                  <FloatingPortal>
+                    <div
+                      ref={attachmentRefs.setFloating}
+                      style={attachmentFloatingStyles}
+                      className="attachment-popup"
+                    >
+                      <button
+                        type="button"
+                        className="attachment-popup__close"
+                        onClick={() => setShowAttachmentPopup(false)}
+                        aria-label={t('Close')}
+                        title={t('Close')}
                       >
-                        <button
-                          type="button"
-                          className="attachment-popup__close"
-                          onClick={() => setShowAttachmentPopup(false)}
-                          aria-label={t('Close')}
-                          title={t('Close')}
-                        >
-                          <RiCloseLine size={20} />
-                        </button>
-                        <div className="attachment-popup__text">{t('Attachment popup hint')}</div>
-                        <div
-                          ref={arrowRef}
-                          className="attachment-popup__arrow"
-                          style={{
-                            left: attachmentMiddlewareData.arrow?.x != null ? `${attachmentMiddlewareData.arrow.x}px` : '',
-                            top: attachmentMiddlewareData.arrow?.y != null ? `${attachmentMiddlewareData.arrow.y}px` : '',
-                          }}
-                        />
-                      </div>
-                    </FloatingPortal>
-                  )}
-                </div>
-              </Tooltip>
+                        <RiCloseLine size={20} />
+                      </button>
+                      <div className="attachment-popup__text">{t('Attachment popup hint')}</div>
+                      <div
+                        ref={arrowRef}
+                        className="attachment-popup__arrow"
+                        style={{
+                          left: attachmentMiddlewareData.arrow?.x != null ? `${attachmentMiddlewareData.arrow.x}px` : '',
+                          top: attachmentMiddlewareData.arrow?.y != null ? `${attachmentMiddlewareData.arrow.y}px` : '',
+                        }}
+                      />
+                    </div>
+                  </FloatingPortal>
+                )}
+              </div>
             )}
           </>
         )}
@@ -698,7 +702,7 @@ const ChatMessageInput: FC<Props> = (props) => {
               >
                 {att.type === 'image' && <GoImage size={12} className="text-secondary-text" />}
                 {att.type === 'text' && <GoFile size={12} className="text-secondary-text" />}
-                {att.type === 'pdf' && <GoFile size={12} className="text-red-500 dark:text-red-400" />}
+                {att.type === 'pdf' && <AiOutlineFilePdf size={12} className="text-red-500 dark:text-red-400" />}
                 {att.type === 'audio' && (
                   transcribingFileId === att.id ? (
                     <div className="animate-spin">
