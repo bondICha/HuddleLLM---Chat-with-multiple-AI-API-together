@@ -79,9 +79,17 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
     return message.images ? message.images.map(img => URL.createObjectURL(img)) : []
   }, [message.images])
 
+  useEffect(() => {
+    return () => { imageUrls.forEach(url => URL.revokeObjectURL(url)) }
+  }, [imageUrls])
+
   const audioUrls = useMemo(() => {
     return message.audioFiles ? message.audioFiles.map(file => ({ url: URL.createObjectURL(file), name: file.name })) : []
   }, [message.audioFiles])
+
+  useEffect(() => {
+    return () => { audioUrls.forEach(({ url }) => URL.revokeObjectURL(url)) }
+  }, [audioUrls])
 
   const pdfNames = useMemo(() => {
     return message.pdfFiles ? message.pdfFiles.map(file => file.name) : []
@@ -137,6 +145,13 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
       timerRef.current = null
     }
   }, [])
+
+  // Reset UI state when this component instance is reused for a different message
+  useEffect(() => {
+    resetConfirmation()
+    setCopied(false)
+    setOpenedAttachment(null)
+  }, [message.id, resetConfirmation])
 
   const startResetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current)

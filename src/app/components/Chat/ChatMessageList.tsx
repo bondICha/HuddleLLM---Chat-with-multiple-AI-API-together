@@ -95,7 +95,7 @@ const ChatMessageList: FC<Props> = (props) => {
           {props.messages.map((message, index) => {
             return (
               <ChatMessageCard
-                key={`${message.id}-${message.text}`}
+                key={message.id}
                 message={message}
                 className={index === 0 ? 'mt-5' : undefined}
                 onPropaganda={props.onPropaganda}

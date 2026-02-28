@@ -1250,7 +1250,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 <p className={labelClass}>{t('Resolution')}</p>
                                 <Select
                                   options={[
-                                    { name: '512px', value: '512px' },
+                                    { name: '0.5K', value: '0.5K' },
                                     { name: '1K', value: '1K' },
                                     { name: '2K', value: '2K' },
                                     { name: '4K', value: '4K' },

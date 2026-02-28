@@ -207,31 +207,15 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
         },
         img: ({ node, ...props }) => {
           const src = (props as any).src as string | undefined
-          const [url, setUrl] = useState<string | undefined>(src)
-          useEffect(() => {
-            let revoke: (() => void) | null = null
-            const run = async () => {
-              if (src && src.startsWith('data:')) {
-                try {
-                  const res = await fetch(src)
-                  const blob = await res.blob()
-                  const obj = URL.createObjectURL(blob)
-                  setUrl(obj)
-                  revoke = () => URL.revokeObjectURL(obj)
-                } catch {
-                  setUrl(src)
-                }
-              } else {
-                setUrl(src)
-              }
-            }
-            run()
-            return () => { if (revoke) revoke() }
-          }, [src])
-          if (!url) return <img {...(props as any)} />
+          if (!src) return <img {...(props as any)} />
+          // Local images (data:/blob:): render directly without link wrapper
+          // (linking blob: URLs causes about:blank#blocked in extensions)
+          if (src.startsWith('data:') || src.startsWith('blob:')) {
+            return <img {...(props as any)} />
+          }
           return (
-            <a href={url} target="_blank" rel="noopener noreferrer">
-              <img {...(props as any)} src={url} />
+            <a href={src} target="_blank" rel="noopener noreferrer">
+              <img {...(props as any)} />
             </a>
           )
         },

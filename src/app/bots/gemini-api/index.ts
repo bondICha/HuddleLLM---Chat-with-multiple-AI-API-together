@@ -258,10 +258,12 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
 
       this.conversationContext.messages.push(userMessage);
 
-      let responseText = '';
+      // fullText preserves order: text and images interleaved as they arrive in the stream
+      let fullText = '';
       let thinkingText = '';
       let lastChunk: any = null;
       let hasFunctionCall = false; // Track if function call was detected
+      let hasImages = false;
       for await (const chunk of result) {
         lastChunk = chunk
         // Process all parts in the chunk to separate thoughts from answer
@@ -283,9 +285,20 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
                 arguments: (part as any).functionCall.args
               }
             })
+          } else if (part.inlineData?.data) {
+            // Inline image: convert base64 → Blob → ObjectURL, insert at current position in text
+            const mime = part.inlineData.mimeType || 'image/png'
+            const b64 = String(part.inlineData.data)
+            const binary = atob(b64)
+            const bytes = new Uint8Array(binary.length)
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+            const blob = new Blob([bytes], { type: mime })
+            const objectUrl = URL.createObjectURL(blob)
+            fullText += `\n\n![image](${objectUrl})\n\n`
+            hasImages = true
           } else if (part.text) {
             // This is answer content
-            responseText += part.text
+            fullText += part.text
           }
         }
 
@@ -295,35 +308,20 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
           params.onEvent({
             type: 'UPDATE_ANSWER',
             data: {
-              text: responseText,
+              text: fullText,
               thinking: thinkingText || undefined
             }
           })
         }
       }
 
-      // After streaming completes, attempt to extract inline image data and grounding URLs
-      let imageMarkdown = ''
+      // After streaming completes, extract grounding URLs
       const referenceUrls: { url: string; title?: string }[] = []
 
       try {
         const cand = (lastChunk?.candidates && Array.isArray((lastChunk as any).candidates))
           ? (lastChunk as any).candidates[0]
           : undefined
-
-        // Extract inline images
-        const parts = cand?.content?.parts || []
-        const imgBuf: string[] = []
-        for (const p of parts as any[]) {
-          if (p?.inlineData?.data) {
-            const mime = p?.inlineData?.mimeType || 'image/png'
-            const b64 = String(p.inlineData.data)
-            imgBuf.push(`![image](data:${mime};base64,${b64})`)
-          }
-        }
-        if (imgBuf.length) {
-          imageMarkdown = `\n\n${imgBuf.join('\n\n')}`
-        }
 
         // Extract grounding URLs from groundingMetadata
         const groundingMeta = cand?.groundingMetadata
@@ -341,17 +339,17 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
         // ignore parsing errors; text fallback will still work
       }
 
-      if (imageMarkdown || referenceUrls.length > 0) {
-        const finalText = (responseText + imageMarkdown).trim() || i18n.t('image_only_response')
+      if (referenceUrls.length > 0) {
+        const finalText = fullText.trim() || i18n.t('image_only_response')
         params.onEvent({
           type: 'UPDATE_ANSWER',
           data: {
             text: finalText,
             thinking: thinkingText || undefined,
-            referenceUrls: referenceUrls.length > 0 ? referenceUrls : undefined
+            referenceUrls: referenceUrls,
           }
         })
-      } else if (!responseText && !hasFunctionCall) {
+      } else if (!fullText && !hasFunctionCall) {
         // Empty response (and no function call)
         params.onEvent({ type: 'UPDATE_ANSWER', data: { text: i18n.t('image_only_response') } })
       }
@@ -360,7 +358,9 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
       if (!hasFunctionCall) {
         params.onEvent({ type: 'DONE' })
       }
-      this.conversationContext.messages.push({ role: 'model', parts: [{ text: responseText }] })
+      // Store plain text (without blob URLs) for conversation context
+      const textOnly = fullText.replace(/!\[image\]\(blob:[^)]+\)/g, '').trim()
+      this.conversationContext.messages.push({ role: 'model', parts: [{ text: textOnly }] })
 
     } catch (error) {
       console.error('Gemini API error:', error);
