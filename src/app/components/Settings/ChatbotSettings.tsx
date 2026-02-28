@@ -387,6 +387,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             const isOpenRouter = effectiveProvider === CustomApiProvider.OpenRouter;
             const isGemini = effectiveProvider === CustomApiProvider.VertexAI_Gemini || effectiveProvider === CustomApiProvider.Google;
             const isOpenAIResponses = effectiveProvider === CustomApiProvider.OpenAI_Responses;
+            const isGeminiImageModel = isGemini && !!(config.model?.toLowerCase().includes('image'));
+            const isGemini3ImageModel = isGeminiImageModel && !!(config.model?.includes('gemini-3'));
 
             // Show flags
             const showImageAgentSettings = isImageAgent;
@@ -1121,7 +1123,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                     const u = [...customApiConfigs];
                                     const updated = {
                                       ...(u[index].advancedConfig || {}),
-                                      openrouterIsImageModel: v === 'image',
+                                      geminiNativeImageMode: v === 'image',
                                     };
                                     u[index].advancedConfig = updated as any;
                                     updateCustomApiConfigs(u);
@@ -1210,6 +1212,60 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 </div>
                               </div>
                             </div>
+                        )}
+                        {/* Gemini Image Config (for Gemini native image models) */}
+                        {isGeminiImageModel && (
+                          <div className="space-y-4">
+                            <div className={formRowClass}>
+                              <p className={labelClass}>{t('Aspect Ratio')}</p>
+                              <Select
+                                options={[
+                                  { name: t('Default (auto)'), value: '' },
+                                  { name: '1:1', value: '1:1' },
+                                  { name: '16:9', value: '16:9' },
+                                  { name: '9:16', value: '9:16' },
+                                  { name: '3:4', value: '3:4' },
+                                  { name: '4:3', value: '4:3' },
+                                  { name: '3:2', value: '3:2' },
+                                  { name: '2:3', value: '2:3' },
+                                  { name: '4:5', value: '4:5' },
+                                  { name: '5:4', value: '5:4' },
+                                  { name: '21:9', value: '21:9' },
+                                  { name: '1:4', value: '1:4' },
+                                  { name: '4:1', value: '4:1' },
+                                  { name: '1:8', value: '1:8' },
+                                  { name: '8:1', value: '8:1' },
+                                ]}
+                                value={config.geminiImageConfig?.aspectRatio || ''}
+                                onChange={(v) => {
+                                  const u = [...customApiConfigs];
+                                  u[index].geminiImageConfig = { ...u[index].geminiImageConfig, aspectRatio: v };
+                                  updateCustomApiConfigs(u);
+                                }}
+                              />
+                              <span className="text-xs opacity-70">{t('Default aspect ratio for generated images')}</span>
+                            </div>
+                            {isGemini3ImageModel && (
+                              <div className={formRowClass}>
+                                <p className={labelClass}>{t('Resolution')}</p>
+                                <Select
+                                  options={[
+                                    { name: '0.5K', value: '0.5K' },
+                                    { name: '1K', value: '1K' },
+                                    { name: '2K', value: '2K' },
+                                    { name: '4K', value: '4K' },
+                                  ]}
+                                  value={config.geminiImageConfig?.imageSize || '1K'}
+                                  onChange={(v) => {
+                                    const u = [...customApiConfigs];
+                                    u[index].geminiImageConfig = { ...u[index].geminiImageConfig, imageSize: v };
+                                    updateCustomApiConfigs(u);
+                                  }}
+                                />
+                                <span className="text-xs opacity-70">{t('Output image resolution (Gemini 3 image models only)')}</span>
+                              </div>
+                            )}
+                          </div>
                         )}
                         {showDeveloperOptions && (
                             <DeveloperOptionsPanel

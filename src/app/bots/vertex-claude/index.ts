@@ -351,6 +351,7 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
 export class VertexClaudeBot extends AbstractVertexClaudeBot {
   private userConfig?: UserConfig;
   private thinkingMode: boolean;
+  private temporaryOverrides?: { temperature?: number; thinkingBudget?: number }
 
   constructor(
     private config: {
@@ -368,6 +369,10 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
   ) {
     super()
     this.thinkingMode = config.thinkingMode ?? false;
+  }
+
+  setTemporaryOverrides(overrides: { temperature?: number; thinkingBudget?: number }) {
+    this.temporaryOverrides = overrides
   }
 
   async fetchCompletionApi(messages: ChatMessage[], signal?: AbortSignal): Promise<Response> {
@@ -411,7 +416,7 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
     };
 
     if (this.thinkingMode) {
-      const budgetTokens = Math.max(this.config.thinkingBudget || 2000, 1024);
+      const budgetTokens = Math.max((this.temporaryOverrides?.thinkingBudget ?? this.config.thinkingBudget) || 2000, 1024);
       requestBody.thinking = {
         type: "enabled",
         budget_tokens: budgetTokens
@@ -420,7 +425,7 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
       requestBody.max_tokens = Math.min(budgetTokens + 8000, 64000);
     } else {
       requestBody.max_tokens = 16384;
-      requestBody.temperature = this.config.temperature;
+      requestBody.temperature = this.temporaryOverrides?.temperature ?? this.config.temperature;
     }
 
     const headers: Record<string, string> = {

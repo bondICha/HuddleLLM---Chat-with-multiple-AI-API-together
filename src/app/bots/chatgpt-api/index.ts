@@ -274,6 +274,12 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
     super()
   }
 
+  private temporaryOverrides?: { temperature?: number; reasoningEffort?: 'none' | 'low' | 'medium' | 'high' }
+
+  setTemporaryOverrides(overrides: { temperature?: number; reasoningEffort?: 'none' | 'low' | 'medium' | 'high' }) {
+    this.temporaryOverrides = overrides
+  }
+
   getSystemMessage() {
     return this.config.systemMessage
   }
@@ -350,11 +356,11 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
         ...(this.tools && this.tools.length > 0 && { tools: this.tools }),
         // Add reasoning parameters if Thinking is enabled (for OpenAI-compatible reasoning)
         ...(thinkingOn && {
-          reasoning_effort: this.config.reasoningEffort || 'medium'
+          reasoning_effort: this.temporaryOverrides?.reasoningEffort ?? this.config.reasoningEffort ?? 'medium'
         }),
         // Include temperature only if Thinking is disabled
         ...((!thinkingOn) && {
-          temperature: this.config.temperature
+          temperature: this.temporaryOverrides?.temperature ?? this.config.temperature
         }),
         // Add OpenRouter specific provider options
         ...(this.config.advancedConfig?.openrouterProviderOnly && {

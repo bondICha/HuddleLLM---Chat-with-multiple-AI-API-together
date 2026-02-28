@@ -1,6 +1,6 @@
 
 import { motion } from 'framer-motion'
-import { FC, ReactNode, useCallback, useMemo, useState, useEffect } from 'react'
+import { FC, ReactNode, useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import clearIcon from '~/assets/icons/clear.svg'
 import historyIcon from '~/assets/icons/history.svg'
@@ -9,6 +9,7 @@ import { cx } from '~/utils'
 import { ConversationContext, ConversationContextValue } from '~app/context'
 import { ChatMessageModel } from '~types'
 import { BotInstance } from '../../bots'
+import { TempChatOverrides } from '~app/bots/abstract-bot'
 import Button from '../Button'
 import BotIcon from '../BotIcon'
 import ShareDialog from '../Share/Dialog'
@@ -17,8 +18,10 @@ import ChatMessageInput from './ChatMessageInput'
 import ChatMessageList from './ChatMessageList'
 import ChatbotName from './ChatbotName'
 import WebAccessCheckbox from './WebAccessCheckbox'
+import ChatQuickSettingsPanel from './ChatQuickSettingsPanel'
 import { getUserConfig, ProviderConfig } from '~services/user-config'
 import { CHATBOTS_UPDATED_EVENT } from '~app/consts'
+import { BiSliderAlt } from 'react-icons/bi'
 
 interface Props {
   index: number
@@ -40,6 +43,9 @@ const ConversationPanel: FC<Props> = (props) => {
   const mode = props.mode || 'full'
   const marginClass = 'mx-3'
   const [showShareDialog, setShowShareDialog] = useState(false)
+  const [showQuickSettings, setShowQuickSettings] = useState(false)
+  const [tempOverrides, setTempOverrides] = useState<TempChatOverrides>({})
+  const quickSettingsRef = useRef<HTMLDivElement>(null)
   // ボット名とアバターを保持するための状態を追加
   const [botName, setBotName] = useState<string>('Custom Bot')
   const [botAvatar, setBotAvatar] = useState<string>('OpenAI.Black')
@@ -151,6 +157,11 @@ const ConversationPanel: FC<Props> = (props) => {
     setShowShareDialog(true)
   }, [props.index])
 
+  const handleTempOverridesChange = useCallback((overrides: TempChatOverrides) => {
+    ;(props.bot as any).setTemporaryOverrides(overrides)
+    setTempOverrides(overrides)
+  }, [props.bot])
+
   let inputActionButton: ReactNode = null
   if (props.generating) {
     inputActionButton = (
@@ -199,6 +210,27 @@ const ConversationPanel: FC<Props> = (props) => {
           {/* 右側：固定領域（Web検索 + ボタン群） */}
           <div className="flex flex-row items-center gap-3 flex-shrink-0">
             <WebAccessCheckbox index={props.index} />
+            {/* Quick Settings balloon */}
+            <div ref={quickSettingsRef} className="relative">
+              <Tooltip content={t('Quick Settings')}>
+                <motion.div
+                  className="w-5 h-5 cursor-pointer flex items-center justify-center opacity-70 hover:opacity-100"
+                  onClick={() => setShowQuickSettings((v) => !v)}
+                  whileHover={{ scale: 1.1 }}
+                >
+                  <BiSliderAlt size={18} />
+                </motion.div>
+              </Tooltip>
+              {showQuickSettings && (
+                <ChatQuickSettingsPanel
+                  botConfig={botConfig}
+                  providerConfigs={providerConfigs}
+                  currentOverrides={tempOverrides}
+                  onClose={() => setShowQuickSettings(false)}
+                  onOverridesChange={handleTempOverridesChange}
+                />
+              )}
+            </div>
             <Tooltip content={t('Share conversation')}>
               <motion.img
                 src={shareIcon}
