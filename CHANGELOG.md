@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.15.0] - 2026-02-28
+
+### Added
+- **PDF File Support**: Attach PDF files to chat via the attachment button, drag & drop, or paste. Natively supported by Gemini, Claude, and OpenAI (Responses API). Other providers show a toast warning.
+- **Quick Settings Panel**: New floating panel accessible via the slider icon in the conversation toolbar. Allows temporary per-session adjustments to thinking level (Low/High/Dynamic for Claude/OpenAI reasoning models), Gemini image aspect ratio, and Gemini 3 output resolution. Settings reset on page reload and do not affect saved configurations.
+- **Provider Info in Chatbot Tooltip**: The chatbot name tooltip now displays the resolved Provider name and API Scheme for quick verification.
+
+### Fixed
+- **Gemini Inline Image Fix**: Fixed a bug where Gemini-generated inline images were only captured from the first streaming chunk. Images are now collected from all chunks and correctly converted to blob URLs for display.
+- **Blob URL Cleanup**: Added proper `useEffect` cleanup for image and audio blob URLs in `ChatMessageCard` to prevent memory leaks.
+- **UI State Reset**: Fixed chat message card UI state (copy button, confirmation) not resetting when the component was reused for a different message.
+
+### Changed
+- **Open Image in New Tab**: Clicking on AI-generated images in the chat (non-data URLs) now opens them in a new browser tab for easier viewing.
+- **PDF Icon Update**: The attachment button now displays a dedicated red PDF icon when cycling to PDF mode, making PDF support more visually distinct.
+
+---
+
 ## [v2.14.0] - 2025-12-17
 
 ### Added

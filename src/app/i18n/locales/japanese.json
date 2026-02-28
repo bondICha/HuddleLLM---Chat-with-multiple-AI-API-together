@@ -516,5 +516,9 @@
   "none": "なし",
   "low": "低",
   "medium": "中",
-  "high": "高"
+  "high": "高",
+  "releasenote_v2150_pdf_support": "## PDFファイル対応\n- ファイルボタンまたはドラッグ＆ドロップでPDFをチャットに直接添付できます。\n- Gemini・Claude・OpenAIの公式APIに直接渡しています。OpenRouterやその他のProviderは非対応です。",
+  "releasenote_v2150_quick_settings_panel": "## クイック設定パネル\n![クイック設定パネル](/release_note_assets/QuickSetting_Button.png)\n- 会話ツールバーのスライダーアイコンから、クイック設定パネルを開けます。\n- 保存済み設定を変えずに、開いているセッションだけ一時的に設定を切り替えられます。\n- 変更はページの再読み込みでリセットされます。",
+  "releasenote_v2150_gemini_image_improvements": "## Gemini画像の改善\n- インライン画像がストリーミングの最初のチャンクからしか取得できない問題を修正しました。すべてのチャンクから正しく収集されます。",
+  "releasenote_v2150_provider_tooltip": "## チャットボットツールチップにProvider情報を表示\n- チャットボット名のツールチップに、正しいProviderとAPIスキームが表示されるようになりました。"
 }

@@ -36,6 +36,9 @@ Browser.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
     // Open welcome page for first-time users
     Browser.tabs.create({ url: 'app.html#/welcome' })
+  } else if (details.reason === 'update') {
+    // Open app page on extension update
+    openAppPage()
   }
 })
 

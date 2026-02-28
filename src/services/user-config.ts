@@ -137,9 +137,6 @@ export async function getUserConfig(): Promise<UserConfig> {
     
     if (finalConfig.customApiConfigs) {
       finalConfig.customApiConfigs.forEach((config: CustomApiConfig) => {
-        if (config.provider === undefined) {
-          config.provider = CustomApiProvider.OpenAI;
-        }
         if (config.isHostFullPath === undefined) {
           config.isHostFullPath = false; // マイグレーション: 既存設定にデフォルト値を設定
         }
