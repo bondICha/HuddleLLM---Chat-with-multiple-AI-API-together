@@ -459,5 +459,21 @@
   "audio_warning_uncommon_format": "非標準MIME類型：{{type}} (.{{ext}})。部分AI提供者可能不支援。",
   "audio_warning_extension_fallback": "未偵測到MIME類型。使用 .{{ext}} 副檔名回退。可靠性降低；部分AI提供者可能拒絕此檔案。",
   "Individual Settings": "個別設定",
-  "Provider reference missing (id: {{id}})": "Provider 參照不存在 (id: {{id}})"
+  "Provider reference missing (id: {{id}})": "Provider 參照不存在 (id: {{id}})",
+  "Quick Settings": "快速設定",
+  "Temporary": "暫時",
+  "Quick settings are temporary and reset on reload": "快速設定僅暫時生效，重新載入後會重設",
+  "Thinking Level": "思考強度",
+  "Low": "低",
+  "High": "高",
+  "Dynamic": "動態",
+  "Aspect Ratio": "長寬比",
+  "Resolution": "解析度",
+  "Default (auto)": "預設（自動）",
+  "Default aspect ratio for generated images": "生成圖片的預設長寬比",
+  "Output image resolution (Gemini 3 image models only)": "輸出圖片解析度（僅 Gemini 3 圖像模型）",
+  "none": "無",
+  "low": "低",
+  "medium": "中",
+  "high": "高"
 }

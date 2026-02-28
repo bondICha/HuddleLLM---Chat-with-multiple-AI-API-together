@@ -29,6 +29,22 @@ interface GeminiApiBotOptions {
   thinkingBudget?: number;
   /** Thinking level (Gemini 3+ models: 'low' or 'high') */
   thinkingLevel?: 'low' | 'high';
+  /** Gemini native image generation config */
+  geminiImageConfig?: {
+    aspectRatio?: string;
+    imageSize?: string;
+  };
+}
+
+/** Temporary per-session overrides applied via the quick settings balloon */
+export interface GeminiTemporaryOverrides {
+  temperature?: number;
+  thinkingBudget?: number;
+  thinkingLevel?: 'low' | 'high';
+  geminiImageConfig?: {
+    aspectRatio?: string;
+    imageSize?: string;
+  };
 }
 
 interface ConversationContext {
@@ -391,6 +407,7 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
 export class GeminiApiBot extends AbstractGeminiApiBot {
   private config: GeminiApiBotOptions;
   private customTools?: any[];
+  private temporaryOverrides?: GeminiTemporaryOverrides;
 
   constructor(options: GeminiApiBotOptions) {
     const httpOptions: HttpOptions | undefined = (() => {
@@ -435,11 +452,15 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
   }
 
   protected getThinkingLevel(): 'low' | 'high' | undefined {
-    return this.config.thinkingLevel
+    return this.temporaryOverrides?.thinkingLevel ?? this.config.thinkingLevel
   }
 
   protected getThinkingBudget(): number | undefined {
-    return this.config.thinkingBudget
+    return this.temporaryOverrides?.thinkingBudget ?? this.config.thinkingBudget
+  }
+
+  setTemporaryOverrides(overrides: GeminiTemporaryOverrides) {
+    this.temporaryOverrides = overrides
   }
 
   protected getCustomTools(): any[] | undefined {
@@ -469,9 +490,20 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
   }
 
   getGenerationConfig(): GenerateContentConfig {
-    return {
-      temperature: this.config.geminiApiTemperature ?? 0.4,
+    const cfg: any = {
+      temperature: this.temporaryOverrides?.temperature ?? this.config.geminiApiTemperature ?? 0.4,
     };
+
+    // Gemini native image config (aspectRatio, imageSize)
+    const imgCfg = this.temporaryOverrides?.geminiImageConfig ?? this.config.geminiImageConfig;
+    if (imgCfg) {
+      const ic: any = {};
+      if (imgCfg.aspectRatio) ic.aspectRatio = imgCfg.aspectRatio;
+      if (imgCfg.imageSize) ic.imageSize = imgCfg.imageSize;
+      if (Object.keys(ic).length > 0) cfg.imageConfig = ic;
+    }
+
+    return cfg;
   }
 
   public getModelName(): string {

@@ -500,5 +500,21 @@
   "file_error_binary_not_supported": "ファイル「{{name}}」はバイナリのためサポートされていません。",
   "file_error_process_failed": "ファイル「{{name}}」を処理できませんでした: {{message}}",
   "audio_warning_uncommon_format": "非標準のMIMEタイプ: {{type}} (.{{ext}})。一部のAIプロバイダーでサポートされていない可能性があります。",
-  "audio_warning_extension_fallback": "MIMEタイプを検出できませんでした。拡張子 .{{ext}} によるフォールバックを使用します。信頼性が低下しており、一部のAIプロバイダーでファイルが拒否される可能性があります。"
+  "audio_warning_extension_fallback": "MIMEタイプを検出できませんでした。拡張子 .{{ext}} によるフォールバックを使用します。信頼性が低下しており、一部のAIプロバイダーでファイルが拒否される可能性があります。",
+  "Quick Settings": "クイック設定",
+  "Temporary": "一時",
+  "Quick settings are temporary and reset on reload": "クイック設定は一時的です。再読み込みするとリセットされます",
+  "Thinking Level": "思考レベル",
+  "Low": "低",
+  "High": "高",
+  "Dynamic": "動的",
+  "Aspect Ratio": "アスペクト比",
+  "Resolution": "解像度",
+  "Default (auto)": "指定なし（自動）",
+  "Default aspect ratio for generated images": "生成画像の既定アスペクト比",
+  "Output image resolution (Gemini 3 image models only)": "出力画像の解像度（Gemini 3 画像モデルのみ）",
+  "none": "なし",
+  "low": "低",
+  "medium": "中",
+  "high": "高"
 }

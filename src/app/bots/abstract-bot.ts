@@ -56,6 +56,18 @@ export interface ConversationHistory {
   messages: any[];  // 各ボットの実装に合わせて型を定義
 }
 
+/** Temporary per-session overrides for the quick settings balloon */
+export interface TempChatOverrides {
+  temperature?: number;
+  thinkingBudget?: number;
+  thinkingLevel?: 'low' | 'high';
+  reasoningEffort?: 'none' | 'low' | 'medium' | 'high';
+  geminiImageConfig?: {
+    aspectRatio?: string;
+    imageSize?: string;
+  };
+}
+
 export abstract class AbstractBot {
   // 思考パーサーインスタンス
   private thinkingParser = new ThinkingParser();
@@ -405,6 +417,17 @@ export abstract class AsyncAbstractBot extends AbstractBot {
 
     if (!(this.#bot instanceof DummyBot) && typeof (this.#bot as any).setTools === 'function') {
       (this.#bot as any).setTools(tools)
+    }
+  }
+
+  async setTemporaryOverrides(overrides: TempChatOverrides) {
+    // Wait for initialization to complete
+    while (this.#bot instanceof DummyBot && !this.#initializeError) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    if (!(this.#bot instanceof DummyBot) && typeof (this.#bot as any).setTemporaryOverrides === 'function') {
+      (this.#bot as any).setTemporaryOverrides(overrides)
     }
   }
 }

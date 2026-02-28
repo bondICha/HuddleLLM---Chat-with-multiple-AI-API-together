@@ -491,5 +491,21 @@
   "file_error_binary_not_supported": "File \"{{name}}\" appears to be a binary file and is not supported.",
   "file_error_process_failed": "Could not process file \"{{name}}\": {{message}}",
   "audio_warning_uncommon_format": "Non-standard MIME type: {{type}} (.{{ext}}). May not be supported by all AI providers.",
-  "audio_warning_extension_fallback": "MIME type undetected. Using .{{ext}} extension fallback. Reliability reduced; some AI providers may reject this file."
+  "audio_warning_extension_fallback": "MIME type undetected. Using .{{ext}} extension fallback. Reliability reduced; some AI providers may reject this file.",
+  "Quick Settings": "Quick Settings",
+  "Temporary": "Temporary",
+  "Quick settings are temporary and reset on reload": "Quick settings are temporary and reset on reload",
+  "Thinking Level": "Thinking Level",
+  "Low": "Low",
+  "High": "High",
+  "Dynamic": "Dynamic",
+  "Aspect Ratio": "Aspect Ratio",
+  "Resolution": "Resolution",
+  "Default (auto)": "Default (auto)",
+  "Default aspect ratio for generated images": "Default aspect ratio for generated images",
+  "Output image resolution (Gemini 3 image models only)": "Output image resolution (Gemini 3 image models only)",
+  "none": "None",
+  "low": "Low",
+  "medium": "Medium",
+  "high": "High"
 }
