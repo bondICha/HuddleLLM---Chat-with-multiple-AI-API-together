@@ -10,16 +10,17 @@ const GEMINI_IMAGE_ASPECT_RATIOS = [
   '4:5', '5:4', '21:9', '1:4', '4:1', '1:8', '8:1',
 ]
 
-const GEMINI_IMAGE_SIZES = ['512px', '1K', '2K', '4K']
+const GEMINI_IMAGE_SIZES = ['0.5K', '1K', '2K', '4K']
 
 interface Props {
   botConfig: CustomApiConfig | null
   providerConfigs: ProviderConfig[]
+  currentOverrides: TempChatOverrides
   onClose: () => void
   onOverridesChange: (overrides: TempChatOverrides) => void
 }
 
-const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, onClose, onOverridesChange }) => {
+const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, currentOverrides, onClose, onOverridesChange }) => {
   const { t } = useTranslation()
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -49,15 +50,15 @@ const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, onClose
   const showReasoningEffort = thinkingMode && (isOpenAI || isOpenRouter || isOpenAIResponses)
   const showTemperature = !thinkingMode || isGemini3Image
 
-  // Local state initialized from botConfig defaults
-  const [temperature, setTemperature] = useState<number>(botConfig?.temperature ?? 0.7)
-  const [thinkingBudget, setThinkingBudget] = useState<number>(botConfig?.thinkingBudget ?? 8192)
-  const [thinkingLevel, setThinkingLevel] = useState<'low' | 'high'>(botConfig?.thinkingLevel ?? 'high')
+  // Local state: currentOverrides first, then botConfig defaults
+  const [temperature, setTemperature] = useState<number>(currentOverrides.temperature ?? botConfig?.temperature ?? 0.7)
+  const [thinkingBudget, setThinkingBudget] = useState<number>(currentOverrides.thinkingBudget ?? botConfig?.thinkingBudget ?? 8192)
+  const [thinkingLevel, setThinkingLevel] = useState<'low' | 'high'>(currentOverrides.thinkingLevel ?? botConfig?.thinkingLevel ?? 'high')
   const [reasoningEffort, setReasoningEffort] = useState<'none' | 'low' | 'medium' | 'high'>(
-    (botConfig?.reasoningEffort as any) ?? 'medium'
+    (currentOverrides.reasoningEffort as any) ?? (botConfig?.reasoningEffort as any) ?? 'medium'
   )
-  const [aspectRatio, setAspectRatio] = useState<string>(botConfig?.geminiImageConfig?.aspectRatio ?? '')
-  const [imageSize, setImageSize] = useState<string>(botConfig?.geminiImageConfig?.imageSize ?? '1K')
+  const [aspectRatio, setAspectRatio] = useState<string>(currentOverrides.geminiImageConfig?.aspectRatio ?? botConfig?.geminiImageConfig?.aspectRatio ?? '')
+  const [imageSize, setImageSize] = useState<string>(currentOverrides.geminiImageConfig?.imageSize ?? botConfig?.geminiImageConfig?.imageSize ?? '1K')
 
   // Close on outside click
   useEffect(() => {

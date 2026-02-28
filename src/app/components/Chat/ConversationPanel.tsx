@@ -44,6 +44,7 @@ const ConversationPanel: FC<Props> = (props) => {
   const marginClass = 'mx-3'
   const [showShareDialog, setShowShareDialog] = useState(false)
   const [showQuickSettings, setShowQuickSettings] = useState(false)
+  const [tempOverrides, setTempOverrides] = useState<TempChatOverrides>({})
   const quickSettingsRef = useRef<HTMLDivElement>(null)
   // ボット名とアバターを保持するための状態を追加
   const [botName, setBotName] = useState<string>('Custom Bot')
@@ -158,6 +159,7 @@ const ConversationPanel: FC<Props> = (props) => {
 
   const handleTempOverridesChange = useCallback((overrides: TempChatOverrides) => {
     ;(props.bot as any).setTemporaryOverrides(overrides)
+    setTempOverrides(overrides)
   }, [props.bot])
 
   let inputActionButton: ReactNode = null
@@ -223,6 +225,7 @@ const ConversationPanel: FC<Props> = (props) => {
                 <ChatQuickSettingsPanel
                   botConfig={botConfig}
                   providerConfigs={providerConfigs}
+                  currentOverrides={tempOverrides}
                   onClose={() => setShowQuickSettings(false)}
                   onOverridesChange={handleTempOverridesChange}
                 />
