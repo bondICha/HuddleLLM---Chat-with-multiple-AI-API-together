@@ -208,9 +208,7 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
         img: ({ node, ...props }) => {
           const src = (props as any).src as string | undefined
           if (!src) return <img {...(props as any)} />
-          // Local images (data:/blob:): render directly without link wrapper
-          // (linking blob: URLs causes about:blank#blocked in extensions)
-          if (src.startsWith('data:') || src.startsWith('blob:')) {
+          if (src.startsWith('data:')) {
             return <img {...(props as any)} />
           }
           return (
