@@ -386,6 +386,8 @@
   "Transcription complete": "文字起こしが完了しました",
   "Transcription failed": "文字起こしに失敗しました",
   "Use Individual Settings": "個別設定を使用する",
+  "Individual Settings": "個別設定",
+  "Provider reference missing (id: {{id}})": "Provider参照が見つかりません (id: {{id}})",
   "When off, this chatbot uses the selected API Provider reference": "オフの場合、このチャットボットは選択されたAPIプロバイダーリファレンスを使用します",
   "Provider reference": "プロバイダーリファレンス",
   "None (not set)": "なし（未設定）",

@@ -1,5 +1,8 @@
-import { FC, memo } from 'react'
+import { FC, memo, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import dropdownIcon from '~/assets/icons/dropdown.svg'
+import { getApiSchemeOptions } from '~app/components/Settings/api-scheme-options'
+import { CustomApiProvider, ProviderConfig } from '~services/user-config'
 import SwitchBotDropdown from '../SwitchBotDropdown'
 import Tooltip from '../Tooltip'
 
@@ -10,9 +13,48 @@ interface Props {
   fullName?: string
   onSwitchBot?: (index: number) => void
   botConfig?: any
+  providerConfigs?: ProviderConfig[]
 }
 
 const ChatbotName: FC<Props> = (props) => {
+  const { t } = useTranslation()
+
+  const schemeLookup = useMemo(() => {
+    const map = new Map<CustomApiProvider, string>()
+    getApiSchemeOptions().forEach((opt) => {
+      map.set(opt.value, opt.name)
+    })
+    return map
+  }, [])
+
+  const resolveProviderDisplay = () => {
+    const config = props.botConfig
+    if (!config) {
+      return null
+    }
+
+    const providerRef = config.providerRefId
+      ? (props.providerConfigs || []).find((provider) => provider.id === config.providerRefId)
+      : undefined
+
+    if (config.providerRefId && !providerRef) {
+      return {
+        error: t('Provider reference missing (id: {{id}})', { id: config.providerRefId }),
+      }
+    }
+
+    const effectiveProvider = providerRef?.provider
+      ?? (config.provider || (config.model?.includes('anthropic.claude') ? CustomApiProvider.Bedrock : CustomApiProvider.OpenAI))
+
+    const apiFormat = schemeLookup.get(effectiveProvider) || effectiveProvider
+    const providerName = providerRef?.name || t('Individual Settings')
+
+    return {
+      providerName,
+      apiFormat,
+    }
+  }
+
   // 詳細情報を含むツールチップコンテンツを文字列で作成
   const createDetailedTooltip = () => {
     if (!props.botConfig) {
@@ -20,6 +62,7 @@ const ChatbotName: FC<Props> = (props) => {
     }
 
     const config = props.botConfig
+    const resolvedProviderDisplay = resolveProviderDisplay()
     const details = []
     
     // ヘッダー
@@ -28,7 +71,9 @@ const ChatbotName: FC<Props> = (props) => {
     // 基本情報
     if (config.model) details.push(`🤖 Model: ${config.model}`)
     if (config.host) details.push(`🌐 Host: ${config.host}`)
-    if (config.provider) details.push(`⚡ Provider: ${config.provider}`)
+    if (resolvedProviderDisplay?.providerName) details.push(`⚡ Provider: ${resolvedProviderDisplay.providerName}`)
+    if (resolvedProviderDisplay?.apiFormat) details.push(`🧩 API Scheme: ${resolvedProviderDisplay.apiFormat}`)
+    if (resolvedProviderDisplay?.error) details.push(`⚠ Provider: ${resolvedProviderDisplay.error}`)
     
     details.push('') // 空行
     

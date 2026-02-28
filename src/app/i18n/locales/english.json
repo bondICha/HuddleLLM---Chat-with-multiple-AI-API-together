@@ -382,6 +382,8 @@
   "Transcription failed": "Transcription failed",
   "releasenote_v2134_replicate_seamless_support": "## Replicate Integration Refresh: Simpler setup, works with any model\n\nThis update significantly enhances our Replicate integration. Just enter the model name and click a button—complex configuration is handled automatically.\n\n- **One‑click model setup**\n  Enter the Replicate model you want (e.g., `stability-ai/sdxl`) and click \"Fetch Schema\". The model‑specific Tool Definition is automatically generated and applied.\n\n- **Works with all Replicate models**\n  You can add and use any image generation model from Replicate without waiting for HuddleLLM updates.\n\n- **More reliable image generation**\n  Parameters optimized for each model are fetched directly from the API to produce results that match your intent.\n\n![Replicate Support](/release_note_assets/Replicate%20Support.gif)\n",
   "Use Individual Settings": "Use Individual Settings",
+  "Individual Settings": "Individual Settings",
+  "Provider reference missing (id: {{id}})": "Provider reference missing (id: {{id}})",
   "When off, this chatbot uses the selected API Provider reference": "When off, this chatbot uses the selected API Provider reference",
   "Provider reference": "Provider reference",
   "None (not set)": "None (not set)",

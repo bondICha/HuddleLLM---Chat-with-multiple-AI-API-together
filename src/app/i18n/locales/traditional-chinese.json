@@ -454,5 +454,7 @@
   "file_error_binary_not_supported": "檔案「{{name}}」為二進位檔，無法處理。",
   "file_error_process_failed": "無法處理檔案「{{name}}」：{{message}}",
   "audio_warning_uncommon_format": "非標準MIME類型：{{type}} (.{{ext}})。部分AI提供者可能不支援。",
-  "audio_warning_extension_fallback": "未偵測到MIME類型。使用 .{{ext}} 副檔名回退。可靠性降低；部分AI提供者可能拒絕此檔案。"
+  "audio_warning_extension_fallback": "未偵測到MIME類型。使用 .{{ext}} 副檔名回退。可靠性降低；部分AI提供者可能拒絕此檔案。",
+  "Individual Settings": "個別設定",
+  "Provider reference missing (id: {{id}})": "Provider 參照不存在 (id: {{id}})"
 }

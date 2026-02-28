@@ -17,7 +17,8 @@ import ChatMessageInput from './ChatMessageInput'
 import ChatMessageList from './ChatMessageList'
 import ChatbotName from './ChatbotName'
 import WebAccessCheckbox from './WebAccessCheckbox'
-import { getUserConfig } from '~services/user-config'
+import { getUserConfig, ProviderConfig } from '~services/user-config'
+import { CHATBOTS_UPDATED_EVENT } from '~app/consts'
 
 interface Props {
   index: number
@@ -43,13 +44,15 @@ const ConversationPanel: FC<Props> = (props) => {
   const [botName, setBotName] = useState<string>('Custom Bot')
   const [botAvatar, setBotAvatar] = useState<string>('OpenAI.Black')
   const [botConfig, setBotConfig] = useState<any>(null)
+  const [providerConfigs, setProviderConfigs] = useState<ProviderConfig[]>([])
   const [isInputVisible, setIsInputVisible] = useState(mode !== 'compact')
 
   // コンポーネントマウント時に設定を取得
   useEffect(() => {
-    const initializeBotInfo = async () => {
+    const reloadBotInfo = async () => {
       const config = await getUserConfig();
       const customApiConfigs = config.customApiConfigs || [];
+      setProviderConfigs(config.providerConfigs || []);
 
       // インデックスが有効な範囲内かどうかを確認
       if (props.index >= 0 && props.index < customApiConfigs.length) {
@@ -60,10 +63,21 @@ const ConversationPanel: FC<Props> = (props) => {
         if (currentBotConfig.avatar) {
           setBotAvatar(currentBotConfig.avatar);
         }
+      } else {
+        setBotConfig(null);
       }
     };
-  
-  initializeBotInfo();
+
+    const handleBotSettingsUpdated = () => {
+      reloadBotInfo();
+    };
+
+    reloadBotInfo();
+    window.addEventListener(CHATBOTS_UPDATED_EVENT, handleBotSettingsUpdated);
+
+    return () => {
+      window.removeEventListener(CHATBOTS_UPDATED_EVENT, handleBotSettingsUpdated);
+    };
   }, [props.index]); // props.index が変更されたときに再実行
 
   const context: ConversationContextValue = useMemo(() => {
@@ -178,6 +192,7 @@ const ConversationPanel: FC<Props> = (props) => {
               model={props.bot.modelName ?? 'Default'}
               onSwitchBot={mode === 'compact' ? (index) => props.onSwitchBot?.(index) : undefined}
               botConfig={botConfig}
+              providerConfigs={providerConfigs}
             />
           </div>
           

@@ -447,5 +447,7 @@
   "file_error_binary_not_supported": "文件\"{{name}}\"是二进制文件，无法处理。",
   "file_error_process_failed": "无法处理文件\"{{name}}\"：{{message}}",
   "audio_warning_uncommon_format": "非标准MIME类型：{{type}} (.{{ext}})。部分AI提供商可能不支持。",
-  "audio_warning_extension_fallback": "未检测到MIME类型。使用 .{{ext}} 扩展名回退。可靠性降低；部分AI提供商可能拒绝此文件。"
+  "audio_warning_extension_fallback": "未检测到MIME类型。使用 .{{ext}} 扩展名回退。可靠性降低；部分AI提供商可能拒绝此文件。",
+  "Individual Settings": "个别设置",
+  "Provider reference missing (id: {{id}})": "Provider 引用不存在 (id: {{id}})"
 }
