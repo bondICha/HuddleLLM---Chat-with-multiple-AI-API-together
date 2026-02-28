@@ -4,6 +4,7 @@ export type ProcessedFileResult =
   | { type: 'text'; content: string; file: File; warning?: { key: string; params: Record<string, string> } }
   | { type: 'image'; file: File; warning?: { key: string; params: Record<string, string> } }
   | { type: 'audio'; file: File; warning?: { key: string; params: Record<string, string> } }
+  | { type: 'pdf'; file: File }
   | { type: 'unsupported'; file: File; error: UnsupportedFileError };
 
 export type UnsupportedFileError =
@@ -76,11 +77,7 @@ export async function processFile(file: File): Promise<ProcessedFileResult> {
     const buffer = await readAsArrayBuffer(file);
 
     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-      return {
-        type: 'unsupported',
-        file,
-        error: { code: 'pdf_not_supported' },
-      };
+      return { type: 'pdf', file };
     }
 
     if (isProbablyBinary(new Uint8Array(buffer))) {

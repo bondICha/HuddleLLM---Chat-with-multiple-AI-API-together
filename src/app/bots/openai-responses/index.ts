@@ -8,6 +8,7 @@ type ContentPart =
   | { type: 'text'; text: string }
   | { type: 'image_url'; image_url: { url: string; detail?: 'low' | 'high' } }
   | { type: 'image_file'; file_id: string }
+  | { type: 'input_file'; filename: string; file_data: string }
 
 type ChatMessage =
   | { role: 'system' | 'assistant'; content: string }
@@ -44,6 +45,7 @@ export class OpenAIResponsesBot extends AbstractBot {
   get modelName() { return this.config.model }
 
   get supportsImageInput() { return true }
+  get supportsPdfInput() { return true }
 
   getSystemMessage() {
     return this.config.systemMessage
@@ -83,19 +85,20 @@ export class OpenAIResponsesBot extends AbstractBot {
     return { messages }
   }
 
-  private buildUserMessageWithPrevious(prompt: string, imageUrls?: string[]): ChatMessage {
+  private buildUserMessageWithPrevious(prompt: string, imageUrls?: string[], pdfDataUrls?: { filename: string; dataUrl: string }[]): ChatMessage {
     const content: ContentPart[] = []
     content.push({ type: 'text', text: prompt })
     ;(imageUrls || []).forEach((url) => content.push({ type: 'image_url', image_url: { url, detail: 'low' } }))
+    ;(pdfDataUrls || []).forEach(({ filename, dataUrl }) => content.push({ type: 'input_file', filename, file_data: dataUrl }))
     return { role: 'user', content }
   }
 
-  private buildMessages(prompt: string, imageUrls?: string[]): ChatMessage[] {
+  private buildMessages(prompt: string, imageUrls?: string[], pdfDataUrls?: { filename: string; dataUrl: string }[]): ChatMessage[] {
     // Unify with Image bot: pass system instructions via top-level `instructions`,
     // not as a system role item in the input array.
     return [
       ...(this.conversationContext?.messages || []).slice(-(CONTEXT_SIZE + 1)),
-      this.buildUserMessageWithPrevious(prompt, imageUrls),
+      this.buildUserMessageWithPrevious(prompt, imageUrls, pdfDataUrls),
     ]
   }
 
@@ -124,10 +127,18 @@ export class OpenAIResponsesBot extends AbstractBot {
       imageUrls = await Promise.all(params.images.map((img) => file2base64(img, true)))
     }
 
-    const messages = this.buildMessages(params.prompt, imageUrls)
+    let pdfDataUrls: { filename: string; dataUrl: string }[] = []
+    if (params.pdfFiles?.length) {
+      pdfDataUrls = await Promise.all(params.pdfFiles.map(async (f) => ({
+        filename: f.name,
+        dataUrl: await file2base64(f, true),
+      })))
+    }
+
+    const messages = this.buildMessages(params.prompt, imageUrls, pdfDataUrls)
     const resp = await this.fetchResponses(messages, params.signal)
 
-    this.conversationContext.messages.push(this.buildUserMessageWithPrevious(params.rawUserInput || params.prompt, imageUrls))
+    this.conversationContext.messages.push(this.buildUserMessageWithPrevious(params.rawUserInput || params.prompt, imageUrls, pdfDataUrls))
 
     let done = false
     let resultText = ''
@@ -257,6 +268,7 @@ export class OpenAIResponsesBot extends AbstractBot {
             if (p.type === 'text') parts.push({ type: 'input_text', text: p.text })
             else if (p.type === 'image_url') parts.push({ type: 'input_image', image_url: p.image_url.url })
             else if ((p as any).type === 'image_file') parts.push({ type: 'input_image', file_id: (p as any).file_id })
+            else if ((p as any).type === 'input_file') parts.push({ type: 'input_file', filename: (p as any).filename, file_data: (p as any).file_data })
           }
           input.push({ role: 'user', content: parts })
         }
@@ -291,7 +303,14 @@ export class OpenAIResponsesBot extends AbstractBot {
       if (role === 'assistant') {
         return { role, content: content.map((c: any) => ({ type: 'output_text', text: c?.text ?? '' })) }
       } else {
-        return { role, content: content.map((c: any) => (c?.type === 'input_image' ? c : { type: 'input_text', text: c?.text ?? '' })) }
+        return {
+          role,
+          content: content.map((c: any) => (
+            c?.type === 'input_image' || c?.type === 'input_file'
+              ? c
+              : { type: 'input_text', text: c?.text ?? '' }
+          )),
+        }
       }
     })
     body.input = sanitize(body.input)

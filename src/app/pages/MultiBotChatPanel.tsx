@@ -399,10 +399,10 @@ const GeneralChatPanel: FC<{
   }, [chats.length, supportImageInput])
 
   const sendSingleMessage = useCallback(
-   (input: string, index: number, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[]) => {
+   (input: string, index: number, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], pdfFiles?: File[]) => {
      const chat = chats.find((c) => c.index === index);
      if (chat) {
-       chat.sendMessage(input, images, attachments, audioFiles);
+       chat.sendMessage(input, images, attachments, audioFiles, pdfFiles);
      }
    },
    [chats],
@@ -415,11 +415,11 @@ const GeneralChatPanel: FC<{
   }, [chats])
 
   const sendAllMessage = useCallback(
-    (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[]) => {
-      if (!input?.trim() && !images?.length && !attachments?.length && !audioFiles?.length) return;
+    (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], pdfFiles?: File[]) => {
+      if (!input?.trim() && !images?.length && !attachments?.length && !audioFiles?.length && !pdfFiles?.length) return;
 
       // まずメッセージを送信（refから最新のchatsを取得）
-      uniqBy(chatsRef.current, (c) => c.index).forEach((c) => c.sendMessage(input, images, attachments, audioFiles));
+      uniqBy(chatsRef.current, (c) => c.index).forEach((c) => c.sendMessage(input, images, attachments, audioFiles, pdfFiles));
 
       // 送信後に入力をクリア
       clearInput();
@@ -578,7 +578,7 @@ const GeneralChatPanel: FC<{
             index={chat.index}
             bot={chat.bot}
             messages={chat.messages}
-            onUserSendMessage={(input, images, attachments, audioFiles) => sendSingleMessage(input, chat.index, images, attachments, audioFiles)}
+            onUserSendMessage={(input, images, attachments, audioFiles, pdfFiles) => sendSingleMessage(input, chat.index, images, attachments, audioFiles, pdfFiles)}
             generating={chat.generating}
             stopGenerating={chat.stopGenerating}
             mode="compact"

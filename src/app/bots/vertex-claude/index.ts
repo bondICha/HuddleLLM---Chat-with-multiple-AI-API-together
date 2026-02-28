@@ -12,9 +12,14 @@ import { sanitizeMessagesForClaude, ensureNonEmptyText } from '../claude-message
 const CONTEXT_SIZE = 120;
 
 interface ContentPart {
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'document';
   text?: string;
-  image?: { 
+  image?: {
+    type: 'base64';
+    media_type: string;
+    data: string;
+  };
+  document?: {
     type: 'base64';
     media_type: string;
     data: string;
@@ -32,6 +37,8 @@ interface ConversationContext {
 
 export abstract class AbstractVertexClaudeBot extends AbstractBot {
   private conversationContext?: ConversationContext
+
+  get supportsPdfInput() { return true }
 
   // ConversationHistoryインターフェースの実装
   public setConversationHistory(history: ConversationHistory): void {
@@ -85,7 +92,7 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
     return { messages };
   }
 
-  private buildUserMessage(prompt: string, images?: { data: string, media_type: string }[]): ChatMessage {
+  private buildUserMessage(prompt: string, images?: { data: string, media_type: string }[], pdfs?: { data: string }[]): ChatMessage {
     const content: ContentPart[] = [];
 
     // Add text content first
@@ -105,6 +112,20 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
       });
     }
 
+    // Then add PDFs if any
+    if (pdfs && pdfs.length > 0) {
+      pdfs.forEach(pdf => {
+        content.push({
+          type: 'document',
+          document: {
+            type: 'base64',
+            media_type: 'application/pdf',
+            data: pdf.data
+          }
+        });
+      });
+    }
+
     return { role: 'user', content };
   }
 
@@ -117,7 +138,7 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
     return 'image/jpeg'; // デフォルト
   }
 
-  private buildMessages(prompt: string, images?: { data: string, media_type: string }[]): ChatMessage[] {
+  private buildMessages(prompt: string, images?: { data: string, media_type: string }[], pdfs?: { data: string }[]): ChatMessage[] {
     // 会話コンテキストからメッセージを取得
     const contextMessages = this.conversationContext!.messages.slice(-(CONTEXT_SIZE + 1));
 
@@ -162,7 +183,7 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
 
     return [
       ...result.slice(-(CONTEXT_SIZE - 1)),
-      this.buildUserMessage(prompt, images),
+      this.buildUserMessage(prompt, images, pdfs),
     ]
   }
 
@@ -184,10 +205,21 @@ export abstract class AbstractVertexClaudeBot extends AbstractBot {
       }
     }
 
-    try {
-      const resp = await this.fetchCompletionApi(this.buildMessages(params.prompt, images_for_api), params.signal);
+    const pdfs_for_api: { data: string }[] = [];
+    if (params.pdfFiles && params.pdfFiles.length > 0) {
+      for (const pdf of params.pdfFiles) {
+        const dataUrl = await file2base64(pdf, true);
+        const match = dataUrl.match(/^data:.+;base64,(.+)$/);
+        if (match) {
+          pdfs_for_api.push({ data: match[1] });
+        }
+      }
+    }
 
-      this.conversationContext.messages.push(this.buildUserMessage(params.rawUserInput || params.prompt, images_for_api))
+    try {
+      const resp = await this.fetchCompletionApi(this.buildMessages(params.prompt, images_for_api, pdfs_for_api), params.signal);
+
+      this.conversationContext.messages.push(this.buildUserMessage(params.rawUserInput || params.prompt, images_for_api, pdfs_for_api))
   
       let done = false
       const result: ChatMessage = { 
@@ -359,6 +391,15 @@ export class VertexClaudeBot extends AbstractVertexClaudeBot {
                 type: 'base64',
                 media_type: part.image.media_type,
                 data: part.image.data
+              }
+            };
+          } else if (part.type === 'document' && part.document) {
+            return {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: part.document.data
               }
             };
           }

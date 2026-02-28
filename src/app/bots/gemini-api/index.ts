@@ -121,9 +121,11 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
     return { messages };
   }
 
-  private async buildUserContent(prompt: string, images?: File[], audioFiles?: File[]): Promise<Content> {
+  get supportsPdfInput() { return true }
+
+  private async buildUserContent(prompt: string, images?: File[], audioFiles?: File[], pdfFiles?: File[]): Promise<Content> {
     const parts: Part[] = [];
-    
+
     if (images && images.length > 0) {
         for (const image of images) {
             const base64data = await file2base64(image);
@@ -148,6 +150,18 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
       }
     }
 
+    if (pdfFiles && pdfFiles.length > 0) {
+      for (const pdf of pdfFiles) {
+        const base64data = await file2base64(pdf);
+        parts.push({
+          inlineData: {
+            data: base64data.replace(/^data:.+;base64,/, ''),
+            mimeType: 'application/pdf',
+          },
+        });
+      }
+    }
+
     parts.push({ text: prompt });
     return { role: 'user', parts };
   }
@@ -161,7 +175,7 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
       this.conversationContext = { messages: [] }
     }
 
-    const userMessage = await this.buildUserContent(params.rawUserInput || params.prompt, params.images, params.audioFiles);
+    const userMessage = await this.buildUserContent(params.rawUserInput || params.prompt, params.images, params.audioFiles, params.pdfFiles);
     
     const history = this.conversationContext.messages.slice(-CONTEXT_SIZE);
     const contents = [...history, userMessage];

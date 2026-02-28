@@ -4,6 +4,7 @@ import { CopyToClipboard } from 'react-copy-to-clipboard-ts'
 import { IoCheckmarkSharp, IoCopyOutline, IoMegaphoneOutline as IoPropaganda } from 'react-icons/io5'
 import { BsCheckAll } from "react-icons/bs";
 import { LuCircleCheckBig } from "react-icons/lu";
+import { GoFile } from 'react-icons/go';
 import { BeatLoader } from 'react-spinners'
 import { ChatMessageModel } from '~/types'
 import Expandable from '../common/Expandable'
@@ -81,6 +82,10 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
   const audioUrls = useMemo(() => {
     return message.audioFiles ? message.audioFiles.map(file => ({ url: URL.createObjectURL(file), name: file.name })) : []
   }, [message.audioFiles])
+
+  const pdfNames = useMemo(() => {
+    return message.pdfFiles ? message.pdfFiles.map(file => file.name) : []
+  }, [message.pdfFiles])
 
   const copyText = useMemo(() => {
     if (message.text) {
@@ -221,6 +226,16 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
                 <div key={index} className="flex flex-col gap-1">
                   <span className="text-xs opacity-70 truncate">{audio.name}</span>
                   <audio controls src={audio.url} className="w-full h-8" />
+                </div>
+              ))}
+            </div>
+          )}
+          {pdfNames.length > 0 && (
+            <div className="flex flex-wrap gap-2 my-2">
+              {pdfNames.map((name, index) => (
+                <div key={index} className="flex items-center gap-1 bg-primary-border dark:bg-secondary rounded-full px-2 py-1 border border-primary-border">
+                  <GoFile size={12} className="text-red-500 dark:text-red-400 flex-shrink-0" />
+                  <span className="text-xs text-primary-text font-semibold truncate max-w-[140px]">{name}</span>
                 </div>
               ))}
             </div>

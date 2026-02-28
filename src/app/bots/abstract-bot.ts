@@ -43,6 +43,7 @@ export interface MessageParams {
   rawUserInput?: string
   images?: File[]
   audioFiles?: File[]
+  pdfFiles?: File[]
   signal?: AbortSignal
 }
 
@@ -58,6 +59,8 @@ export interface ConversationHistory {
 export abstract class AbstractBot {
   // 思考パーサーインスタンス
   private thinkingParser = new ThinkingParser();
+
+  get supportsPdfInput(): boolean { return false }
 
   public sendMessage(params: MessageParams): AsyncGenerator<AnwserPayload> {
     return this.doSendMessageGenerator(params);
@@ -171,6 +174,7 @@ export abstract class AbstractBot {
           rawUserInput: params.rawUserInput,
           images: params.images,
           audioFiles: params.audioFiles,
+          pdfFiles: params.pdfFiles,
           signal: params.signal,
           onEvent(event) {
             if (event.type === 'UPDATE_ANSWER') {
@@ -353,6 +357,10 @@ export abstract class AsyncAbstractBot extends AbstractBot {
 
   get supportsAudioInput() {
     return this.#bot.supportsAudioInput
+  }
+
+  get supportsPdfInput() {
+    return this.#bot.supportsPdfInput
   }
 
   // System message setter for dynamic updates
