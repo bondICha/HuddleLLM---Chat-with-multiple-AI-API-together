@@ -38,6 +38,12 @@ export class OpenAIResponsesBot extends AbstractBot {
     super()
   }
 
+  private temporaryOverrides?: { reasoningEffort?: 'none' | 'low' | 'medium' | 'high' }
+
+  setTemporaryOverrides(overrides: { reasoningEffort?: 'none' | 'low' | 'medium' | 'high' }) {
+    this.temporaryOverrides = overrides
+  }
+
   get name() {
     return `OpenAI Responses (${this.config.model})`
   }
@@ -292,7 +298,7 @@ export class OpenAIResponsesBot extends AbstractBot {
       input,
       stream: true,
       ...(system ? { instructions: system } : {}),
-      ...(this.config.thinkingMode ? { reasoning: { effort: this.config.reasoningEffort || 'medium' } } : {}),
+      ...(this.config.thinkingMode ? { reasoning: { effort: this.temporaryOverrides?.reasoningEffort ?? this.config.reasoningEffort ?? 'medium' } } : {}),
       ...(extraBodyObj ? { extra_body: extraBodyObj } : {}),
     }
 

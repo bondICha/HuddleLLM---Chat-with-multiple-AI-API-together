@@ -330,6 +330,12 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
     this.thinkingMode = thinkingMode;
   }
 
+  private temporaryOverrides?: { temperature?: number; thinkingBudget?: number }
+
+  setTemporaryOverrides(overrides: { temperature?: number; thinkingBudget?: number }) {
+    this.temporaryOverrides = overrides
+  }
+
   getSystemMessage() {
     return this.config.systemMessage
   }
@@ -390,7 +396,7 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
 
     // Add Extended Thinking configuration or temperature based on thinkingMode flag
     if (this.thinkingMode) {
-      const budgetTokens = Math.max(this.config.thinkingBudget || 2000, 1024); // Minimum 1024 tokens as per Extended Thinking spec
+      const budgetTokens = Math.max((this.temporaryOverrides?.thinkingBudget ?? this.config.thinkingBudget) || 2000, 1024); // Minimum 1024 tokens as per Extended Thinking spec
       body.thinking = {
         type: "enabled",
         budget_tokens: budgetTokens
@@ -400,7 +406,7 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       // Do not set temperature when thinking mode is enabled
     } else {
       body.max_tokens = hasImageInput ? 4096 : 8192;
-      body.temperature = this.config.temperature; // Use config.temperature
+      body.temperature = this.temporaryOverrides?.temperature ?? this.config.temperature; // Use config.temperature
     }
 
     const headers: Record<string, string> = {
