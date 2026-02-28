@@ -5,6 +5,7 @@ import { IoCheckmarkSharp, IoCopyOutline, IoMegaphoneOutline as IoPropaganda } f
 import { BsCheckAll } from "react-icons/bs";
 import { LuCircleCheckBig } from "react-icons/lu";
 import { GoFile } from 'react-icons/go';
+import { AiOutlineFilePdf } from 'react-icons/ai';
 import { BeatLoader } from 'react-spinners'
 import { ChatMessageModel } from '~/types'
 import Expandable from '../common/Expandable'
@@ -234,7 +235,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
             <div className="flex flex-wrap gap-2 my-2">
               {pdfNames.map((name, index) => (
                 <div key={index} className="flex items-center gap-1 bg-primary-border dark:bg-secondary rounded-full px-2 py-1 border border-primary-border">
-                  <GoFile size={12} className="text-red-500 dark:text-red-400 flex-shrink-0" />
+                  <AiOutlineFilePdf size={12} className="text-red-500 dark:text-red-400 flex-shrink-0" />
                   <span className="text-xs text-primary-text font-semibold truncate max-w-[140px]">{name}</span>
                 </div>
               ))}
