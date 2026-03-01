@@ -473,6 +473,7 @@
   "releasenote_v2150_quick_settings_panel": "## 快速设置面板\n![快速设置面板](/release_note_assets/QuickSetting_Button.png)\n- 点击聊天工具栏中的滑块图标即可打开全新的悬浮面板。\n- 可在不改动已保存设置的前提下，仅对当前会话临时调整选项。\n- 页面刷新后，临时修改将自动重置。",
   "releasenote_v2150_gemini_image_improvements": "## Gemini 图片改进\n- 修复了流式传输时内联图片不在首个分片中会导致丢失的问题，现可从完整的流式响应中正确解析图片。",
   "releasenote_v2150_provider_tooltip": "## 悬浮提示显示 Provider 信息\n- 聊天机器人名称的工具提示现在会显示正确的 Provider 名称和 API 协议。",
+  "releasenote_v2151_system_prompt_updates": "## 深化本地化：文化适配的系统提示词 (v2.5.1)\n\n系统提示词进一步深度本地化，更贴合各语言文化的地道表达。更新通知与自动备份可保护您的自定义设置。",
   "System Prompt Updated": "系统提示词已更新",
   "Default system prompt has been updated to version": "默认系统提示词已更新至版本",
   "Would you like to update your Common System Message? Select your preferred language:": "是否要更新您的通用系统消息？请选择您的首选语言：",
