@@ -472,5 +472,20 @@
   "releasenote_v2150_pdf_support": "## PDF 文件支持\n- 通过文件按钮或拖放直接在聊天中附加 PDF 文件。\n- 直接传递给 Gemini、Claude 和 OpenAI 的官方 API。OpenRouter 及其他提供商不支持。",
   "releasenote_v2150_quick_settings_panel": "## 快速设置面板\n![快速设置面板](/release_note_assets/QuickSetting_Button.png)\n- 点击聊天工具栏中的滑块图标即可打开全新的悬浮面板。\n- 可在不改动已保存设置的前提下，仅对当前会话临时调整选项。\n- 页面刷新后，临时修改将自动重置。",
   "releasenote_v2150_gemini_image_improvements": "## Gemini 图片改进\n- 修复了流式传输时内联图片不在首个分片中会导致丢失的问题，现可从完整的流式响应中正确解析图片。",
-  "releasenote_v2150_provider_tooltip": "## 悬浮提示显示 Provider 信息\n- 聊天机器人名称的工具提示现在会显示正确的 Provider 名称和 API 协议。"
+  "releasenote_v2150_provider_tooltip": "## 悬浮提示显示 Provider 信息\n- 聊天机器人名称的工具提示现在会显示正确的 Provider 名称和 API 协议。",
+  "System Prompt Updated": "系统提示词已更新",
+  "Default system prompt has been updated to version": "默认系统提示词已更新至版本",
+  "Would you like to update your Common System Message? Select your preferred language:": "是否要更新您的通用系统消息？请选择您的首选语言：",
+  "System prompt has been updated": "系统提示词已更新",
+  "Failed to update system prompt": "系统提示词更新失败",
+  "Skip": "跳过",
+  "Current": "当前",
+  "Latest": "最新",
+  "Warning: Your system prompt has been customized": "警告：您的系统提示词已被自定义",
+  "Updating will overwrite your changes. Your current prompt is backed up below.": "更新将覆盖您的更改。您当前的提示词已在下方备份。",
+  "Current Prompt Backup": "当前提示词备份",
+  "View previous backup prompt": "查看之前的备份提示词",
+  "Previous System Prompt Backup": "之前的系统提示词备份",
+  "This is your system prompt before the last update. You can copy and restore it manually if needed.": "这是您上次更新前的系统提示词。如需要，您可以手动复制并恢复。",
+  "No backup found. Backups are created when you update your system prompt.": "未找到备份。更新系统提示词时会创建备份。"
 }

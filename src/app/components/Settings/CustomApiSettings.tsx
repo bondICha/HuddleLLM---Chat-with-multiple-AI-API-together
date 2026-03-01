@@ -1,13 +1,15 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import Browser from 'webextension-polyfill';
 import { UserConfig, ProviderConfig, CustomApiProvider } from '~services/user-config';
 import Dialog from '../Dialog';
 import Button from '../Button';
 import Blockquote from './Blockquote';
 import { BiInfoCircle } from 'react-icons/bi';
 import { Input, Textarea } from '../Input';
-import { DEFAULT_SYSTEM_MESSAGE } from '~app/consts';
+import { getSystemPrompt, SYSTEM_PROMPTS, SYSTEM_PROMPT_VERSION } from '~app/system-prompts';
+import { getSystemPromptBackup } from '~services/system-prompt-version';
 import ApiProviderSettings from './ApiProviderSettings';
 import ChatbotSettings from './ChatbotSettings';
 import Switch from '../Switch';
@@ -22,11 +24,35 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
   const { t } = useTranslation();
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showVariables, setShowVariables] = useState(false);
+  const [showBackupDialog, setShowBackupDialog] = useState(false);
+  const [currentVersion, setCurrentVersion] = useState<string>('');
+  const [backupPrompt, setBackupPrompt] = useState<string | undefined>(undefined);
 
-  const resetToDefaultSystemMessage = () => {
-    updateConfigValue({ commonSystemMessage: DEFAULT_SYSTEM_MESSAGE });
+  // Load current system prompt version
+  useEffect(() => {
+    const loadVersion = async () => {
+      const { lastSystemPromptVersion } = await Browser.storage.sync.get('lastSystemPromptVersion');
+      setCurrentVersion(lastSystemPromptVersion || 'Unknown');
+    };
+    loadVersion();
+  }, []);
+
+  const resetToDefaultSystemMessage = async (lang: 'en' | 'ja' | 'zh-CN' | 'zh-TW') => {
+    // 現在のプロンプトをバックアップとして保存 (local storage)
+    await Browser.storage.local.set({ systemPromptBackup: userConfig.commonSystemMessage });
+
+    updateConfigValue({ commonSystemMessage: SYSTEM_PROMPTS[lang] });
+    // Update version when reset
+    await Browser.storage.sync.set({ lastSystemPromptVersion: SYSTEM_PROMPT_VERSION });
+    setCurrentVersion(SYSTEM_PROMPT_VERSION);
     setShowResetDialog(false);
     toast.success(t('Common System Message has been reset to default'));
+  };
+
+  const handleViewBackup = async () => {
+    const backup = await getSystemPromptBackup();
+    setBackupPrompt(backup);
+    setShowBackupDialog(true);
   };
 
   const formRowClass = "flex flex-col gap-2";
@@ -93,13 +119,27 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         value={userConfig.commonSystemMessage}
                         onChange={(e) => updateConfigValue({ commonSystemMessage: e.currentTarget.value })}
                       />
-                      <Button
-                        text={t('Reset Common system prompt to default')}
-                        color="flat"
-                        size="small"
-                        onClick={() => setShowResetDialog(true)}
-                        className="self-start"
-                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            text={t('Reset Common system prompt to default')}
+                            color="flat"
+                            size="small"
+                            onClick={() => setShowResetDialog(true)}
+                          />
+                          <Button
+                            text={t('View previous backup prompt')}
+                            color="flat"
+                            size="small"
+                            onClick={handleViewBackup}
+                          />
+                        </div>
+                        <div className="text-xs opacity-60">
+                          <span>Current: {currentVersion}</span>
+                          <span className="mx-2">|</span>
+                          <span>Latest: {SYSTEM_PROMPT_VERSION}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -160,12 +200,51 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         </div>
       </div>
 
-      <Dialog title={t('Confirm Reset')} open={showResetDialog} onClose={() => setShowResetDialog(false)}>
+      <Dialog title={t('Reset to HuddleLLM default prompt')} open={showResetDialog} onClose={() => setShowResetDialog(false)}>
         <div className="space-y-4">
-          <p>{t('Are you sure you want to reset the Common System Message to the default value? This action cannot be undone.')}</p>
-          <div className="flex justify-end gap-2">
+          <p>{t('Select the language for the default system prompt:')}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              text="English"
+              color="primary"
+              onClick={() => resetToDefaultSystemMessage('en')}
+            />
+            <Button
+              text="日本語"
+              color="primary"
+              onClick={() => resetToDefaultSystemMessage('ja')}
+            />
+            <Button
+              text="简体中文"
+              color="primary"
+              onClick={() => resetToDefaultSystemMessage('zh-CN')}
+            />
+            <Button
+              text="繁體中文"
+              color="primary"
+              onClick={() => resetToDefaultSystemMessage('zh-TW')}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-300 dark:border-gray-700">
             <Button text={t('Cancel')} color="flat" onClick={() => setShowResetDialog(false)} />
-            <Button text={t('Reset to Default')} color="primary" onClick={resetToDefaultSystemMessage} />
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog title={t('Previous System Prompt Backup')} open={showBackupDialog} onClose={() => setShowBackupDialog(false)}>
+        <div className="space-y-4">
+          {backupPrompt ? (
+            <>
+              <p className="text-sm opacity-70">{t('This is your system prompt before the last update. You can copy and restore it manually if needed.')}</p>
+              <div className="max-h-96 overflow-y-auto p-3 bg-gray-100 dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-700 custom-scrollbar">
+                <pre className="text-xs whitespace-pre-wrap break-words">{backupPrompt}</pre>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm opacity-70">{t('No backup found. Backups are created when you update your system prompt.')}</p>
+          )}
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-300 dark:border-gray-700">
+            <Button text={t('Close')} color="flat" onClick={() => setShowBackupDialog(false)} />
           </div>
         </div>
       </Dialog>
