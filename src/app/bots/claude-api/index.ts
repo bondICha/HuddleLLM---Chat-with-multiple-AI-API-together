@@ -77,41 +77,49 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
     return { messages };
   }
 
-  private async buildUserMessage(prompt: string, images?: File[]): Promise<ChatMessage> {
-    if (!images || images.length === 0) {
+  get supportsPdfInput() { return true }
+
+  private async buildUserMessage(prompt: string, images?: File[], pdfFiles?: File[]): Promise<ChatMessage> {
+    const hasImages = images && images.length > 0
+    const hasPdfs = pdfFiles && pdfFiles.length > 0
+
+    if (!hasImages && !hasPdfs) {
       return { role: 'user', content: ensureNonEmptyText(prompt) }
     }
 
-    const imageContents = await Promise.all(images.map(async (image) => {
-      const dataUrl = await file2base64(image, true) // keepHeader = true
+    const imageContents = hasImages ? await Promise.all(images!.map(async (image) => {
+      const dataUrl = await file2base64(image, true)
       const match = dataUrl.match(/^data:(.+);base64,(.+)$/)
       if (match) {
-        return {
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: match[1],
-            data: match[2]
-          }
-        }
+        return { type: 'image', source: { type: 'base64', media_type: match[1], data: match[2] } }
       }
       console.error('Could not parse data URL for image:', dataUrl)
       return null
-    }))
+    })) : []
 
-    const validImageContents = imageContents.filter(content => content !== null)
+    const pdfContents = hasPdfs ? await Promise.all(pdfFiles!.map(async (pdf) => {
+      const dataUrl = await file2base64(pdf, true)
+      const match = dataUrl.match(/^data:(.+);base64,(.+)$/)
+      if (match) {
+        return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: match[2] } }
+      }
+      console.error('Could not parse data URL for PDF:', dataUrl)
+      return null
+    })) : []
+
+    const validContents = [...imageContents, ...pdfContents].filter(content => content !== null)
 
     return {
       role: 'user',
       content: [
         { type: 'text', text: ensureNonEmptyText(prompt) },
-        ...validImageContents
+        ...validContents
       ],
     }
   }
 
-  private async buildMessages(prompt: string, images?: File[]): Promise<ChatMessage[]> {
-    const userMessage = await this.buildUserMessage(prompt, images);
+  private async buildMessages(prompt: string, images?: File[], pdfFiles?: File[]): Promise<ChatMessage[]> {
+    const userMessage = await this.buildUserMessage(prompt, images, pdfFiles);
     return [
       ...this.conversationContext!.messages.slice(-(CONTEXT_SIZE + 1)),
       userMessage,
@@ -125,11 +133,11 @@ export abstract class AbstractClaudeApiBot extends AbstractBot {
       this.conversationContext = { messages: [] }
     }
 
-    const messages = await this.buildMessages(params.prompt, params.images);
+    const messages = await this.buildMessages(params.prompt, params.images, params.pdfFiles);
     const resp = await this.fetchCompletionApi(messages, params.signal)
 
     // add user message to context only after fetch success
-    const userMessage = await this.buildUserMessage(params.rawUserInput || params.prompt, params.images);
+    const userMessage = await this.buildUserMessage(params.rawUserInput || params.prompt, params.images, params.pdfFiles);
     this.conversationContext.messages.push(userMessage);
 
     let done = false
@@ -322,6 +330,12 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
     this.thinkingMode = thinkingMode;
   }
 
+  private temporaryOverrides?: { temperature?: number; thinkingBudget?: number }
+
+  setTemporaryOverrides(overrides: { temperature?: number; thinkingBudget?: number }) {
+    this.temporaryOverrides = overrides
+  }
+
   getSystemMessage() {
     return this.config.systemMessage
   }
@@ -382,7 +396,7 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
 
     // Add Extended Thinking configuration or temperature based on thinkingMode flag
     if (this.thinkingMode) {
-      const budgetTokens = Math.max(this.config.thinkingBudget || 2000, 1024); // Minimum 1024 tokens as per Extended Thinking spec
+      const budgetTokens = Math.max((this.temporaryOverrides?.thinkingBudget ?? this.config.thinkingBudget) || 2000, 1024); // Minimum 1024 tokens as per Extended Thinking spec
       body.thinking = {
         type: "enabled",
         budget_tokens: budgetTokens
@@ -392,7 +406,7 @@ export class ClaudeApiBot extends AbstractClaudeApiBot {
       // Do not set temperature when thinking mode is enabled
     } else {
       body.max_tokens = hasImageInput ? 4096 : 8192;
-      body.temperature = this.config.temperature; // Use config.temperature
+      body.temperature = this.temporaryOverrides?.temperature ?? this.config.temperature; // Use config.temperature
     }
 
     const headers: Record<string, string> = {

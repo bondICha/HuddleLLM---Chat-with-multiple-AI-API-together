@@ -35,6 +35,7 @@ export const followArcThemeAtom = atomWithStorage('followArcTheme', false)
 export const sidePanelBotAtom = atomWithStorage<number>('sidePanelBot', 0)
 export const showDiscountModalAtom = atom<false | true | Campaign>(false)
 export const releaseNotesAtom = atom<{ version: string; notes: string[] }[]>([])
+export const systemPromptUpdateAtom = atom<boolean>(false)
 export const pendingSearchQueryAtom = atom<string | null>(null)
 export const sessionRestoreModalAtom = atom(false)
 export const companyProfileModalAtom = atom(false)
@@ -63,7 +64,7 @@ export const allInOneInputTextAtom = atom<string>('')
 export const allInOneInputAttachmentsAtom = atom<Array<{
   id: string;
   file: File;
-  type: 'image' | 'text' | 'audio';
+  type: 'image' | 'text' | 'audio' | 'pdf';
   content?: string;
   transcribedText?: string;
 }>>([])

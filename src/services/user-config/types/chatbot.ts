@@ -48,6 +48,14 @@ export interface CustomApiConfig {
   /** Agentic image generation settings (for ImageAgent) */
   agenticImageBotSettings?: AgenticImageBotSettings;
 
+  /** Gemini native image generation config (for Google provider image models) */
+  geminiImageConfig?: {
+    /** Aspect ratio of the output image */
+    aspectRatio?: string;
+    /** Image resolution (only for gemini-3.x image models): "512px" | "1K" | "2K" | "4K" */
+    imageSize?: string;
+  };
+
   /**
    * Unified provider Web search toggle
    * When true, use provider's native web search (OpenAI web_search_preview, Claude web_search_20250305, Gemini google_search)
