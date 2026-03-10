@@ -359,7 +359,69 @@ export const MODEL_NOVITA_SEEDREAM: ImageModelConfig = {
 }
 
 /**
- * 5. Replicate - Generic / Seedream
+ * 5. OpenAI GPT Image (gpt-image-1, gpt-image-1-mini, gpt-image-1.5)
+ * API: POST /v1/images/generations (sync, returns JSON with b64_json)
+ * Edit: POST /v1/images/edits (multipart/form-data - not yet supported in Image Agent)
+ */
+export const MODEL_OPENAI_GPT_IMAGE: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate an image using OpenAI GPT Image model. Creates high-quality images from text descriptions with excellent instruction following and text rendering.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'A detailed description of the image to generate. Be specific about subjects, style, composition, and text to render.',
+        },
+        size: {
+          type: 'string',
+          description: 'Image dimensions.',
+          enum: ['1024x1024', '1024x1536', '1536x1024', 'auto'],
+          default: '1024x1024',
+        },
+        quality: {
+          type: 'string',
+          description: 'Rendering quality level.',
+          enum: ['low', 'medium', 'high', 'auto'],
+          default: 'high',
+        },
+        background: {
+          type: 'string',
+          description: 'Background transparency. Use "transparent" for logos/icons.',
+          enum: ['auto', 'transparent', 'opaque'],
+          default: 'auto',
+        },
+        output_format: {
+          type: 'string',
+          description: 'Output image format. Use "png" for transparency support.',
+          enum: ['png', 'jpeg', 'webp'],
+          default: 'png',
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    endpoint: (_hasImages: boolean, baseHost: string) => {
+      const cleanHost = baseHost.replace(/\/$/, '')
+      // Avoid duplicating /v1 if already present
+      let endpoint: string
+      if (cleanHost.endsWith('/v1')) {
+        endpoint = `${cleanHost.slice(0, -3)}/v1/images/generations`
+      } else {
+        endpoint = `${cleanHost}/v1/images/generations`
+      }
+      // Clean up any v1/v1 issues
+      return endpoint.replace(/\/v1\/v1\//g, '/v1/')
+    },
+    isAsync: false,
+    supportsEdit: false, // Edit uses multipart/form-data, not yet supported
+  },
+}
+
+/**
+ * 6. Replicate - Generic / Seedream
  * Endpoint: Uses the baseHost directly (configured in settings as .../predictions)
  */
 export const MODEL_REPLICATE_GENERIC: ImageModelConfig = {
@@ -414,6 +476,9 @@ export const IMAGE_MODEL_REGISTRY: Record<string, ImageModelConfig> = {
   'novita-seedream': MODEL_NOVITA_SEEDREAM,
   'novita-seedream-4': MODEL_NOVITA_SEEDREAM, // Alias
   'novita-seedream-4-0': MODEL_NOVITA_SEEDREAM, // Alias
+  'openai-gpt-image-1': MODEL_OPENAI_GPT_IMAGE,
+  'openai-gpt-image-1-mini': MODEL_OPENAI_GPT_IMAGE,
+  'openai-gpt-image-1.5': MODEL_OPENAI_GPT_IMAGE,
 }
 
 /**
@@ -460,6 +525,9 @@ export function getDefaultImageModel(model: string, provider?: string): ImageMod
   if (modelLower.includes('flux')) {
     return MODEL_CHUTES_CHROMA
   }
+  if (modelLower.includes('gpt-image')) {
+    return MODEL_OPENAI_GPT_IMAGE
+  }
 
   // Replicate の場合はモデル名が不明でも汎用設定で通す
   if (providerLower.includes('replicate')) {
@@ -478,4 +546,5 @@ export const IMAGE_MODEL_PRESETS = [
   { id: 'novita-qwen', name: 'Novita - Qwen Image', config: MODEL_NOVITA_QWEN },
   { id: 'novita-hunyuan', name: 'Novita - Hunyuan Image 3', config: MODEL_NOVITA_HUNYUAN },
   { id: 'novita-seedream', name: 'Novita - Seedream 4.0', config: MODEL_NOVITA_SEEDREAM },
+  { id: 'openai-gpt-image-1', name: 'OpenAI - GPT Image 1', config: MODEL_OPENAI_GPT_IMAGE },
 ]

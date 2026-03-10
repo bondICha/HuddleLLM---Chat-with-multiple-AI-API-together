@@ -212,8 +212,8 @@ export class ImageAgentBot extends AbstractBot {
                 delete apiBody.images
               }
 
-              // Add model field for Chutes API (they require it in the body)
-              if (/chutes/i.test(imageHost || '')) {
+              // Add model field for APIs that require it in the body (Chutes, OpenAI Images)
+              if (/chutes/i.test(imageHost || '') || /gpt-image/i.test(imageModel || '')) {
                 apiBody.model = imageModel
               }
 
