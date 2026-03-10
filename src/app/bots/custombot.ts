@@ -326,6 +326,7 @@ export class CustomBot extends AsyncAbstractBot {
                         thinkingMode: config.thinkingMode,
                         thinkingBudget: config.thinkingBudget,
                         thinkingLevel: config.thinkingLevel,
+                        geminiImageConfig: config.geminiImageConfig,
                         // For advanced setups, these fields allow routing via gateways
                         // or custom endpoints using js-genai HttpOptions.
                         baseUrl: (effectiveHost && effectiveHost.trim().length > 0) ? effectiveHost : undefined,

@@ -19,8 +19,9 @@ import BotIcon from '../BotIcon'
 import CollapsedMosaic from './CollapsedMosaic'
 import { cx } from '~/utils'
 import { useEnabledBots } from '~app/hooks/use-enabled-bots'
-import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom } from '~app/state'
+import { releaseNotesAtom, showDiscountModalAtom, sidebarCollapsedAtom, sidebarDisplayModeAtom, companyProfileModalAtom, detectedCompanyAtom, systemPromptUpdateAtom } from '~app/state'
 import { checkReleaseNotes, getAllReleaseNotes } from '~services/release-notes'
+import { checkSystemPromptUpdate } from '~services/system-prompt-version'
 import * as api from '~services/server-api'
 import {
   getAppOpenTimes,
@@ -32,6 +33,7 @@ import {
 import GuideModal from '../GuideModal'
 import ThemeSettingModal from '../ThemeSettingModal'
 import AddressBarModal from '../Modals/AddressBarModal'
+import SystemPromptUpdateModal from '../Modals/SystemPromptUpdateModal'
 import Tooltip from '../Tooltip'
 import NavLink from './NavLink'
 import PremiumEntry from './PremiumEntry'
@@ -71,6 +73,7 @@ function Sidebar() {
   const setReleaseNotes = useSetAtom(releaseNotesAtom)
   const setCompanyProfileModal = useSetAtom(companyProfileModalAtom)
   const setDetectedCompany = useSetAtom(detectedCompanyAtom)
+  const [systemPromptUpdate, setSystemPromptUpdate] = useAtom(systemPromptUpdateAtom)
   // ボットの情報を保持するための状態（インデックスベース）
   const [botNames, setBotNames] = useState<Record<number, string>>({})
   const [botShortNames, setBotShortNames] = useState<Record<number, string>>({})
@@ -380,7 +383,18 @@ useEffect(() => {
         console.error('Error checking company environment:', error)
       }
 
-      // 2. Release Notes Check (Second priority)
+      // 1.5. System Prompt Update Check (Before release notes)
+      try {
+        const needsSystemPromptUpdate = await checkSystemPromptUpdate();
+        if (needsSystemPromptUpdate) {
+          setSystemPromptUpdate(true);
+          return; // Stop further checks
+        }
+      } catch (error) {
+        console.error('Error checking system prompt update:', error)
+      }
+
+      // 2. Release Notes Check (Third priority)
       const releaseNotes = await checkReleaseNotes();
       if (releaseNotes && releaseNotes.length > 0) {
         setReleaseNotes(releaseNotes);
@@ -764,10 +778,14 @@ useEffect(() => {
       </div>
       <GuideModal />
       <ThemeSettingModal open={themeSettingModalOpen} onClose={() => setThemeSettingModalOpen(false)} />
-      <AddressBarModal 
-        open={addressBarModalOpen} 
-        onClose={handleAddressBarModalClose} 
-        onDontShowAgain={handleAddressBarModalDontShowAgain} 
+      <AddressBarModal
+        open={addressBarModalOpen}
+        onClose={handleAddressBarModalClose}
+        onDontShowAgain={handleAddressBarModalDontShowAgain}
+      />
+      <SystemPromptUpdateModal
+        open={systemPromptUpdate}
+        onClose={() => setSystemPromptUpdate(false)}
       />
     </motion.aside>
     </>

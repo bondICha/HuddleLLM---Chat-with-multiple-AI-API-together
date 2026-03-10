@@ -8,6 +8,8 @@ import { setConversationMessages, loadHistoryMessages } from '~services/chat-his
 import { ChatMessageModel, FetchedUrlContent } from '~types'
 import { uuid } from '~utils'
 import { ChatError } from '~utils/errors'
+import toast from 'react-hot-toast'
+import i18n from '~app/i18n'
 
 export function useChat(index: number) {
   console.log(`useChat called with index:`, index, `(type: ${typeof index})`);
@@ -41,7 +43,7 @@ export function useChat(index: number) {
   )
 
   const sendMessage = useCallback(
-    async (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[]) => {
+    async (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], pdfFiles?: File[]) => {
       // URL処理
       const urlPattern = /@(https?:\/\/[^\s]+)/g
       const matches = [...input.matchAll(urlPattern)]
@@ -155,6 +157,7 @@ export function useChat(index: number) {
             images,
             attachments: attachments && attachments.length ? attachments : undefined,
             audioFiles: audioFiles && audioFiles.length ? audioFiles : undefined,
+            pdfFiles: pdfFiles && pdfFiles.length ? pdfFiles : undefined,
             author: 'user',
             fetchedUrls: fetchedUrls.length > 0 ? fetchedUrls : undefined
           },
@@ -205,10 +208,17 @@ export function useChat(index: number) {
         compressedImages = await Promise.all(images.map(compressImageFile))
       }
 
+      const supportsPdf = chatState.bot.supportsPdfInput
+      if (pdfFiles && pdfFiles.length > 0 && !supportsPdf) {
+        toast(i18n.t('pdf_not_supported_provider'), { duration: 5000 })
+      }
+      const effectivePdfFiles = supportsPdf ? pdfFiles : undefined
+
       const resp = chatState.bot.sendMessage({
         prompt: finalMessage,
         images: compressedImages,
         audioFiles: audioFiles,
+        pdfFiles: effectivePdfFiles,
         signal: abortController.signal,
       });
 

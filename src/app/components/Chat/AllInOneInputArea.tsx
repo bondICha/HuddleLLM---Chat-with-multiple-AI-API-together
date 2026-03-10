@@ -13,7 +13,7 @@ interface Props {
   supportImageInput?: boolean
   hasUserResized: boolean
   onLayoutChange: (layout: Layout) => void
-  onSubmit: (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[]) => void
+  onSubmit: (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], pdfFiles?: File[]) => void
   onHeightChange: (height: number) => void
 }
 

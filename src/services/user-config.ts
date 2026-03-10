@@ -56,7 +56,7 @@ const userConfigWithDefaultValue = {
   providerConfigs: [] as ProviderConfig[], // API Provider設定
   customApiKey: '',
   customApiHost: '',
-  commonSystemMessage: DEFAULT_SYSTEM_MESSAGE,
+  commonSystemMessage: DEFAULT_SYSTEM_MESSAGE as string,
   isCustomApiHostFullPath: false, // デフォルト値を設定
   savedChatPairs: [] as ChatPair[], // 保存されたチャットペア
   fontType: FontType.SERIF, // フォントタイプ（デフォルト: Sans-serif）
@@ -137,9 +137,6 @@ export async function getUserConfig(): Promise<UserConfig> {
     
     if (finalConfig.customApiConfigs) {
       finalConfig.customApiConfigs.forEach((config: CustomApiConfig) => {
-        if (config.provider === undefined) {
-          config.provider = CustomApiProvider.OpenAI;
-        }
         if (config.isHostFullPath === undefined) {
           config.isHostFullPath = false; // マイグレーション: 既存設定にデフォルト値を設定
         }
@@ -409,6 +406,7 @@ export async function resetFlags(): Promise<void> {
       'premiumModalOpenTimes',
       'hasUsedOmniboxSearch',
       'lastCheckReleaseNotesVersion',
+      'lastSystemPromptVersion',
       'showSessionRestore',
       'startupPage',
       'fontType',

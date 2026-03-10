@@ -43,6 +43,7 @@ export interface MessageParams {
   rawUserInput?: string
   images?: File[]
   audioFiles?: File[]
+  pdfFiles?: File[]
   signal?: AbortSignal
 }
 
@@ -55,9 +56,23 @@ export interface ConversationHistory {
   messages: any[];  // 各ボットの実装に合わせて型を定義
 }
 
+/** Temporary per-session overrides for the quick settings balloon */
+export interface TempChatOverrides {
+  temperature?: number;
+  thinkingBudget?: number;
+  thinkingLevel?: 'low' | 'high';
+  reasoningEffort?: 'none' | 'low' | 'medium' | 'high';
+  geminiImageConfig?: {
+    aspectRatio?: string;
+    imageSize?: string;
+  };
+}
+
 export abstract class AbstractBot {
   // 思考パーサーインスタンス
   private thinkingParser = new ThinkingParser();
+
+  get supportsPdfInput(): boolean { return false }
 
   public sendMessage(params: MessageParams): AsyncGenerator<AnwserPayload> {
     return this.doSendMessageGenerator(params);
@@ -171,6 +186,7 @@ export abstract class AbstractBot {
           rawUserInput: params.rawUserInput,
           images: params.images,
           audioFiles: params.audioFiles,
+          pdfFiles: params.pdfFiles,
           signal: params.signal,
           onEvent(event) {
             if (event.type === 'UPDATE_ANSWER') {
@@ -355,6 +371,10 @@ export abstract class AsyncAbstractBot extends AbstractBot {
     return this.#bot.supportsAudioInput
   }
 
+  get supportsPdfInput() {
+    return this.#bot.supportsPdfInput
+  }
+
   // System message setter for dynamic updates
   async setSystemMessage(systemMessage: string) {
     // Wait for initialization to complete
@@ -397,6 +417,17 @@ export abstract class AsyncAbstractBot extends AbstractBot {
 
     if (!(this.#bot instanceof DummyBot) && typeof (this.#bot as any).setTools === 'function') {
       (this.#bot as any).setTools(tools)
+    }
+  }
+
+  async setTemporaryOverrides(overrides: TempChatOverrides) {
+    // Wait for initialization to complete
+    while (this.#bot instanceof DummyBot && !this.#initializeError) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    if (!(this.#bot instanceof DummyBot) && typeof (this.#bot as any).setTemporaryOverrides === 'function') {
+      (this.#bot as any).setTemporaryOverrides(overrides)
     }
   }
 }
