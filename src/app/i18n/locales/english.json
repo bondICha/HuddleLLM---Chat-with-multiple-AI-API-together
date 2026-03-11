@@ -528,6 +528,5 @@
   "Previous System Prompt Backup": "Previous System Prompt Backup",
   "This is your system prompt before the last update. You can copy and restore it manually if needed.": "This is your system prompt before the last update. You can copy and restore it manually if needed.",
   "No backup found. Backups are created when you update your system prompt.": "No backup found. Backups are created when you update your system prompt.",
-  "image_agent_history_note": "Generated images are not carried over to the next conversation. To continue editing based on a generated image, manually re-upload it as input.",
-  "Note": "Note"
+  "image_agent_history_note": "Generated images are not carried over to the next conversation. To continue editing based on a generated image, manually re-upload it as input."
 }

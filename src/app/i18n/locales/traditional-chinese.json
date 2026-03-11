@@ -493,6 +493,5 @@
   "Previous System Prompt Backup": "之前的系統提示詞備份",
   "This is your system prompt before the last update. You can copy and restore it manually if needed.": "這是您上次更新前的系統提示詞。如需要，您可以手動複製並恢復。",
   "No backup found. Backups are created when you update your system prompt.": "未找到備份。更新系統提示詞時會建立備份。",
-  "image_agent_history_note": "生成的影像不會傳遞到下一次對話中。如需繼續編輯，請手動重新上傳輸出影像。",
-  "Note": "注意"
+  "image_agent_history_note": "生成的影像不會傳遞到下一次對話中。如需繼續編輯，請手動重新上傳輸出影像。"
 }

@@ -537,6 +537,5 @@
   "Previous System Prompt Backup": "以前のシステムプロンプトバックアップ",
   "This is your system prompt before the last update. You can copy and restore it manually if needed.": "これは前回の更新前のシステムプロンプトです。必要に応じて手動でコピーして復元できます。",
   "No backup found. Backups are created when you update your system prompt.": "バックアップが見つかりません。バックアップはシステムプロンプトを更新すると作成されます。",
-  "image_agent_history_note": "生成された画像は次の会話に引き継がれません。編集を続ける場合は、出力画像を手動で再アップロードしてください。",
-  "Note": "注意"
+  "image_agent_history_note": "生成された画像は次の会話に引き継がれません。編集を続ける場合は、出力画像を手動で再アップロードしてください。"
 }

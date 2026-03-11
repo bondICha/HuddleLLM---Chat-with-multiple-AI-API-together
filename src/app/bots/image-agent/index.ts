@@ -251,10 +251,10 @@ export class ImageAgentBot extends AbstractBot {
                     const fileName = userImages[index]?.name || `Input Image ${index + 1}`
                     return { image_url: `[${fileName}]` }
                   })
-                } else if (fieldName === 'image' && typeof fieldValue === 'string') {
+                } else if (inputFormat === 'base64-string' && typeof fieldValue === 'string') {
                   // Single base64 string (Qwen)
                   const fileName = userImages[0]?.name || 'Input Image'
-                  displayBody.image = `[${fileName}]`
+                  displayBody[fieldName] = `[${fileName}]`
                 } else if (Array.isArray(fieldValue)) {
                   // Array of base64 strings (Seedream)
                   displayBody[fieldName] = fieldValue.map((_: any, index: number) => {
