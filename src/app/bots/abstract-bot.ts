@@ -66,6 +66,8 @@ export interface TempChatOverrides {
     aspectRatio?: string;
     imageSize?: string;
   };
+  /** Dynamic image tool parameters from tool definition schema */
+  imageToolParams?: Record<string, any>;
 }
 
 export abstract class AbstractBot {

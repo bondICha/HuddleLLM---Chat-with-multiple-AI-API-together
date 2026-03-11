@@ -84,8 +84,24 @@ async function generateImageSync(
     // Handle JSON response (Seedream pattern)
     const jsonResponse = await resp.json()
 
-    // Extract image URL from JSON response
+    // Extract image from JSON response
     // Handle different response formats
+
+    // OpenAI Images API: { data: [{ b64_json: "..." }] }
+    const b64Json = jsonResponse.data?.[0]?.b64_json
+    if (b64Json) {
+      const fmt = jsonResponse.data[0].output_format || 'png'
+      const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png'
+      return `data:${mime};base64,${b64Json}`
+    }
+
+    // OpenAI Images API: { data: [{ url: "..." }] }
+    const dataUrl = jsonResponse.data?.[0]?.url
+    if (dataUrl) {
+      return dataUrl
+    }
+
+    // Seedream/Novita: { images: [{ image_url: "..." }] }
     let imageUrl = jsonResponse.images?.[0]?.image_url
     if (!imageUrl && Array.isArray(jsonResponse.images) && typeof jsonResponse.images[0] === 'string') {
       imageUrl = jsonResponse.images[0]
@@ -96,7 +112,7 @@ async function generateImageSync(
 
     if (!imageUrl) {
       throw new ChatError(
-        'No image URL in JSON response',
+        'No image data in JSON response',
         ErrorCode.UNKOWN_ERROR,
         JSON.stringify(jsonResponse)
       )

@@ -488,5 +488,6 @@
   "View previous backup prompt": "查看之前的备份提示词",
   "Previous System Prompt Backup": "之前的系统提示词备份",
   "This is your system prompt before the last update. You can copy and restore it manually if needed.": "这是您上次更新前的系统提示词。如需要，您可以手动复制并恢复。",
-  "No backup found. Backups are created when you update your system prompt.": "未找到备份。更新系统提示词时会创建备份。"
+  "No backup found. Backups are created when you update your system prompt.": "未找到备份。更新系统提示词时会创建备份。",
+  "image_agent_history_note": "生成的图像不会传递到下一次对话中。如需继续编辑，请手动重新上传输出图像。"
 }
