@@ -127,6 +127,14 @@ export function convertClaudeToolToGemini(claudeTool: ToolDefinition): any {
 }
 
 /**
+ * Image input format for different API providers
+ */
+export type ImageInputFormat =
+  | 'base64-string'      // Single base64 string (e.g., Novita Qwen)
+  | 'base64-array'       // Array of base64 strings (e.g., Novita Seedream)
+  | 'openai-image-url'   // Array of { image_url: "data:..." } objects (e.g., OpenAI GPT Image)
+
+/**
  * Configuration for API processing
  * Separated from Tool Call (JSON definition passed to LLM)
  */
@@ -137,8 +145,10 @@ export interface ImageApiConfig {
   isAsync: boolean
   /** Whether this model supports image editing (img2img) */
   supportsEdit: boolean
-  /** When set, user-provided images are automatically injected into this request field as base64 strings */
+  /** When set, user-provided images are automatically injected into this request field */
   imageInputField?: string
+  /** Format for encoding images (defaults to 'base64-string' for backward compatibility) */
+  imageInputFormat?: ImageInputFormat
 }
 
 /**
@@ -355,28 +365,29 @@ export const MODEL_NOVITA_SEEDREAM: ImageModelConfig = {
     isAsync: false, // ✨ Seedream 4.0 is synchronous
     supportsEdit: true,
     imageInputField: 'images',
+    imageInputFormat: 'base64-array',
   },
 }
 
 /**
  * 5. OpenAI GPT Image (gpt-image-1, gpt-image-1-mini, gpt-image-1.5)
- * API: POST /v1/images/generations (sync, returns JSON with b64_json)
- * Edit: POST /v1/images/edits (multipart/form-data - not yet supported in Image Agent)
+ * API: POST /v1/images/generations (txt2img, sync, returns JSON with b64_json)
+ * Edit: POST /v1/images/edits (img2img, JSON with images[].image_url for base64)
  */
 export const MODEL_OPENAI_GPT_IMAGE: ImageModelConfig = {
   toolDefinition: {
     name: 'generate_image',
-    description: 'Generate an image using OpenAI GPT Image model. Creates high-quality images from text descriptions with excellent instruction following and text rendering.',
+    description: 'Generate or edit an image using OpenAI GPT Image model. When the user provides images, it will automatically switch to edit mode. Creates high-quality images from text descriptions with excellent instruction following and text rendering.',
     input_schema: {
       type: 'object',
       properties: {
         prompt: {
           type: 'string',
-          description: 'A detailed description of the image to generate. Be specific about subjects, style, composition, and text to render.',
+          description: 'A detailed description of the image to generate. Be specific about subjects, style, composition, and text to render. Max 32,000 characters.',
         },
         size: {
           type: 'string',
-          description: 'Image dimensions.',
+          description: 'Image dimensions. NOTE: This parameter is IGNORED in edit mode (when user provides images).',
           enum: ['1024x1024', '1024x1536', '1536x1024', 'auto'],
           default: '1024x1024',
         },
@@ -403,20 +414,23 @@ export const MODEL_OPENAI_GPT_IMAGE: ImageModelConfig = {
     },
   },
   apiConfig: {
-    endpoint: (_hasImages: boolean, baseHost: string) => {
+    endpoint: (hasImages: boolean, baseHost: string) => {
       const cleanHost = baseHost.replace(/\/$/, '')
       // Avoid duplicating /v1 if already present
       let endpoint: string
       if (cleanHost.endsWith('/v1')) {
-        endpoint = `${cleanHost.slice(0, -3)}/v1/images/generations`
+        const base = cleanHost.slice(0, -3)
+        endpoint = hasImages ? `${base}/v1/images/edits` : `${base}/v1/images/generations`
       } else {
-        endpoint = `${cleanHost}/v1/images/generations`
+        endpoint = hasImages ? `${cleanHost}/v1/images/edits` : `${cleanHost}/v1/images/generations`
       }
       // Clean up any v1/v1 issues
       return endpoint.replace(/\/v1\/v1\//g, '/v1/')
     },
     isAsync: false,
-    supportsEdit: false, // Edit uses multipart/form-data, not yet supported
+    supportsEdit: true,
+    imageInputField: 'images',
+    imageInputFormat: 'openai-image-url',
   },
 }
 

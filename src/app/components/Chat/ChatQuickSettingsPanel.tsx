@@ -1,7 +1,8 @@
-import { FC, useEffect, useRef, useState } from 'react'
+import { FC, useEffect, useRef, useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CustomApiProvider } from '~services/user-config'
 import { TempChatOverrides } from '~app/bots/abstract-bot'
+import { getDefaultImageModel } from '~services/image-tool-definitions'
 import type { CustomApiConfig } from '~services/user-config'
 import type { ProviderConfig } from '~services/user-config/types/provider'
 
@@ -45,6 +46,43 @@ const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, current
   const isGeminiImageModel = isGemini && modelName.toLowerCase().includes('image')
   const isGemini3Image = isGeminiImageModel && modelName.includes('gemini-3')
 
+  // Detect Image Agent and extract tool schema properties
+  const isImageAgent = botConfig?.agenticImageBotSettings?.imageGeneratorProviderId != null
+
+  // Extract enum properties from image tool definition
+  const imageToolEnumProperties = useMemo(() => {
+    if (!isImageAgent || !modelName) return []
+    try {
+      const agenticSettings = botConfig?.agenticImageBotSettings
+      const imageProviderRef = agenticSettings?.imageGeneratorProviderId
+        ? (providerConfigs.find(p => p.id === agenticSettings.imageGeneratorProviderId))
+        : undefined
+      const imageProvider = imageProviderRef?.provider
+      const imageModelConfig = getDefaultImageModel(modelName, imageProvider)
+
+      // Use custom tool definition if provided
+      const toolDefinition = botConfig?.toolDefinition || imageModelConfig.toolDefinition
+      const properties = toolDefinition?.input_schema?.properties || {}
+
+      // Extract properties with enum (excluding prompt)
+      return Object.entries(properties)
+        .filter(([key, prop]: [string, any]) =>
+          key !== 'prompt' &&
+          prop &&
+          Array.isArray(prop.enum) &&
+          prop.enum.length > 0
+        )
+        .map(([key, prop]: [string, any]) => ({
+          key,
+          enum: prop.enum as string[],
+          default: prop.default as string | undefined,
+          description: prop.description as string | undefined,
+        }))
+    } catch {
+      return []
+    }
+  }, [isImageAgent, modelName, botConfig, providerConfigs])
+
   const showThinkingBudget = thinkingMode && (isGemini && modelName.includes('gemini-2') || isAnthropic)
   const showThinkingLevel = thinkingMode && isGemini && !modelName.includes('gemini-2')
   const showReasoningEffort = thinkingMode && (isOpenAI || isOpenRouter || isOpenAIResponses)
@@ -59,6 +97,17 @@ const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, current
   )
   const [aspectRatio, setAspectRatio] = useState<string>(currentOverrides.geminiImageConfig?.aspectRatio ?? botConfig?.geminiImageConfig?.aspectRatio ?? '')
   const [imageSize, setImageSize] = useState<string>(currentOverrides.geminiImageConfig?.imageSize ?? botConfig?.geminiImageConfig?.imageSize ?? '1K')
+
+  // Dynamic image tool parameters state
+  const [imageToolParams, setImageToolParams] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {}
+    // Initialize from current overrides or use defaults from schema
+    const existingParams = currentOverrides.imageToolParams || {}
+    imageToolEnumProperties.forEach(prop => {
+      initial[prop.key] = existingParams[prop.key] ?? prop.default ?? prop.enum[0]
+    })
+    return initial
+  })
 
   // Close on outside click
   useEffect(() => {
@@ -87,6 +136,7 @@ const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, current
     effort: 'none' | 'low' | 'medium' | 'high',
     ar: string,
     iSize: string,
+    toolParams?: Record<string, string>,
   ) => {
     const overrides: TempChatOverrides = {}
     if (showTemperature) overrides.temperature = temp
@@ -97,32 +147,40 @@ const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, current
       overrides.geminiImageConfig = { aspectRatio: ar }
       if (isGemini3Image) overrides.geminiImageConfig.imageSize = iSize
     }
+    if (isImageAgent && toolParams && Object.keys(toolParams).length > 0) {
+      overrides.imageToolParams = toolParams
+    }
     onOverridesChange(overrides)
   }
 
   const handleTemperatureChange = (v: number) => {
     setTemperature(v)
-    buildAndEmitOverrides(v, thinkingBudget, thinkingLevel, reasoningEffort, aspectRatio, imageSize)
+    buildAndEmitOverrides(v, thinkingBudget, thinkingLevel, reasoningEffort, aspectRatio, imageSize, imageToolParams)
   }
   const handleThinkingBudgetChange = (v: number) => {
     setThinkingBudget(v)
-    buildAndEmitOverrides(temperature, v, thinkingLevel, reasoningEffort, aspectRatio, imageSize)
+    buildAndEmitOverrides(temperature, v, thinkingLevel, reasoningEffort, aspectRatio, imageSize, imageToolParams)
   }
   const handleThinkingLevelChange = (v: 'low' | 'high') => {
     setThinkingLevel(v)
-    buildAndEmitOverrides(temperature, thinkingBudget, v, reasoningEffort, aspectRatio, imageSize)
+    buildAndEmitOverrides(temperature, thinkingBudget, v, reasoningEffort, aspectRatio, imageSize, imageToolParams)
   }
   const handleReasoningEffortChange = (v: 'none' | 'low' | 'medium' | 'high') => {
     setReasoningEffort(v)
-    buildAndEmitOverrides(temperature, thinkingBudget, thinkingLevel, v, aspectRatio, imageSize)
+    buildAndEmitOverrides(temperature, thinkingBudget, thinkingLevel, v, aspectRatio, imageSize, imageToolParams)
   }
   const handleAspectRatioChange = (v: string) => {
     setAspectRatio(v)
-    buildAndEmitOverrides(temperature, thinkingBudget, thinkingLevel, reasoningEffort, v, imageSize)
+    buildAndEmitOverrides(temperature, thinkingBudget, thinkingLevel, reasoningEffort, v, imageSize, imageToolParams)
   }
   const handleImageSizeChange = (v: string) => {
     setImageSize(v)
-    buildAndEmitOverrides(temperature, thinkingBudget, thinkingLevel, reasoningEffort, aspectRatio, v)
+    buildAndEmitOverrides(temperature, thinkingBudget, thinkingLevel, reasoningEffort, aspectRatio, v, imageToolParams)
+  }
+  const handleImageToolParamChange = (key: string, value: string) => {
+    const newParams = { ...imageToolParams, [key]: value }
+    setImageToolParams(newParams)
+    buildAndEmitOverrides(temperature, thinkingBudget, thinkingLevel, reasoningEffort, aspectRatio, imageSize, newParams)
   }
 
   const labelClass = 'text-xs font-medium opacity-70 mb-1'
@@ -265,6 +323,35 @@ const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, current
               </div>
             </div>
           )}
+        </>
+      )}
+
+      {/* Dynamic Image Tool Parameters (Image Agent) */}
+      {isImageAgent && imageToolEnumProperties.length > 0 && (
+        <>
+          {(showTemperature || showThinkingBudget || showThinkingLevel || showReasoningEffort || isGeminiImageModel) && (
+            <div className={dividerClass} />
+          )}
+          {imageToolEnumProperties.map((prop) => (
+            <div key={prop.key} className={sectionClass}>
+              <div className={labelClass}>{prop.key}</div>
+              <div className="flex gap-1 flex-wrap">
+                {prop.enum.map((value) => (
+                  <button
+                    key={value}
+                    onClick={() => handleImageToolParamChange(prop.key, value)}
+                    className={`text-xs py-1 px-2 rounded-md border transition-colors ${
+                      imageToolParams[prop.key] === value
+                        ? 'border-primary-blue bg-primary-blue text-white'
+                        : 'border-primary-border hover:border-primary-blue'
+                    }`}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </>
       )}
 

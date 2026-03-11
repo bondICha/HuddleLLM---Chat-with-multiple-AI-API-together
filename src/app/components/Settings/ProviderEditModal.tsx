@@ -135,6 +135,7 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
                   CustomApiProvider.ChutesAI,
                   CustomApiProvider.NovitaAI,
                   CustomApiProvider.Replicate,
+                  CustomApiProvider.OpenAI_Image,
                 ].includes(opt.value);
 
                 const isImageAgent = opt.value === CustomApiProvider.ImageAgent;
