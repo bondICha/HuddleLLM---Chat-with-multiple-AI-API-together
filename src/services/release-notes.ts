@@ -6,6 +6,13 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.15.2',
+    notes: [
+      'releasenote_v2152_novita_models',
+      'releasenote_v2152_quick_settings',
+    ],
+  },
+  {
     version: '2.15.0',
     notes: [
       'releasenote_v2150_pdf_support',

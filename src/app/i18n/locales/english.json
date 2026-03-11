@@ -508,6 +508,8 @@
   "low": "Low",
   "medium": "Medium",
   "high": "High",
+  "releasenote_v2152_novita_models": "Added GLM Image and Seedream 5.0 lite to Novita AI image models.",
+  "releasenote_v2152_quick_settings": "Image Agent parameters (size, quality, watermark, etc.) are now adjustable from the Quick Settings panel.",
   "releasenote_v2150_pdf_support": "## PDF File Support\n- Attach PDFs in chat via the file button or drag & drop.\n- Sent directly to the official APIs of Gemini, Claude, and OpenAI. OpenRouter and other providers are not supported.",
   "releasenote_v2150_quick_settings_panel": "## Quick Settings Panel\n![Quick Settings Panel](/release_note_assets/QuickSetting_Button.png)\n- Open the new floating panel from the slider icon in the chat toolbar.\n- Temporarily adjust session-only options without changing your saved settings.\n- Changes reset when you reload the page.",
   "releasenote_v2150_gemini_image_improvements": "## Gemini Image Improvements\n- Fixed an issue where inline images were only captured from the first streaming chunk; images are now collected correctly from all chunks.",

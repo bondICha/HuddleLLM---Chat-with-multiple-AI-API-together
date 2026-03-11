@@ -469,6 +469,8 @@
   "low": "低",
   "medium": "中",
   "high": "高",
+  "releasenote_v2152_novita_models": "Novita AI 图像模型新增 GLM Image 和 Seedream 5.0 lite。",
+  "releasenote_v2152_quick_settings": "Image Agent 的参数（尺寸、质量、水印等）现可在快捷设置面板中调整。",
   "releasenote_v2150_pdf_support": "## PDF 文件支持\n- 通过文件按钮或拖放直接在聊天中附加 PDF 文件。\n- 直接传递给 Gemini、Claude 和 OpenAI 的官方 API。OpenRouter 及其他提供商不支持。",
   "releasenote_v2150_quick_settings_panel": "## 快速设置面板\n![快速设置面板](/release_note_assets/QuickSetting_Button.png)\n- 点击聊天工具栏中的滑块图标即可打开全新的悬浮面板。\n- 可在不改动已保存设置的前提下，仅对当前会话临时调整选项。\n- 页面刷新后，临时修改将自动重置。",
   "releasenote_v2150_gemini_image_improvements": "## Gemini 图片改进\n- 修复了流式传输时内联图片不在首个分片中会导致丢失的问题，现可从完整的流式响应中正确解析图片。",
