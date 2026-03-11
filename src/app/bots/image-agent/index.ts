@@ -198,7 +198,15 @@ export class ImageAgentBot extends AbstractBot {
 
               // Apply temporary overrides for image tool parameters (from quick settings)
               if (this.tempOverrides?.imageToolParams) {
-                Object.assign(apiBody, this.tempOverrides.imageToolParams)
+                const toolProps = imageModelConfig.toolDefinition.input_schema?.properties || {}
+                for (const [k, v] of Object.entries(this.tempOverrides.imageToolParams)) {
+                  // Convert string "true"/"false" back to boolean when schema expects boolean
+                  if (toolProps[k]?.type === 'boolean') {
+                    apiBody[k] = v === 'true'
+                  } else {
+                    apiBody[k] = v
+                  }
+                }
               }
 
               // Auto inject user images into the expected field when supported

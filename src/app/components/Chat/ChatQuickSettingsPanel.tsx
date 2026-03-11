@@ -49,8 +49,8 @@ const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, current
   // Detect Image Agent and extract tool schema properties
   const isImageAgent = botConfig?.agenticImageBotSettings?.imageGeneratorProviderId != null
 
-  // Extract enum properties from image tool definition
-  const imageToolEnumProperties = useMemo(() => {
+  // Extract settable properties from image tool definition (enum + boolean)
+  const imageToolSettableProperties = useMemo(() => {
     if (!isImageAgent || !modelName) return []
     try {
       const agenticSettings = botConfig?.agenticImageBotSettings
@@ -64,18 +64,19 @@ const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, current
       const toolDefinition = botConfig?.toolDefinition || imageModelConfig.toolDefinition
       const properties = toolDefinition?.input_schema?.properties || {}
 
-      // Extract properties with enum (excluding prompt)
+      // Extract properties with enum or boolean type (excluding prompt)
       return Object.entries(properties)
-        .filter(([key, prop]: [string, any]) =>
-          key !== 'prompt' &&
-          prop &&
-          Array.isArray(prop.enum) &&
-          prop.enum.length > 0
-        )
+        .filter(([key, prop]: [string, any]) => {
+          if (key === 'prompt' || !prop) return false
+          if (Array.isArray(prop.enum) && prop.enum.length > 0) return true
+          if (prop.type === 'boolean') return true
+          return false
+        })
         .map(([key, prop]: [string, any]) => ({
           key,
-          enum: prop.enum as string[],
-          default: prop.default as string | undefined,
+          type: prop.type as string,
+          enum: prop.type === 'boolean' ? ['true', 'false'] : (prop.enum as string[]),
+          default: prop.type === 'boolean' ? String(prop.default ?? false) : (prop.default as string | undefined),
           description: prop.description as string | undefined,
         }))
     } catch {
@@ -99,12 +100,13 @@ const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, current
   const [imageSize, setImageSize] = useState<string>(currentOverrides.geminiImageConfig?.imageSize ?? botConfig?.geminiImageConfig?.imageSize ?? '1K')
 
   // Dynamic image tool parameters state
+  // UNSET_VALUE = let agent decide (do not include in overrides)
+  const UNSET_VALUE = '__unset__'
   const [imageToolParams, setImageToolParams] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {}
-    // Initialize from current overrides or use defaults from schema
     const existingParams = currentOverrides.imageToolParams || {}
-    imageToolEnumProperties.forEach(prop => {
-      initial[prop.key] = existingParams[prop.key] ?? prop.default ?? prop.enum[0]
+    imageToolSettableProperties.forEach(prop => {
+      initial[prop.key] = existingParams[prop.key] ?? UNSET_VALUE
     })
     return initial
   })
@@ -147,8 +149,15 @@ const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, current
       overrides.geminiImageConfig = { aspectRatio: ar }
       if (isGemini3Image) overrides.geminiImageConfig.imageSize = iSize
     }
-    if (isImageAgent && toolParams && Object.keys(toolParams).length > 0) {
-      overrides.imageToolParams = toolParams
+    if (isImageAgent && toolParams) {
+      // Only include params that are not __unset__ (agent decides)
+      const effective: Record<string, string> = {}
+      for (const [k, v] of Object.entries(toolParams)) {
+        if (v !== '__unset__') effective[k] = v
+      }
+      if (Object.keys(effective).length > 0) {
+        overrides.imageToolParams = effective
+      }
     }
     onOverridesChange(overrides)
   }
@@ -327,15 +336,25 @@ const ChatQuickSettingsPanel: FC<Props> = ({ botConfig, providerConfigs, current
       )}
 
       {/* Dynamic Image Tool Parameters (Image Agent) */}
-      {isImageAgent && imageToolEnumProperties.length > 0 && (
+      {isImageAgent && imageToolSettableProperties.length > 0 && (
         <>
           {(showTemperature || showThinkingBudget || showThinkingLevel || showReasoningEffort || isGeminiImageModel) && (
             <div className={dividerClass} />
           )}
-          {imageToolEnumProperties.map((prop) => (
+          {imageToolSettableProperties.map((prop) => (
             <div key={prop.key} className={sectionClass}>
               <div className={labelClass}>{prop.key}</div>
               <div className="flex gap-1 flex-wrap">
+                <button
+                  onClick={() => handleImageToolParamChange(prop.key, UNSET_VALUE)}
+                  className={`text-xs py-1 px-2 rounded-md border transition-colors italic ${
+                    imageToolParams[prop.key] === UNSET_VALUE
+                      ? 'border-primary-blue bg-primary-blue text-white'
+                      : 'border-primary-border hover:border-primary-blue opacity-60'
+                  }`}
+                >
+                  -
+                </button>
                 {prop.enum.map((value) => (
                   <button
                     key={value}

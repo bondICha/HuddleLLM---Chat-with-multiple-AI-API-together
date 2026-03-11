@@ -244,7 +244,8 @@ export const MODEL_NOVITA_QWEN: ImageModelConfig = {
         },
         size: {
           type: 'string',
-          description: 'Image resolution in format "WIDTH*HEIGHT". Range: 256*256 to 1536*1536. Available: "1536*864" (16:9), "1536*1152" (4:3), "1328*1328" (1:1), "1152*1536" (3:4), "864*1536" (9:16). NOTE: This parameter is IGNORED in edit mode (when user provides images).',
+          description: 'Image resolution in format "WIDTH*HEIGHT". NOTE: This parameter is IGNORED in edit mode (when user provides images).',
+          enum: ['1328*1328', '1536*864', '864*1536', '1536*1152', '1152*1536'],
           default: '1328*1328',
         },
         seed: {
@@ -293,7 +294,8 @@ export const MODEL_NOVITA_HUNYUAN: ImageModelConfig = {
         },
         size: {
           type: 'string',
-          description: 'Image size in format "WIDTH*HEIGHT" (e.g., "1024*1024"). Range: 256-1536 per dimension.',
+          description: 'Image size in format "WIDTH*HEIGHT".',
+          enum: ['1024*1024', '1536*864', '864*1536', '1536*1152', '1152*1536', '1536*1536'],
           default: '1024*1024',
         },
         seed: {
@@ -334,7 +336,8 @@ export const MODEL_NOVITA_SEEDREAM: ImageModelConfig = {
         },
         size: {
           type: 'string',
-          description: 'Image resolution. Use "1K", "2K", "4K" or "WIDTHxHEIGHT" format (e.g., "2048x2048"). Pixel range: 1024x1024 to 4096x4096, aspect ratio: 1/16 to 16.',
+          description: 'Image resolution.',
+          enum: ['2048x2048', '2048x1152', '1152x2048', '2732x1536', '1536x2732', '4096x4096'],
           default: '2048x2048',
         },
         sequential_image_generation: {
@@ -387,13 +390,13 @@ export const MODEL_NOVITA_GLM: ImageModelConfig = {
         },
         size: {
           type: 'string',
-          description: 'Image size in format "WIDTHxHEIGHT". Recommended: "1280x1280" (default), "1568x1056", "1056x1568", "1472x1088", "1088x1472", "1728x960", "960x1728". Custom: 1024-2048px per dimension, max 4194304 total pixels, multiples of 32.',
+          description: 'Image size in format "WIDTHxHEIGHT".',
+          enum: ['1280x1280', '1568x1056', '1056x1568', '1472x1088', '1088x1472', '1728x960', '960x1728', '2048x2048'],
           default: '1280x1280',
         },
         quality: {
           type: 'string',
           description: 'Image quality. HD produces finer details with higher consistency.',
-          enum: ['hd'],
           default: 'hd',
         },
         watermark_enabled: {
@@ -434,7 +437,8 @@ export const MODEL_NOVITA_SEEDREAM_5: ImageModelConfig = {
         },
         size: {
           type: 'string',
-          description: 'Image resolution. Use "2K", "3K" or "WIDTHxHEIGHT" format (e.g., "2048x2048"). Pixel range: 2560x1440 to ~3072x3072, aspect ratio: 1/16 to 16.',
+          description: 'Image resolution.',
+          enum: ['2048x2048', '2048x1152', '1152x2048', '2732x1536', '1536x2732', '3072x3072'],
           default: '2048x2048',
         },
         sequential_image_generation: {
@@ -450,7 +454,7 @@ export const MODEL_NOVITA_SEEDREAM_5: ImageModelConfig = {
         },
         watermark: {
           type: 'boolean',
-          description: 'Add watermark to generated images. Default is false.',
+          description: 'Add watermark to generated images.',
           default: false,
         },
       },
