@@ -68,12 +68,14 @@ export class ImageAgentBot extends AbstractBot {
         throw new ChatError('Image Provider not configured for Image Agent', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
       }
 
-      const imageApiKey = imageProviderRef.apiKey
+      const resolvedImageApiKey = (imageProviderRef.apiKey && imageProviderRef.apiKey.trim().length > 0)
+        ? imageProviderRef.apiKey
+        : (custom.apiKey || cfg.customApiKey || '')
       const imageHost = imageProviderRef.host
       const imageModel = custom.model
       const imageProvider = imageProviderRef.provider
 
-      if (!imageApiKey) {
+      if (!resolvedImageApiKey) {
         throw new ChatError('Image Provider API key not set', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
       }
 
@@ -313,7 +315,7 @@ export class ImageAgentBot extends AbstractBot {
               // Generate image using unified API client
               const imageUrl = await generateImage({
                 endpoint,
-                apiKey: imageApiKey,
+                apiKey: resolvedImageApiKey,
                 body: apiBody,
                 signal: params.signal,
                 isAsync: imageModelConfig.apiConfig.isAsync,
