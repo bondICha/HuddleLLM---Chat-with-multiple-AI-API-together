@@ -34,3 +34,19 @@ This application supports automatic company profile detection and template appli
 ## Template Data
 
 Define your API configurations directly in the `templateData` field of your company profile configuration.
+
+## Debugging: Chrome Storage Manipulation
+
+Use the following commands in the Chrome DevTools Console (Extension background page) to reset or manipulate the company profile state for testing.
+
+**Print current profile name and version:**
+```javascript
+chrome.storage.local.get(null, (all) => { const k = Object.keys(all).find(k => k.startsWith('companyProfile_')); console.log(k, all[k]?.companyName, all[k]?.version) })
+```
+
+**Trigger re-import (downgrade stored version):**
+```javascript
+chrome.storage.local.get(null, (all) => { const k = Object.keys(all).find(k => k.startsWith('companyProfile_')); chrome.storage.local.set({ [k]: { ...all[k], version: '2020.01.01' } }, () => console.log('done')) })
+```
+
+After running, reload the extension or open a new tab to trigger the detection flow.

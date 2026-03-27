@@ -9,6 +9,23 @@ import Select from '../Select';
 import { BiRefresh } from 'react-icons/bi';
 import ReplicateSettings from './ReplicateSettings';
 
+/** Fixed model lists per provider (single source of truth) */
+const PROVIDER_MODEL_LISTS: Record<string, { name: string; value: string }[]> = {
+  novita: [
+    { name: 'Qwen Image', value: 'qwen-image' },
+    { name: 'GLM Image', value: 'glm-image' },
+    { name: 'Hunyuan Image 3', value: 'hunyuan-image-3' },
+    { name: 'Seedream 4.0', value: 'seedream-4-0' },
+    { name: 'Seedream 5.0 lite', value: 'seedream-5-0-lite' },
+  ],
+};
+
+/** Detect provider key for model list lookup */
+function getProviderModelListKey(provider: ProviderConfig): string | null {
+  if (provider.provider === CustomApiProvider.NovitaAI || /novita/i.test(provider.host || '')) return 'novita';
+  return null;
+}
+
 interface Props {
   config: CustomApiConfig;
   index: number;
@@ -57,18 +74,11 @@ export const ImageAgentSettings: FC<Props> = ({
     const imageProvider = (userConfig.providerConfigs || []).find(
       p => p.id === config.agenticImageBotSettings?.imageGeneratorProviderId
     );
+    if (!imageProvider || config.model) return;
 
-    if (imageProvider) {
-      const isNovita = imageProvider.provider === CustomApiProvider.NovitaAI || /novita/i.test(imageProvider.host || '');
-
-      if (isNovita && !config.model) {
-        const novitaModels = [
-          { name: 'Qwen Image', value: 'qwen-image' },
-          { name: 'Hunyuan Image 3', value: 'hunyuan-image-3' },
-          { name: 'Seedream 4.0', value: 'seedream-4-0' },
-        ];
-        onUpdateConfig(index, { model: novitaModels[0].value });
-      }
+    const key = getProviderModelListKey(imageProvider);
+    if (key) {
+      onUpdateConfig(index, { model: PROVIDER_MODEL_LISTS[key][0].value });
     }
   }, [config.agenticImageBotSettings?.imageGeneratorProviderId, index, onUpdateConfig]);
 
@@ -76,26 +86,19 @@ export const ImageAgentSettings: FC<Props> = ({
     const imageProvider = (userConfig.providerConfigs || []).find(
       p => p.id === config.agenticImageBotSettings?.imageGeneratorProviderId
     );
-
     if (!imageProvider) return null;
 
-    const isNovita = imageProvider.provider === CustomApiProvider.NovitaAI || /novita/i.test(imageProvider.host || '');
     const isReplicate = imageProvider.provider === CustomApiProvider.Replicate || /replicate/i.test(imageProvider.host || '');
+    const modelListKey = getProviderModelListKey(imageProvider);
 
-    if (isNovita) {
-      // Novita: Fixed list only
-      const novitaModels = [
-        { name: 'Qwen Image', value: 'qwen-image' },
-        { name: 'Hunyuan Image 3', value: 'hunyuan-image-3' },
-        { name: 'Seedream 4.0', value: 'seedream-4-0' },
-      ];
-
+    if (modelListKey) {
+      const models = PROVIDER_MODEL_LISTS[modelListKey];
       return (
         <div className={formRowClass}>
           <p className={labelClass}>{t('Image Model')}</p>
           <Select
-            options={novitaModels}
-            value={config.model || novitaModels[0].value}
+            options={models}
+            value={config.model || models[0].value}
             onChange={(v) => onUpdateConfig(index, { model: v })}
           />
           <span className="text-xs opacity-70">{t('Select Novita model. Tool definition will be set automatically.')}</span>

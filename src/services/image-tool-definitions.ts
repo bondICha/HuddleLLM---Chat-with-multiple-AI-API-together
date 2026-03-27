@@ -127,6 +127,14 @@ export function convertClaudeToolToGemini(claudeTool: ToolDefinition): any {
 }
 
 /**
+ * Image input format for different API providers
+ */
+export type ImageInputFormat =
+  | 'base64-string'      // Single base64 string (e.g., Novita Qwen)
+  | 'base64-array'       // Array of base64 strings (e.g., Novita Seedream)
+  | 'openai-image-url'   // Array of { image_url: "data:..." } objects (e.g., OpenAI GPT Image)
+
+/**
  * Configuration for API processing
  * Separated from Tool Call (JSON definition passed to LLM)
  */
@@ -137,8 +145,10 @@ export interface ImageApiConfig {
   isAsync: boolean
   /** Whether this model supports image editing (img2img) */
   supportsEdit: boolean
-  /** When set, user-provided images are automatically injected into this request field as base64 strings */
+  /** When set, user-provided images are automatically injected into this request field */
   imageInputField?: string
+  /** Format for encoding images (defaults to 'base64-string' for backward compatibility) */
+  imageInputFormat?: ImageInputFormat
 }
 
 /**
@@ -234,7 +244,8 @@ export const MODEL_NOVITA_QWEN: ImageModelConfig = {
         },
         size: {
           type: 'string',
-          description: 'Image resolution in format "WIDTH*HEIGHT". Range: 256*256 to 1536*1536. Available: "1536*864" (16:9), "1536*1152" (4:3), "1328*1328" (1:1), "1152*1536" (3:4), "864*1536" (9:16). NOTE: This parameter is IGNORED in edit mode (when user provides images).',
+          description: 'Image resolution in format "WIDTH*HEIGHT". NOTE: This parameter is IGNORED in edit mode (when user provides images).',
+          enum: ['1328*1328', '1536*864', '864*1536', '1536*1152', '1152*1536'],
           default: '1328*1328',
         },
         seed: {
@@ -283,7 +294,8 @@ export const MODEL_NOVITA_HUNYUAN: ImageModelConfig = {
         },
         size: {
           type: 'string',
-          description: 'Image size in format "WIDTH*HEIGHT" (e.g., "1024*1024"). Range: 256-1536 per dimension.',
+          description: 'Image size in format "WIDTH*HEIGHT".',
+          enum: ['1024*1024', '1536*864', '864*1536', '1536*1152', '1152*1536', '1536*1536'],
           default: '1024*1024',
         },
         seed: {
@@ -324,7 +336,8 @@ export const MODEL_NOVITA_SEEDREAM: ImageModelConfig = {
         },
         size: {
           type: 'string',
-          description: 'Image resolution. Use "1K", "2K", "4K" or "WIDTHxHEIGHT" format (e.g., "2048x2048"). Pixel range: 1024x1024 to 4096x4096, aspect ratio: 1/16 to 16.',
+          description: 'Image resolution.',
+          enum: ['2048x2048', '2048x1152', '1152x2048', '2732x1536', '1536x2732', '4096x4096'],
           default: '2048x2048',
         },
         sequential_image_generation: {
@@ -355,11 +368,178 @@ export const MODEL_NOVITA_SEEDREAM: ImageModelConfig = {
     isAsync: false, // ✨ Seedream 4.0 is synchronous
     supportsEdit: true,
     imageInputField: 'images',
+    imageInputFormat: 'base64-array',
   },
 }
 
 /**
- * 5. Replicate - Generic / Seedream
+ * 5. Novita AI - GLM Image
+ * API: https://api.novita.ai/v3/async/glm-image (async)
+ * Edit support: No
+ */
+export const MODEL_NOVITA_GLM: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate an image using GLM Image model. Creates high-quality HD images with fine details and high consistency. Images provided by the user are not sent to the API, so incorporate any visual details into the prompt text.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Text description of the desired image. Describe the scene, subject, style, and details you want in the generated image.',
+        },
+        size: {
+          type: 'string',
+          description: 'Image size in format "WIDTHxHEIGHT".',
+          enum: ['1280x1280', '1568x1056', '1056x1568', '1472x1088', '1088x1472', '1728x960', '960x1728', '2048x2048'],
+          default: '1280x1280',
+        },
+        quality: {
+          type: 'string',
+          description: 'Image quality. HD produces finer details with higher consistency.',
+          default: 'hd',
+        },
+        watermark_enabled: {
+          type: 'boolean',
+          description: 'Whether to add AI watermark on generated images.',
+          default: false,
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    endpoint: (hasImages: boolean, baseHost: string) => {
+      const cleanHost = baseHost.replace(/\/$/, '')
+      return `${cleanHost}/v3/async/glm-image`
+    },
+    isAsync: true,
+    supportsEdit: false,
+  },
+}
+
+/**
+ * 6. Novita AI - Seedream 5.0 lite
+ * API: https://api.novita.ai/v3/seedream-5.0-lite (synchronous API)
+ * Edit support: Yes - same endpoint, image parameter optional
+ * Note: Higher resolution than Seedream 4.0. Supports prompt optimization and sequential generation.
+ */
+export const MODEL_NOVITA_SEEDREAM_5: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate or edit images using Seedream 5.0 lite model. Supports text-to-image, single/multi image-to-image, and sequential image generation. Any images attached by the user are automatically forwarded for editing or reference.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Detailed text description for image generation. Supports both Chinese and English. Recommended: under 300 Chinese characters or 600 English words.',
+        },
+        size: {
+          type: 'string',
+          description: 'Image resolution.',
+          enum: ['2048x2048', '2048x1152', '1152x2048', '2732x1536', '1536x2732', '3072x3072'],
+          default: '2048x2048',
+        },
+        sequential_image_generation: {
+          type: 'string',
+          description: 'Enable sequential generation mode. "auto" for automatic batch generation based on prompt, "disabled" for single image.',
+          enum: ['auto', 'disabled'],
+          default: 'disabled',
+        },
+        max_images: {
+          type: 'number',
+          description: 'Maximum number of images to generate (1-15). Only applies when sequential_image_generation is "auto". Total of reference images + generated images cannot exceed 15.',
+          default: 15,
+        },
+        watermark: {
+          type: 'boolean',
+          description: 'Add watermark to generated images.',
+          default: false,
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    endpoint: (hasImages: boolean, baseHost: string) => {
+      const cleanHost = baseHost.replace(/\/$/, '')
+      return `${cleanHost}/v3/seedream-5.0-lite`
+    },
+    isAsync: false, // Seedream 5.0 lite is synchronous (returns images directly)
+    supportsEdit: true,
+    imageInputField: 'image',
+    imageInputFormat: 'base64-array',
+  },
+}
+
+/**
+ * 7. OpenAI GPT Image (gpt-image-1, gpt-image-1-mini, gpt-image-1.5)
+ * API: POST /v1/images/generations (txt2img, sync, returns JSON with b64_json)
+ * Edit: POST /v1/images/edits (img2img, JSON with images[].image_url for base64)
+ */
+export const MODEL_OPENAI_GPT_IMAGE: ImageModelConfig = {
+  toolDefinition: {
+    name: 'generate_image',
+    description: 'Generate or edit an image using OpenAI GPT Image model. When the user provides images, it will automatically switch to edit mode. Creates high-quality images from text descriptions with excellent instruction following and text rendering.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'A detailed description of the image to generate. Be specific about subjects, style, composition, and text to render. Max 32,000 characters.',
+        },
+        size: {
+          type: 'string',
+          description: 'Image dimensions. NOTE: This parameter is IGNORED in edit mode (when user provides images).',
+          enum: ['1024x1024', '1024x1536', '1536x1024', 'auto'],
+          default: '1024x1024',
+        },
+        quality: {
+          type: 'string',
+          description: 'Rendering quality level.',
+          enum: ['low', 'medium', 'high', 'auto'],
+          default: 'high',
+        },
+        background: {
+          type: 'string',
+          description: 'Background transparency. Use "transparent" for logos/icons.',
+          enum: ['auto', 'transparent', 'opaque'],
+          default: 'auto',
+        },
+        output_format: {
+          type: 'string',
+          description: 'Output image format. Use "png" for transparency support.',
+          enum: ['png', 'jpeg', 'webp'],
+          default: 'png',
+        },
+      },
+      required: ['prompt'],
+    },
+  },
+  apiConfig: {
+    endpoint: (hasImages: boolean, baseHost: string) => {
+      const cleanHost = baseHost.replace(/\/$/, '')
+      // Avoid duplicating /v1 if already present
+      let endpoint: string
+      if (cleanHost.endsWith('/v1')) {
+        const base = cleanHost.slice(0, -3)
+        endpoint = hasImages ? `${base}/v1/images/edits` : `${base}/v1/images/generations`
+      } else {
+        endpoint = hasImages ? `${cleanHost}/v1/images/edits` : `${cleanHost}/v1/images/generations`
+      }
+      // Clean up any v1/v1 issues
+      return endpoint.replace(/\/v1\/v1\//g, '/v1/')
+    },
+    isAsync: false,
+    supportsEdit: true,
+    imageInputField: 'images',
+    imageInputFormat: 'openai-image-url',
+  },
+}
+
+/**
+ * 6. Replicate - Generic / Seedream
  * Endpoint: Uses the baseHost directly (configured in settings as .../predictions)
  */
 export const MODEL_REPLICATE_GENERIC: ImageModelConfig = {
@@ -411,9 +591,17 @@ export const IMAGE_MODEL_REGISTRY: Record<string, ImageModelConfig> = {
   'novita-qwen': MODEL_NOVITA_QWEN,
   'novita-hunyuan': MODEL_NOVITA_HUNYUAN,
   'novita-hunyuan-image-3': MODEL_NOVITA_HUNYUAN, // Alias
+  'novita-glm': MODEL_NOVITA_GLM,
+  'novita-glm-image': MODEL_NOVITA_GLM, // Alias
   'novita-seedream': MODEL_NOVITA_SEEDREAM,
   'novita-seedream-4': MODEL_NOVITA_SEEDREAM, // Alias
   'novita-seedream-4-0': MODEL_NOVITA_SEEDREAM, // Alias
+  'novita-seedream-5': MODEL_NOVITA_SEEDREAM_5,
+  'novita-seedream-5-0': MODEL_NOVITA_SEEDREAM_5, // Alias
+  'novita-seedream-5-0-lite': MODEL_NOVITA_SEEDREAM_5, // Alias
+  'openai-gpt-image-1': MODEL_OPENAI_GPT_IMAGE,
+  'openai-gpt-image-1-mini': MODEL_OPENAI_GPT_IMAGE,
+  'openai-gpt-image-1.5': MODEL_OPENAI_GPT_IMAGE,
 }
 
 /**
@@ -450,15 +638,25 @@ export function getDefaultImageModel(model: string, provider?: string): ImageMod
   if (modelLower.includes('hunyuan')) {
     return MODEL_NOVITA_HUNYUAN
   }
+  if (modelLower.includes('glm') && !modelLower.includes('chat')) {
+    return MODEL_NOVITA_GLM
+  }
   if (modelLower.includes('seedream')) {
     // Novita 以外（Replicateなど）の場合は汎用設定を優先
     if (providerLower && !providerLower.includes('novita')) {
       return MODEL_REPLICATE_GENERIC
     }
+    // Seedream 5.x は新モデル
+    if (modelLower.includes('5')) {
+      return MODEL_NOVITA_SEEDREAM_5
+    }
     return MODEL_NOVITA_SEEDREAM
   }
   if (modelLower.includes('flux')) {
     return MODEL_CHUTES_CHROMA
+  }
+  if (modelLower.includes('gpt-image')) {
+    return MODEL_OPENAI_GPT_IMAGE
   }
 
   // Replicate の場合はモデル名が不明でも汎用設定で通す
@@ -477,5 +675,8 @@ export const IMAGE_MODEL_PRESETS = [
   { id: 'chutes-chroma', name: 'Chutes - Chroma', config: MODEL_CHUTES_CHROMA },
   { id: 'novita-qwen', name: 'Novita - Qwen Image', config: MODEL_NOVITA_QWEN },
   { id: 'novita-hunyuan', name: 'Novita - Hunyuan Image 3', config: MODEL_NOVITA_HUNYUAN },
+  { id: 'novita-glm', name: 'Novita - GLM Image', config: MODEL_NOVITA_GLM },
   { id: 'novita-seedream', name: 'Novita - Seedream 4.0', config: MODEL_NOVITA_SEEDREAM },
+  { id: 'novita-seedream-5', name: 'Novita - Seedream 5.0 lite', config: MODEL_NOVITA_SEEDREAM_5 },
+  { id: 'openai-gpt-image-1', name: 'OpenAI - GPT Image 1', config: MODEL_OPENAI_GPT_IMAGE },
 ]

@@ -12,7 +12,7 @@ export function getApiSchemeOptions(): ApiSchemeOption[] {
     { name: 'OpenAI Compatible (Completion)', value: CustomApiProvider.OpenAI, outputType: 'text' },
     { name: 'OpenRouter (Chat / Image)', value: CustomApiProvider.OpenRouter, outputType: 'text' },
     { name: 'OpenAI Responses API (Beta)', value: CustomApiProvider.OpenAI_Responses, outputType: 'text' },
-    { name: 'OpenAI Image (gpt-image-1, Beta)', value: CustomApiProvider.OpenAI_Image, outputType: 'text' },
+    { name: 'OpenAI Image (gpt-image-1, Beta)', value: CustomApiProvider.OpenAI_Image, outputType: 'image' },
     { name: 'Image Agent (Generate + Agentic Chatbot)', value: CustomApiProvider.ImageAgent, outputType: 'text' },
     { name: 'Anthropic Claude API', value: CustomApiProvider.Anthropic, outputType: 'text' },
     { name: 'AWS Bedrock (Anthropic)', value: CustomApiProvider.Bedrock, outputType: 'text' },

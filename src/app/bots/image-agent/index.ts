@@ -1,4 +1,4 @@
-import { AbstractBot, SendMessageParams, ConversationHistory, Event } from '../abstract-bot'
+import { AbstractBot, SendMessageParams, ConversationHistory, Event, TempChatOverrides } from '../abstract-bot'
 import { ChatError, ErrorCode } from '~utils/errors'
 import { getUserConfig, OPENAI_COMPATIBLE_PROVIDERS, CLAUDE_COMPATIBLE_PROVIDERS, GEMINI_COMPATIBLE_PROVIDERS, CustomApiProvider } from '~services/user-config'
 import { getDefaultImageModel, convertClaudeToolToOpenAI, convertClaudeToolToOpenAIResponses, convertClaudeToolToGemini } from '~services/image-tool-definitions'
@@ -24,6 +24,7 @@ import { file2base64 } from '~app/utils/file-utils'
  */
 export class ImageAgentBot extends AbstractBot {
   private conversationContext?: ConversationHistory
+  private tempOverrides?: TempChatOverrides
 
   constructor(private botIndex: number) {
     super()
@@ -41,8 +42,13 @@ export class ImageAgentBot extends AbstractBot {
     return this.conversationContext
   }
 
+  public setTemporaryOverrides(overrides: TempChatOverrides): void {
+    this.tempOverrides = overrides
+  }
+
   resetConversation(): void {
     this.conversationContext = undefined
+    this.tempOverrides = undefined
   }
 
   async doSendMessage(params: SendMessageParams): Promise<void> {
@@ -62,12 +68,14 @@ export class ImageAgentBot extends AbstractBot {
         throw new ChatError('Image Provider not configured for Image Agent', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
       }
 
-      const imageApiKey = imageProviderRef.apiKey
+      const resolvedImageApiKey = (imageProviderRef.apiKey && imageProviderRef.apiKey.trim().length > 0)
+        ? imageProviderRef.apiKey
+        : (custom.apiKey || cfg.customApiKey || '')
       const imageHost = imageProviderRef.host
       const imageModel = custom.model
       const imageProvider = imageProviderRef.provider
 
-      if (!imageApiKey) {
+      if (!resolvedImageApiKey) {
         throw new ChatError('Image Provider API key not set', ErrorCode.CUSTOMBOT_CONFIGURATION_ERROR)
       }
 
@@ -190,19 +198,41 @@ export class ImageAgentBot extends AbstractBot {
               // Use tool call arguments directly (they match the API format)
               const apiBody: any = { ...args }
 
+              // Apply temporary overrides for image tool parameters (from quick settings)
+              if (this.tempOverrides?.imageToolParams) {
+                const toolProps = imageModelConfig.toolDefinition.input_schema?.properties || {}
+                for (const [k, v] of Object.entries(this.tempOverrides.imageToolParams)) {
+                  // Convert string "true"/"false" back to boolean when schema expects boolean
+                  if (toolProps[k]?.type === 'boolean') {
+                    apiBody[k] = v === 'true'
+                  } else {
+                    apiBody[k] = v
+                  }
+                }
+              }
+
               // Auto inject user images into the expected field when supported
               if (imageModelConfig.apiConfig.imageInputField) {
                 if (userImages.length > 0) {
                   const fieldName = imageModelConfig.apiConfig.imageInputField
-                  // Singular field (e.g., 'image') expects a single string, plural (e.g., 'images') expects an array
-                  if (fieldName === 'image') {
-                    // Qwen edit: single image as string
-                    apiBody[fieldName] = await file2base64(userImages[0])
-                  } else {
-                    // Seedream: multiple images as array
+                  const inputFormat = imageModelConfig.apiConfig.imageInputFormat || 'base64-string'
+
+                  if (inputFormat === 'openai-image-url') {
+                    // OpenAI GPT Image: array of { image_url: "data:..." } objects
+                    // Note: OpenAI requires full data URL with header (keepHeader = true)
+                    apiBody[fieldName] = await Promise.all(
+                      userImages.map(async (img) => ({
+                        image_url: await file2base64(img, true)  // keepHeader = true
+                      }))
+                    )
+                  } else if (inputFormat === 'base64-array') {
+                    // Seedream: array of base64 strings
                     apiBody[fieldName] = await Promise.all(
                       userImages.map((img) => file2base64(img))
                     )
+                  } else {
+                    // base64-string: single image as base64 string (Qwen)
+                    apiBody[fieldName] = await file2base64(userImages[0])
                   }
                 } else {
                   delete apiBody[imageModelConfig.apiConfig.imageInputField]
@@ -212,8 +242,8 @@ export class ImageAgentBot extends AbstractBot {
                 delete apiBody.images
               }
 
-              // Add model field for Chutes API (they require it in the body)
-              if (/chutes/i.test(imageHost || '')) {
+              // Add model field for APIs that require it in the body (Chutes, OpenAI Images)
+              if (/chutes/i.test(imageHost || '') || /gpt-image/i.test(imageModel || '')) {
                 apiBody.model = imageModel
               }
 
@@ -222,12 +252,22 @@ export class ImageAgentBot extends AbstractBot {
               const displayBody = { ...apiBody }
               if (imageModelConfig.apiConfig.imageInputField && userImages.length > 0) {
                 const fieldName = imageModelConfig.apiConfig.imageInputField
-                if (fieldName === 'image' && displayBody.image) {
-                  // Get filename from the first user image
+                const inputFormat = imageModelConfig.apiConfig.imageInputFormat || 'base64-string'
+                const fieldValue = displayBody[fieldName]
+
+                if (inputFormat === 'openai-image-url' && Array.isArray(fieldValue)) {
+                  // OpenAI format: array of { image_url: "..." }
+                  displayBody[fieldName] = fieldValue.map((_: any, index: number) => {
+                    const fileName = userImages[index]?.name || `Input Image ${index + 1}`
+                    return { image_url: `[${fileName}]` }
+                  })
+                } else if (inputFormat === 'base64-string' && typeof fieldValue === 'string') {
+                  // Single base64 string (Qwen)
                   const fileName = userImages[0]?.name || 'Input Image'
-                  displayBody.image = `[${fileName}]`
-                } else if (fieldName === 'images' && Array.isArray(displayBody.images)) {
-                  displayBody.images = displayBody.images.map((_: any, index: number) => {
+                  displayBody[fieldName] = `[${fileName}]`
+                } else if (Array.isArray(fieldValue)) {
+                  // Array of base64 strings (Seedream)
+                  displayBody[fieldName] = fieldValue.map((_: any, index: number) => {
                     const fileName = userImages[index]?.name || `Input Image ${index + 1}`
                     return `[${fileName}]`
                   })
@@ -248,8 +288,10 @@ export class ImageAgentBot extends AbstractBot {
 
               // Determine endpoint based on whether images are present
               const imageField = imageModelConfig.apiConfig.imageInputField
-              const hasImages = (imageField === 'image' && apiBody.image) ||
-                                (imageField === 'images' && Array.isArray(apiBody.images) && apiBody.images.length > 0)
+              const imageValue = imageField ? apiBody[imageField] : undefined
+              const hasImages = imageValue !== undefined &&
+                                (typeof imageValue === 'string' ||
+                                 (Array.isArray(imageValue) && imageValue.length > 0))
 
               // Build endpoint URL based on provider and configuration
               let endpoint: string
@@ -273,7 +315,7 @@ export class ImageAgentBot extends AbstractBot {
               // Generate image using unified API client
               const imageUrl = await generateImage({
                 endpoint,
-                apiKey: imageApiKey,
+                apiKey: resolvedImageApiKey,
                 body: apiBody,
                 signal: params.signal,
                 isAsync: imageModelConfig.apiConfig.isAsync,

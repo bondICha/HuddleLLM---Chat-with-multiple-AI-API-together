@@ -120,6 +120,8 @@ export async function exportCustomAPITemplate() {
         icon: p.icon,
         ...(isAnthropic ? { isAnthropicUsingAuthorizationHeader: p.isAnthropicUsingAuthorizationHeader } : {}),
         ...(p.AuthMode ? { AuthMode: p.AuthMode } : {}),
+        ...(p.VertexMode !== undefined ? { VertexMode: p.VertexMode } : {}),
+        ...(p.outputType ? { outputType: p.outputType } : {}),
         advancedConfig: p.advancedConfig,
       } as Partial<ProviderConfig>
     });

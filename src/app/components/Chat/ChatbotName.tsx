@@ -1,5 +1,6 @@
-import { FC, memo, useMemo } from 'react'
+import { FC, memo, useMemo, useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FiInfo } from 'react-icons/fi'
 import dropdownIcon from '~/assets/icons/dropdown.svg'
 import { getApiSchemeOptions } from '~app/components/Settings/api-scheme-options'
 import { CustomApiProvider, ProviderConfig } from '~services/user-config'
@@ -18,6 +19,31 @@ interface Props {
 
 const ChatbotName: FC<Props> = (props) => {
   const { t } = useTranslation()
+
+  // Image Agent info popover state
+  const isImageAgent = !!props.botConfig?.agenticImageBotSettings?.imageGeneratorProviderId
+  const [showImageAgentNote, setShowImageAgentNote] = useState(false)
+  const infoRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showImageAgentNote) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (infoRef.current && !infoRef.current.contains(e.target as Node)) {
+        setShowImageAgentNote(false)
+      }
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowImageAgentNote(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showImageAgentNote])
 
   const schemeLookup = useMemo(() => {
     const map = new Map<CustomApiProvider, string>()
@@ -118,12 +144,37 @@ const ChatbotName: FC<Props> = (props) => {
     </Tooltip>
   ) : null;
 
+  // Info icon + popover for Image Agent
+  const imageAgentInfoNode = isImageAgent ? (
+    <div className="relative flex-shrink-0" ref={infoRef}>
+      <button
+        type="button"
+        className="flex items-center justify-center w-4 h-4 text-amber-500 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300 transition-colors"
+        onClick={(e) => {
+          e.stopPropagation()
+          setShowImageAgentNote((v) => !v)
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+        aria-label={t('image_agent_history_note')}
+      >
+        <FiInfo size={14} />
+      </button>
+      {showImageAgentNote && (
+        <div className="absolute left-0 top-full mt-1 z-50 w-56 bg-primary-background border border-primary-border rounded-lg shadow-lg p-3 text-xs text-primary-text leading-relaxed">
+          {t('image_agent_history_note')}
+        </div>
+      )}
+    </div>
+  ) : null
+
   if (!props.onSwitchBot) {
     return (
       <div className="flex items-center min-w-0 flex-1">
         {node}
         <div className="flex-shrink-[5] min-w-0 w-2"></div>
         {modelNode}
+        {imageAgentInfoNode && <div className="flex-shrink-0 w-1.5"></div>}
+        {imageAgentInfoNode}
         <div className="flex-shrink-[5] min-w-0 w-2"></div>
       </div>
     )
@@ -133,6 +184,8 @@ const ChatbotName: FC<Props> = (props) => {
       {node}
       <div className="flex-shrink-[5] min-w-0 w-2"></div>
       {modelNode}
+      {imageAgentInfoNode && <div className="flex-shrink-0 w-1.5"></div>}
+      {imageAgentInfoNode}
       <div className="flex-shrink-[5] min-w-0 w-2"></div>
       <img src={dropdownIcon} className="w-5 h-5 flex-shrink-0" />
     </div>

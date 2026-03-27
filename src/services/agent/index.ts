@@ -4,29 +4,28 @@ import Browser from 'webextension-polyfill';
 import { htmlToText } from '~app/utils/html-utils';
 import { getLanguage } from '~services/storage/language';
 
-// Import i18n resources for all supported languages
-import enLocale from '~app/i18n/locales/english.json';
-import jaLocale from '~app/i18n/locales/japanese.json';
-import zhCNLocale from '~app/i18n/locales/simplified-chinese.json';
-import zhTWLocale from '~app/i18n/locales/traditional-chinese.json';
+// Import i18n modules (new multilang format: { key: { en, ja, 'zh-CN', 'zh-TW' } })
+import chatModule from '~app/i18n/locales/chat.json';
 
-const locales = {
-  'en': enLocale,
-  'ja': jaLocale,
-  'zh-CN': zhCNLocale,
-  'zh-TW': zhTWLocale,
-} as const;
+type LangCode = 'en' | 'ja' | 'zh-CN' | 'zh-TW';
+type MultiLangEntry = Record<LangCode, string>;
+
+const allModules: Record<string, MultiLangEntry> = {
+  ...chatModule as unknown as Record<string, MultiLangEntry>,
+};
 
 function getLocalizedText(key: string, language: string = 'en', replacements?: Record<string, string>): string {
-  const locale = locales[language as keyof typeof locales] || locales['en'];
-  let text = (locale as any)[key] || (enLocale as any)[key] || key;
-  
+  const entry = allModules[key];
+  let text = entry
+    ? (entry[language as LangCode] ?? entry['en'] ?? key)
+    : key;
+
   if (replacements) {
     Object.entries(replacements).forEach(([placeholder, value]) => {
       text = text.replace(new RegExp(`\\{\\{${placeholder}\\}\\}`, 'g'), value);
     });
   }
-  
+
   return text;
 }
 

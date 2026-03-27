@@ -3,8 +3,8 @@ import { ModelInfo } from '../src/services/user-config'
 // モデルリストをプロバイダーごとに階層化
 export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
     "OpenAI": {
-        "GPT-5.2": "gpt-5.2",
-        "GPT-5.2 Pro": "gpt-5.2-pro",
+        "GPT-5.4": "gpt-5.4",
+        "GPT-5.4 Pro": "gpt-5.4-pro",
         "GPT-5.3 Codex": "gpt-5.3-codex"
 
     },
@@ -14,14 +14,13 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
         "Claude Haiku 4.5": "claude-haiku-4-5",
     },
     "Google": {
-        "Gemini 2.5 Pro": "gemini-2.5-pro",
-        "Gemini 3 Pro": "gemini-3-pro-preview",
-        "Gemini 3 Pro Image": "gemini-3-pro-image-preview",
+        "Gemini 3.1 Pro": "gemini-3.1-pro-preview",
+        "Gemini 3.1 Pro Image": "gemini-3-pro-image-preview",
         "Nano Banana2": "gemini-3.1-flash-image-preview",
     },
     "Grok": {
         "Grok 4": "grok-4",
-        "Grok 4 Fast": "grok-4-1-fast",
+        "Grok 4.1 Fast": "grok-4-1-fast",
         "Grok 4.1 Fast NR": "grok-4-1-fast-non-reasoning",
         "Grok Code Fast": "grok-code-fast-1",
     },
