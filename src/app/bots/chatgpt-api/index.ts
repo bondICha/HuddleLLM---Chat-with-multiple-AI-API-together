@@ -76,27 +76,34 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
     this.tools = tools
   }
 
-  private buildUserMessage(prompt: string, imageUrls?: string[]): ChatMessage {
-    if (!imageUrls || imageUrls.length === 0) {
+  private buildUserMessage(prompt: string, imageUrls?: string[], videoUrls?: string[]): ChatMessage {
+    if ((!imageUrls || imageUrls.length === 0) && (!videoUrls || videoUrls.length === 0)) {
       return { role: 'user', content: prompt }
     }
-    
+
     const content: any[] = [{ type: 'text', text: prompt }];
-    imageUrls.forEach(imageUrl => {
-      content.push({ type: 'image_url', image_url: { url: imageUrl, detail: 'low' } });
-    });
-    
+    if (imageUrls) {
+      imageUrls.forEach(imageUrl => {
+        content.push({ type: 'image_url', image_url: { url: imageUrl, detail: 'low' } });
+      });
+    }
+    if (videoUrls) {
+      videoUrls.forEach(videoUrl => {
+        content.push({ type: 'video_url', video_url: { url: videoUrl } });
+      });
+    }
+
     return {
       role: 'user',
       content: content,
     }
   }
 
-  private buildMessages(prompt: string, imageUrls?: string[]): ChatMessage[] {
+  private buildMessages(prompt: string, imageUrls?: string[], videoUrls?: string[]): ChatMessage[] {
     return [
       { role: 'system', content: this.getSystemMessage() },
       ...this.conversationContext!.messages.slice(-(CONTEXT_SIZE + 1)),
-      this.buildUserMessage(prompt, imageUrls),
+      this.buildUserMessage(prompt, imageUrls, videoUrls),
     ]
   }
 
@@ -134,10 +141,17 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
       )
     }
 
-    const resp = await this.fetchCompletionApi(this.buildMessages(params.prompt, imageUrls), params.signal)
+    let videoUrls: string[] = []
+    if (params.videoFiles && params.videoFiles.length > 0) {
+      videoUrls = await Promise.all(
+        params.videoFiles.map(video => file2base64(video, true))
+      )
+    }
+
+    const resp = await this.fetchCompletionApi(this.buildMessages(params.prompt, imageUrls, videoUrls), params.signal)
 
     // add user message to context only after fetch success
-    this.conversationContext.messages.push(this.buildUserMessage(params.rawUserInput || params.prompt, imageUrls))
+    this.conversationContext.messages.push(this.buildUserMessage(params.rawUserInput || params.prompt, imageUrls, videoUrls))
 
     let done = false
     const result: ChatMessage = { role: 'assistant', content: '' }
@@ -269,6 +283,7 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       reasoningEffort?: 'none' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
       advancedConfig?: any; // To pass OpenRouter provider options
       extraBody?: any; // Extra body parameters for compatible APIs
+      enableVideoInput?: boolean; // Enable video input support (e.g. OpenRouter)
     },
   ) {
     super()
@@ -408,6 +423,8 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
     return true
   }
 
-
+  get supportsVideoInput() {
+    return this.config.enableVideoInput ?? false
+  }
 
 }

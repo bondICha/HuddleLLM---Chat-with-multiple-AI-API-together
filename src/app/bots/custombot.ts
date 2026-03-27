@@ -271,6 +271,7 @@ export class CustomBot extends AsyncAbstractBot {
                         thinkingMode: config.thinkingMode,
                         reasoningEffort: config.reasoningEffort,
                         advancedConfig: effectiveAdvanced,
+                        enableVideoInput: true,
                     })
                 }
                 break;
