@@ -62,7 +62,7 @@ interface Props {
   controlledValue?: string
   onControlledValueChange?: (value: string) => void
   controlledAttachments?: Attachment[]
-  onControlledAttachmentsChange?: (attachments: Attachment[]) => void
+  onControlledAttachmentsChange?: (attachments: Attachment[] | ((prev: Attachment[]) => Attachment[])) => void
 }
 
 const ChatMessageInput: FC<Props> = (props) => {
@@ -93,14 +93,13 @@ const ChatMessageInput: FC<Props> = (props) => {
   // Wrapper for setAttachments to handle both controlled and uncontrolled cases
   const setAttachments = useCallback((update: Attachment[] | ((prev: Attachment[]) => Attachment[])) => {
     if (isAttachmentsControlled && onControlledAttachmentsChange) {
-      // For controlled state, compute the new value if update is a function
-      const newValue = typeof update === 'function' ? update(attachments) : update
-      onControlledAttachmentsChange(newValue)
+      // Pass updater directly to Jotai setter (supports both value and updater function)
+      onControlledAttachmentsChange(update)
     } else {
       // For uncontrolled state, just use the local setter
       setLocalAttachments(update)
     }
-  }, [isAttachmentsControlled, onControlledAttachmentsChange, attachments])
+  }, [isAttachmentsControlled, onControlledAttachmentsChange])
   const [editingAttachment, setEditingAttachment] = useState<Attachment | null>(null);
   const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -280,7 +279,7 @@ const ChatMessageInput: FC<Props> = (props) => {
         setTranscribingFileId(null);
         setTranscribeFile(null);
       }
-    }, [transcribeFile, t]);
+    }, [transcribeFile, t, setAttachments]);
   
     const onFormSubmit = useCallback(
       (e: React.FormEvent<HTMLFormElement>) => {
