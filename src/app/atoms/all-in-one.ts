@@ -60,6 +60,9 @@ export const initializeAllInOneAtom = atom(null, async (get, set) => {
   set(allInOnePairsAtom, { default: initialConfig })
 })
 
+// 現在のセッション名（AI生成）を管理するatom
+export const currentSessionNameAtom = atom<string | undefined>(undefined)
+
 // 設定保存用のatom
 export const saveAllInOneConfigAtom = atom(null, async (get, set) => {
   const pairs = get(allInOnePairsAtom)

@@ -35,3 +35,10 @@
 
 ## Testing
 - Ask user to check what, after success run of yarn build.
+
+## Git Commits
+- Do NOT add "Co-Authored-By" lines to commit messages
+
+## Git Flow
+- Feature branches (`feat/*`) and fix branches (`fix/*`) MUST be created from `dev` branch
+- See CONTRIBUTING.md for full workflow details

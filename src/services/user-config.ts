@@ -60,6 +60,10 @@ const userConfigWithDefaultValue = {
   isCustomApiHostFullPath: false, // デフォルト値を設定
   savedChatPairs: [] as ChatPair[], // 保存されたチャットペア
   fontType: FontType.SERIF, // フォントタイプ（デフォルト: Sans-serif）
+  titleGenerationBotIndex: undefined as number | undefined, // タイトル生成に使用するボットのインデックス（undefined = 生成しない）
+  titleLanguage: 'ja' as 'ja' | 'zh', // タイトル生成言語（日本語 or 中国語）
+  titleUpdateEveryTurn: false, // 毎回のチャット毎にタイトルを更新するか（デフォルト: 初回のみ）
+  aiTitlePromptDismissed: false, // 起動時のAI Title Generationプロンプトを非表示にしたか
 }
 
 export type UserConfig = typeof userConfigWithDefaultValue

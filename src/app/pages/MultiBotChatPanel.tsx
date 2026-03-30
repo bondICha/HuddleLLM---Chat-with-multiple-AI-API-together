@@ -12,6 +12,7 @@ import {
 } from '../state'
 import { getSessionSnapshot, loadAllInOneSessions, loadHistoryMessages, setAllInOneSession, saveSessionSnapshot, ChatMessageModel } from '~services/chat-history'
 import { updateChatPair, getUserConfig } from '~services/user-config'
+import { useSessionNameGenerator } from '~app/hooks/use-session-name'
 import AllInOneInputArea from '~app/components/Chat/AllInOneInputArea'
 import { Layout } from '~app/consts'
 import { useChat } from '~app/hooks/use-chat'
@@ -191,6 +192,14 @@ const GeneralChatPanel: FC<{
 
   // 入力クリア用（購読しない）
   const clearInput = useSetAtom(clearAllInOneInputAtom)
+
+  // セッション名自動生成フック
+  useSessionNameGenerator({
+    generating,
+    getMessages: () => chats
+      .filter(c => c.messages && c.messages.length > 0)
+      .map(c => [...c.messages]),
+  })
   
   // 現在のペア設定を取得
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
@@ -433,10 +442,10 @@ const GeneralChatPanel: FC<{
     if (chats.length > 0 && !generating && chats.some(chat => chat.messages.length > 0)) {
       const currentBots = getCurrentBotIndices();
       const pairName = currentPairConfig.pairName || `All-in-One ${currentBots.length} bots`;
-      
+
       // 既存のセッションUUIDがあればそれを使用、なければ新しいUUIDを生成
       const sessionUUID = currentSessionUUID || `session-${uuid()}`;
-      
+
       // 新しいUUIDを生成した場合は保存
       if (!currentSessionUUID && setCurrentSessionUUID) {
         setCurrentSessionUUID(sessionUUID);
@@ -456,6 +465,7 @@ const GeneralChatPanel: FC<{
       }
     }
   }, [generating, chats, getCurrentBotIndices, currentPairConfig, layout, currentSessionUUID])
+
 
   // 保存された検索クエリがあれば自動的に送信
   useEffect(() => {
