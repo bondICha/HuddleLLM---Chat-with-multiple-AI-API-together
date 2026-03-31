@@ -24,6 +24,24 @@ export function useSessionNameGenerator({ generating, getMessages, onSessionName
   const prevGeneratingRef = useRef(false)
   const sessionNameGeneratingRef = useRef(false)
 
+  // Store latest values in refs to avoid stale closure
+  const currentSessionNameRef = useRef(currentSessionName)
+  const getMessagesRef = useRef(getMessages)
+  const onSessionNameGeneratedRef = useRef(onSessionNameGenerated)
+
+  // Update refs when values change
+  useEffect(() => {
+    currentSessionNameRef.current = currentSessionName
+  }, [currentSessionName])
+
+  useEffect(() => {
+    getMessagesRef.current = getMessages
+  }, [getMessages])
+
+  useEffect(() => {
+    onSessionNameGeneratedRef.current = onSessionNameGenerated
+  }, [onSessionNameGenerated])
+
   // アンマウント時にタイトル生成Botをリセット
   useEffect(() => {
     return () => { resetTitleBot() }
@@ -45,9 +63,9 @@ export function useSessionNameGenerator({ generating, getMessages, onSessionName
         if (titleBotIndex === undefined) return // タイトル生成がオフ
 
         // 毎回更新モードでなければ、既にセッション名があればスキップ
-        if (!config.titleUpdateEveryTurn && currentSessionName) return
+        if (!config.titleUpdateEveryTurn && currentSessionNameRef.current) return
 
-        const allMessages = getMessages()
+        const allMessages = getMessagesRef.current()
         if (allMessages.length === 0) return
 
         // 少なくとも1つのチャットに応答がある
@@ -56,7 +74,7 @@ export function useSessionNameGenerator({ generating, getMessages, onSessionName
 
         const name = await generateSessionName(allMessages, titleBotIndex)
         setCurrentSessionName(name)
-        onSessionNameGenerated?.(name)
+        onSessionNameGeneratedRef.current?.(name)
       } catch (_error) {
         // Silent failure - session name generation is optional
       } finally {
@@ -65,8 +83,7 @@ export function useSessionNameGenerator({ generating, getMessages, onSessionName
     }
 
     generateName()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generating])
+  }, [generating, setCurrentSessionName])
 
   // ブラウザタブタイトルをセッション名に同期
   useEffect(() => {
