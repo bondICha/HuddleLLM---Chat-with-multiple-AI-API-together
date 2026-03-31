@@ -59,7 +59,8 @@ const AllInOneInputArea: FC<Props> = memo(({
     prevProps.generating === nextProps.generating &&
     prevProps.layout === nextProps.layout &&
     prevProps.supportImageInput === nextProps.supportImageInput &&
-    prevProps.hasUserResized === nextProps.hasUserResized
+    prevProps.hasUserResized === nextProps.hasUserResized &&
+    prevProps.onLayoutChange === nextProps.onLayoutChange
   )
 })
 
