@@ -43,6 +43,7 @@ export interface MessageParams {
   rawUserInput?: string
   images?: File[]
   audioFiles?: File[]
+  videoFiles?: File[]
   pdfFiles?: File[]
   signal?: AbortSignal
 }
@@ -188,6 +189,7 @@ export abstract class AbstractBot {
           rawUserInput: params.rawUserInput,
           images: params.images,
           audioFiles: params.audioFiles,
+          videoFiles: params.videoFiles,
           pdfFiles: params.pdfFiles,
           signal: params.signal,
           onEvent(event) {
@@ -234,6 +236,10 @@ export abstract class AbstractBot {
   }
 
   get supportsAudioInput() {
+    return false
+  }
+
+  get supportsVideoInput() {
     return false
   }
 
@@ -371,6 +377,10 @@ export abstract class AsyncAbstractBot extends AbstractBot {
 
   get supportsAudioInput() {
     return this.#bot.supportsAudioInput
+  }
+
+  get supportsVideoInput() {
+    return this.#bot.supportsVideoInput
   }
 
   get supportsPdfInput() {

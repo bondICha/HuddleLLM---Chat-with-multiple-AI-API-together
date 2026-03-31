@@ -64,7 +64,7 @@ export const allInOneInputTextAtom = atom<string>('')
 export const allInOneInputAttachmentsAtom = atom<Array<{
   id: string;
   file: File;
-  type: 'image' | 'text' | 'audio' | 'pdf';
+  type: 'image' | 'text' | 'audio' | 'video' | 'pdf';
   content?: string;
   transcribedText?: string;
 }>>([])

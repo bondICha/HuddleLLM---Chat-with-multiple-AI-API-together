@@ -39,14 +39,14 @@ import './ChatMessageInput.scss';
 interface Attachment {
   id: string;
   file: File;
-  type: 'image' | 'text' | 'audio' | 'pdf';
+  type: 'image' | 'text' | 'audio' | 'video' | 'pdf';
   content?: string;
   transcribedText?: string; // For audio files
 }
 
 interface Props {
   mode: 'full' | 'compact'
-  onSubmit: (value: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], pdfFiles?: File[]) => void
+  onSubmit: (value: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], videoFiles?: File[], pdfFiles?: File[]) => void
   className?: string
   disabled?: boolean
   placeholder?: string
@@ -304,10 +304,11 @@ const ChatMessageInput: FC<Props> = (props) => {
           }));
 
         const allTextAttachments = [...textAttachments, ...transcriptAttachments];
+        const videoFiles = attachments.filter(a => a.type === 'video').map(a => a.file);
         const pdfFiles = attachments.filter(a => a.type === 'pdf').map(a => a.file);
 
-        if (value.trim() || images.length > 0 || allTextAttachments.length > 0 || audioFiles.length > 0 || pdfFiles.length > 0) {
-          props.onSubmit(value, images, allTextAttachments, audioFiles, pdfFiles);
+        if (value.trim() || images.length > 0 || allTextAttachments.length > 0 || audioFiles.length > 0 || videoFiles.length > 0 || pdfFiles.length > 0) {
+          props.onSubmit(value, images, allTextAttachments, audioFiles, videoFiles, pdfFiles);
           setValue('');
           setAttachments([]);
           setShowAttachmentPopup(false);
@@ -343,10 +344,11 @@ const ChatMessageInput: FC<Props> = (props) => {
       }));
 
     const allTextAttachments = [...textAttachments, ...transcriptAttachments];
+    const videoFiles = attachments.filter(a => a.type === 'video').map(a => a.file);
     const pdfFiles = attachments.filter(a => a.type === 'pdf').map(a => a.file);
 
-    if (value.trim() || images.length > 0 || allTextAttachments.length > 0 || audioFiles.length > 0 || pdfFiles.length > 0) {
-      props.onSubmit(value, images, allTextAttachments, audioFiles, pdfFiles);
+    if (value.trim() || images.length > 0 || allTextAttachments.length > 0 || audioFiles.length > 0 || videoFiles.length > 0 || pdfFiles.length > 0) {
+      props.onSubmit(value, images, allTextAttachments, audioFiles, videoFiles, pdfFiles);
       setValue('');
       setAttachments([]);
       setShowAttachmentPopup(false);
@@ -408,6 +410,12 @@ const ChatMessageInput: FC<Props> = (props) => {
           // while audio file will be sent directly to audio-supporting bots
           setTranscribeFile(file);
           setIsTranscribeModalOpen(true);
+          break;
+        case 'video':
+          if (result.warning) {
+            toast(t(result.warning.key, result.warning.params), { duration: 8000 });
+          }
+          setAttachments(prev => [...prev, { id, file, type: 'video' }]);
           break;
         case 'text':
           if (result.warning) {
@@ -534,6 +542,10 @@ const ChatMessageInput: FC<Props> = (props) => {
               <td>{t('Attachment tooltip row image detail')}</td>
             </tr>
             <tr>
+              <td>{t('Attachment tooltip row video label')}</td>
+              <td>{t('Attachment tooltip row video detail')}</td>
+            </tr>
+            <tr>
               <td>{t('Attachment tooltip row pdf label')}</td>
               <td>{t('Attachment tooltip row pdf detail')}</td>
             </tr>
@@ -637,6 +649,9 @@ const ChatMessageInput: FC<Props> = (props) => {
                       <span className="attachment-rotator__icon attachment-rotator__icon--image">
                         <GoImage size={20} />
                       </span>
+                      <span className="attachment-rotator__icon attachment-rotator__icon--video">
+                        <GoFileMedia size={20} className="text-purple-500 dark:text-purple-400" />
+                      </span>
                       <span className="attachment-rotator__icon attachment-rotator__icon--pdf">
                         <AiOutlineFilePdf size={22} className="text-red-500 dark:text-red-400" />
                       </span>
@@ -703,6 +718,7 @@ const ChatMessageInput: FC<Props> = (props) => {
                 {att.type === 'image' && <GoImage size={12} className="text-secondary-text" />}
                 {att.type === 'text' && <GoFile size={12} className="text-secondary-text" />}
                 {att.type === 'pdf' && <AiOutlineFilePdf size={12} className="text-red-500 dark:text-red-400" />}
+                {att.type === 'video' && <GoFileMedia size={12} className="text-purple-500 dark:text-purple-400" />}
                 {att.type === 'audio' && (
                   transcribingFileId === att.id ? (
                     <div className="animate-spin">

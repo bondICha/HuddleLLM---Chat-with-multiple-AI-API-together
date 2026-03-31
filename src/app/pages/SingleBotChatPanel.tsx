@@ -50,7 +50,7 @@ const SingleBotChatPanel: FC<Props> = ({ index }) => {
         index={index}
         bot={chat.bot}
         messages={chat.messages}
-        onUserSendMessage={(input, images, attachments, audioFiles, pdfFiles) => chat.sendMessage(input, images, attachments, audioFiles, pdfFiles)}
+        onUserSendMessage={(input, images, attachments, audioFiles, videoFiles, pdfFiles) => chat.sendMessage(input, images, attachments, audioFiles, videoFiles, pdfFiles)}
         generating={chat.generating}
         stopGenerating={chat.stopGenerating}
         resetConversation={chat.resetConversation}

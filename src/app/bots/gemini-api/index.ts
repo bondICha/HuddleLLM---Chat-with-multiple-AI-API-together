@@ -139,7 +139,7 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
 
   get supportsPdfInput() { return true }
 
-  private async buildUserContent(prompt: string, images?: File[], audioFiles?: File[], pdfFiles?: File[]): Promise<Content> {
+  private async buildUserContent(prompt: string, images?: File[], audioFiles?: File[], videoFiles?: File[], pdfFiles?: File[]): Promise<Content> {
     const parts: Part[] = [];
 
     if (images && images.length > 0) {
@@ -161,6 +161,18 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
           inlineData: {
             data: base64data.replace(/^data:.+;base64,/, ''),
             mimeType: audio.type,
+          },
+        });
+      }
+    }
+
+    if (videoFiles && videoFiles.length > 0) {
+      for (const video of videoFiles) {
+        const base64data = await file2base64(video);
+        parts.push({
+          inlineData: {
+            data: base64data.replace(/^data:.+;base64,/, ''),
+            mimeType: video.type,
           },
         });
       }
@@ -191,7 +203,7 @@ export abstract class AbstractGeminiApiBot extends AbstractBot {
       this.conversationContext = { messages: [] }
     }
 
-    const userMessage = await this.buildUserContent(params.rawUserInput || params.prompt, params.images, params.audioFiles, params.pdfFiles);
+    const userMessage = await this.buildUserContent(params.rawUserInput || params.prompt, params.images, params.audioFiles, params.videoFiles, params.pdfFiles);
     
     const history = this.conversationContext.messages.slice(-CONTEXT_SIZE);
     const contents = [...history, userMessage];
@@ -523,6 +535,10 @@ export class GeminiApiBot extends AbstractGeminiApiBot {
   }
 
   get supportsAudioInput() {
+    return true;
+  }
+
+  get supportsVideoInput() {
     return true;
   }
 }

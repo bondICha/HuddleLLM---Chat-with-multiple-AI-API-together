@@ -272,6 +272,7 @@ export class CustomBot extends AsyncAbstractBot {
                         reasoningEffort: config.reasoningEffort,
                         advancedConfig: effectiveAdvanced,
                         enableAudioInput: true, // OpenRouter supports input_audio format
+                        enableVideoInput: true,
                     })
                 }
                 break;
