@@ -7,7 +7,9 @@ import Button from '~app/components/Button'
 import { Input } from '~app/components/Input'
 import RadioGroup from '~app/components/RadioGroup'
 import Select from '~app/components/Select'
+import Tooltip from '~app/components/Tooltip'
 import Blockquote from '~app/components/Settings/Blockquote'
+import { BiInfoCircle } from 'react-icons/bi'
 import { cloneDeep } from 'lodash-es'
 import { requestHostPermissions } from '~services/host-permissions'
 import { useAtomValue } from 'jotai'
@@ -130,20 +132,52 @@ function SettingPage() {
       <OldStorageNotification />
       <div className="flex flex-col gap-5 mt-3 mb-10 px-10" style={{ backgroundColor: themeColor ? `${themeColor}15` : 'rgba(17, 24, 39, 0.15)' }}>
         <ExportDataPanel userConfig={userConfig} updateConfigValue={updateConfigValue} />
-        <div>
-          <p className="font-bold mb-2 text-lg">{t('Startup page')}</p>
-          <div className="w-[200px]">
-            <Select
-              options={[
-                { name: 'All-In-One', value: ALL_IN_ONE_PAGE_ID },
-                ...(userConfig.customApiConfigs || []).map((config: CustomApiConfig, index: number) => ({
-                  name: config.name,
-                  value: `custom-${index}`,
-                })),
-              ]}
-              value={userConfig.startupPage}
-              onChange={(v) => updateConfigValue({ startupPage: v as string })}
-            />
+        <div className="flex flex-row gap-8 flex-wrap">
+          <div>
+            <p className="font-bold mb-2 text-lg">{t('Startup page')}</p>
+            <div className="w-[200px]">
+              <Select
+                options={[
+                  { name: 'All-In-One', value: ALL_IN_ONE_PAGE_ID },
+                  ...(userConfig.customApiConfigs || []).map((config: CustomApiConfig, index: number) => ({
+                    name: config.name,
+                    value: `custom-${index}`,
+                  })),
+                ]}
+                value={userConfig.startupPage}
+                onChange={(v) => updateConfigValue({ startupPage: v as string })}
+              />
+            </div>
+          </div>
+          <div>
+            <p className="font-bold mb-2 text-lg flex items-center gap-1.5">
+              {t('AI Title Generation')}
+              <Tooltip content={t('AI Title Generation Prompt Description')}>
+                <BiInfoCircle className="w-4 h-4 opacity-60 cursor-help" />
+              </Tooltip>
+            </p>
+            <div className="w-72">
+              <Select
+                options={[
+                  { name: t('Do not generate title'), value: '' },
+                  ...(userConfig.customApiConfigs || []).map((config: CustomApiConfig, index: number) => ({
+                    name: config.name,
+                    value: index.toString(),
+                  })),
+                ]}
+                value={userConfig.titleGenerationBotIndex !== undefined ? userConfig.titleGenerationBotIndex.toString() : ''}
+                onChange={(v) => updateConfigValue({ titleGenerationBotIndex: v === '' ? undefined : parseInt(v, 10) })}
+              />
+            </div>
+            {userConfig.titleGenerationBotIndex !== undefined && (
+              <div className="flex items-center gap-2 mt-2">
+                <Switch
+                  checked={userConfig.titleUpdateEveryTurn || false}
+                  onChange={(v) => updateConfigValue({ titleUpdateEveryTurn: v })}
+                />
+                <span className="text-sm text-primary-text">{t('Update title every turn')}</span>
+              </div>
+            )}
           </div>
         </div>
 

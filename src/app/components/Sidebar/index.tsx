@@ -571,9 +571,12 @@ useEffect(() => {
             </div>
             <span className={cx(
               'font-medium text-sm',
-              !shouldShowAsHamburger && collapsed && 'overflow-hidden text-ellipsis leading-tight text-center break-words w-full'
+              !shouldShowAsHamburger && collapsed && 'overflow-hidden text-ellipsis leading-tight text-center break-words w-full',
+              (shouldShowAsHamburger || !collapsed) && 'truncate'
             )}>
-              {shouldShowAsHamburger || !collapsed ? 'All-In-One' : 'A-One'}
+              {shouldShowAsHamburger || !collapsed
+                ? 'All-In-One'
+                : 'A-One'}
             </span>
           </Link>
           

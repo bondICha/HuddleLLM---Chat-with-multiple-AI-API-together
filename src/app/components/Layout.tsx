@@ -3,6 +3,7 @@ import { useAtomValue } from 'jotai'
 import { Toaster } from 'react-hot-toast'
 import { followArcThemeAtom, themeColorAtom, sidebarDisplayModeAtom } from '~app/state'
 import ReleaseNotesModal from './Modals/ReleaseNotesModal'
+import AiTitlePromptModal from './Modals/AiTitlePromptModal'
 import Sidebar from './Sidebar'
 
 function Layout() {
@@ -29,6 +30,7 @@ function Layout() {
         <Outlet />
       </div>
       <ReleaseNotesModal />
+      <AiTitlePromptModal />
       <Toaster position="bottom-center" />
     </main>
   )
