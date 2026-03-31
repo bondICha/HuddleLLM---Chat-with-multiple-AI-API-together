@@ -101,12 +101,6 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
         content.push({ type: 'video_url', video_url: { url: videoUrl } });
       });
     }
-    }
-    if (videoUrls) {
-      videoUrls.forEach(videoUrl => {
-        content.push({ type: 'video_url', video_url: { url: videoUrl } });
-      });
-    }
 
     return {
       role: 'user',
@@ -352,10 +346,6 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
 
   get supportsAudioInput() {
     return !!this.config.enableAudioInput
-  }
-
-  get supportsVideoInput() {
-    return !!this.config.enableVideoInput
   }
 
   private temporaryOverrides?: { temperature?: number; reasoningEffort?: 'none' | 'low' | 'medium' | 'high' }
