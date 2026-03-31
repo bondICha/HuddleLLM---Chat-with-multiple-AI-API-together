@@ -252,38 +252,38 @@ const GeneralChatPanel: FC<{
     }
   }
   
-  const setLayout = async (newLayout: Layout) => {
+  const setLayout = useCallback(async (newLayout: Layout) => {
     // レイアウト変更時にbots配列を正規化
     const newPanelCount = getPanelCount(newLayout)
     const enabledIndices = await resolveEnabledBotIndices()
-    
+
     if (enabledIndices.length === 0) {
       alert(t('All-in-One: Failed to resolve models'))
       return
     }
-    
+
     if (enabledIndices.length < newPanelCount) {
       alert(t('All-in-One: Not enough enabled models', { count: newPanelCount }))
       return
     }
-    
+
     // 現在のbots配列を取得
     const currentBots = currentPairConfig.bots || DEFAULT_BOTS
-    
+
     // 新しいレイアウトに合わせて正規化
     const normalizedBots = normalizeBotsForLayout(currentBots, newPanelCount, enabledIndices)
-    
+
     // 全体のbots配列を更新（既存の部分を正規化されたボットで置き換え）
     const updatedAllBots = [...currentBots]
     normalizedBots.forEach((botIndex, i) => {
       updatedAllBots[i] = botIndex
     })
-    
+
     updateCurrentPairConfig({
       layout: newLayout,
       bots: updatedAllBots
     })
-  }
+  }, [t, currentPairConfig, updateCurrentPairConfig])
   
   const [refresh, setRefresh] = useState(0) // 更新用の state を追加
   const [pendingSearchQuery, setPendingSearchQuery] = useAtom(pendingSearchQueryAtom)
