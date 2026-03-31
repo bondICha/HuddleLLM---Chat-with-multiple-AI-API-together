@@ -467,8 +467,8 @@ const HistoryPage: FC = () => {
                       <SessionCard
                         session={s}
                         isSelected={isSelected}
-                        onToggleSelect={() => setSelectedSessionKey((prev) => (prev === sessionKey ? null : sessionKey))}
-                        onRestore={() => restoreSession(s)}
+                        onToggleSelect={(key) => setSelectedSessionKey((prev) => (prev === key ? null : key))}
+                        onRestore={restoreSession}
                       />
                     </div>
                   )
