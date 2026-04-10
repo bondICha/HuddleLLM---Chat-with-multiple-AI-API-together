@@ -76,28 +76,76 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
     this.tools = tools
   }
 
-  private buildUserMessage(prompt: string, imageUrls?: string[]): ChatMessage {
-    if (!imageUrls || imageUrls.length === 0) {
+  private buildUserMessage(prompt: string, imageUrls?: string[], audioParts?: { data: string; format: string }[], videoUrls?: string[]): ChatMessage {
+    const hasImages = imageUrls && imageUrls.length > 0
+    const hasAudio = audioParts && audioParts.length > 0
+    const hasVideo = videoUrls && videoUrls.length > 0
+
+    if (!hasImages && !hasAudio && !hasVideo) {
       return { role: 'user', content: prompt }
     }
-    
+
     const content: any[] = [{ type: 'text', text: prompt }];
-    imageUrls.forEach(imageUrl => {
-      content.push({ type: 'image_url', image_url: { url: imageUrl, detail: 'low' } });
-    });
-    
+    if (imageUrls) {
+      imageUrls.forEach(imageUrl => {
+        content.push({ type: 'image_url', image_url: { url: imageUrl, detail: 'low' } });
+      });
+    }
+    if (audioParts) {
+      audioParts.forEach(audio => {
+        content.push({ type: 'input_audio', input_audio: { data: audio.data, format: audio.format } });
+      });
+    }
+    if (videoUrls) {
+      videoUrls.forEach(videoUrl => {
+        content.push({ type: 'video_url', video_url: { url: videoUrl } });
+      });
+    }
+
     return {
       role: 'user',
       content: content,
     }
   }
 
-  private buildMessages(prompt: string, imageUrls?: string[]): ChatMessage[] {
+  private buildMessages(prompt: string, imageUrls?: string[], audioParts?: { data: string; format: string }[], videoUrls?: string[]): ChatMessage[] {
     return [
       { role: 'system', content: this.getSystemMessage() },
       ...this.conversationContext!.messages.slice(-(CONTEXT_SIZE + 1)),
-      this.buildUserMessage(prompt, imageUrls),
+      this.buildUserMessage(prompt, imageUrls, audioParts, videoUrls),
     ]
+  }
+
+  /**
+   * Extract audio format from MIME type for OpenRouter input_audio format.
+   * Supported formats: wav, mp3, aiff, aac, ogg, flac, m4a, pcm16, pcm24
+   * ref: https://openrouter.ai/docs/guides/overview/multimodal/audio
+   */
+  private extractAudioFormat(mimeType: string): string {
+    const formatMap: Record<string, string> = {
+      'audio/wav': 'wav',
+      'audio/wave': 'wav',
+      'audio/mp3': 'mp3',
+      'audio/mpeg': 'mp3',
+      'audio/mpeg3': 'mp3',
+      'audio/aiff': 'aiff',
+      'audio/x-aiff': 'aiff',
+      'audio/aac': 'aac',
+      'audio/aacp': 'aac',
+      'audio/ogg': 'ogg',
+      'audio/flac': 'flac',
+      'audio/x-flac': 'flac',
+      'audio/m4a': 'm4a',
+      'audio/x-m4a': 'm4a',
+      'audio/mp4': 'm4a',
+      // PCM formats
+      'audio/pcm': 'pcm16',
+      'audio/pcm;rate=16000': 'pcm16',
+      'audio/pcm;rate=24000': 'pcm24',
+      'audio/l16': 'pcm16',
+      'audio/l24': 'pcm24',
+    }
+    return formatMap[mimeType.toLowerCase()] || 'wav' // default to wav
   }
 
   async modifyLastMessage(message: string): Promise<void> {
@@ -134,10 +182,30 @@ export abstract class AbstractChatGPTApiBot extends AbstractBot {
       )
     }
 
-    const resp = await this.fetchCompletionApi(this.buildMessages(params.prompt, imageUrls), params.signal)
+    // Process audio files for OpenRouter input_audio format
+    let audioParts: { data: string; format: string }[] = []
+    if (params.audioFiles && params.audioFiles.length > 0) {
+      const audioResults = await Promise.all(
+        params.audioFiles.map(async (audio) => {
+          const base64Data = await file2base64(audio, false) // raw base64 without header
+          const format = this.extractAudioFormat(audio.type)
+          return { data: base64Data, format }
+        })
+      )
+      audioParts = audioResults
+    }
+
+    let videoUrls: string[] = []
+    if (params.videoFiles && params.videoFiles.length > 0) {
+      videoUrls = await Promise.all(
+        params.videoFiles.map(video => file2base64(video, true))
+      )
+    }
+
+    const resp = await this.fetchCompletionApi(this.buildMessages(params.prompt, imageUrls, audioParts, videoUrls), params.signal)
 
     // add user message to context only after fetch success
-    this.conversationContext.messages.push(this.buildUserMessage(params.rawUserInput || params.prompt, imageUrls))
+    this.conversationContext.messages.push(this.buildUserMessage(params.rawUserInput || params.prompt, imageUrls, audioParts, videoUrls))
 
     let done = false
     const result: ChatMessage = { role: 'assistant', content: '' }
@@ -269,9 +337,15 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
       reasoningEffort?: 'none' | 'low' | 'medium' | 'high'; // OpenAI reasoning effort
       advancedConfig?: any; // To pass OpenRouter provider options
       extraBody?: any; // Extra body parameters for compatible APIs
+      enableAudioInput?: boolean; // OpenRouter audio input support
+      enableVideoInput?: boolean; // Enable video input support (e.g. OpenRouter)
     },
   ) {
     super()
+  }
+
+  get supportsAudioInput() {
+    return !!this.config.enableAudioInput
   }
 
   private temporaryOverrides?: { temperature?: number; reasoningEffort?: 'none' | 'low' | 'medium' | 'high' }
@@ -408,6 +482,8 @@ export class ChatGPTApiBot extends AbstractChatGPTApiBot {
     return true
   }
 
-
+  get supportsVideoInput() {
+    return this.config.enableVideoInput ?? false
+  }
 
 }

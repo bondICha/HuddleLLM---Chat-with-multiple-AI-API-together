@@ -59,18 +59,17 @@ const ThemeSettingModal: FC<Props> = (props) => {
   const [lang, setLang] = useState(() => getLanguage() || 'auto')
   const userConfig = useUserConfig()
   const [fontType, setFontType] = useState<FontType>(userConfig?.fontType || FontType.SERIF)
+  const [titleLanguage, setTitleLanguage] = useState<'ja' | 'zh'>(userConfig?.titleLanguage || 'ja')
 
   const languageOptions = useMemo(() => {
-    const nameGenerator = new Intl.DisplayNames('en', { type: 'language' })
+    const nativeNames: Record<string, string> = {
+      en: 'English',
+      ja: '日本語',
+      'zh-CN': '简体中文',
+      'zh-TW': '繁體中文',
+    }
     return languageCodes.map((code) => {
-      let name: string
-      if (code === 'zh-CN') {
-        name = '简体中文'
-      } else if (code === 'zh-TW') {
-        name = '繁體中文'
-      } else {
-        name = nameGenerator.of(code) || code
-      }
+      const name = nativeNames[code] || code
       return { name, value: code }
     })
   }, [])
@@ -122,6 +121,14 @@ const ThemeSettingModal: FC<Props> = (props) => {
     (fontType: FontType) => {
       setFontType(fontType)
       updateUserConfig({ fontType })
+    },
+    [],
+  )
+
+  const onTitleLanguageChange = useCallback(
+    (lang: 'ja' | 'zh') => {
+      setTitleLanguage(lang)
+      updateUserConfig({ titleLanguage: lang })
     },
     [],
   )
@@ -187,13 +194,28 @@ const ThemeSettingModal: FC<Props> = (props) => {
         <div className="w-[300px]">
           <p className="font-bold text-lg mb-3">{t('Language')}</p>
           <Select
-            options={[{ name: t('Auto'), value: 'auto' }, { name: 'English', value: 'en' }, ...languageOptions]}
+            options={[{ name: t('Auto'), value: 'auto' }, ...languageOptions]}
             value={lang}
             onChange={onLanguageChange}
             position="top"
           />
         </div>
-        <div className="">
+        <div className="w-[300px]">
+          <p className="font-bold text-lg mb-3">{t('Title Generation Language')}</p>
+          <Select
+            options={[
+              { name: '日本語', value: 'ja' as const },
+              { name: '中文', value: 'zh' as const },
+            ]}
+            value={titleLanguage}
+            onChange={onTitleLanguageChange}
+            position="top"
+          />
+          <p className="mt-2 text-xs text-primary-text opacity-60">
+            {t('Title language hint')}
+          </p>
+        </div>
+        <div className="w-[300px]">
           <p className="font-bold text-lg mb-3">{t('Sidebar Display Mode')}</p>
           <Select
             options={[
@@ -206,7 +228,7 @@ const ThemeSettingModal: FC<Props> = (props) => {
             position="top"
           />
         </div>
-        <div className="">
+        <div className="w-[300px]">
           <p className="font-bold text-lg mb-3">{t('Font Type')}</p>
           <Select
             options={[

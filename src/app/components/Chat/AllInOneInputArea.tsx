@@ -13,7 +13,7 @@ interface Props {
   supportImageInput?: boolean
   hasUserResized: boolean
   onLayoutChange: (layout: Layout) => void
-  onSubmit: (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], pdfFiles?: File[]) => void
+  onSubmit: (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], videoFiles?: File[], pdfFiles?: File[]) => void
   onHeightChange: (height: number) => void
 }
 
@@ -59,7 +59,8 @@ const AllInOneInputArea: FC<Props> = memo(({
     prevProps.generating === nextProps.generating &&
     prevProps.layout === nextProps.layout &&
     prevProps.supportImageInput === nextProps.supportImageInput &&
-    prevProps.hasUserResized === nextProps.hasUserResized
+    prevProps.hasUserResized === nextProps.hasUserResized &&
+    prevProps.onLayoutChange === nextProps.onLayoutChange
   )
 })
 

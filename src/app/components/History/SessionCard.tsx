@@ -61,8 +61,8 @@ const omitBase64DataUrl = (value?: string) => {
 interface SessionCardProps {
   session: SessionListItem
   isSelected: boolean
-  onToggleSelect: () => void
-  onRestore: () => void
+  onToggleSelect: (sessionKey: string) => void
+  onRestore: (session: SessionListItem) => void
 }
 
 const SessionCard: FC<SessionCardProps> = memo(
@@ -72,10 +72,14 @@ const SessionCard: FC<SessionCardProps> = memo(
     const handleRestoreClick = useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation()
-        onRestore()
+        onRestore(s)
       },
-      [onRestore],
+      [onRestore, s],
     )
+
+    const handleToggleSelect = useCallback(() => {
+      onToggleSelect(s._sessionKey)
+    }, [onToggleSelect, s._sessionKey])
 
     const displayFirstMessage = omitBase64DataUrl(s.firstMessage)
     const displayLastMessage = s.type === 'single' ? omitBase64DataUrl(s.lastMessage) : ''
@@ -93,7 +97,7 @@ const SessionCard: FC<SessionCardProps> = memo(
           'border border-primary-border rounded-2xl p-5 bg-primary-background/40 hover:bg-secondary/30 transition-all cursor-pointer',
           isSelected && 'bg-secondary/30 shadow-lg max-h-[50vh] overflow-y-auto custom-scrollbar',
         )}
-        onClick={onToggleSelect}
+        onClick={handleToggleSelect}
       >
         <div className="flex flex-col gap-3">
           <div className="flex flex-row items-start gap-3 flex-wrap">
@@ -234,7 +238,10 @@ const SessionCard: FC<SessionCardProps> = memo(
   (prevProps, nextProps) => {
     // Custom comparison for optimal memoization
     return (
-      prevProps.session._sessionKey === nextProps.session._sessionKey && prevProps.isSelected === nextProps.isSelected
+      prevProps.session._sessionKey === nextProps.session._sessionKey &&
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.onToggleSelect === nextProps.onToggleSelect &&
+      prevProps.onRestore === nextProps.onRestore
     )
   },
 )
