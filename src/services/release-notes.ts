@@ -6,6 +6,15 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.15.3',
+    notes: [
+      'releasenote_v2153_video_input',
+      'releasenote_v2153_openrouter_audio',
+      'releasenote_v2153_ai_title',
+      'releasenote_v2153_allinone_fix',
+    ],
+  },
+  {
     version: '2.15.2',
     notes: [
       'releasenote_v2152_novita_models',
