@@ -1,7 +1,8 @@
-import { FC, useEffect } from 'react'
+import { FC, useCallback, useEffect } from 'react'
 import { useSetAtom } from 'jotai'
 import { useTranslation } from 'react-i18next'
 import { useChat } from '~app/hooks/use-chat'
+import { useSessionNameGenerator } from '~app/hooks/use-session-name'
 import ConversationPanel from '../components/Chat/ConversationPanel'
 import { sessionToRestoreAtom } from '~app/state'
 import { loadHistoryMessages } from '~services/chat-history'
@@ -15,6 +16,19 @@ const SingleBotChatPanel: FC<Props> = ({ index }) => {
   const { t } = useTranslation()
   const setSessionToRestore = useSetAtom(sessionToRestoreAtom)
   const chat = useChat(index)
+
+  // セッション名自動生成（単一ボット: 1つの応答のみ）
+  const getMessages = useCallback(() => {
+    if (chat.messages && chat.messages.length > 0) {
+      return [[...chat.messages]]
+    }
+    return []
+  }, [chat.messages])
+
+  useSessionNameGenerator({
+    generating: chat.generating,
+    getMessages,
+  })
 
   // URL パラメータ経由の単体セッション復元（新規タブ復元用）
   useEffect(() => {
@@ -50,7 +64,7 @@ const SingleBotChatPanel: FC<Props> = ({ index }) => {
         index={index}
         bot={chat.bot}
         messages={chat.messages}
-        onUserSendMessage={(input, images, attachments, audioFiles, pdfFiles) => chat.sendMessage(input, images, attachments, audioFiles, pdfFiles)}
+        onUserSendMessage={(input, images, attachments, audioFiles, videoFiles, pdfFiles) => chat.sendMessage(input, images, attachments, audioFiles, videoFiles, pdfFiles)}
         generating={chat.generating}
         stopGenerating={chat.stopGenerating}
         resetConversation={chat.resetConversation}

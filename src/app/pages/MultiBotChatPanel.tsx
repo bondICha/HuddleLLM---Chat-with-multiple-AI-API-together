@@ -12,6 +12,7 @@ import {
 } from '../state'
 import { getSessionSnapshot, loadAllInOneSessions, loadHistoryMessages, setAllInOneSession, saveSessionSnapshot, ChatMessageModel } from '~services/chat-history'
 import { updateChatPair, getUserConfig } from '~services/user-config'
+import { useSessionNameGenerator } from '~app/hooks/use-session-name'
 import AllInOneInputArea from '~app/components/Chat/AllInOneInputArea'
 import { Layout } from '~app/consts'
 import { useChat } from '~app/hooks/use-chat'
@@ -191,6 +192,14 @@ const GeneralChatPanel: FC<{
 
   // 入力クリア用（購読しない）
   const clearInput = useSetAtom(clearAllInOneInputAtom)
+
+  // セッション名自動生成フック
+  useSessionNameGenerator({
+    generating,
+    getMessages: () => chats
+      .filter(c => c.messages && c.messages.length > 0)
+      .map(c => [...c.messages]),
+  })
   
   // 現在のペア設定を取得
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
@@ -252,38 +261,38 @@ const GeneralChatPanel: FC<{
     }
   }
   
-  const setLayout = async (newLayout: Layout) => {
+  const setLayout = useCallback(async (newLayout: Layout) => {
     // レイアウト変更時にbots配列を正規化
     const newPanelCount = getPanelCount(newLayout)
     const enabledIndices = await resolveEnabledBotIndices()
-    
+
     if (enabledIndices.length === 0) {
       alert(t('All-in-One: Failed to resolve models'))
       return
     }
-    
+
     if (enabledIndices.length < newPanelCount) {
       alert(t('All-in-One: Not enough enabled models', { count: newPanelCount }))
       return
     }
-    
+
     // 現在のbots配列を取得
     const currentBots = currentPairConfig.bots || DEFAULT_BOTS
-    
+
     // 新しいレイアウトに合わせて正規化
     const normalizedBots = normalizeBotsForLayout(currentBots, newPanelCount, enabledIndices)
-    
+
     // 全体のbots配列を更新（既存の部分を正規化されたボットで置き換え）
     const updatedAllBots = [...currentBots]
     normalizedBots.forEach((botIndex, i) => {
       updatedAllBots[i] = botIndex
     })
-    
+
     updateCurrentPairConfig({
       layout: newLayout,
       bots: updatedAllBots
     })
-  }
+  }, [t, currentPairConfig, updateCurrentPairConfig])
   
   const [refresh, setRefresh] = useState(0) // 更新用の state を追加
   const [pendingSearchQuery, setPendingSearchQuery] = useAtom(pendingSearchQueryAtom)
@@ -399,10 +408,10 @@ const GeneralChatPanel: FC<{
   }, [chats.length, supportImageInput])
 
   const sendSingleMessage = useCallback(
-   (input: string, index: number, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], pdfFiles?: File[]) => {
+   (input: string, index: number, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], videoFiles?: File[], pdfFiles?: File[]) => {
      const chat = chats.find((c) => c.index === index);
      if (chat) {
-       chat.sendMessage(input, images, attachments, audioFiles, pdfFiles);
+       chat.sendMessage(input, images, attachments, audioFiles, videoFiles, pdfFiles);
      }
    },
    [chats],
@@ -415,11 +424,11 @@ const GeneralChatPanel: FC<{
   }, [chats])
 
   const sendAllMessage = useCallback(
-    (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], pdfFiles?: File[]) => {
-      if (!input?.trim() && !images?.length && !attachments?.length && !audioFiles?.length && !pdfFiles?.length) return;
+    (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], videoFiles?: File[], pdfFiles?: File[]) => {
+      if (!input?.trim() && !images?.length && !attachments?.length && !audioFiles?.length && !videoFiles?.length && !pdfFiles?.length) return;
 
       // まずメッセージを送信（refから最新のchatsを取得）
-      uniqBy(chatsRef.current, (c) => c.index).forEach((c) => c.sendMessage(input, images, attachments, audioFiles, pdfFiles));
+      uniqBy(chatsRef.current, (c) => c.index).forEach((c) => c.sendMessage(input, images, attachments, audioFiles, videoFiles, pdfFiles));
 
       // 送信後に入力をクリア
       clearInput();
@@ -433,10 +442,10 @@ const GeneralChatPanel: FC<{
     if (chats.length > 0 && !generating && chats.some(chat => chat.messages.length > 0)) {
       const currentBots = getCurrentBotIndices();
       const pairName = currentPairConfig.pairName || `All-in-One ${currentBots.length} bots`;
-      
+
       // 既存のセッションUUIDがあればそれを使用、なければ新しいUUIDを生成
       const sessionUUID = currentSessionUUID || `session-${uuid()}`;
-      
+
       // 新しいUUIDを生成した場合は保存
       if (!currentSessionUUID && setCurrentSessionUUID) {
         setCurrentSessionUUID(sessionUUID);
@@ -456,6 +465,7 @@ const GeneralChatPanel: FC<{
       }
     }
   }, [generating, chats, getCurrentBotIndices, currentPairConfig, layout, currentSessionUUID])
+
 
   // 保存された検索クエリがあれば自動的に送信
   useEffect(() => {
@@ -578,7 +588,7 @@ const GeneralChatPanel: FC<{
             index={chat.index}
             bot={chat.bot}
             messages={chat.messages}
-            onUserSendMessage={(input, images, attachments, audioFiles, pdfFiles) => sendSingleMessage(input, chat.index, images, attachments, audioFiles, pdfFiles)}
+            onUserSendMessage={(input, images, attachments, audioFiles, videoFiles, pdfFiles) => sendSingleMessage(input, chat.index, images, attachments, audioFiles, videoFiles, pdfFiles)}
             generating={chat.generating}
             stopGenerating={chat.stopGenerating}
             mode="compact"

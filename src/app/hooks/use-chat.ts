@@ -43,7 +43,7 @@ export function useChat(index: number) {
   )
 
   const sendMessage = useCallback(
-    async (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], pdfFiles?: File[]) => {
+    async (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], videoFiles?: File[], pdfFiles?: File[]) => {
       // URL処理
       const urlPattern = /@(https?:\/\/[^\s]+)/g
       const matches = [...input.matchAll(urlPattern)]
@@ -157,6 +157,7 @@ export function useChat(index: number) {
             images,
             attachments: attachments && attachments.length ? attachments : undefined,
             audioFiles: audioFiles && audioFiles.length ? audioFiles : undefined,
+            videoFiles: videoFiles && videoFiles.length ? videoFiles : undefined,
             pdfFiles: pdfFiles && pdfFiles.length ? pdfFiles : undefined,
             author: 'user',
             fetchedUrls: fetchedUrls.length > 0 ? fetchedUrls : undefined
@@ -168,14 +169,14 @@ export function useChat(index: number) {
       // API へ渡す最終メッセージは、ユーザ本文 + 取得URL + 添付を末尾に付加
       let finalMessage = cleanInput.trim() + (fetchedContent ? '\n\n' + fetchedContent : '')
 
-      // Wait for bot initialization if needed, then check audio capability
-      let audioCapable = false;
+      // Wait for bot initialization if needed, then check capabilities
       if ('isInitialized' in chatState.bot) {
         // Wait for AsyncAbstractBot initialization
         while (!(chatState.bot as any).isInitialized) {
           await new Promise((resolve) => setTimeout(resolve, 10));
         }
       }
+      let audioCapable = false;
       if ('supportsAudioInput' in chatState.bot) {
         audioCapable = (chatState.bot as any).supportsAudioInput;
       }
@@ -208,16 +209,25 @@ export function useChat(index: number) {
         compressedImages = await Promise.all(images.map(compressImageFile))
       }
 
+      const botModelName = chatState.bot.modelName || chatState.bot.name || 'Unknown'
+
       const supportsPdf = chatState.bot.supportsPdfInput
       if (pdfFiles && pdfFiles.length > 0 && !supportsPdf) {
-        toast(i18n.t('pdf_not_supported_provider'), { duration: 5000 })
+        toast(i18n.t('pdf_not_supported_provider', { model: botModelName }), { duration: 5000 })
       }
       const effectivePdfFiles = supportsPdf ? pdfFiles : undefined
+
+      const videoCapable = chatState.bot.supportsVideoInput ?? false;
+      if (videoFiles && videoFiles.length > 0 && !videoCapable) {
+        toast(i18n.t('video_not_supported_provider', { model: botModelName }), { duration: 5000 })
+      }
+      const effectiveVideoFiles = videoCapable ? videoFiles : undefined
 
       const resp = chatState.bot.sendMessage({
         prompt: finalMessage,
         images: compressedImages,
         audioFiles: audioFiles,
+        videoFiles: effectiveVideoFiles,
         pdfFiles: effectivePdfFiles,
         signal: abortController.signal,
       });
@@ -388,7 +398,7 @@ export function useChat(index: number) {
   useEffect(() => {
     if (chatState.messages.length) {
       // 履歴保存時に添付とオーディオを除去（画像同様、添付テキストは残さない）
-      const sanitized = chatState.messages.map(({ attachments, audioFiles, ...rest }) => rest)
+      const sanitized = chatState.messages.map(({ attachments, audioFiles, videoFiles, ...rest }) => rest)
       setConversationMessages(index, chatState.conversationId, sanitized as ChatMessageModel[])
     }
   }, [index, chatState.conversationId, chatState.messages])

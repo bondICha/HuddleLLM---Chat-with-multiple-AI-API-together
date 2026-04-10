@@ -48,10 +48,12 @@ function hasProviderWebSearch(provider?: CustomApiProvider, config?: CustomApiCo
 export class CustomBot extends AsyncAbstractBot {
     private customBotNumber: number;
     private config: CustomApiConfig | undefined;
+    private systemMessageOverride?: string;
 
-    constructor(params: { customBotNumber: number }) {
+    constructor(params: { customBotNumber: number; systemMessageOverride?: string }) {
         super();
         this.customBotNumber = params.customBotNumber;
+        this.systemMessageOverride = params.systemMessageOverride;
     }
 
     async initializeBot() {
@@ -87,6 +89,11 @@ export class CustomBot extends AsyncAbstractBot {
 
     // System prompt作成の共通ロジック
     private buildSystemPrompt(config: CustomApiConfig, commonSystemMessage: string): string {
+        // システムプロンプトがオーバーライドされている場合はそれを使用
+        if (this.systemMessageOverride) {
+            return this.systemMessageOverride;
+        }
+
         let combinedSystemMessage = '';
         switch (config.systemPromptMode) {
             case SystemPromptMode.APPEND:
@@ -271,6 +278,8 @@ export class CustomBot extends AsyncAbstractBot {
                         thinkingMode: config.thinkingMode,
                         reasoningEffort: config.reasoningEffort,
                         advancedConfig: effectiveAdvanced,
+                        enableAudioInput: true, // OpenRouter supports input_audio format
+                        enableVideoInput: true,
                     })
                 }
                 break;

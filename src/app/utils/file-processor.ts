@@ -4,6 +4,7 @@ export type ProcessedFileResult =
   | { type: 'text'; content: string; file: File; warning?: { key: string; params: Record<string, string> } }
   | { type: 'image'; file: File; warning?: { key: string; params: Record<string, string> } }
   | { type: 'audio'; file: File; warning?: { key: string; params: Record<string, string> } }
+  | { type: 'video'; file: File; warning?: { key: string; params: Record<string, string> } }
   | { type: 'pdf'; file: File }
   | { type: 'unsupported'; file: File; error: UnsupportedFileError };
 
@@ -21,6 +22,12 @@ const supportedAudioMimeTypes = [
     'audio/m4a', 'audio/x-m4a'
 ];
 
+const supportedVideoExtensions = ['mp4', 'mpeg', 'mpg', 'mov', 'avi', 'wmv', 'webm', '3gp'];
+const supportedVideoMimeTypes = [
+  'video/mp4', 'video/mpeg', 'video/quicktime',
+  'video/x-msvideo', 'video/x-ms-wmv', 'video/webm', 'video/3gpp'
+];
+
 async function readAsArrayBuffer(file: File): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -33,6 +40,11 @@ async function readAsArrayBuffer(file: File): Promise<ArrayBuffer> {
 function getAudioExtension(filename: string): string | null {
   const ext = filename.toLowerCase().match(/\.([^.]+)$/)?.[1];
   return ext && supportedAudioExtensions.includes(ext) ? ext : null;
+}
+
+function getVideoExtension(filename: string): string | null {
+  const ext = filename.toLowerCase().match(/\.([^.]+)$/)?.[1];
+  return ext && supportedVideoExtensions.includes(ext) ? ext : null;
 }
 
 export async function processFile(file: File): Promise<ProcessedFileResult> {
@@ -69,6 +81,38 @@ export async function processFile(file: File): Promise<ProcessedFileResult> {
       warning: {
         key: 'audio_warning_extension_fallback',
         params: { ext: audioExt }
+      },
+    };
+  }
+
+  // Video detection: Priority 1 - MIME type
+  if (file.type.startsWith('video/')) {
+    const isSupportedMime = supportedVideoMimeTypes.some(fmt =>
+      file.type === fmt || file.type.startsWith(fmt)
+    );
+    if (!isSupportedMime) {
+      const videoExt = getVideoExtension(file.name);
+      return {
+        type: 'video',
+        file,
+        warning: {
+          key: 'video_warning_uncommon_format',
+          params: { type: file.type, ext: videoExt || 'unknown' }
+        },
+      };
+    }
+    return { type: 'video', file };
+  }
+
+  // Video detection: Priority 2 - extension fallback
+  const videoExt = getVideoExtension(file.name);
+  if ((!file.type || file.type === 'application/octet-stream') && videoExt) {
+    return {
+      type: 'video',
+      file,
+      warning: {
+        key: 'video_warning_extension_fallback',
+        params: { ext: videoExt }
       },
     };
   }

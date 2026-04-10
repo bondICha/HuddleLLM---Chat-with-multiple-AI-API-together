@@ -1,4 +1,28 @@
 {
+  "releasenote_v2153_video_input": {
+    "en": "You can now attach video files to your chats when using Gemini or OpenRouter models.",
+    "ja": "GeminiおよびOpenRouterモデルで、チャットに動画ファイルを添付できるようになりました。",
+    "zh-CN": "使用 Gemini 或 OpenRouter 模型时，现在可以在聊天中附加视频文件。",
+    "zh-TW": "使用 Gemini 或 OpenRouter 模型時，現在可以在聊天中附加影片檔案。"
+  },
+  "releasenote_v2153_openrouter_audio": {
+    "en": "OpenRouter models can now receive audio files directly in the input_audio format — no transcription step needed, just attach and send.",
+    "ja": "OpenRouterモデルがオーディオファイルを input_audio 形式で直接受け取れるようになりました。文字起こし不要で、そのまま音声を送信できます。",
+    "zh-CN": "OpenRouter 模型现在可以直接接收 input_audio 格式的音频文件，无需转录，直接附加发送即可。",
+    "zh-TW": "OpenRouter 模型現在可以直接接收 input_audio 格式的音訊檔案，無需轉錄，直接附加傳送即可。"
+  },
+  "releasenote_v2153_ai_title": {
+    "en": "The AI now automatically generates a title for each chat session, displayed in your browser tab. You can customize the bot used, update frequency, and language in Display Settings.",
+    "ja": "チャット後にAIがセッションタイトルを自動生成し、ブラウザのタブに表示されます。使用するBot・更新頻度・言語は表示設定からカスタマイズできます。",
+    "zh-CN": "AI 现在会在聊天结束后自动生成会话标题，并显示在浏览器标签页中。您可以在显示设置中自定义所用机器人、更新频率和语言。",
+    "zh-TW": "AI 現在會在聊天結束後自動產生工作階段標題，並顯示於瀏覽器分頁中。您可以在顯示設定中自訂所用機器人、更新頻率與語言。"
+  },
+  "releasenote_v2153_allinone_fix": {
+    "en": "Fixed a bug where panel count switching in the All-in-One view would stop working after repeated chats.",
+    "ja": "All-in-Oneビューでチャットを繰り返すとパネル数の切り替えが効かなくなるバグを修正しました。",
+    "zh-CN": "修复了 All-in-One 视图中多次聊天后面板数量切换失效的问题。",
+    "zh-TW": "修復了 All-in-One 檢視中多次聊天後面板數量切換失效的問題。"
+  },
   "releasenote_v2152_novita_models": {
     "en": "Added GLM Image and Seedream 5.0 lite to Novita AI image models.",
     "ja": "Novita AI の画像モデルに GLM Image と Seedream 5.0 lite を追加しました。",

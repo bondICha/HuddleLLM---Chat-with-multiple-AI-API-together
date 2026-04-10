@@ -92,6 +92,14 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
     return () => { audioUrls.forEach(({ url }) => URL.revokeObjectURL(url)) }
   }, [audioUrls])
 
+  const videoUrls = useMemo(() => {
+    return message.videoFiles ? message.videoFiles.map(file => ({ url: URL.createObjectURL(file), name: file.name })) : []
+  }, [message.videoFiles])
+
+  useEffect(() => {
+    return () => { videoUrls.forEach(({ url }) => URL.revokeObjectURL(url)) }
+  }, [videoUrls])
+
   const pdfNames = useMemo(() => {
     return message.pdfFiles ? message.pdfFiles.map(file => file.name) : []
   }, [message.pdfFiles])
@@ -242,6 +250,16 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
                 <div key={index} className="flex flex-col gap-1">
                   <span className="text-xs opacity-70 truncate">{audio.name}</span>
                   <audio controls src={audio.url} className="w-full h-8" />
+                </div>
+              ))}
+            </div>
+          )}
+          {videoUrls.length > 0 && (
+            <div className="flex flex-col gap-2 my-2 w-full max-w-xs">
+              {videoUrls.map((video, index) => (
+                <div key={index} className="flex flex-col gap-1">
+                  <span className="text-xs opacity-70 truncate">{video.name}</span>
+                  <video controls src={video.url} className="w-full rounded" />
                 </div>
               ))}
             </div>

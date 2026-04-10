@@ -47,6 +47,48 @@
     "zh-CN": "字体类型",
     "zh-TW": "字體類型"
   },
+  "AI Title Generation": {
+    "en": "AI Title Generation",
+    "ja": "AIタイトル生成",
+    "zh-CN": "AI标题生成",
+    "zh-TW": "AI標題生成"
+  },
+  "Do not generate title": {
+    "en": "Do not generate title",
+    "ja": "タイトルを生成しない",
+    "zh-CN": "不生成标题",
+    "zh-TW": "不生成標題"
+  },
+  "AI Title Generation Prompt Description": {
+    "en": "Automatically generate session names from conversation content. Select a chatbot to use for title generation.",
+    "ja": "会話内容からセッション名を自動生成します。タイトル生成に使用するチャットボットを選択してください。",
+    "zh-CN": "根据对话内容自动生成会话名称。请选择用于标题生成的聊天机器人。",
+    "zh-TW": "根據對話內容自動生成工作階段名稱。請選擇用於標題生成的聊天機器人。"
+  },
+  "Update title every turn": {
+    "en": "Update title every turn",
+    "ja": "毎回のチャットでタイトルを更新",
+    "zh-CN": "每次对话时更新标题",
+    "zh-TW": "每次對話時更新標題"
+  },
+  "Do not show again": {
+    "en": "Do not show again",
+    "ja": "今後表示しない",
+    "zh-CN": "不再显示",
+    "zh-TW": "不再顯示"
+  },
+  "Title Generation Language": {
+    "en": "Title Generation Language",
+    "ja": "タイトル生成言語",
+    "zh-CN": "标题生成语言",
+    "zh-TW": "標題生成語言"
+  },
+  "Title language hint": {
+    "en": "English is not available — English words are too long to fit in compact spaces like tab titles and history lists. Japanese and Chinese express the same meaning in far fewer characters.",
+    "ja": "英語は選択できません。英単語は1語あたりの文字数が多く、タブタイトルや履歴リストの限られたスペースに収まりにくいためです。",
+    "zh-CN": "不支持英语：英文单词过长，无法在标签标题、历史记录等紧凑空间中正常显示。日语和中文可用较少汉字表达相同含义。",
+    "zh-TW": "不支援英語：英文單詞較長，無法在標籤標題、歷史記錄等有限空間中完整顯示。日語和中文可用較少漢字表達相同含義。"
+  },
   "Sans-serif (Gothic)": {
     "en": "Sans-serif (Gothic)",
     "ja": "ゴシック体",

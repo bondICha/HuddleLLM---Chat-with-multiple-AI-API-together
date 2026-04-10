@@ -546,19 +546,19 @@
     "zh-TW": "可用模型"
   },
   "Fetch Models": {
-    "en": "",
+    "en": "Fetch Models",
     "ja": "モデルを取得",
     "zh-CN": "获取模型",
     "zh-TW": "獲取模型"
   },
   "Loading...": {
-    "en": "",
+    "en": "Loading...",
     "ja": "読み込み中...",
     "zh-CN": "加载中...",
     "zh-TW": "載入中..."
   },
   "Search models...": {
-    "en": "",
+    "en": "Search models...",
     "ja": "モデルを検索...",
     "zh-CN": "搜索模型...",
     "zh-TW": "搜尋模型..."
