@@ -1,4 +1,16 @@
 {
+  "releasenote_v2160_btw_popup": {
+    "en": "Inspired by Claude Code, HuddleLLM now supports the /btw command. It opens a dedicated popup window so you can start a separate chat thread using your All-in-One conversation context.",
+    "ja": "With the respect to the Claude Code、HuddleLLM also introduced /BTW feature. ポップアップウィンドウで、All-in-Oneの会話のコンテキストをもとに別の会話スレッドでチャットできます",
+    "zh-CN": "受 Claude Code 启发，HuddleLLM 也推出了 /btw 功能。它会打开一个专属弹出窗口，让你可以基于 All-in-One 的对话上下文，在独立的聊天线程中继续交流。",
+    "zh-TW": "受 Claude Code 啟發，HuddleLLM 也推出了 /btw 功能。它會開啟一個專屬彈出視窗，讓你可以基於 All-in-One 的對話脈絡，在獨立的聊天執行緒中繼續交流。"
+  },
+  "releasenote_v2160_chat_bubble": {
+    "en": "Chat message bubbles now expand to full width in the conversation panel, giving you more room to read responses — action buttons like copy and regenerate appear as a hover overlay so they stay out of your way.",
+    "ja": "チャットのメッセージバブルが会話パネルの全幅に広がり、回答が格段に読みやすくなりました。コピーや再生成などのボタンはホバー時にオーバーレイ表示されるので、邪魔になりません。",
+    "zh-CN": "聊天气泡现在会扩展至对话面板的全宽，让回答更易阅读；复制、重新生成等操作按钮改为悬停时浮层显示，不再占用额外空间。",
+    "zh-TW": "聊天氣泡現在會擴展至對話面板的完整寬度，讓回應內容更易閱讀；複製、重新生成等操作按鈕改為游標懸停時以浮層顯示，不再佔用額外空間。"
+  },
   "releasenote_v2153_video_input": {
     "en": "You can now attach video files to your chats when using Gemini or OpenRouter models.",
     "ja": "GeminiおよびOpenRouterモデルで、チャットに動画ファイルを添付できるようになりました。",
