@@ -334,5 +334,59 @@
     "ja": "Enterで改行、Shift+Enterで送信します。",
     "zh-CN": "输入 Enter 换行，Shift+Enter 发送。",
     "zh-TW": "輸入 Enter 換行，Shift+Enter 發送。"
+  },
+  "Btw drawer subtitle": {
+    "en": "Chat with one AI using all other responses as context",
+    "ja": "他のAIの回答を参照しながら、1対1で深掘りできます",
+    "zh-CN": "结合所有回答进行对话",
+    "zh-TW": "結合所有回覆進行對話"
+  },
+  "Btw bot selector label": {
+    "en": "Ask",
+    "ja": "質問先",
+    "zh-CN": "提问对象",
+    "zh-TW": "提問對象"
+  },
+  "Btw context label": {
+    "en": "Context",
+    "ja": "参照情報",
+    "zh-CN": "参考对话",
+    "zh-TW": "參考對話"
+  },
+  "Btw no response yet": {
+    "en": "No response yet",
+    "ja": "まだ回答がありません",
+    "zh-CN": "暂无回复",
+    "zh-TW": "尚無回覆"
+  },
+  "Btw empty state": {
+    "en": "Ask anything — all AI responses are included as context",
+    "ja": "何でも聞いてみましょう。全AIの回答がコンテキストに含まれています",
+    "zh-CN": "尽管提问 — 所有 AI 的回复均已作为上下文",
+    "zh-TW": "盡情提問 — 所有 AI 的回覆均已納入背景"
+  },
+  "Btw input placeholder": {
+    "en": "Ask a follow-up...",
+    "ja": "続けて質問する...",
+    "zh-CN": "继续提问…",
+    "zh-TW": "繼續提問…"
+  },
+  "Btw context preamble": {
+    "en": "The following are conversations with other AIs for your reference:",
+    "ja": "参考情報として、他のAIとの会話履歴を以下に示します：",
+    "zh-CN": "以下是与其他 AI 的对话记录，供参考：",
+    "zh-TW": "以下是與其他 AI 的對話記錄，供參考："
+  },
+  "Btw comparison System-prompt": {
+    "en": "By default, respond with a markdown comparison table where each AI is a column and each row is a characteristic (e.g. Key Points, Agreements, Disagreements, Unique Insights). Adapt the format naturally to best fit the user's request.",
+    "ja": "基本的にはMarkdown比較テーブル（列：各AI、行：要点・合意点・相違点・独自の洞察など）で出力してください。ユーザーのリクエストに応じて、形式は柔軟に調整してください。",
+    "zh-CN": "默认以 Markdown 对比表格的形式输出（列为各 AI，行包含要点、共识、分歧、独特洞察等）。请根据用户的需求，灵活调整格式。",
+    "zh-TW": "預設以 Markdown 比較表格的形式輸出（欄為各 AI，列包含要點、共識、分歧、獨特洞見等）。請依使用者的需求，彈性調整格式。"
+  },
+  "Btw combobox description": {
+    "en": "Chat with context from all AI responses so far",
+    "ja": "ここまでのチャット履歴を参照しながらチャットできます",
+    "zh-CN": "以所有 AI 回复为上下文进行对话",
+    "zh-TW": "以所有 AI 回覆為背景進行對話"
   }
 }

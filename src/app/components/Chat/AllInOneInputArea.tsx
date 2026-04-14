@@ -15,6 +15,7 @@ interface Props {
   onLayoutChange: (layout: Layout) => void
   onSubmit: (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], videoFiles?: File[], pdfFiles?: File[]) => void
   onHeightChange: (height: number) => void
+  onBtwCommand?: (query: string) => void
 }
 
 const AllInOneInputArea: FC<Props> = memo(({
@@ -24,13 +25,22 @@ const AllInOneInputArea: FC<Props> = memo(({
   hasUserResized,
   onLayoutChange,
   onSubmit,
-  onHeightChange
+  onHeightChange,
+  onBtwCommand,
 }) => {
   const { t } = useTranslation()
 
-  // ここでatomを購読（このコンポーネント内のみ再レンダ）
   const [inputText, setInputText] = useAtom(allInOneInputTextAtom)
   const [inputAttachments, setInputAttachments] = useAtom(allInOneInputAttachmentsAtom)
+
+  const handleSubmit = (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], videoFiles?: File[], pdfFiles?: File[]) => {
+    const trimmed = input.trim()
+    if (trimmed.startsWith('/btw')) {
+      onBtwCommand?.(trimmed.slice(4).trim())
+      return
+    }
+    onSubmit(input, images, attachments, audioFiles, videoFiles, pdfFiles)
+  }
 
   return (
     <div className="flex flex-row gap-2 flex-grow min-h-0 overflow-hidden">
@@ -39,7 +49,7 @@ const AllInOneInputArea: FC<Props> = memo(({
         mode="full"
         className={`rounded-2xl bg-primary-background px-4 py-2 grow ${!hasUserResized ? 'max-h-full overflow-hidden' : ''}`}
         disabled={generating}
-        onSubmit={onSubmit}
+        onSubmit={handleSubmit}
         actionButton={!generating && <Button text={t('Send')} color="primary" type="submit" />}
         autoFocus={true}
         supportImageInput={supportImageInput}
@@ -54,13 +64,13 @@ const AllInOneInputArea: FC<Props> = memo(({
     </div>
   )
 }, (prevProps, nextProps) => {
-  // propsが変わらなければ再レンダしない
   return (
     prevProps.generating === nextProps.generating &&
     prevProps.layout === nextProps.layout &&
     prevProps.supportImageInput === nextProps.supportImageInput &&
     prevProps.hasUserResized === nextProps.hasUserResized &&
-    prevProps.onLayoutChange === nextProps.onLayoutChange
+    prevProps.onLayoutChange === nextProps.onLayoutChange &&
+    prevProps.onBtwCommand === nextProps.onBtwCommand
   )
 })
 

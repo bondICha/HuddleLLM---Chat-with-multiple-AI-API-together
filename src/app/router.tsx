@@ -5,7 +5,7 @@ import SettingPage from './pages/SettingPage'
 import SingleBotChatPanel from './pages/SingleBotChatPanel'
 import WelcomePage from './pages/WelcomePage'
 import HistoryPage from './pages/HistoryPage'
-// SearchQueryHandler のインポートは不要になります
+import BtwPage from './pages/BtwPage'
 
 const rootRoute = createRootRoute()
 
@@ -50,11 +50,19 @@ const historyRoute = createRoute({
   component: HistoryPage,
 })
 
+// BTW popup window — Layout なしのスタンドアロンページ
+const btwRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'btw',
+  component: BtwPage,
+})
+
 // searchRoute の定義を削除 コメントは不要なので削除
 // const searchRoute = createRoute({ ... })
 
 const routeTree = rootRoute.addChildren([
   layoutRoute.addChildren([indexRoute, customChatRoute, settingRoute, welcomeRoute, historyRoute]),
+  btwRoute,
 ])
 
 const hashHistory = createHashHistory()

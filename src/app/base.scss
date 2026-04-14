@@ -60,6 +60,10 @@ body {
   --primary-border: 53 53 53; // #353535
 }
 
+// /btw 機能共通のアンバー系カラー
+.light .text-btw { color: #864e00; }
+.dark  .text-btw { color: #e8a317; }
+
 @layer base {
   :root {
     opacity: 0.88;

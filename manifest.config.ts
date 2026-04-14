@@ -25,7 +25,7 @@ export default defineManifest(async () => {
       "https://rex.rakuten.design/favicon.ico",
     ],
     optional_host_permissions: ['https://*/*', 'http://*/*', 'wss://*/*'],
-    permissions: ['storage', 'unlimitedStorage', 'sidePanel', 'scripting', 'offscreen', 'declarativeNetRequestWithHostAccess'],
+    permissions: ['storage', 'unlimitedStorage', 'sidePanel', 'scripting', 'offscreen', 'declarativeNetRequestWithHostAccess', 'windows'],
     // content_scripts: [
     // ],
     commands: {
