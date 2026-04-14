@@ -192,11 +192,6 @@ const GeneralChatPanel: FC<{
   const chatsRef = useRef(chats)
   const currentSessionName = useAtomValue(currentSessionNameAtom)
 
-  // popup window のタブタイトル用に session name を session storage に同期する
-  useEffect(() => {
-    Browser.storage.session.set({ btwSessionName: currentSessionName || '' })
-  }, [currentSessionName])
-
   const [activeAllInOne] = useAtom(activeAllInOneAtom)
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const saveConfig = useSetAtom(saveAllInOneConfigAtom)
@@ -454,6 +449,7 @@ const GeneralChatPanel: FC<{
         index: c.index,
         messages: c.messages.map((m) => ({ author: m.author, text: m.text || '' })),
       })),
+      sessionName: currentSessionName || undefined,
     }
     await Browser.storage.session.set({ btwContext: ctx })
     await Browser.windows.create({
@@ -464,7 +460,7 @@ const GeneralChatPanel: FC<{
       focused: true,
     })
     clearInput()
-  }, [clearInput])
+  }, [clearInput, currentSessionName])
 
   // 生成完了時にセッション保存
   useEffect(() => {

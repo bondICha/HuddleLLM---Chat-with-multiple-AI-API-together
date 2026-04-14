@@ -23,6 +23,7 @@ export interface StoredChatEntry {
 export interface BtwStorageContext {
   query: string
   chats: StoredChatEntry[]
+  sessionName?: string
 }
 
 // ============================================================
@@ -143,32 +144,10 @@ const BtwPage: FC = () => {
       if (ctx) {
         setContext(ctx)
         setSelectedBotIndex(ctx.chats[0]?.index ?? 0)
+        const name = ctx.sessionName
+        document.title = name ? `BTW: ${name} - HuddleLLM` : 'BTW: HuddleLLM'
       }
     })
-  }, [])
-
-  // タブタイトルをメインウィンドウのセッション名に同期（live update）
-  useEffect(() => {
-    const applyTitle = (sessionName: string) => {
-      document.title = sessionName ? `BTW: ${sessionName} - HuddleLLM` : 'BTW: HuddleLLM'
-    }
-
-    // 初期値を読み込む
-    Browser.storage.session.get('btwSessionName').then((data) => {
-      applyTitle((data as { btwSessionName?: string }).btwSessionName || '')
-    })
-
-    // メインウィンドウでのセッション名更新を受け取る
-    const listener = (
-      changes: Record<string, Browser.Storage.StorageChange>,
-      area: string,
-    ) => {
-      if (area === 'session' && 'btwSessionName' in changes) {
-        applyTitle((changes.btwSessionName.newValue as string) || '')
-      }
-    }
-    Browser.storage.onChanged.addListener(listener)
-    return () => Browser.storage.onChanged.removeListener(listener)
   }, [])
 
   // Load bot names
