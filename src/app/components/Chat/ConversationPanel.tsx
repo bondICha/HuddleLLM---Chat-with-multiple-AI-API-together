@@ -260,7 +260,7 @@ const ConversationPanel: FC<Props> = (props) => {
         <ChatMessageList
           index={props.index}
           messages={props.messages}
-          className={cx(marginClass)}
+          className=""
           onPropaganda={props.onPropaganda}
           shouldAutoScroll={props.shouldAutoScroll}
           setAutoScroll={props.setAutoScroll}

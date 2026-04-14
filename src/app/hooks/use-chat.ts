@@ -11,9 +11,9 @@ import { ChatError } from '~utils/errors'
 import toast from 'react-hot-toast'
 import i18n from '~app/i18n'
 
-export function useChat(index: number) {
+export function useChat(index: number, page: string = 'singleton') {
   console.log(`useChat called with index:`, index, `(type: ${typeof index})`);
-  const chatAtom = useMemo(() => chatFamily({ index, page: 'singleton' }), [index])
+  const chatAtom = useMemo(() => chatFamily({ index, page }), [index, page])
   const [chatState, setChatState] = useAtom(chatAtom)
 
   const sessionToRestore = useAtomValue(sessionToRestoreAtom)
@@ -43,7 +43,7 @@ export function useChat(index: number) {
   )
 
   const sendMessage = useCallback(
-    async (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], videoFiles?: File[], pdfFiles?: File[]) => {
+    async (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], videoFiles?: File[], pdfFiles?: File[], contextPrefix?: string) => {
       // URL処理
       const urlPattern = /@(https?:\/\/[^\s]+)/g
       const matches = [...input.matchAll(urlPattern)]
@@ -167,7 +167,11 @@ export function useChat(index: number) {
       })
       
       // API へ渡す最終メッセージは、ユーザ本文 + 取得URL + 添付を末尾に付加
-      let finalMessage = cleanInput.trim() + (fetchedContent ? '\n\n' + fetchedContent : '')
+      // contextPrefixがある場合はAI側にのみ渡す（UIには表示しない）
+      let finalMessage = contextPrefix
+        ? `${contextPrefix}\n\n---\n\n${cleanInput.trim()}`
+        : cleanInput.trim()
+      if (fetchedContent) finalMessage += '\n\n' + fetchedContent
 
       // Wait for bot initialization if needed, then check capabilities
       if ('isInitialized' in chatState.bot) {

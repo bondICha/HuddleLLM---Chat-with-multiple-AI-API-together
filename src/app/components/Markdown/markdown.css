@@ -73,6 +73,19 @@
 
 }
 
+/* Light mode: override dark-CSS table colors */
+.light .markdown-body table tr {
+  background-color: transparent;
+  border-top-color: #d1d9e0b3;
+}
+.light .markdown-body table tr:nth-child(2n) {
+  background-color: #f6f8fa;
+}
+.light .markdown-body table th,
+.light .markdown-body table td {
+  border-color: #d1d9e0;
+}
+
 /* コードブロック専用の余白なしクラス */
 .markdown-body.code-block-no-margin pre {
   margin-top: 0;

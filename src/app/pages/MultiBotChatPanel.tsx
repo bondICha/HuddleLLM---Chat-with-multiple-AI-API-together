@@ -4,6 +4,7 @@ import { sample, uniqBy } from 'lodash-es'
 import { FC, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cx, uuid } from '~/utils'
+import Browser from 'webextension-polyfill'
 import {
   pendingSearchQueryAtom,
   sessionToRestoreAtom,
@@ -14,6 +15,7 @@ import { getSessionSnapshot, loadAllInOneSessions, loadHistoryMessages, setAllIn
 import { updateChatPair, getUserConfig } from '~services/user-config'
 import { useSessionNameGenerator } from '~app/hooks/use-session-name'
 import AllInOneInputArea from '~app/components/Chat/AllInOneInputArea'
+import { BtwStorageContext } from '~app/pages/BtwPage'
 import { Layout } from '~app/consts'
 import { useChat } from '~app/hooks/use-chat'
 import ConversationPanel from '../components/Chat/ConversationPanel'
@@ -24,7 +26,8 @@ import {
   saveAllInOneConfigAtom,
   DEFAULT_BOTS,
   DEFAULT_PAIR_CONFIG,
-  AllInOnePairConfig
+  AllInOnePairConfig,
+  currentSessionNameAtom,
 } from '~app/atoms/all-in-one'
 
 // ========== Helper Functions ==========
@@ -185,7 +188,24 @@ const GeneralChatPanel: FC<{
   const { t } = useTranslation()
   const generating = useMemo(() => chats.some((c) => c.generating), [chats])
 
-  // タブローカルatomを使用
+  // Btw hint: show after first round of generation completes
+  const [showBtwHint, setShowBtwHint] = useState(false)
+  const prevGeneratingRef = useRef(false)
+  useEffect(() => {
+    // Detect generating going from true → false (a round just finished)
+    if (prevGeneratingRef.current && !generating) {
+      const hasResponses = chats.some((c) => c.messages.length > 0)
+      if (hasResponses) {
+        setShowBtwHint(true)
+      }
+    }
+    prevGeneratingRef.current = generating
+  }, [generating, chats])
+
+  // /Btw feature
+  const chatsRef = useRef(chats)
+  const currentSessionName = useAtomValue(currentSessionNameAtom)
+
   const [activeAllInOne] = useAtom(activeAllInOneAtom)
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const saveConfig = useSetAtom(saveAllInOneConfigAtom)
@@ -417,8 +437,7 @@ const GeneralChatPanel: FC<{
    [chats],
  );
 
-  // chatsをrefで保持して、sendAllMessageを安定化
-  const chatsRef = useRef(chats)
+  // chatsをrefで更新して、sendAllMessageを安定化
   useEffect(() => {
     chatsRef.current = chats
   }, [chats])
@@ -435,6 +454,27 @@ const GeneralChatPanel: FC<{
     },
     [clearInput],
   )
+
+  // /btw コマンドを処理する — context を storage に保存してポップアップウィンドウを開く
+  const handleBtwCommand = useCallback(async (query: string) => {
+    const ctx: BtwStorageContext = {
+      query,
+      chats: chatsRef.current.map((c) => ({
+        index: c.index,
+        messages: c.messages.map((m) => ({ author: m.author, text: m.text || '' })),
+      })),
+      sessionName: currentSessionName || undefined,
+    }
+    await Browser.storage.session.set({ btwContext: ctx })
+    await Browser.windows.create({
+      url: Browser.runtime.getURL('app.html#/btw'),
+      type: 'popup',
+      width: 840,
+      height: 680,
+      focused: true,
+    })
+    clearInput()
+  }, [clearInput, currentSessionName])
 
   // 生成完了時にセッション保存
   useEffect(() => {
@@ -566,11 +606,13 @@ const GeneralChatPanel: FC<{
   )
 
   return (
-    <div className="flex flex-col overflow-hidden h-full" ref={mainContainerRef}>
-      {/* チャットパネルのグリッドエリア */}
-      <div
-        ref={gridAreaRef}
-        style={{ height: gridAreaHeight }}
+    <div className="flex flex-col overflow-hidden h-full">
+      {/* Inner container */}
+      <div ref={mainContainerRef} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        {/* チャットパネルのグリッドエリア */}
+        <div
+          ref={gridAreaRef}
+          style={{ height: gridAreaHeight }}
         className={cx(
           layout === 'twoHorizon'
             ? 'flex flex-col'
@@ -619,10 +661,13 @@ const GeneralChatPanel: FC<{
         generating={generating}
         supportImageInput={supportImageInput}
         hasUserResized={hasUserResized}
+        showBtwHint={showBtwHint}
         onLayoutChange={onLayoutChange}
         onSubmit={sendAllMessage}
         onHeightChange={handleAutoHeightChange}
+        onBtwCommand={handleBtwCommand}
       />
+      </div>
     </div>
   )
 }

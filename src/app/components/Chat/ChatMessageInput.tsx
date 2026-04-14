@@ -1,5 +1,4 @@
 import {
-  FloatingFocusManager,
   FloatingList,
   FloatingPortal,
   arrow,
@@ -68,7 +67,7 @@ interface Props {
 const ChatMessageInput: FC<Props> = (props) => {
   const { t } = useTranslation()
   const {
-    placeholder = t('Use / to select prompts, @URL to fetch content, Shift+Enter to add new line'),
+    placeholder = t('singlebot_input_placeholder'),
     fullHeight = false,
     onHeightChange,
     onVisibilityChange,
@@ -189,7 +188,7 @@ const ChatMessageInput: FC<Props> = (props) => {
     activeIndex,
     onNavigate: setActiveIndex,
     loop: true,
-    focusItemOnOpen: true,
+    focusItemOnOpen: false,
     openOnArrowKeyDown: false,
   })
 
@@ -618,13 +617,17 @@ const ChatMessageInput: FC<Props> = (props) => {
             )}
             <ComboboxContext.Provider value={comboboxContext}>
               {isComboboxOpen && (
-                <FloatingFocusManager context={context} modal={false} initialFocus={-1}>
-                  <div ref={refs.setFloating} style={{ ...floatingStyles }} {...getFloatingProps()}>
+                <FloatingPortal>
+                  <div
+                    ref={refs.setFloating}
+                    style={{ ...floatingStyles, zIndex: 9999 }}
+                    {...getFloatingProps()}
+                  >
                     <FloatingList elementsRef={floatingListRef}>
                       <PromptCombobox />
                     </FloatingList>
                   </div>
-                </FloatingFocusManager>
+                </FloatingPortal>
               )}
             </ComboboxContext.Provider>
             {props.supportImageInput && (
@@ -760,7 +763,7 @@ const ChatMessageInput: FC<Props> = (props) => {
           maxRows={props.maxRows}
           fullHeight={fullHeight}
           onHeightChange={onHeightChange}
-          className={cx(isCompactMode && !shouldShowInput && 'text-center')}
+          className={cx(isCompactMode && !shouldShowInput && 'text-center', value.startsWith('/btw') && 'text-btw')}
         />
       </div>
       {isCompactMode && !shouldShowInput

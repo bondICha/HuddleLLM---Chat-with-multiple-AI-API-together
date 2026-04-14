@@ -11,6 +11,13 @@ const LIBRARY_PROMPT: Prompt = {
   prompt: '',
 }
 
+const BTW_PROMPT: Prompt = {
+  id: 'BTW_COMMAND',
+  title: '/btw — By The Way',
+  prompt: '/btw ',
+  description: t('BTW combobox description'),
+}
+
 export interface ComboboxContextValue {
   activeIndex: number | null
   getItemProps: ReturnType<typeof useInteractions>['getItemProps']
@@ -30,7 +37,7 @@ const PromptItem: FC<{ prompt: Prompt }> = ({ prompt }) => {
       tabIndex={isActive ? 0 : -1}
       className={cx(
         'cursor-default select-none py-2 px-4',
-        isActive ? 'bg-primary-blue text-white' : 'text-secondary-text',
+        isActive ? 'bg-primary-blue text-white' : 'text-primary-text hover:bg-secondary',
       )}
       {...context.getItemProps({
         onClick: () => {
@@ -46,7 +53,12 @@ const PromptItem: FC<{ prompt: Prompt }> = ({ prompt }) => {
         },
       })}
     >
-      {prompt.title}
+      <div className="font-medium text-sm">{prompt.title}</div>
+      {prompt.description && (
+        <div className={cx('text-xs mt-0.5', isActive ? 'text-white/75' : 'text-secondary-text')}>
+          {prompt.description}
+        </div>
+      )}
     </div>
   )
 }
@@ -56,8 +68,11 @@ const PromptCombobox: FC = () => {
   if (!promptsQuery.data) {
     return null
   }
+
   return (
-    <div className="overflow-auto rounded-md py-1 shadow-lg ring-1 ring-primary-border focus:outline-none text-sm min-w-[150px] bg-primary-background">
+    <div className="overflow-auto rounded-md py-1 shadow-lg border border-primary-border text-sm min-w-[220px] bg-primary-background">
+      <PromptItem key={BTW_PROMPT.id} prompt={BTW_PROMPT} />
+      <div className="h-[1px] bg-primary-border" />
       {promptsQuery.data.map((prompt) => {
         return <PromptItem key={prompt.id} prompt={prompt} />
       })}

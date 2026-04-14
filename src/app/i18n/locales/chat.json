@@ -239,6 +239,18 @@
     "zh-CN": "使用 / 选择提示词，@URL获取内容，Shift+Enter添加换行",
     "zh-TW": "使用 / 選擇提示詞，@URL獲取內容，Shift+Enter添加換行"
   },
+  "singlebot_input_placeholder": {
+    "en": "Use / to select prompts, @URL to fetch content, Shift+Enter to add new line",
+    "ja": "プロンプトを選択するには/を使用し、@URLでコンテンツを取得し、Shift+Enterで新しい行を追加します",
+    "zh-CN": "使用 / 选择提示词，@URL获取内容，Shift+Enter添加换行",
+    "zh-TW": "使用 / 選擇提示詞，@URL獲取內容，Shift+Enter添加換行"
+  },
+  "allinone_input_placeholder": {
+    "en": "Use / to select prompts, /btw to compare AI answers, @URL获取内容，Shift+Enter to add new line",
+    "ja": "/でプロンプト選択、/btwでAI回答を比較、@URLでコンテンツを取得、Shift+Enterで改行",
+    "zh-CN": "/ 选择提示词，/btw 比较 AI 回答，@URL获取内容，Shift+Enter 换行",
+    "zh-TW": "/ 選擇提示詞，/btw 比較 AI 回覆，@URL 取得內容，Shift+Enter 換行"
+  },
   "Reference Sites": {
     "en": "Reference Sites",
     "ja": "参考サイト",
@@ -334,5 +346,83 @@
     "ja": "Enterで改行、Shift+Enterで送信します。",
     "zh-CN": "输入 Enter 换行，Shift+Enter 发送。",
     "zh-TW": "輸入 Enter 換行，Shift+Enter 發送。"
+  },
+  "Btw drawer subtitle": {
+    "en": "Chat with one AI using all other responses as context",
+    "ja": "他のAIの回答を参照しながら、一対一で深掘りできます",
+    "zh-CN": "将其他 AI 的回答作为上下文进行对话",
+    "zh-TW": "將其他 AI 的回覆作為背景進行對話"
+  },
+  "Btw bot selector label": {
+    "en": "Ask",
+    "ja": "質問先",
+    "zh-CN": "提问对象",
+    "zh-TW": "提問對象"
+  },
+  "Btw context label": {
+    "en": "Context",
+    "ja": "参照情報",
+    "zh-CN": "参考对话",
+    "zh-TW": "參考對話"
+  },
+  "Btw no response yet": {
+    "en": "No response yet",
+    "ja": "まだ回答がありません",
+    "zh-CN": "暂无回复",
+    "zh-TW": "尚無回覆"
+  },
+  "Btw empty state": {
+    "en": "Ask anything — all AI responses are included as context",
+    "ja": "何でも聞いてみましょう。全AIの回答がコンテキストに含まれています",
+    "zh-CN": "畅所欲言 — 所有 AI 的回答都已作为上下文",
+    "zh-TW": "盡情提問 — 所有 AI 的回覆均已納入背景"
+  },
+  "Btw input placeholder": {
+    "en": "Ask a follow-up...",
+    "ja": "続けて質問する...",
+    "zh-CN": "继续提问…",
+    "zh-TW": "繼續提問…"
+  },
+  "Btw context preamble": {
+    "en": "The following are conversations with other AIs for your reference:",
+    "ja": "参考情報として、他のAIとの会話履歴を以下に示します：",
+    "zh-CN": "以下是与其他 AI 的对话记录，供参考：",
+    "zh-TW": "以下是與其他 AI 的對話記錄，供參考："
+  },
+  "Btw comparison System-prompt": {
+    "en": "By default, respond with a markdown comparison table where each AI is a column and each row is a characteristic (e.g. Key Points, Agreements, Disagreements, Unique Insights). Adapt the format naturally to best fit the user's request.",
+    "ja": "基本的にはMarkdown比較テーブル（列：各AI、行：要点・合意点・相違点・独自の洞察など）で出力してください。ユーザーのリクエストに応じて、形式は柔軟に調整してください。",
+    "zh-CN": "默认以 Markdown 对比表格的形式输出（列为各 AI，行包含要点、共识、分歧、独特洞察等）。请根据用户的需求，灵活调整格式。",
+    "zh-TW": "預設以 Markdown 比較表格的形式輸出（欄為各 AI，列包含要點、共識、分歧、獨特洞見等）。請依使用者的需求，彈性調整格式。"
+  },
+  "Btw combobox description": {
+    "en": "Chat with context from all AI responses so far",
+    "ja": "ここまでのチャット履歴を参照しながらチャットできます",
+    "zh-CN": "结合目前所有 AI 的回答进行对话",
+    "zh-TW": "結合目前所有 AI 的回覆進行對話"
+  },
+  "Btw hint message": {
+    "en": "Want to compare AI answers? Use /btw to discuss them with another AI.",
+    "ja": "AIの回答を比較したいですか？ /btw で別のAIに分析してもらいましょう。",
+    "zh-CN": "想比较这些 AI 的回答吗？输入 /btw 让另一个 AI 帮你分析。",
+    "zh-TW": "想比較這些 AI 的回覆嗎？輸入 /btw 讓另一個 AI 幫你分析唷！"
+  },
+  "Btw hint try button": {
+    "en": "Try /btw",
+    "ja": "/btw を試す",
+    "zh-CN": "试试 /btw",
+    "zh-TW": "試試 /btw"
+  },
+  "Btw hint dismiss": {
+    "en": "Maybe later",
+    "ja": "あとで",
+    "zh-CN": "稍后再说",
+    "zh-TW": "稍後再說"
+  },
+  "Btw hint default query": {
+    "en": "Compare responses",
+    "ja": "それぞれの返答を比較してください。以上よろしくお願いします。",
+    "zh-CN": "人工 比较回答一下，谢了！",
+    "zh-TW": "幫我比較一下這些 AI の回覆唷！"
   }
 }
