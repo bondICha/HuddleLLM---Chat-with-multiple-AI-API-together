@@ -223,12 +223,24 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
     <div
       id={message.id}
       className={cx(
-        'group flex gap-2 w-full',
+        'group flex w-full',
         message.author === 'user' ? 'flex-row-reverse' : 'flex-row',
         className,
       )}
     >
-      <div ref={messageRef} className="flex flex-col max-w-fit items-start gap-2 min-w-0">
+      <div ref={messageRef} className={cx('relative flex flex-col items-start gap-2 min-w-0', message.author === 'user' ? 'max-w-fit pl-12' : 'w-full')}>
+        {!!copyText && (
+          <>
+            <div className="absolute right-1 top-1 z-10">
+              <ActionButton />
+            </div>
+            {messageHeight > MESSAGE_HEIGHT_THRESHOLD && (
+              <div className="absolute right-1 bottom-1 z-10">
+                <ActionButton />
+              </div>
+            )}
+          </>
+        )}
         <MessageBubble
           color={message.author === 'user' ? 'primary' : 'flat'}
           thinking={message.thinking}
@@ -330,12 +342,6 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
           )}
         </MessageBubble>
       </div>
-      {!!copyText && (
-        <div className="flex flex-col justify-between py-1 self-stretch">
-          <ActionButton />
-          {messageHeight > MESSAGE_HEIGHT_THRESHOLD && <ActionButton />}
-        </div>
-      )}
       {/* Read-only attachment modal (footer left: characters, right: close) */}
       <ExpandableDialog
         open={!!openedAttachment}
