@@ -188,6 +188,20 @@ const GeneralChatPanel: FC<{
   const { t } = useTranslation()
   const generating = useMemo(() => chats.some((c) => c.generating), [chats])
 
+  // Btw hint: show after first round of generation completes
+  const [showBtwHint, setShowBtwHint] = useState(false)
+  const prevGeneratingRef = useRef(false)
+  useEffect(() => {
+    // Detect generating going from true → false (a round just finished)
+    if (prevGeneratingRef.current && !generating) {
+      const hasResponses = chats.some((c) => c.messages.length > 0)
+      if (hasResponses) {
+        setShowBtwHint(true)
+      }
+    }
+    prevGeneratingRef.current = generating
+  }, [generating, chats])
+
   // /Btw feature
   const chatsRef = useRef(chats)
   const currentSessionName = useAtomValue(currentSessionNameAtom)
@@ -647,6 +661,7 @@ const GeneralChatPanel: FC<{
         generating={generating}
         supportImageInput={supportImageInput}
         hasUserResized={hasUserResized}
+        showBtwHint={showBtwHint}
         onLayoutChange={onLayoutChange}
         onSubmit={sendAllMessage}
         onHeightChange={handleAutoHeightChange}

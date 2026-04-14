@@ -67,7 +67,7 @@ interface Props {
 const ChatMessageInput: FC<Props> = (props) => {
   const { t } = useTranslation()
   const {
-    placeholder = t('Use / to select prompts, @URL to fetch content, Shift+Enter to add new line'),
+    placeholder = t('singlebot_input_placeholder'),
     fullHeight = false,
     onHeightChange,
     onVisibilityChange,
