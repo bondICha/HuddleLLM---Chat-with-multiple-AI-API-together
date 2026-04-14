@@ -1,4 +1,16 @@
 {
+  "releasenote_v2160_btw_popup": {
+    "en": "Inspired by Claude Code, HuddleLLM now supports the /btw command. It opens a dedicated popup window so you can start a separate chat thread using your All-in-One conversation context.",
+    "ja": "Claude Code にインスパイアされ、/btw コマンドに対応しました。専用のポップアップウィンドウで、All-in-One の会話コンテキストをもとに別スレッドのチャットを始められます。",
+    "zh-CN": "受 Claude Code 启发，HuddleLLM 也推出了 /btw 功能。它会打开一个专属弹出窗口，让你可以基于 All-in-One 的对话上下文，在独立的聊天线程中继续交流。",
+    "zh-TW": "受 Claude Code 啟發，HuddleLLM 也推出了 /btw 功能。它會開啟一個專屬彈出視窗，讓你可以基於 All-in-One 的對話脈絡，在獨立的聊天執行緒中繼續交流。"
+  },
+  "releasenote_v2160_chat_bubble": {
+    "en": "Chat bubbles now display at full width.",
+    "ja": "AI 回答が全幅で表示されます。",
+    "zh-CN": "AI 回答以全宽显示。",
+    "zh-TW": "AI 回答以全寬顯示。"
+  },
   "releasenote_v2153_video_input": {
     "en": "You can now attach video files to your chats when using Gemini or OpenRouter models.",
     "ja": "GeminiおよびOpenRouterモデルで、チャットに動画ファイルを添付できるようになりました。",

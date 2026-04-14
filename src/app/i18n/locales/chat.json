@@ -249,7 +249,7 @@
     "en": "Use / to select prompts, /btw to compare AI answers, @URL获取内容，Shift+Enter to add new line",
     "ja": "/でプロンプト選択、/btwでAI回答を比較、@URLでコンテンツを取得、Shift+Enterで改行",
     "zh-CN": "/ 选择提示词，/btw 比较 AI 回答，@URL获取内容，Shift+Enter 换行",
-    "zh-TW": "/ 選擇提示詞，/btw 比較 AI 回覆，@URL获取内容，Shift+Enter 換行"
+    "zh-TW": "/ 選擇提示詞，/btw 比較 AI 回覆，@URL 取得內容，Shift+Enter 換行"
   },
   "Reference Sites": {
     "en": "Reference Sites",

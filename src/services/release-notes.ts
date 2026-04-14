@@ -6,6 +6,13 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.16.0',
+    notes: [
+      'releasenote_v2160_btw_popup',
+      'releasenote_v2160_chat_bubble',
+    ],
+  },
+  {
     version: '2.15.3',
     notes: [
       'releasenote_v2153_video_input',
