@@ -3,9 +3,12 @@ import { createRoot } from 'react-dom/client'
 import { useSetAtom } from 'jotai'
 import { useEffect } from 'react'
 import Browser from 'webextension-polyfill'
+import { perfMark } from '~utils/perf'
+perfMark('main.tsx start')
 import '../services/sentry'
 import './base.scss'
 import './i18n'
+perfMark('i18n loaded')
 import { router } from './router'
 import { pendingSearchQueryAtom } from './state'
 import { markOmniboxSearchAsUsed } from '../services/storage/open-times'
