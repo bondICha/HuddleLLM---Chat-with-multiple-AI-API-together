@@ -348,16 +348,18 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
 
         if (targetIndex === -2) { // Add as new
           const newIndex = newConfigs.length + configsToAdd.length;
+          // Respect template's enabled flag: profiles marked enabled:false load as disabled by default
           configsToAdd.push({
             ...configToSave,
             id: newIndex + 1, // Assign new ID
-            enabled: true,
+            enabled: configToSave.enabled ?? true,
           });
         } else if (targetIndex !== undefined && targetIndex >= 0 && targetIndex < newConfigs.length) { // Overwrite existing
+          // Preserve user's existing enabled state on overwrite
           newConfigs[targetIndex] = {
             ...configToSave,
             id: newConfigs[targetIndex].id, // Preserve original ID
-            enabled: true, // Enable imported config
+            enabled: newConfigs[targetIndex].enabled ?? true,
           };
         }
       });
