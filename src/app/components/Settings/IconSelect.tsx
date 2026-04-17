@@ -53,6 +53,8 @@ import zhipuLogo from '~/assets/logos/zhipu.svg';
 import chutesLogo from '~/assets/logos/chutes.svg';
 import novitaLogo from '~/assets/logos/novita.svg';
 import openrouterLogo from '~/assets/logos/openrouter.svg';
+import minimaxLogo from '~/assets/logos/minimax-color.svg';
+import xiaomiLogo from '~/assets/logos/xiaomi.svg';
 
 // アイコンオプションの定義
 interface IconOption {
@@ -143,7 +145,9 @@ const otherIcons: IconOption[] = [
   { id: 'zhipu', name: 'Zhipu AI', src: zhipuLogo },
   { id: 'chutes', name: 'Chutes', src: chutesLogo },
   { id: 'novita', name: 'Novita', src: novitaLogo },
-  { id: 'openrouter', name: 'OpenRouter', src: openrouterLogo }
+  { id: 'openrouter', name: 'OpenRouter', src: openrouterLogo },
+  { id: 'minimax', name: 'MiniMax', src: minimaxLogo },
+  { id: 'xiaomi', name: 'Xiaomi', src: xiaomiLogo }
 ];
 
 interface IconSelectProps {

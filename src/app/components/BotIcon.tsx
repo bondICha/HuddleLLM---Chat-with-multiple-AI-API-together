@@ -57,6 +57,8 @@ import zhipuLogo from '~/assets/logos/zhipu.svg';
 import chutesLogo from '~/assets/logos/chutes.svg';
 import novitaLogo from '~/assets/logos/novita.svg';
 import openrouterLogo from '~/assets/logos/openrouter.svg';
+import minimaxLogo from '~/assets/logos/minimax-color.svg';
+import xiaomiLogo from '~/assets/logos/xiaomi.svg';
 
 // 特殊フォーマットのアイコンID用マッピング
 const specialFormatMap: Record<string, string> = {
@@ -119,6 +121,8 @@ const iconMap: Record<string, string> = {
   'chutes': chutesLogo,
   'novita': novitaLogo,
   'openrouter': openrouterLogo,
+  'minimax': minimaxLogo,
+  'xiaomi': xiaomiLogo,
 };
 
 // 安全なアイコン表示のための検証関数
