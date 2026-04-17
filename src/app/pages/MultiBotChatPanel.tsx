@@ -3,6 +3,7 @@ import { atomWithStorage } from 'jotai/utils'
 import { sample, uniqBy } from 'lodash-es'
 import { FC, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { perfMark } from '~utils/perf'
 import { cx, uuid } from '~/utils'
 import Browser from 'webextension-polyfill'
 import {
@@ -24,6 +25,7 @@ import {
   activeAllInOneAtom,
   initializeAllInOneAtom,
   saveAllInOneConfigAtom,
+  isInitializingAtom,
   DEFAULT_BOTS,
   DEFAULT_PAIR_CONFIG,
   AllInOnePairConfig,
@@ -58,7 +60,9 @@ function getPanelCount(layout: Layout): number {
  */
 async function resolveEnabledBotIndices(): Promise<number[]> {
   try {
+    perfMark('getUserConfig start')
     const config = await getUserConfig()
+    perfMark('getUserConfig done')
     if (!config || !Array.isArray(config.customApiConfigs)) {
       return []
     }
@@ -186,7 +190,14 @@ const GeneralChatPanel: FC<{
   setCurrentSessionUUID?: (uuid: string | null) => void
 }> = ({ chats, setBots, supportImageInput, currentSessionUUID, setCurrentSessionUUID }) => {
   const { t } = useTranslation()
+  const isInitializing = useAtomValue(isInitializingAtom)
   const generating = useMemo(() => chats.some((c) => c.generating), [chats])
+
+  useEffect(() => {
+    if (chats.length > 0) {
+      perfMark('GeneralChatPanel chats ready')
+    }
+  }, [chats])
 
   // Btw hint: show after first round of generation completes
   const [showBtwHint, setShowBtwHint] = useState(false)
@@ -614,6 +625,7 @@ const GeneralChatPanel: FC<{
           ref={gridAreaRef}
           style={{ height: gridAreaHeight }}
         className={cx(
+          isInitializing && "invisible",
           layout === 'twoHorizon'
             ? 'flex flex-col'
             : 'grid auto-rows-fr',
@@ -987,13 +999,17 @@ const MultiBotChatPanel: FC = () => {
   const sessionToRestore = useAtomValue(sessionToRestoreAtom)
   const setSessionToRestore = useSetAtom(sessionToRestoreAtom)
   const setAllInOneRestoreData = useSetAtom(allInOneRestoreDataAtom)
-  
-  // 現在のセッションUUIDを保持（復元された場合はそのUUID、新規の場合はnull）
+
   const [currentSessionUUID, setCurrentSessionUUID] = useState<string | null>(null)
-  
+  const setIsInitializing = useSetAtom(isInitializingAtom)
+
   // 初期化（前回の設定を復旧）
   useEffect(() => {
-    initializeConfig()
+    perfMark('MultiBotChatPanel mount')
+    initializeConfig().then(() => {
+      perfMark('initializeConfig complete')
+      setIsInitializing(false)
+    })
   }, [])
 
   // URL パラメータ経由のセッション復元（新規タブ復元用）
