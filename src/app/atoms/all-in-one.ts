@@ -2,6 +2,7 @@ import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
 import { Layout } from '~app/consts'
 import Browser from 'webextension-polyfill'
+import { perfMark } from '~utils/perf'
 
 // デフォルトボット設定
 export const DEFAULT_BOTS: number[] = [0, 1, 2, 3, 4, 5]
@@ -56,9 +57,14 @@ export const activeAllInOneAtom = atom<string>('default')
 
 // 初期化用のatom（前回の設定を復旧）
 export const initializeAllInOneAtom = atom(null, async (get, set) => {
+  perfMark('initializeAllInOne start')
   const initialConfig = await getInitialPairConfig()
+  perfMark('initializeAllInOne done')
   set(allInOnePairsAtom, { default: initialConfig })
 })
+
+// 初期化中かどうかを管理するatom（タブローカル、メモリ上のみ）
+export const isInitializingAtom = atom<boolean>(true)
 
 // 現在のセッション名（AI生成）を管理するatom
 export const currentSessionNameAtom = atom<string | undefined>(undefined)
