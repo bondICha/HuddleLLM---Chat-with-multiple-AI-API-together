@@ -15,6 +15,7 @@ import Button from '../Button';
 import NestedDropdown, { NestedDropdownOption } from '../NestedDropdown';
 import TripleStateToggle from '../TripleStateToggle';
 import ModelSearchInput from '../ModelSearchInput';
+import { maskKey } from '~/utils/active-api-key';
 import DeveloperOptionsPanel from './DeveloperOptionsPanel';
 import { getTemplateOptions, getActivePresets, getPresetMapping } from '~services/preset-loader';
 import { useApiModels } from '~hooks/use-api-models';
@@ -1091,24 +1092,49 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           </div>
                         )}
 
-                        {showApiKey && (
-                          <div className={formRowClass}>
-                            <p className={labelClass}>API Key</p>
-                            <div className={inputContainerClass}>
-                              <Input
-                                className='w-full'
-                                placeholder="Leave blank to use common API Key"
-                                value={config.apiKey}
-                                onChange={(e) => {
-                                  const updatedConfigs = [...customApiConfigs];
-                                  updatedConfigs[index].apiKey = e.currentTarget.value;
-                                  updateCustomApiConfigs(updatedConfigs);
-                                }}
-                                type="password"
-                              />
+                        {showApiKey && (() => {
+                          const commonKey = userConfig.customApiKey || '';
+                          const hasCustomKey = !!(config.apiKey?.trim());
+                          const usingCommon = !hasCustomKey && !!commonKey.trim();
+                          const usingNone = !hasCustomKey && !commonKey.trim();
+                          return (
+                            <div className={formRowClass}>
+                              <p className={labelClass}>API Key</p>
+                              <div className={inputContainerClass}>
+                                <Input
+                                  className='w-full'
+                                  placeholder={t('Leave blank to use Common API Key')}
+                                  value={config.apiKey || ''}
+                                  onChange={(e) => {
+                                    const updatedConfigs = [...customApiConfigs];
+                                    updatedConfigs[index].apiKey = e.currentTarget.value;
+                                    updateCustomApiConfigs(updatedConfigs);
+                                  }}
+                                  onBlur={(e) => {
+                                    if (!e.currentTarget.value.trim() && commonKey.trim()) {
+                                      if (!window.confirm(t('API Key is empty. Use Common API Key?'))) {
+                                        e.currentTarget.focus();
+                                      }
+                                    }
+                                  }}
+                                  type="password"
+                                />
+                                {(usingCommon || usingNone) && (
+                                  <div className="mt-1.5">
+                                    <span className={cx(
+                                      'text-[11px] px-2 py-0.5 rounded-sm font-medium',
+                                      usingCommon
+                                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
+                                        : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                    )}>
+                                      {usingCommon ? `${t('Active Key')}: ${t('Common')} (${maskKey(commonKey)})` : t('No API Key configured')}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                         {showOpenRouterMode && (
                             <div className="space-y-4">
                               <div className={formRowClass}>
