@@ -588,15 +588,6 @@ const GeneralChatPanel: FC<{
         newAllBots[i] = botIndex
       })
 
-      updatedPanelBots.forEach((newBotIndex, idx) => {
-        if (currentBots[idx] !== newBotIndex) {
-          const chat = chats[idx]
-          if (chat) {
-            chat.resetConversation()
-          }
-        }
-      })
-
       // 共通設定を更新
       updateCurrentPairConfig({ bots: newAllBots })
 
