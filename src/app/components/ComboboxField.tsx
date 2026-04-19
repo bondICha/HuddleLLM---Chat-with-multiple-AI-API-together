@@ -1,6 +1,6 @@
 import { Combobox, Transition } from '@headlessui/react'
 import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/20/solid'
-import { Fragment, useMemo, useState, FC, ReactNode } from 'react'
+import { Fragment, useMemo, useState, useRef, FC, ReactNode } from 'react'
 import { cx } from '~/utils'
 
 export interface ComboboxOption {
@@ -46,6 +46,16 @@ const ComboboxField: FC<Props> = ({
   searchable = true,
 }) => {
   const [query, setQuery] = useState('')
+  const skipNextChangeRef = useRef(false)
+
+  const handleChange = (v: string) => {
+    if (skipNextChangeRef.current) {
+      skipNextChangeRef.current = false
+      return
+    }
+    onChange(v ?? '')
+    setQuery('')
+  }
 
   const filteredOptions = useMemo(() => {
     if (!searchable || !query) return options
@@ -85,10 +95,7 @@ const ComboboxField: FC<Props> = ({
   return (
     <Combobox
       value={value}
-      onChange={(v: string) => {
-        onChange(v ?? '')
-        setQuery('')
-      }}
+      onChange={handleChange}
       disabled={disabled}
     >
       <div className={cx('relative', className)}>
@@ -101,6 +108,19 @@ const ComboboxField: FC<Props> = ({
             type={inputType}
             autoComplete="off"
             spellCheck={false}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && query && customLabel) {
+                skipNextChangeRef.current = true
+                onChange(query)
+                setQuery('')
+              }
+            }}
+            onBlur={() => {
+              if (query && customLabel) {
+                onChange(query)
+                setQuery('')
+              }
+            }}
           />
           <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
             <ChevronUpDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
@@ -114,6 +134,20 @@ const ComboboxField: FC<Props> = ({
           afterLeave={() => setQuery('')}
         >
           <Combobox.Options className="absolute z-50 mt-1 max-h-72 w-full min-w-[280px] overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 dark:ring-gray-600 focus:outline-none">
+            {showCustomEntry && (
+              <Combobox.Option
+                value={query}
+                className={({ active }) =>
+                  cx(
+                    'relative cursor-pointer select-none py-2 pl-3 pr-9 border-b border-gray-200 dark:border-gray-700',
+                    active ? 'bg-blue-100 text-blue-900 dark:bg-blue-600 dark:text-white' : 'text-gray-900 dark:text-gray-200',
+                  )
+                }
+              >
+                <span className="text-xs italic">{customLabel!(query)}</span>
+              </Combobox.Option>
+            )}
+
             {filteredOptions.length === 0 && !showCustomEntry && (
               <div className="px-3 py-2 text-gray-500 dark:text-gray-400 text-xs">
                 {emptyDisplayText || 'No options'}
@@ -170,19 +204,6 @@ const ComboboxField: FC<Props> = ({
               </Fragment>
             ))}
 
-            {showCustomEntry && (
-              <Combobox.Option
-                value={query}
-                className={({ active }) =>
-                  cx(
-                    'relative cursor-pointer select-none py-2 pl-3 pr-9 border-t border-gray-200 dark:border-gray-700',
-                    active ? 'bg-blue-100 text-blue-900 dark:bg-blue-600 dark:text-white' : 'text-gray-900 dark:text-gray-200',
-                  )
-                }
-              >
-                <span className="text-xs italic">{customLabel!(query)}</span>
-              </Combobox.Option>
-            )}
           </Combobox.Options>
         </Transition>
       </div>
