@@ -374,7 +374,7 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, commonApiKey = 
           <div className="border-t pt-4">
             <ModelPreview
               provider={editingProvider.provider || CustomApiProvider.OpenAI}
-              apiKey={editingProvider.apiKey}
+              apiKey={resolveActiveKeyForProvider(editingProvider, commonApiKey).key}
               host={editingProvider.host}
               isHostFullPath={editingProvider.isHostFullPath}
             />
