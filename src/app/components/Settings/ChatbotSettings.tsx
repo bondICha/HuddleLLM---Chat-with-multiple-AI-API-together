@@ -14,7 +14,7 @@ import Range from '../Range';
 import Button from '../Button';
 import NestedDropdown, { NestedDropdownOption } from '../NestedDropdown';
 import TripleStateToggle from '../TripleStateToggle';
-import ModelSearchInput from '../ModelSearchInput';
+import ComboboxField, { ComboboxOption } from '../ComboboxField';
 import { maskKey } from '~/utils/active-api-key';
 import DeveloperOptionsPanel from './DeveloperOptionsPanel';
 import { getTemplateOptions, getActivePresets, getPresetMapping } from '~services/preset-loader';
@@ -172,58 +172,32 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     await fetchSingleModel(fetchConfig, index);
   };
 
-  const createModelOptions = (configIndex?: number): NestedDropdownOption[] => {
-    const options: NestedDropdownOption[] = [];
-    if (configIndex !== undefined && modelsPerConfig[configIndex]?.length > 0) {
-      const config = customApiConfigs[configIndex];
-      if (config) {
+  const createModelComboboxOptions = (configIndex: number): ComboboxOption[] => {
+    const options: ComboboxOption[] = [];
+
+    if (modelsPerConfig[configIndex]?.length > 0) {
+      modelsPerConfig[configIndex].forEach((model: any) => {
         options.push({
-          label: 'Fetched API Models',
-          children: modelsPerConfig[configIndex].map((model: any) => ({
-            label: model.id,
-            value: model.id,
-            icon: 'FiCode'
-          })),
-          icon: 'FiCode'
-        });
-      }
-    }
-
-    const getProviderIcon = (provider: string): string => {
-      switch (provider.toLowerCase()) {
-        case 'openai': return 'openai';
-        case 'anthropic': return 'anthropic';
-        case 'google': return 'gemini';
-        case 'grok': return 'grok';
-        case 'deepseek': return 'deepseek';
-        case 'rakuten': return 'rakuten';
-        case 'qwen': return 'qianwen';
-        case 'perplexity': return 'perplexity';
-        case 'custom': return 'huddlellm';
-        default: return 'chatgpt';
-      }
-    };
-
-    Object.keys(MODEL_LIST).forEach(provider => {
-      const providerIcon = getProviderIcon(provider);
-      const categoryOption: NestedDropdownOption = {
-        label: provider,
-        children: [],
-        icon: providerIcon,
-      };
-      Object.entries(MODEL_LIST[provider]).forEach(([modelName, modelData]) => {
-        const modelValue = typeof modelData === 'string' ? modelData : modelData.value;
-        const modelIcon = typeof modelData === 'object' && modelData.icon ? modelData.icon : providerIcon;
-        categoryOption.children?.push({
-          label: modelName,
-          value: modelValue,
-          icon: modelIcon,
+          value: model.id,
+          label: model.id,
+          group: t('API Models'),
+          badge: { text: 'API', color: 'green' },
         });
       });
-      if (categoryOption.children && categoryOption.children.length > 0) {
-        options.push(categoryOption);
-      }
+    }
+
+    Object.keys(MODEL_LIST).forEach(provider => {
+      Object.entries(MODEL_LIST[provider]).forEach(([modelName, modelData]) => {
+        const modelValue = typeof modelData === 'string' ? modelData : modelData.value;
+        options.push({
+          value: modelValue,
+          label: modelName,
+          group: provider,
+          badge: { text: 'Static', color: 'blue' },
+        });
+      });
     });
+
     return options;
   };
 
@@ -745,35 +719,22 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           className="px-3 py-1 text-xs rounded transition-colors bg-white dark:bg-black border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
                           title={errorsPerConfig[index] || t('Fetch models from API')}
                         >
-                          {modelsLoading ? t('Loading...') : t('Fetch Models')}
+                          {modelsLoading ? t('Loading...') : t('Refresh models')}
                         </button>
                       )}
                     </div>
-                    <div className="flex flex-col gap-3">
-                      <NestedDropdown
-                        options={createModelOptions(index)}
-                        value={config.model}
-                        onChange={(v) => {
-                          if (!v || v.startsWith('header-')) return;
-                          const updatedConfigs = [...customApiConfigs];
-                          updatedConfigs[index].model = v;
-                          updateCustomApiConfigs(updatedConfigs);
-                        }}
-                        placeholder={config.model && config.model.trim() !== '' ? t('user-defined-model') : t('Choose model')}
-                        showModelId={true}
-                      />
-                      <ModelSearchInput
-                        value={config.model}
-                        onChange={(model) => {
-                          const updatedConfigs = [...customApiConfigs];
-                          updatedConfigs[index].model = model;
-                          updateCustomApiConfigs(updatedConfigs);
-                        }}
-                        apiModels={modelsPerConfig[index]}
-                        provider={config.provider}
-                        placeholder={t('Search models...')}
-                      />
-                    </div>
+                    <ComboboxField
+                      value={config.model || ''}
+                      onChange={(v) => {
+                        const updatedConfigs = [...customApiConfigs];
+                        updatedConfigs[index].model = v;
+                        updateCustomApiConfigs(updatedConfigs);
+                      }}
+                      options={createModelComboboxOptions(index)}
+                      placeholder={t('Choose model')}
+                      customLabel={(q) => t('Use "{{value}}" as custom model', { value: q })}
+                      searchable={true}
+                    />
                   </div>
                   )}
 
