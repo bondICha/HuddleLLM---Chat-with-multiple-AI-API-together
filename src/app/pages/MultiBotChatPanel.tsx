@@ -3,6 +3,7 @@ import { atomWithStorage } from 'jotai/utils'
 import { sample, uniqBy } from 'lodash-es'
 import { FC, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { perfMark } from '~utils/perf'
 import { cx, uuid } from '~/utils'
 import Browser from 'webextension-polyfill'
@@ -13,7 +14,7 @@ import {
   clearAllInOneInputAtom
 } from '../state'
 import { getSessionSnapshot, loadAllInOneSessions, loadHistoryMessages, setAllInOneSession, saveSessionSnapshot, ChatMessageModel } from '~services/chat-history'
-import { updateChatPair, getUserConfig } from '~services/user-config'
+import { updateChatPair, getUserConfig, saveChatPair, getSavedChatPairs } from '~services/user-config'
 import { useSessionNameGenerator } from '~app/hooks/use-session-name'
 import AllInOneInputArea from '~app/components/Chat/AllInOneInputArea'
 import { BtwStorageContext } from '~app/pages/BtwPage'
@@ -25,6 +26,7 @@ import {
   activeAllInOneAtom,
   initializeAllInOneAtom,
   saveAllInOneConfigAtom,
+  setActiveAllInOneAtom,
   isInitializingAtom,
   DEFAULT_BOTS,
   DEFAULT_PAIR_CONFIG,
@@ -984,6 +986,8 @@ const MultiBotChatPanel: FC = () => {
   const [activeAllInOne] = useAtom(activeAllInOneAtom)
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const initializeConfig = useSetAtom(initializeAllInOneAtom)
+  const persistActivePair = useSetAtom(setActiveAllInOneAtom)
+  const saveConfig = useSetAtom(saveAllInOneConfigAtom)
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
   const layout = currentPairConfig.layout
   const { t } = useTranslation()
@@ -992,7 +996,37 @@ const MultiBotChatPanel: FC = () => {
   const setAllInOneRestoreData = useSetAtom(allInOneRestoreDataAtom)
 
   const [currentSessionUUID, setCurrentSessionUUID] = useState<string | null>(null)
-  const setIsInitializing = useSetAtom(isInitializingAtom)
+  const [isInitializing, setIsInitializing] = useAtom(isInitializingAtom)
+  const pairSaveToastShownRef = useRef(false)
+
+  // 現在のボットインデックスを取得（layout依存）
+  const getCurrentBotIndicesForPair = useCallback((): number[] => {
+    const bots = currentPairConfig.bots || DEFAULT_BOTS
+    const count = (() => {
+      switch (layout) {
+        case 'single': return 1
+        case 2: case 'twoHorizon': return 2
+        case 3: return 3
+        case 4: return 4
+        default: return 6
+      }
+    })()
+    return bots.slice(0, count)
+  }, [currentPairConfig, layout])
+
+  // ペアを保存してアクティブ切り替え
+  const handleSaveCurrentAsPair = useCallback(async () => {
+    try {
+      const botIndices = getCurrentBotIndicesForPair()
+      const newPair = await saveChatPair(botIndices)
+      const newConfig = { ...currentPairConfig, bots: currentPairConfig.bots || DEFAULT_BOTS }
+      setAllInOnePairs(prev => ({ ...prev, [newPair.id]: newConfig }))
+      await persistActivePair(newPair.id)
+      setTimeout(() => saveConfig(), 100)
+    } catch (error) {
+      console.error('Failed to save pair:', error)
+    }
+  }, [currentPairConfig, getCurrentBotIndicesForPair, persistActivePair, saveConfig, setAllInOnePairs])
 
   // 初期化（前回の設定を復旧）
   useEffect(() => {
@@ -1002,6 +1036,61 @@ const MultiBotChatPanel: FC = () => {
       setIsInitializing(false)
     })
   }, [])
+
+  // pair URL パラメータ経由のペア選択（初期化完了後に処理）
+  useEffect(() => {
+    if (isInitializing) return
+
+    const hash = window.location.hash
+    const queryStart = hash.indexOf('?')
+    if (queryStart === -1) return
+
+    const params = new URLSearchParams(hash.substring(queryStart + 1))
+    const pairId = params.get('pair')
+    if (!pairId) return
+
+    const clearUrlParams = () => {
+      const newHash = hash.substring(0, queryStart)
+      window.history.replaceState({}, '', window.location.pathname + newHash)
+    }
+
+    clearUrlParams()
+    // 存在するペアIDのみ切り替え。存在しない場合は無視（defaultのまま）
+    if (allInOnePairs[pairId]) {
+      persistActivePair(pairId)
+    }
+  }, [isInitializing])
+
+  // layout/bots変更時にペア保存トーストを一度だけ表示
+  useEffect(() => {
+    if (isInitializing) return
+    if (activeAllInOne !== 'default') return
+    if (pairSaveToastShownRef.current) return
+
+    const isDefaultLayout = layout === DEFAULT_PAIR_CONFIG.layout
+    const bots = currentPairConfig.bots || DEFAULT_BOTS
+    const isDefaultBots = JSON.stringify(bots) === JSON.stringify(DEFAULT_BOTS)
+    if (isDefaultLayout && isDefaultBots) return
+
+    pairSaveToastShownRef.current = true
+    toast(
+      (toastInstance) => (
+        <span className="flex items-center gap-2">
+          <span>{t('pair_save_hint')}</span>
+          <button
+            className="ml-2 px-2 py-1 rounded bg-primary text-white text-sm font-medium hover:opacity-80"
+            onClick={() => {
+              handleSaveCurrentAsPair()
+              toast.dismiss(toastInstance.id)
+            }}
+          >
+            {t('pair_save_action')}
+          </button>
+        </span>
+      ),
+      { duration: 8000 }
+    )
+  }, [isInitializing, activeAllInOne, layout, currentPairConfig.bots])
 
   // URL パラメータ経由のセッション復元（新規タブ復元用）
   useEffect(() => {

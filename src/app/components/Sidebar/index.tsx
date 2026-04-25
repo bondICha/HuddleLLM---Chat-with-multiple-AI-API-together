@@ -42,6 +42,7 @@ import {
   allInOnePairsAtom,
   activeAllInOneAtom,
   saveAllInOneConfigAtom,
+  setActiveAllInOneAtom,
   DEFAULT_PAIR_CONFIG,
   DEFAULT_BOTS,
   AllInOnePairConfig
@@ -89,6 +90,7 @@ function Sidebar() {
   const [activeAllInOne, setActiveAllInOne] = useAtom(activeAllInOneAtom)
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const saveConfig = useSetAtom(saveAllInOneConfigAtom)
+  const persistActivePair = useSetAtom(setActiveAllInOneAtom)
   
   // 現在のペア設定を取得
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
@@ -193,8 +195,8 @@ useEffect(() => {
         [newPair.id]: newConfig
       }))
 
-      // 新しく作成したAll-In-Oneをアクティブにする
-      setActiveAllInOne(newPair.id)
+      // 新しく作成したAll-In-Oneをアクティブにする（永続化）
+      await persistActivePair(newPair.id)
 
       // 設定を保存
       setTimeout(() => saveConfig(), 100)
@@ -217,9 +219,9 @@ useEffect(() => {
         return rest
       })
       
-      // 削除したAll-In-OneがアクティブだったらDefaultに戻す
+      // 削除したAll-In-OneがアクティブだったらDefaultに戻す（永続化）
       if (activeAllInOne === pairId) {
-        setActiveAllInOne('default')
+        await persistActivePair('default')
       }
       
       // 設定を保存
@@ -278,8 +280,8 @@ useEffect(() => {
       setTimeout(() => saveConfig(), 100)
     }
 
-    // アクティブなAll-In-Oneを切り替え
-    setActiveAllInOne(pairId)
+    // アクティブなAll-In-Oneを切り替え（永続化）
+    persistActivePair(pairId)
   }
 
   // 名前変更を開始
@@ -700,6 +702,13 @@ useEffect(() => {
             )}
           </div>
         ))}
+
+        {/* ペアが0件のときの空状態ヒント */}
+        {savedPairs.length === 0 && (shouldShowAsHamburger || !collapsed) && (
+          <p className="text-xs text-secondary mt-2 px-1 leading-relaxed opacity-70">
+            {t('pair_empty_hint')}
+          </p>
+        )}
         </div>
       </div>
       

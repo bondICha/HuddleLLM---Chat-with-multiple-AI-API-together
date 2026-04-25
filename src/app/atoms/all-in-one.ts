@@ -1,5 +1,4 @@
 import { atom } from 'jotai'
-import { atomWithStorage } from 'jotai/utils'
 import { Layout } from '~app/consts'
 import Browser from 'webextension-polyfill'
 import { perfMark } from '~utils/perf'
@@ -33,20 +32,6 @@ export const DEFAULT_PAIR_CONFIG: AllInOnePairConfig = {
   bots: DEFAULT_BOTS, // [0, 1, 2, 3, 4, 5]
 }
 
-// 初期値を取得する関数（前回のAll-in-One設定を復旧）
-const getInitialPairConfig = async (): Promise<AllInOnePairConfig> => {
-  try {
-    const result = await Browser.storage.local.get('allInOnePairs')
-    const saved = result.allInOnePairs
-    if (saved && saved.default) {
-      return saved.default
-    }
-  } catch (error) {
-    console.error('Failed to load initial pair config:', error)
-  }
-  return DEFAULT_PAIR_CONFIG
-}
-
 // All-In-Oneペア管理Atom（タブローカル、メモリ上のみ）
 export const allInOnePairsAtom = atom<Record<string, AllInOnePairConfig>>(
   { default: DEFAULT_PAIR_CONFIG }
@@ -55,12 +40,44 @@ export const allInOnePairsAtom = atom<Record<string, AllInOnePairConfig>>(
 // アクティブなAll-In-Oneを管理するatom（タブローカル、メモリ上のみ）
 export const activeAllInOneAtom = atom<string>('default')
 
+// アクティブなペアを永続化して切り替えるwrite atom
+export const setActiveAllInOneAtom = atom(null, async (get, set, pairId: string) => {
+  set(activeAllInOneAtom, pairId)
+  try {
+    await Browser.storage.local.set({ activeAllInOnePair: pairId })
+  } catch (error) {
+    console.error('Failed to persist active pair:', error)
+  }
+})
+
 // 初期化用のatom（前回の設定を復旧）
 export const initializeAllInOneAtom = atom(null, async (get, set) => {
   perfMark('initializeAllInOne start')
-  const initialConfig = await getInitialPairConfig()
+  try {
+    const result = await Browser.storage.local.get(['allInOnePairs', 'activeAllInOnePair'])
+    const saved = result.allInOnePairs
+    if (saved && typeof saved === 'object' && Object.keys(saved).length > 0) {
+      // default ペアがなければ追加
+      if (!saved.default) {
+        saved.default = DEFAULT_PAIR_CONFIG
+      }
+      set(allInOnePairsAtom, saved)
+    } else {
+      set(allInOnePairsAtom, { default: DEFAULT_PAIR_CONFIG })
+    }
+    // アクティブペアを復元（保存済みペアに存在する場合のみ）
+    const activePairId = result.activeAllInOnePair
+    if (activePairId && typeof activePairId === 'string') {
+      const pairs = get(allInOnePairsAtom)
+      if (pairs[activePairId]) {
+        set(activeAllInOneAtom, activePairId)
+      }
+    }
+  } catch (error) {
+    console.error('Failed to restore all-in-one config:', error)
+    set(allInOnePairsAtom, { default: DEFAULT_PAIR_CONFIG })
+  }
   perfMark('initializeAllInOne done')
-  set(allInOnePairsAtom, { default: initialConfig })
 })
 
 // 初期化中かどうかを管理するatom（タブローカル、メモリ上のみ）

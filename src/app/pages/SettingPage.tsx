@@ -29,6 +29,8 @@ import {
   getUserConfig,
   updateUserConfig,
   CustomApiConfig,
+  getSavedChatPairs,
+  ChatPair,
 } from '~services/user-config'
 import { getVersion } from '~utils'
 import PagePanel from '../components/Page'
@@ -50,6 +52,7 @@ function SettingPage() {
   const [userConfig, setUserConfig] = useState<UserConfig | undefined>(undefined)
   const [dirty, setDirty] = useState(false)
   const [companyInfo, setCompanyInfo] = useState<{ name: string; version: string } | null>(null)
+  const [savedPairs, setSavedPairs] = useState<ChatPair[]>([])
   const themeColor = useAtomValue(themeColorAtom)
 
 
@@ -57,6 +60,7 @@ function SettingPage() {
     getUserConfig().then((config) => {
       setUserConfig(config);
     });
+    getSavedChatPairs().then(setSavedPairs).catch(() => {});
 
     // Check for active company profile from stored state
     const checkActiveCompanyProfile = async () => {
@@ -139,6 +143,10 @@ function SettingPage() {
               <Select
                 options={[
                   { name: 'All-In-One', value: ALL_IN_ONE_PAGE_ID },
+                  ...savedPairs.map((pair: ChatPair) => ({
+                    name: `  ${pair.name}`,
+                    value: pair.id,
+                  })),
                   ...(userConfig.customApiConfigs || []).map((config: CustomApiConfig, index: number) => ({
                     name: config.name,
                     value: `custom-${index}`,
