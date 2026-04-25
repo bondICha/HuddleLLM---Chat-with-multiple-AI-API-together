@@ -3,7 +3,6 @@ import { atomWithStorage } from 'jotai/utils'
 import { sample, uniqBy } from 'lodash-es'
 import { FC, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import toast from 'react-hot-toast'
 import { perfMark } from '~utils/perf'
 import { cx, uuid } from '~/utils'
 import Browser from 'webextension-polyfill'
@@ -14,7 +13,7 @@ import {
   clearAllInOneInputAtom
 } from '../state'
 import { getSessionSnapshot, loadAllInOneSessions, loadHistoryMessages, setAllInOneSession, saveSessionSnapshot, ChatMessageModel } from '~services/chat-history'
-import { updateChatPair, getUserConfig, saveChatPair, getSavedChatPairs } from '~services/user-config'
+import { updateChatPair, getUserConfig } from '~services/user-config'
 import { useSessionNameGenerator } from '~app/hooks/use-session-name'
 import AllInOneInputArea from '~app/components/Chat/AllInOneInputArea'
 import { BtwStorageContext } from '~app/pages/BtwPage'
@@ -997,38 +996,6 @@ const MultiBotChatPanel: FC = () => {
 
   const [currentSessionUUID, setCurrentSessionUUID] = useState<string | null>(null)
   const [isInitializing, setIsInitializing] = useAtom(isInitializingAtom)
-  const pairSaveToastShownRef = useRef(false)
-  // 初期化完了直後のbots値を記録（これと比較して「ユーザーが変更した」を検知）
-  const initializedBotsRef = useRef<number[] | null>(null)
-
-  // 現在のボットインデックスを取得（layout依存）
-  const getCurrentBotIndicesForPair = useCallback((): number[] => {
-    const bots = currentPairConfig.bots || DEFAULT_BOTS
-    const count = (() => {
-      switch (layout) {
-        case 'single': return 1
-        case 2: case 'twoHorizon': return 2
-        case 3: return 3
-        case 4: return 4
-        default: return 6
-      }
-    })()
-    return bots.slice(0, count)
-  }, [currentPairConfig, layout])
-
-  // ペアを保存してアクティブ切り替え
-  const handleSaveCurrentAsPair = useCallback(async () => {
-    try {
-      const botIndices = getCurrentBotIndicesForPair()
-      const newPair = await saveChatPair(botIndices)
-      const newConfig = { ...currentPairConfig, bots: currentPairConfig.bots || DEFAULT_BOTS }
-      setAllInOnePairs(prev => ({ ...prev, [newPair.id]: newConfig }))
-      await persistActivePair(newPair.id)
-      setTimeout(() => saveConfig(), 100)
-    } catch (error) {
-      console.error('Failed to save pair:', error)
-    }
-  }, [currentPairConfig, getCurrentBotIndicesForPair, persistActivePair, saveConfig, setAllInOnePairs])
 
   // 初期化（前回の設定を復旧）
   useEffect(() => {
@@ -1039,11 +1006,6 @@ const MultiBotChatPanel: FC = () => {
     })
   }, [])
 
-  // 初期化完了時にbots初期値を記録（以降の変更検知用）
-  useEffect(() => {
-    if (isInitializing) return
-    initializedBotsRef.current = currentPairConfig.bots || DEFAULT_BOTS
-  }, [isInitializing])
 
   // pair URL パラメータ経由のペア選択（初期化完了後に処理）
   useEffect(() => {
@@ -1069,42 +1031,6 @@ const MultiBotChatPanel: FC = () => {
     }
   }, [isInitializing])
 
-  // activeAllInOneが変わったらトーストフラグをリセット
-  useEffect(() => {
-    pairSaveToastShownRef.current = false
-    initializedBotsRef.current = null
-  }, [activeAllInOne])
-
-  // ユーザーがbots（モデル）を変更したときにペア保存トーストを一度だけ表示
-  useEffect(() => {
-    if (isInitializing) return
-    if (activeAllInOne !== 'default') return
-    if (pairSaveToastShownRef.current) return
-    if (initializedBotsRef.current === null) return
-
-    const currentBots = currentPairConfig.bots || DEFAULT_BOTS
-    const botsChanged = JSON.stringify(currentBots) !== JSON.stringify(initializedBotsRef.current)
-    if (!botsChanged) return
-
-    pairSaveToastShownRef.current = true
-    toast(
-      (toastInstance) => (
-        <span className="flex items-center gap-2">
-          <span>{t('pair_save_hint')}</span>
-          <button
-            className="ml-2 px-2 py-1 rounded bg-primary text-white text-sm font-medium hover:opacity-80"
-            onClick={() => {
-              handleSaveCurrentAsPair()
-              toast.dismiss(toastInstance.id)
-            }}
-          >
-            {t('pair_save_action')}
-          </button>
-        </span>
-      ),
-      { duration: 8000 }
-    )
-  }, [isInitializing, activeAllInOne, currentPairConfig.bots])
 
   // URL パラメータ経由のセッション復元（新規タブ復元用）
   useEffect(() => {

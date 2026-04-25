@@ -706,13 +706,13 @@ useEffect(() => {
         {/* ペアが0件のときの空状態コールアウト */}
         {savedPairs.length === 0 && (shouldShowAsHamburger || !collapsed) && (
           <div className="mt-2 px-1">
-            <p className="text-xs text-secondary mb-1.5 leading-relaxed opacity-60">
+            <p className="text-xs text-primary-text mb-1.5 leading-relaxed opacity-70">
               {t('pair_empty_hint')}
             </p>
             <button
               onClick={handleCreateNewAllInOne}
               disabled={isSaving}
-              className="w-full flex items-center gap-1.5 px-2 py-1.5 text-xs text-secondary rounded border border-dashed border-secondary border-opacity-40 hover:border-opacity-70 hover:bg-secondary hover:bg-opacity-10 transition-all disabled:opacity-50"
+              className="w-full flex items-center gap-1.5 px-2 py-1.5 text-xs text-primary-text rounded border border-dashed border-primary-text border-opacity-30 hover:border-opacity-60 hover:bg-primary-text hover:bg-opacity-5 transition-all disabled:opacity-50"
             >
               <PlusIcon className="w-3.5 h-3.5 shrink-0" />
               <span>{t('pair_save_action_long')}</span>
