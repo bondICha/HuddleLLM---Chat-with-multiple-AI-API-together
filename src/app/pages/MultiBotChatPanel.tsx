@@ -998,6 +998,8 @@ const MultiBotChatPanel: FC = () => {
   const [currentSessionUUID, setCurrentSessionUUID] = useState<string | null>(null)
   const [isInitializing, setIsInitializing] = useAtom(isInitializingAtom)
   const pairSaveToastShownRef = useRef(false)
+  // 初期化完了直後のbots値を記録（これと比較して「ユーザーが変更した」を検知）
+  const initializedBotsRef = useRef<number[] | null>(null)
 
   // 現在のボットインデックスを取得（layout依存）
   const getCurrentBotIndicesForPair = useCallback((): number[] => {
@@ -1037,6 +1039,12 @@ const MultiBotChatPanel: FC = () => {
     })
   }, [])
 
+  // 初期化完了時にbots初期値を記録（以降の変更検知用）
+  useEffect(() => {
+    if (isInitializing) return
+    initializedBotsRef.current = currentPairConfig.bots || DEFAULT_BOTS
+  }, [isInitializing])
+
   // pair URL パラメータ経由のペア選択（初期化完了後に処理）
   useEffect(() => {
     if (isInitializing) return
@@ -1061,16 +1069,22 @@ const MultiBotChatPanel: FC = () => {
     }
   }, [isInitializing])
 
-  // layout/bots変更時にペア保存トーストを一度だけ表示
+  // activeAllInOneが変わったらトーストフラグをリセット
+  useEffect(() => {
+    pairSaveToastShownRef.current = false
+    initializedBotsRef.current = null
+  }, [activeAllInOne])
+
+  // ユーザーがbots（モデル）を変更したときにペア保存トーストを一度だけ表示
   useEffect(() => {
     if (isInitializing) return
     if (activeAllInOne !== 'default') return
     if (pairSaveToastShownRef.current) return
+    if (initializedBotsRef.current === null) return
 
-    const isDefaultLayout = layout === DEFAULT_PAIR_CONFIG.layout
-    const bots = currentPairConfig.bots || DEFAULT_BOTS
-    const isDefaultBots = JSON.stringify(bots) === JSON.stringify(DEFAULT_BOTS)
-    if (isDefaultLayout && isDefaultBots) return
+    const currentBots = currentPairConfig.bots || DEFAULT_BOTS
+    const botsChanged = JSON.stringify(currentBots) !== JSON.stringify(initializedBotsRef.current)
+    if (!botsChanged) return
 
     pairSaveToastShownRef.current = true
     toast(
@@ -1090,7 +1104,7 @@ const MultiBotChatPanel: FC = () => {
       ),
       { duration: 8000 }
     )
-  }, [isInitializing, activeAllInOne, layout, currentPairConfig.bots])
+  }, [isInitializing, activeAllInOne, currentPairConfig.bots])
 
   // URL パラメータ経由のセッション復元（新規タブ復元用）
   useEffect(() => {
