@@ -11,6 +11,8 @@ import IconSelectModal from './IconSelectModal';
 import BotIcon from '../BotIcon';
 import ProviderEditModal from './ProviderEditModal';
 import CopyIcon from '../icons/CopyIcon';
+import { resolveActiveKeyForProvider, maskKey } from '~/utils/active-api-key';
+import { cx } from '~/utils';
 
 interface Props {
   userConfig: UserConfig;
@@ -112,7 +114,22 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
                 <div className="text-xs opacity-60 mb-3 space-y-1">
                   <div className="truncate">Host: {prov.host || t('Not set')}</div>
-                  <div className="text-primary">API Key: {prov.apiKey ? '••••••••' : t('Not set')}</div>
+                  {(() => {
+                    const active = resolveActiveKeyForProvider(prov, userConfig.customApiKey || '');
+                    if (active.source === 'individual') {
+                      return <div className="truncate">API Key: ••••••••</div>;
+                    }
+                    const badgeColor = active.source === 'common'
+                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
+                      : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+                    return (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={cx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', badgeColor)}>
+                          {active.source === 'common' ? `${t('Active Key')}: ${t('Common')} (${maskKey(userConfig.customApiKey || '')})` : t('No API Key configured')}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <div className="truncate">Type: {resolveProviderMode(prov) === 'image' ? t('Image Generation') : t('Chat')}</div>
                   {prov.provider === CustomApiProvider.Replicate && resolveProviderMode(prov) === 'image' && (
                     <div className="text-xs text-blue-600 dark:text-blue-400 pt-1">
@@ -224,6 +241,7 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         open={editingProviderIndex !== null}
         onClose={() => setEditingProviderIndex(null)}
         provider={editingProviderIndex !== null ? providerConfigs[editingProviderIndex] : null}
+        commonApiKey={userConfig.customApiKey || ''}
         onSave={(updatedProvider) => {
           if (editingProviderIndex !== null) {
             const updated = [...providerConfigs];
