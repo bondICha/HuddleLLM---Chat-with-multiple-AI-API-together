@@ -281,17 +281,8 @@ useEffect(() => {
     }
 
     // アクティブなAll-In-Oneを切り替え（永続化）
+    // URLは <Link to="/" search={{ pair }}> 側でTanstack Routerが管理する
     persistActivePair(pairId)
-
-    // URLを更新（pair=<id> パラメータ）
-    const hash = window.location.hash
-    const queryStart = hash.indexOf('?')
-    const baseHash = queryStart >= 0 ? hash.substring(0, queryStart) : hash
-    if (pairId === 'default') {
-      window.history.replaceState({}, '', window.location.pathname + baseHash)
-    } else {
-      window.history.replaceState({}, '', window.location.pathname + baseHash + '?pair=' + pairId)
-    }
   }
 
   // 名前変更を開始
@@ -565,6 +556,7 @@ useEffect(() => {
         <div className="relative group">
           <Link
             to="/"
+            search={{}}
             onClick={() => handleSwitchAllInOne('default')}
             className={cx(
               'rounded-[10px] w-full pl-3 flex items-center shrink-0',
@@ -620,6 +612,7 @@ useEffect(() => {
           <div key={pair.id} className="relative group mt-2">
             <Link
               to="/"
+              search={{ pair: pair.id }}
               onClick={() => handleSwitchAllInOne(pair.id, pair)}
               className={cx(
                 'rounded-[10px] w-full pl-3 flex items-center shrink-0',
