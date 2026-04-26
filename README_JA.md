@@ -7,185 +7,122 @@
 <div align="center">
 
 ### HuddleLLM はオールインワンのチャットボットクライアントです
- 
-    
-[English](README.md) &nbsp;&nbsp;|&nbsp;&nbsp; [Indonesia](README_IN.md) &nbsp;&nbsp;|&nbsp;&nbsp; [简体中文](README_ZH-CN.md) &nbsp;&nbsp;|&nbsp;&nbsp; [繁體中文](README_ZH-TW.md) &nbsp;&nbsp;|&nbsp;&nbsp; 日本語
 
-##    
-    
+[English](README.md) &nbsp;&nbsp;|&nbsp;&nbsp; [简体中文](README_ZH-CN.md) &nbsp;&nbsp;|&nbsp;&nbsp; [繁體中文](README_ZH-TW.md) &nbsp;&nbsp;|&nbsp;&nbsp; 日本語
+
+##
+
 ### インストール
 
 #### ストアから
 
 <a href="https://chromewebstore.google.com/detail/huddlellm-oss-all-in-one/edjbcjkcabpmpcpnpfjfcehegjkacgod"><img src="https://user-images.githubusercontent.com/64502893/231991498-8df6dd63-727c-41d0-916f-c90c15127de3.png" width="200" alt="Chromium 用の HuddleLLM を入手してください"></a> <a href="https://microsoftedge.microsoft.com/addons/detail/huddlellm-oss-%E3%82%AA%E3%83%BC%E3%83%AB%E3%82%A4%E3%83%B3%E3%83%AF%E3%83%B3%E3%83%81%E3%83%A3/kmphcofekafjmnpjegchboapjpgjhgch"><img src="https://user-images.githubusercontent.com/64502893/231991158-1b54f831-2fdc-43b6-bf9a-f894000e5aa8.png" width="160" alt="Microsoft Edge 用の HuddleLLM を入手してください"></a>
 
-> [!NOTE]  
+> [!NOTE]
 > Microsoftの審査が時間がかかるため、Microsoft Edge Extensionは更新が一週間以上遅れます。Chrome Extension Storeからインストールすることをおすすめします
 
 
 #### Sourceから
-Refer [🔨 ソースからビルドする](#-ソースからビルドする) this section
+[🔨 ソースからビルドする](#-ソースからビルドする) を参照してください。
 
 ---
 
-[スクリーンショット](#-スクリーンショット) &nbsp;&nbsp;|&nbsp;&nbsp; [特徴](#-特徴) &nbsp;&nbsp;|&nbsp;&nbsp; [サポートされているボット](#-サポートされているボット) &nbsp;&nbsp;|&nbsp;&nbsp; [手動インストール](#-手動インストール) &nbsp;&nbsp;|&nbsp;&nbsp; [ソースからビルドする](#-ソースからビルドする) &nbsp;&nbsp;|&nbsp;&nbsp; [変更ログ](#-変更ログ)
-
+[スクリーンショット](#-スクリーンショット) &nbsp;&nbsp;|&nbsp;&nbsp; [特徴](#-特徴) &nbsp;&nbsp;|&nbsp;&nbsp; [対応プロバイダ・ボット](#-対応プロバイダ--ボット) &nbsp;&nbsp;|&nbsp;&nbsp; [ソースからビルドする](#-ソースからビルドする) &nbsp;&nbsp;|&nbsp;&nbsp; [変更ログ](#-変更ログ)
 
 </div>
-
-##
 
 ## 📷 スクリーンショット
 
 ![Screenshot](screenshots/extension.png?raw=true)
 
-## ✨ Features
+## ✨ 特徴
 
-- 🤖 1つのアプリで様々なチャットボットを利用可能
-- 🖼️ 複数画像のアップロードに対応
-- 🔍 ショートカットでブラウザのどこからでも素早くアプリを起動
-- 🎨 マークダウンとコードハイライトに対応
+- 🤖 複数のAIと1画面で同時にチャット・比較
+- 🧩 ネイティブAPI・OpenRouter・OpenAI互換プロバイダを一元管理
+- 🖼️🎙️🎬📄 画像・音声・動画・PDFをまとめて扱えるマルチモーダル対応
+- 🌐 OpenAI Responses / Claude / Gemini のネイティブWeb検索に対応。その他のモデルはHuddleLLM独自のWeb検索をFunction Callから利用可能。
+- 🎨 Nano Bananaの他、ChatとImage Generationを組み合わせた Image Agent でシームレスな画像生成。
+- ⚙️ 思考レベル・画像生成パラメータをChatbot設定で設定可能な他、Quick Settingsパネルからセッション単位でも素早く調整できる
+- 🧠 指定したAIでタブタイトルを自動生成
+- 🪟 Chrome Side Panel から個別ボットを開いて素早くチャット
+- 🎙️ 音声を文字起こし（OpenAI Whisper / Gemini）してテキスト送信
+- 🔎 アドレスバーで `hl <キーワード>` と入力するだけで HuddleLLM を起動（Omnibox 統合）
+- 🔀 `/btw` コマンドで複数AIの回答を別のAIに分析・比較させるスタンドアロンポップアップを起動
 - 📚 カスタムプロンプトとコミュニティプロンプトのライブラリ
-- 💾 会話履歴をローカルに保存
-- 📥 全データのインポート＆エクスポート
-- 🔗 会話をマークダウンで共有
-- 🌙 ダークモード
-- 🌐 Webアクセス
+- 💾 会話履歴はローカル保存、セッション復元可能。
+- 💾 設定、会話履歴など全データのエクスポート / インポートに対応
 
-## 🤖 Supported Bots
+詳細は [CHANGELOG.md](./CHANGELOG.md) を参照してください。
 
-- OpenAI
-- Google Gemini
-- Anthropic
-- Perplexity
-- DeepSeek, QwenなどのOpenAI互換モデル
-- Together AI, Fireworks AI, Hyperbolic, DeepInfra, NebiusなどのOpenAI互換LLMプラットフォーム
-- Vertex AI and Bedrock (現在、限定的にサポート)
+## 🤖 対応プロバイダ / ボット
+
+### ネイティブAPI
+- **OpenAI**（Chat Completions / Responses API）
+- **Google Gemini**（公式 `@google/genai` SDK。GenAIまたはVertex）
+- **Anthropic Claude**
 
 
 
-## 🔨 Build from Source
+### OpenAI互換プロバイダ
+- **OpenRouter**（音声・動画入力にも対応）
+- DeepSeek、Qwen、xAI Grok、Z.AI GLM
+- Together AI、Fireworks AI、Hyperbolic、DeepInfra、Nebius
+- その他任意のOpenAI互換エンドポイント
 
-- Clone the source code
+### 画像生成（Image Agent経由）
+- OpenAI Image（DALL·E 3、gpt-image-1）
+- Google Gemini（Imagen / ネイティブ画像生成）
+- Chutes AI（Chroma、FLUX.1-dev）
+- Novita AI（Qwen Image、Hunyuan Image 3、Seedream 4.0）
+- Replicate（Google Imagen 4 ほか）
+
+> [!NOTE]
+> 機能の対応状況はプロバイダ・モデルにより異なります。
+> 例：PDF入力は Gemini / Claude / OpenAI Responses で対応、動画入力は Gemini / OpenRouter で対応。
+
+## 🗂️ マルチモーダル対応
+
+| 入力種別 | 対応プロバイダ |
+|---|---|
+| 🖼️ 画像 | OpenAI、Gemini、Claude、OpenRouter ほか |
+| 🎵 音声（WAV / MP3 / OGG） | Gemini（ネイティブ）、OpenRouter、OpenAI Whisper / Gemini（文字起こし） |
+| 🎬 動画 | Gemini、OpenRouter |
+| 📄 PDF | Gemini、Claude、OpenAI Responses API |
+
+## 🌐 ネイティブAPI Web検索
+
+各プロバイダ公式のWeb検索ツールを直接利用するため、Context Sizeを抑えつつ安定した結果が得られます：
+
+- OpenAI Responses: `web_search_preview`
+- Anthropic Claude: `web_search_20250305`
+- Google Gemini: `google_search`（参照URL付き）
+
+ネイティブツール非対応のプロバイダでは、HuddleLLM独自のWeb Agent（検索結果をPromptに付与する方式）にフォールバックします。
+
+## 🎨 Image Agent
+
+LLMの推論力と画像生成APIを組み合わせた、エージェント型の画像生成システム：
+
+1. 自然な日本語で「こんな画像が欲しい」と入力
+2. LLM（Claude や OpenAI互換）が最適な画像プロンプトを生成
+3. 画像生成APIが画像を生成
+
+OpenAI Image、Google Gemini、Chutes AI、Novita AI、Replicate に対応しています。
+
+## 🔨 ソースからビルドする
+
+- ソースコードをクローン
 - `corepack enable`
 - `yarn install`
 - `yarn build`
-- In Chrome/Edge go to the Extensions page (chrome://extensions or edge://extensions)
-- Enable Developer Mode
-- Drag the `dist` folder anywhere on the page to import it (do not delete the folder afterward)
+- Chrome / Edge の拡張機能ページを開く（chrome://extensions または edge://extensions）
+- デベロッパーモードを有効化
+- `dist` フォルダをページ上にドラッグ＆ドロップしてインポート（読み込み後もフォルダは削除しないでください）
 
 ## 📜 プライバシーポリシー
-◯ 本アプリケーションはユーザーの個人データを一切収集しません
+◯ 本アプリケーションはユーザーの個人データを一切送信せず、収集しません。
 ◯ ユーザーが設定画面で明示的に有効化したAIサービス、またはユーザー自身が設定したAPI経由で利用するサービスにおけるデータ取り扱いについては、当開発者は一切の関知をしません。これら外部サービスの利用はユーザー自身の責任において行ってください
 
 ## 📜 変更ログ
 
-### v1.22.0
-
-- Claude API のサポートを追加
-
-### v1.21.0
-
-- より多くのオープンソースモデルを追加
-
-### v1.20.0
-
-- Chrome のサイドパネルからアクセスできるようにしました
-
-### v1.19.0
-
-- プロンプトへの簡単アクセス
-
-### v1.18.0
-
-- Alpaca、Vicuna、ChatGLM のサポート
-
-### v1.17.0
-
-- GPT-4 Browsing モデルのサポート
-
-### v1.16.5
-
-- Azure OpenAI サービスのサポートを追加
-
-### v1.16.0
-
-- カスタムテーマ設定を追加
-
-### v1.15.0
-
-- Xunfei Spark ボットを追加
-
-### v1.14.0
-
-- プレミアムユーザー向けのオールインワンモードで、より多くのボットをサポート
-
-### v1.12.0
-
-- プレミアムライセンスを追加
-
-### v1.11.0
-
-- クロードのサポートを追加 (Poe経由で)
-
-### v1.10.0
-
-- Command + K
-
-### v1.9.4
-
-- ダークモード
-
-### v1.9.3
-
-- katex で数式をサポート
-- コミュニティプロンプトをローカルに保存
-
-### v1.9.2
-
-- 履歴メッセージを削除する
-
-### v1.9.0
-
-- markdown として、または sharegpt.com 経由でチャットを共有する
-
-### v1.8.0
-
-- すべてのデータのインポート/エクスポート
-- ローカルプロンプトを編集する
-- 比較のためにチャットボットを切り替える
-
-### v1.7.0
-
-- 会話履歴を追加する
-
-### v1.6.0
-
-- Google Bard のサポートを追加
-
-### v1.5.4
-
-- ChatGPT api モードで GPT-4 モデルをサポート
-
-### v1.5.1
-
-- i18n 設定を追加
-
-### v1.5.0
-
-- ChatGPT Webapp モードで GPT-4 モデルをサポート
-
-### v1.4.0
-
-- プロンプトライブラリを追加
-
-### v1.3.0
-
-- コピーコードボタンを追加
-- オールインワンモードとスタンドアロンモードの間でチャット状態を同期
-- 回答の生成中に入力を許可
-
-### v1.2.0
-
-- コピーメッセージテキストのサポート
-- ページフォーム要素スタイルの設定を改善
+最新の更新履歴は [CHANGELOG.md](./CHANGELOG.md) を参照してください。

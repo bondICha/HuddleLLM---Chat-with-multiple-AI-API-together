@@ -574,5 +574,59 @@
     "ja": "APIキーとホストを設定してモデルを取得してください",
     "zh-CN": "请配置API密钥和主机以获取模型",
     "zh-TW": "請配置API金鑰和主機以獲取模型"
+  },
+  "Leave blank to use Common API Key": {
+    "en": "Leave blank to use Common API Key",
+    "ja": "未入力の場合は共通APIキーを使用",
+    "zh-CN": "留空则使用通用 API Key",
+    "zh-TW": "留空則使用通用 API Key"
+  },
+  "API Key is empty. Use Common API Key?": {
+    "en": "API Key is empty. Use Common API Key?",
+    "ja": "APIキーが未入力です。共通APIキーを使用しますか？",
+    "zh-CN": "API Key 为空。使用通用 API Key 吗？",
+    "zh-TW": "API Key 為空。使用通用 API Key 嗎？"
+  },
+  "Active Key": {
+    "en": "Active Key",
+    "ja": "使用中のKey",
+    "zh-CN": "当前密钥",
+    "zh-TW": "當前金鑰"
+  },
+  "Common": {
+    "en": "Common",
+    "ja": "共通",
+    "zh-CN": "通用",
+    "zh-TW": "通用"
+  },
+  "No API Key configured": {
+    "en": "No API Key configured",
+    "ja": "API Keyが未設定です",
+    "zh-CN": "未配置API密钥",
+    "zh-TW": "未設定API金鑰"
+  },
+  "Provider": {
+    "en": "Provider",
+    "ja": "Provider",
+    "zh-CN": "提供商",
+    "zh-TW": "提供商"
+  },
+  "API Models": {
+    "en": "API Models",
+    "ja": "APIモデル",
+    "zh-CN": "API模型",
+    "zh-TW": "API模型"
+  },
+  "Refresh models": {
+    "en": "Refresh models",
+    "ja": "モデルを更新",
+    "zh-CN": "刷新模型",
+    "zh-TW": "重新整理模型"
+  },
+  "Use \"{{value}}\" as custom model": {
+    "en": "Use \"{{value}}\" as custom model",
+    "ja": "「{{value}}」をカスタムモデルとして使用",
+    "zh-CN": "使用 \"{{value}}\" 作为自定义模型",
+    "zh-TW": "使用「{{value}}」作為自定義模型"
   }
 }

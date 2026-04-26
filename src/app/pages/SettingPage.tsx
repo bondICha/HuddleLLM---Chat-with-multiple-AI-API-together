@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { FC, PropsWithChildren, useCallback, useEffect, useState } from 'react'
-import toast, { Toaster } from 'react-hot-toast'
+import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import Browser from 'webextension-polyfill'
 import Button from '~app/components/Button'
@@ -29,6 +29,8 @@ import {
   getUserConfig,
   updateUserConfig,
   CustomApiConfig,
+  getSavedChatPairs,
+  ChatPair,
 } from '~services/user-config'
 import { getVersion } from '~utils'
 import PagePanel from '../components/Page'
@@ -50,6 +52,7 @@ function SettingPage() {
   const [userConfig, setUserConfig] = useState<UserConfig | undefined>(undefined)
   const [dirty, setDirty] = useState(false)
   const [companyInfo, setCompanyInfo] = useState<{ name: string; version: string } | null>(null)
+  const [savedPairs, setSavedPairs] = useState<ChatPair[]>([])
   const themeColor = useAtomValue(themeColorAtom)
 
 
@@ -57,6 +60,7 @@ function SettingPage() {
     getUserConfig().then((config) => {
       setUserConfig(config);
     });
+    getSavedChatPairs().then(setSavedPairs).catch(() => {});
 
     // Check for active company profile from stored state
     const checkActiveCompanyProfile = async () => {
@@ -135,13 +139,24 @@ function SettingPage() {
         <div className="flex flex-row gap-8 flex-wrap">
           <div>
             <p className="font-bold mb-2 text-lg">{t('Startup page')}</p>
-            <div className="w-[200px]">
+            <div className="w-[320px]">
               <Select
+                showIcon={true}
                 options={[
-                  { name: 'All-In-One', value: ALL_IN_ONE_PAGE_ID },
+                  { name: 'All-In-One', value: ALL_IN_ONE_PAGE_ID, icon: 'BsGrid3X3' },
+                  ...(savedPairs.length > 0 ? [
+                    { name: t('Saved Pairs'), value: '__label_pairs__' as string, isLabel: true },
+                    ...savedPairs.map((pair: ChatPair) => ({
+                      name: pair.name,
+                      value: pair.id,
+                      icon: 'BsBookmarkStar',
+                    })),
+                  ] : []),
+                  { name: t('Individual Bots'), value: '__label_bots__' as string, isLabel: true },
                   ...(userConfig.customApiConfigs || []).map((config: CustomApiConfig, index: number) => ({
                     name: config.name,
                     value: `custom-${index}`,
+                    icon: config.avatar,
                   })),
                 ]}
                 value={userConfig.startupPage}
@@ -158,11 +173,13 @@ function SettingPage() {
             </p>
             <div className="w-72">
               <Select
+                showIcon={true}
                 options={[
                   { name: t('Do not generate title'), value: '' },
                   ...(userConfig.customApiConfigs || []).map((config: CustomApiConfig, index: number) => ({
                     name: config.name,
                     value: index.toString(),
+                    icon: config.avatar,
                   })),
                 ]}
                 value={userConfig.titleGenerationBotIndex !== undefined ? userConfig.titleGenerationBotIndex.toString() : ''}
@@ -206,7 +223,6 @@ function SettingPage() {
           <Button color="primary" size="small" text={t('Save changes')} onClick={save} className="py-2" />
         </motion.div>
       )}
-      <Toaster position="bottom-center" />
     </PagePanel>
   )
 }

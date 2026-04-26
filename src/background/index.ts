@@ -17,7 +17,14 @@ setupProxyExecutor()
 
 async function openAppPage() {
   const { startupPage } = await getUserConfig()
-  const hash = startupPage === ALL_IN_ONE_PAGE_ID ? '' : `#/chat/${startupPage}`
+  let hash = ''
+  if (startupPage === ALL_IN_ONE_PAGE_ID) {
+    hash = ''
+  } else if (startupPage.startsWith('pair_')) {
+    hash = `#/?pair=${startupPage}`
+  } else {
+    hash = `#/chat/${startupPage}`
+  }
   await Browser.tabs.create({ url: `app.html${hash}` })
 }
 

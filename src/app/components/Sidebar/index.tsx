@@ -42,6 +42,7 @@ import {
   allInOnePairsAtom,
   activeAllInOneAtom,
   saveAllInOneConfigAtom,
+  setActiveAllInOneAtom,
   DEFAULT_PAIR_CONFIG,
   DEFAULT_BOTS,
   AllInOnePairConfig
@@ -89,6 +90,7 @@ function Sidebar() {
   const [activeAllInOne, setActiveAllInOne] = useAtom(activeAllInOneAtom)
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const saveConfig = useSetAtom(saveAllInOneConfigAtom)
+  const persistActivePair = useSetAtom(setActiveAllInOneAtom)
   
   // 現在のペア設定を取得
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
@@ -193,8 +195,8 @@ useEffect(() => {
         [newPair.id]: newConfig
       }))
 
-      // 新しく作成したAll-In-Oneをアクティブにする
-      setActiveAllInOne(newPair.id)
+      // 新しく作成したAll-In-Oneをアクティブにする（永続化）
+      await persistActivePair(newPair.id)
 
       // 設定を保存
       setTimeout(() => saveConfig(), 100)
@@ -217,9 +219,9 @@ useEffect(() => {
         return rest
       })
       
-      // 削除したAll-In-OneがアクティブだったらDefaultに戻す
+      // 削除したAll-In-OneがアクティブだったらDefaultに戻す（永続化）
       if (activeAllInOne === pairId) {
-        setActiveAllInOne('default')
+        await persistActivePair('default')
       }
       
       // 設定を保存
@@ -278,8 +280,18 @@ useEffect(() => {
       setTimeout(() => saveConfig(), 100)
     }
 
-    // アクティブなAll-In-Oneを切り替え
-    setActiveAllInOne(pairId)
+    // アクティブなAll-In-Oneを切り替え（永続化）
+    persistActivePair(pairId)
+
+    // URLを更新（pair=<id> パラメータ）
+    const hash = window.location.hash
+    const queryStart = hash.indexOf('?')
+    const baseHash = queryStart >= 0 ? hash.substring(0, queryStart) : hash
+    if (pairId === 'default') {
+      window.history.replaceState({}, '', window.location.pathname + baseHash)
+    } else {
+      window.history.replaceState({}, '', window.location.pathname + baseHash + '?pair=' + pairId)
+    }
   }
 
   // 名前変更を開始
@@ -700,6 +712,23 @@ useEffect(() => {
             )}
           </div>
         ))}
+
+        {/* ペアが0件のときの空状態コールアウト */}
+        {savedPairs.length === 0 && (shouldShowAsHamburger || !collapsed) && (
+          <div className="mt-2 px-1">
+            <p className="text-xs text-primary-text mb-1.5 leading-relaxed opacity-70">
+              {t('pair_empty_hint')}
+            </p>
+            <button
+              onClick={handleCreateNewAllInOne}
+              disabled={isSaving}
+              className="w-full flex items-center gap-1.5 px-2 py-1.5 text-xs text-primary-text rounded border border-dashed border-primary-text border-opacity-30 hover:border-opacity-60 hover:bg-primary-text hover:bg-opacity-5 transition-all disabled:opacity-50"
+            >
+              <PlusIcon className="w-3.5 h-3.5 shrink-0" />
+              <span>{t('pair_save_action_long')}</span>
+            </button>
+          </div>
+        )}
         </div>
       </div>
       

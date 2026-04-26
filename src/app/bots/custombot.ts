@@ -345,30 +345,48 @@ export class CustomBot extends AsyncAbstractBot {
                     });
                 }
                 break;
-            case CustomApiProvider.OpenAI_Responses:
+            case CustomApiProvider.OpenAI_Responses: {
+                const webSearchEnabled = config.providerWebSearch ?? (config.responsesWebSearch ?? false);
+                const imageGenEnabled = !!config.imageFunctionToolSettings?.enabled;
+
+                const buildResponsesTools = () => {
+                    let userTools: any[] = [];
+                    if (config.responsesFunctionTools?.trim()) {
+                        try {
+                            const parsed = JSON.parse(config.responsesFunctionTools);
+                            if (Array.isArray(parsed)) userTools = parsed;
+                        } catch { /* ignore invalid JSON */ }
+                    }
+
+                    if (!imageGenEnabled) {
+                        return userTools.length > 0 ? userTools : undefined;
+                    }
+
+                    const imageTool: any = { type: 'image_generation' };
+                    if (config.imageFunctionToolSettings?.params) {
+                        Object.assign(imageTool, config.imageFunctionToolSettings.params);
+                    }
+
+                    const tools: any[] = [imageTool];
+                    if (webSearchEnabled) tools.push({ type: 'web_search_preview' });
+                    tools.push(...userTools);
+                    return tools;
+                };
+
                 botInstance = new OpenAIResponsesBot({
                     apiKey: effectiveApiKey,
                     host: effectiveHost,
                     model: config.model,
                     systemMessage: processedSystemMessage,
                     isHostFullPath: effectiveIsHostFullPath,
-                    webAccess: config.providerWebSearch ?? (config.responsesWebSearch ?? false),
+                    webAccess: webSearchEnabled,
                     thinkingMode: config.thinkingMode,
                     reasoningEffort: config.reasoningEffort,
-                    functionTools: (() => {
-                      if (config.responsesFunctionTools && config.responsesFunctionTools.trim().length > 0) {
-                        try {
-                          const parsed = JSON.parse(config.responsesFunctionTools);
-                          return Array.isArray(parsed) ? parsed : undefined;
-                        } catch {
-                          return undefined;
-                        }
-                      }
-                      return undefined;
-                    })(),
+                    functionTools: buildResponsesTools(),
                     extraBody: undefined,
                 });
                 break;
+            }
             case CustomApiProvider.GeminiOpenAI:
                 botInstance = new ChatGPTApiBot({
                     apiKey: effectiveApiKey,

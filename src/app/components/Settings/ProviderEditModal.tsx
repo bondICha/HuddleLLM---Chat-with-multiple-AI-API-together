@@ -12,15 +12,17 @@ import BotIcon from '../BotIcon';
 import IconSelectModal from './IconSelectModal';
 import ModelPreview from './ModelPreview';
 import { HiChatBubbleLeftRight, HiPhoto } from 'react-icons/hi2';
-
+import { resolveActiveKeyForProvider, maskKey } from '~/utils/active-api-key';
+import { cx } from '~/utils';
 interface Props {
   open: boolean;
   onClose: () => void;
   provider: ProviderConfig | null;
+  commonApiKey?: string;
   onSave: (provider: ProviderConfig) => void;
 }
 
-const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
+const ProviderEditModal: FC<Props> = ({ open, onClose, provider, commonApiKey = '', onSave }) => {
   const { t } = useTranslation();
   const [editingProvider, setEditingProvider] = useState<ProviderConfig | null>(null);
   const [iconModalOpen, setIconModalOpen] = useState(false);
@@ -35,6 +37,9 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
 
   const handleSave = () => {
     if (editingProvider) {
+      if (!editingProvider.apiKey?.trim() && commonApiKey.trim()) {
+        if (!window.confirm(t('API Key is empty. Use Common API Key?'))) return;
+      }
       onSave(editingProvider);
       onClose();
     }
@@ -338,22 +343,38 @@ const ProviderEditModal: FC<Props> = ({ open, onClose, provider, onSave }) => {
           {/* API Key */}
           <div className={formRowClass}>
             <p className={labelClass}>API Key</p>
-            <Input
-              className='w-full'
-              placeholder={t('Enter API Key for this provider')}
-              value={editingProvider.apiKey}
-              onChange={(e) => {
-                setEditingProvider({ ...editingProvider, apiKey: e.currentTarget.value });
-              }}
-              type="password"
-            />
+            {(() => {
+              const active = resolveActiveKeyForProvider(editingProvider, commonApiKey);
+              const showBadge = active.source !== 'individual';
+              const badgeColor = active.source === 'common'
+                ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
+                : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+              return (
+                <>
+                  <Input
+                    className="w-full"
+                    placeholder={t('Enter API Key for this provider')}
+                    value={editingProvider.apiKey || ''}
+                    onChange={(e) => setEditingProvider({ ...editingProvider, apiKey: e.currentTarget.value })}
+                    type="password"
+                  />
+                  {showBadge && (
+                    <div className="mt-1.5">
+                      <span className={cx('text-[11px] px-2 py-0.5 rounded-sm font-medium', badgeColor)}>
+                        {active.source === 'common' ? `${t('Active Key')}: ${t('Common')} (${maskKey(commonApiKey)})` : t('No API Key configured')}
+                      </span>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Model Preview */}
           <div className="border-t pt-4">
             <ModelPreview
               provider={editingProvider.provider || CustomApiProvider.OpenAI}
-              apiKey={editingProvider.apiKey}
+              apiKey={resolveActiveKeyForProvider(editingProvider, commonApiKey).key}
               host={editingProvider.host}
               isHostFullPath={editingProvider.isHostFullPath}
             />

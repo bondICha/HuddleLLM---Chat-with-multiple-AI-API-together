@@ -25,6 +25,7 @@ import {
   activeAllInOneAtom,
   initializeAllInOneAtom,
   saveAllInOneConfigAtom,
+  setActiveAllInOneAtom,
   isInitializingAtom,
   DEFAULT_BOTS,
   DEFAULT_PAIR_CONFIG,
@@ -588,15 +589,6 @@ const GeneralChatPanel: FC<{
         newAllBots[i] = botIndex
       })
 
-      updatedPanelBots.forEach((newBotIndex, idx) => {
-        if (currentBots[idx] !== newBotIndex) {
-          const chat = chats[idx]
-          if (chat) {
-            chat.resetConversation()
-          }
-        }
-      })
-
       // 共通設定を更新
       updateCurrentPairConfig({ bots: newAllBots })
 
@@ -993,6 +985,8 @@ const MultiBotChatPanel: FC = () => {
   const [activeAllInOne] = useAtom(activeAllInOneAtom)
   const [allInOnePairs, setAllInOnePairs] = useAtom(allInOnePairsAtom)
   const initializeConfig = useSetAtom(initializeAllInOneAtom)
+  const persistActivePair = useSetAtom(setActiveAllInOneAtom)
+  const saveConfig = useSetAtom(saveAllInOneConfigAtom)
   const currentPairConfig = allInOnePairs[activeAllInOne] || DEFAULT_PAIR_CONFIG
   const layout = currentPairConfig.layout
   const { t } = useTranslation()
@@ -1001,7 +995,7 @@ const MultiBotChatPanel: FC = () => {
   const setAllInOneRestoreData = useSetAtom(allInOneRestoreDataAtom)
 
   const [currentSessionUUID, setCurrentSessionUUID] = useState<string | null>(null)
-  const setIsInitializing = useSetAtom(isInitializingAtom)
+  const [isInitializing, setIsInitializing] = useAtom(isInitializingAtom)
 
   // 初期化（前回の設定を復旧）
   useEffect(() => {
@@ -1011,6 +1005,26 @@ const MultiBotChatPanel: FC = () => {
       setIsInitializing(false)
     })
   }, [])
+
+
+  // pair URL パラメータ経由のペア選択（初期化完了後に処理）
+  useEffect(() => {
+    if (isInitializing) return
+
+    const hash = window.location.hash
+    const queryStart = hash.indexOf('?')
+    if (queryStart === -1) return
+
+    const params = new URLSearchParams(hash.substring(queryStart + 1))
+    const pairId = params.get('pair')
+    if (!pairId) return
+
+    // 存在するペアIDのみ切り替え。存在しない場合は無視（defaultのまま）
+    if (allInOnePairs[pairId]) {
+      persistActivePair(pairId)
+    }
+  }, [isInitializing])
+
 
   // URL パラメータ経由のセッション復元（新規タブ復元用）
   useEffect(() => {

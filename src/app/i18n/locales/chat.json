@@ -424,5 +424,29 @@
     "ja": "それぞれの返答を比較してください。以上よろしくお願いします。",
     "zh-CN": "人工 比较回答一下，谢了！",
     "zh-TW": "幫我比較一下這些 AI の回覆唷！"
+  },
+  "pair_save_hint": {
+    "en": "You can save this layout as a pair",
+    "ja": "この構成をペアとして保存できます",
+    "zh-CN": "可以将当前配置保存为 Pair",
+    "zh-TW": "可以將目前配置儲存為 Pair"
+  },
+  "pair_save_action": {
+    "en": "Save",
+    "ja": "保存する",
+    "zh-CN": "保存",
+    "zh-TW": "儲存"
+  },
+  "pair_empty_hint": {
+    "en": "Save your favorite layouts as pairs to switch quickly",
+    "ja": "よく使う構成をペアとして保存できます",
+    "zh-CN": "可将常用配置保存为 Pair 快速切换",
+    "zh-TW": "可將常用配置儲存為 Pair 快速切換"
+  },
+  "pair_save_action_long": {
+    "en": "+ Save current layout",
+    "ja": "+ 現在の構成を保存",
+    "zh-CN": "+ 保存当前配置",
+    "zh-TW": "+ 儲存目前配置"
   }
 }

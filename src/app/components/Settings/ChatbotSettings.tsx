@@ -14,7 +14,8 @@ import Range from '../Range';
 import Button from '../Button';
 import NestedDropdown, { NestedDropdownOption } from '../NestedDropdown';
 import TripleStateToggle from '../TripleStateToggle';
-import ModelSearchInput from '../ModelSearchInput';
+import ComboboxField, { ComboboxOption } from '../ComboboxField';
+import { maskKey } from '~/utils/active-api-key';
 import DeveloperOptionsPanel from './DeveloperOptionsPanel';
 import { getTemplateOptions, getActivePresets, getPresetMapping } from '~services/preset-loader';
 import { useApiModels } from '~hooks/use-api-models';
@@ -171,58 +172,32 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     await fetchSingleModel(fetchConfig, index);
   };
 
-  const createModelOptions = (configIndex?: number): NestedDropdownOption[] => {
-    const options: NestedDropdownOption[] = [];
-    if (configIndex !== undefined && modelsPerConfig[configIndex]?.length > 0) {
-      const config = customApiConfigs[configIndex];
-      if (config) {
+  const createModelComboboxOptions = (configIndex: number): ComboboxOption[] => {
+    const options: ComboboxOption[] = [];
+
+    if (modelsPerConfig[configIndex]?.length > 0) {
+      modelsPerConfig[configIndex].forEach((model: any) => {
         options.push({
-          label: 'Fetched API Models',
-          children: modelsPerConfig[configIndex].map((model: any) => ({
-            label: model.id,
-            value: model.id,
-            icon: 'FiCode'
-          })),
-          icon: 'FiCode'
-        });
-      }
-    }
-
-    const getProviderIcon = (provider: string): string => {
-      switch (provider.toLowerCase()) {
-        case 'openai': return 'openai';
-        case 'anthropic': return 'anthropic';
-        case 'google': return 'gemini';
-        case 'grok': return 'grok';
-        case 'deepseek': return 'deepseek';
-        case 'rakuten': return 'rakuten';
-        case 'qwen': return 'qianwen';
-        case 'perplexity': return 'perplexity';
-        case 'custom': return 'huddlellm';
-        default: return 'chatgpt';
-      }
-    };
-
-    Object.keys(MODEL_LIST).forEach(provider => {
-      const providerIcon = getProviderIcon(provider);
-      const categoryOption: NestedDropdownOption = {
-        label: provider,
-        children: [],
-        icon: providerIcon,
-      };
-      Object.entries(MODEL_LIST[provider]).forEach(([modelName, modelData]) => {
-        const modelValue = typeof modelData === 'string' ? modelData : modelData.value;
-        const modelIcon = typeof modelData === 'object' && modelData.icon ? modelData.icon : providerIcon;
-        categoryOption.children?.push({
-          label: modelName,
-          value: modelValue,
-          icon: modelIcon,
+          value: model.id,
+          label: model.id,
+          group: t('API Models'),
+          badge: { text: 'API', color: 'green' },
         });
       });
-      if (categoryOption.children && categoryOption.children.length > 0) {
-        options.push(categoryOption);
-      }
+    }
+
+    Object.keys(MODEL_LIST).forEach(provider => {
+      Object.entries(MODEL_LIST[provider]).forEach(([modelName, modelData]) => {
+        const modelValue = typeof modelData === 'string' ? modelData : modelData.value;
+        options.push({
+          value: modelValue,
+          label: modelName,
+          group: provider,
+          badge: { text: 'Static', color: 'blue' },
+        });
+      });
     });
+
     return options;
   };
 
@@ -396,9 +371,10 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             const showThinkingBudget = THINKING_BUDGET_PROVIDERS.includes(effectiveProvider as any);
             const showReasoningEffort = isOpenAI || isOpenRouter || isOpenAIResponses;
 
-            // Image Function Tool settings (for OpenAI_Image, OpenRouter Image, etc.)
+            // Image Function Tool settings (for OpenAI_Image, OpenAI_Responses with image enabled, OpenRouter Image, etc.)
             const showImageFunctionSettings =
               effectiveProvider === CustomApiProvider.OpenAI_Image ||
+              (isOpenAIResponses && !!config.imageFunctionToolSettings?.enabled) ||
               (isOpenRouter && !!config.advancedConfig?.openrouterIsImageModel);
 
             const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort && !isImageAgent && !showImageFunctionSettings;
@@ -744,35 +720,22 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           className="px-3 py-1 text-xs rounded transition-colors bg-white dark:bg-black border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
                           title={errorsPerConfig[index] || t('Fetch models from API')}
                         >
-                          {modelsLoading ? t('Loading...') : t('Fetch Models')}
+                          {modelsLoading ? t('Loading...') : t('Refresh models')}
                         </button>
                       )}
                     </div>
-                    <div className="flex flex-col gap-3">
-                      <NestedDropdown
-                        options={createModelOptions(index)}
-                        value={config.model}
-                        onChange={(v) => {
-                          if (!v || v.startsWith('header-')) return;
-                          const updatedConfigs = [...customApiConfigs];
-                          updatedConfigs[index].model = v;
-                          updateCustomApiConfigs(updatedConfigs);
-                        }}
-                        placeholder={config.model && config.model.trim() !== '' ? t('user-defined-model') : t('Choose model')}
-                        showModelId={true}
-                      />
-                      <ModelSearchInput
-                        value={config.model}
-                        onChange={(model) => {
-                          const updatedConfigs = [...customApiConfigs];
-                          updatedConfigs[index].model = model;
-                          updateCustomApiConfigs(updatedConfigs);
-                        }}
-                        apiModels={modelsPerConfig[index]}
-                        provider={config.provider}
-                        placeholder={t('Search models...')}
-                      />
-                    </div>
+                    <ComboboxField
+                      value={config.model || ''}
+                      onChange={(v) => {
+                        const updatedConfigs = [...customApiConfigs];
+                        updatedConfigs[index].model = v;
+                        updateCustomApiConfigs(updatedConfigs);
+                      }}
+                      options={createModelComboboxOptions(index)}
+                      placeholder={t('Choose model')}
+                      customLabel={(q) => t('Use "{{value}}" as custom model', { value: q })}
+                      searchable={true}
+                    />
                   </div>
                   )}
 
@@ -1091,24 +1054,49 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           </div>
                         )}
 
-                        {showApiKey && (
-                          <div className={formRowClass}>
-                            <p className={labelClass}>API Key</p>
-                            <div className={inputContainerClass}>
-                              <Input
-                                className='w-full'
-                                placeholder="Leave blank to use common API Key"
-                                value={config.apiKey}
-                                onChange={(e) => {
-                                  const updatedConfigs = [...customApiConfigs];
-                                  updatedConfigs[index].apiKey = e.currentTarget.value;
-                                  updateCustomApiConfigs(updatedConfigs);
-                                }}
-                                type="password"
-                              />
+                        {showApiKey && (() => {
+                          const commonKey = userConfig.customApiKey || '';
+                          const hasCustomKey = !!(config.apiKey?.trim());
+                          const usingCommon = !hasCustomKey && !!commonKey.trim();
+                          const usingNone = !hasCustomKey && !commonKey.trim();
+                          return (
+                            <div className={formRowClass}>
+                              <p className={labelClass}>API Key</p>
+                              <div className={inputContainerClass}>
+                                <Input
+                                  className='w-full'
+                                  placeholder={t('Leave blank to use Common API Key')}
+                                  value={config.apiKey || ''}
+                                  onChange={(e) => {
+                                    const updatedConfigs = [...customApiConfigs];
+                                    updatedConfigs[index].apiKey = e.currentTarget.value;
+                                    updateCustomApiConfigs(updatedConfigs);
+                                  }}
+                                  onBlur={(e) => {
+                                    if (!e.currentTarget.value.trim() && commonKey.trim()) {
+                                      if (!window.confirm(t('API Key is empty. Use Common API Key?'))) {
+                                        e.currentTarget.focus();
+                                      }
+                                    }
+                                  }}
+                                  type="password"
+                                />
+                                {(usingCommon || usingNone) && (
+                                  <div className="mt-1.5">
+                                    <span className={cx(
+                                      'text-[11px] px-2 py-0.5 rounded-sm font-medium',
+                                      usingCommon
+                                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
+                                        : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                    )}>
+                                      {usingCommon ? `${t('Active Key')}: ${t('Common')} (${maskKey(commonKey)})` : t('No API Key configured')}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                         {showOpenRouterMode && (
                             <div className="space-y-4">
                               <div className={formRowClass}>
@@ -1149,6 +1137,25 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                   />
                                   <p className="text-xs opacity-70 mt-1">
                                     {t('Use {{provider}} web search (OFF: HuddleLLM Web Access)', { provider: 'OpenAI' })}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className={formRowClass}>
+                                <p className={labelClass}>{t('Image Generation')}</p>
+                                <div className={inputContainerClass}>
+                                  <Switch
+                                    checked={!!config.imageFunctionToolSettings?.enabled}
+                                    onChange={(checked) => {
+                                      const u = [...customApiConfigs];
+                                      u[index].imageFunctionToolSettings = {
+                                        ...(u[index].imageFunctionToolSettings || {}),
+                                        enabled: checked,
+                                      };
+                                      updateCustomApiConfigs(u);
+                                    }}
+                                  />
+                                  <p className="text-xs opacity-70 mt-1">
+                                    {t('Allow the model to generate or edit images in chat.')}
                                   </p>
                                 </div>
                               </div>
@@ -1334,6 +1341,11 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                       { name: '1024x1024', value: '1024x1024' },
                                       { name: `1024x1536 ${t('portrait-suffix')}`, value: '1024x1536' },
                                       { name: `1536x1024 ${t('landscape-suffix')}`, value: '1536x1024' },
+                                      { name: `2048x2048 (2K)`, value: '2048x2048' },
+                                      { name: `1152x2048 (2K ${t('portrait-suffix')})`, value: '1152x2048' },
+                                      { name: `2048x1152 (2K ${t('landscape-suffix')})`, value: '2048x1152' },
+                                      { name: `2160x3840 (4K ${t('portrait-suffix')})`, value: '2160x3840' },
+                                      { name: `3840x2160 (4K ${t('landscape-suffix')})`, value: '3840x2160' },
                                     ]}
                                     value={(config.imageFunctionToolSettings?.params as any)?.size || 'auto'}
                                     onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), size: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
@@ -1362,6 +1374,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                     options={[
                                       { name: t('auto'), value: 'auto' },
                                       { name: t('transparent'), value: 'transparent' },
+                                      { name: t('opaque'), value: 'opaque' },
                                     ]}
                                     value={(config.imageFunctionToolSettings?.params as any)?.background || 'auto'}
                                     onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), background: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
