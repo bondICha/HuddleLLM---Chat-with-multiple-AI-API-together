@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.16.3] - 2026-04-26
+
+### Fixed
+- **Sidebar URL management migration**: Removed manual URL update code from `handleSwitchAllInOne` function. URL is now managed by Tanstack Router via Link component's `search` prop, fixing URL parameter handling issues.
+
+### 修复
+- **Sidebar URL管理迁移**: 从`handleSwitchAllInOne`函数中移除手动URL更新代码。现在通过Link组件的`search`属性由Tanstack Router管理URL，修复URL参数处理问题。
+
+---
+
 ## [v2.16.2] - 2026-04-26
 
 ### Added
