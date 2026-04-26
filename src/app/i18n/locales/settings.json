@@ -119,6 +119,18 @@
     "zh-CN": "启动页面",
     "zh-TW": "啟動頁面"
   },
+  "Saved Pairs": {
+    "en": "Saved Pairs",
+    "ja": "保存済みペア",
+    "zh-CN": "已保存的对话组",
+    "zh-TW": "已儲存的對話組"
+  },
+  "Individual Bots": {
+    "en": "Individual Bots",
+    "ja": "個別ボット",
+    "zh-CN": "独立机器人",
+    "zh-TW": "個別機器人"
+  },
   "Show session restore on startup": {
     "en": "Show session restore on startup",
     "ja": "起動時に履歴再開を表示",

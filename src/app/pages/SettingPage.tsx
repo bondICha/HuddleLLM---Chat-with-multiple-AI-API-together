@@ -139,17 +139,24 @@ function SettingPage() {
         <div className="flex flex-row gap-8 flex-wrap">
           <div>
             <p className="font-bold mb-2 text-lg">{t('Startup page')}</p>
-            <div className="w-[200px]">
+            <div className="w-[320px]">
               <Select
+                showIcon={true}
                 options={[
-                  { name: 'All-In-One', value: ALL_IN_ONE_PAGE_ID },
-                  ...savedPairs.map((pair: ChatPair) => ({
-                    name: `  ${pair.name}`,
-                    value: pair.id,
-                  })),
+                  { name: 'All-In-One', value: ALL_IN_ONE_PAGE_ID, icon: 'BsGrid3X3' },
+                  ...(savedPairs.length > 0 ? [
+                    { name: t('Saved Pairs'), value: '__label_pairs__' as string, isLabel: true },
+                    ...savedPairs.map((pair: ChatPair) => ({
+                      name: pair.name,
+                      value: pair.id,
+                      icon: 'BsBookmarkStar',
+                    })),
+                  ] : []),
+                  { name: t('Individual Bots'), value: '__label_bots__' as string, isLabel: true },
                   ...(userConfig.customApiConfigs || []).map((config: CustomApiConfig, index: number) => ({
                     name: config.name,
                     value: `custom-${index}`,
+                    icon: config.avatar,
                   })),
                 ]}
                 value={userConfig.startupPage}
