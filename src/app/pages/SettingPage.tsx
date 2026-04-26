@@ -173,11 +173,13 @@ function SettingPage() {
             </p>
             <div className="w-72">
               <Select
+                showIcon={true}
                 options={[
                   { name: t('Do not generate title'), value: '' },
                   ...(userConfig.customApiConfigs || []).map((config: CustomApiConfig, index: number) => ({
                     name: config.name,
                     value: index.toString(),
+                    icon: config.avatar,
                   })),
                 ]}
                 value={userConfig.titleGenerationBotIndex !== undefined ? userConfig.titleGenerationBotIndex.toString() : ''}
