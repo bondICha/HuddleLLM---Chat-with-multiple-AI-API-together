@@ -354,22 +354,24 @@ export function useChat(index: number, page: string = 'singleton') {
         try {
           const restoreInfo = allInOneRestoreData[index]
 
-          // スナップショット復元の場合は直接メッセージを使用
+          // スナップショット復元の場合: chat history に同IDの会話があれば
+          // そちらを優先（復元後にユーザが追加した発言を巻き戻さないため）
           if (restoreInfo.conversationId.startsWith('snapshot-')) {
-            // スナップショットメッセージを直接復元
             if (restoreInfo.messages && restoreInfo.messages.length > 0) {
+              const conversations = await loadHistoryMessages(index)
+              const existing = conversations.find(c => c.id === restoreInfo.conversationId)
+              const messagesToUse = (existing && existing.messages.length >= restoreInfo.messages.length)
+                ? existing.messages
+                : restoreInfo.messages
+
               setChatState((draft) => {
-                draft.messages = restoreInfo.messages
+                draft.messages = messagesToUse
                 draft.conversationId = restoreInfo.conversationId
               })
 
-              // ボットに会話履歴を設定
               if (chatState.bot.setConversationHistory) {
-                chatState.bot.setConversationHistory({
-                  messages: restoreInfo.messages
-                })
+                chatState.bot.setConversationHistory({ messages: messagesToUse })
               }
-
             }
           } else {
             // 既存の会話履歴から復元（従来の方法）
