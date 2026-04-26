@@ -282,6 +282,16 @@ useEffect(() => {
 
     // アクティブなAll-In-Oneを切り替え（永続化）
     persistActivePair(pairId)
+
+    // URLを更新（pair=<id> パラメータ）
+    const hash = window.location.hash
+    const queryStart = hash.indexOf('?')
+    const baseHash = queryStart >= 0 ? hash.substring(0, queryStart) : hash
+    if (pairId === 'default') {
+      window.history.replaceState({}, '', window.location.pathname + baseHash)
+    } else {
+      window.history.replaceState({}, '', window.location.pathname + baseHash + '?pair=' + pairId)
+    }
   }
 
   // 名前変更を開始
