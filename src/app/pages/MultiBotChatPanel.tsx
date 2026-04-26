@@ -1019,12 +1019,6 @@ const MultiBotChatPanel: FC = () => {
     const pairId = params.get('pair')
     if (!pairId) return
 
-    const clearUrlParams = () => {
-      const newHash = hash.substring(0, queryStart)
-      window.history.replaceState({}, '', window.location.pathname + newHash)
-    }
-
-    clearUrlParams()
     // 存在するペアIDのみ切り替え。存在しない場合は無視（defaultのまま）
     if (allInOnePairs[pairId]) {
       persistActivePair(pairId)
