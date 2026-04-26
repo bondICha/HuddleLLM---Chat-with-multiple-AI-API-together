@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import BotIcon from './BotIcon'
 
 interface Props<T> {
-  options: { value: T; name: string; icon?: string; recommended?: boolean }[]
+  options: { value: T; name: string; icon?: string; recommended?: boolean; isLabel?: boolean }[]
   value: T
   onChange: (value: T) => void
   size?: 'normal' | 'small'
@@ -97,12 +97,20 @@ function Select<T extends string>(props: Props<T>) {
                   dropPosition === 'top' && 'bottom-full mb-1',
                 )}
               >
-                {options.map((option) => (
+                {options.map((option, idx) =>
+                  option.isLabel ? (
+                    <div
+                      key={`label-${idx}`}
+                      className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 select-none"
+                    >
+                      {option.name}
+                    </div>
+                  ) : (
                   <Listbox.Option
                     key={option.value}
                     className={({ active }) =>
                       cx(
-                        active ? 'bg-primary-blue text-white' : 'text-[#303030] dark:text-gray-200', // Dark mode text color for inactive options
+                        active ? 'bg-primary-blue text-white' : 'text-[#303030] dark:text-gray-200',
                         'relative cursor-default select-none py-2 pl-3 pr-9',
                       )
                     }
@@ -124,7 +132,7 @@ function Select<T extends string>(props: Props<T>) {
                         {selected ? (
                           <span
                             className={cx(
-                              active ? 'text-white' : 'text-primary-blue dark:text-white', // Dark mode check icon color (keep white if active, use primary-blue or white otherwise)
+                              active ? 'text-white' : 'text-primary-blue dark:text-white',
                               'absolute inset-y-0 right-0 flex items-center pr-4',
                             )}
                           >
@@ -134,7 +142,8 @@ function Select<T extends string>(props: Props<T>) {
                       </div>
                     )}
                   </Listbox.Option>
-                ))}
+                  )
+                )}
               </Listbox.Options>
             </Transition>
           </div>

@@ -3,7 +3,7 @@
  */
 
 // System prompt version for update notifications
-export const SYSTEM_PROMPT_VERSION = '2.5.1'
+export const SYSTEM_PROMPT_VERSION = '2.16.2'
 
 export const SYSTEM_PROMPTS = {
   en: `
@@ -31,16 +31,18 @@ Timezone: {timezone}
 
 <platform_capabilities>
 HuddleLLM features available to users:
-- Multi-model comparison interface
-- Multiple image upload support
-- Browser activation shortcut
-- Markdown and code highlighting
+- Multi-model chat and side-by-side response comparison
+- Quick access via Chrome Side Panel and Omnibox shortcut (\`hl ...\`)
+- Multimodal input: images, audio (voice transcription via Whisper/Gemini), video, PDF
+- Image Agent: natural-language image generation across multiple providers
+- Web search: native provider tools (OpenAI Responses API, Claude, Gemini); function-call fallback for other models
+- /btw command: aggregate multiple AI responses and send to another AI for cross-model analysis
+- Quick Settings panel: per-session adjustment of thinking level and image generation parameters
+- All-In-One pair saving/switching with shareable URL parameters
 - Prompt library (custom and community)
-- Local conversation history
-- Data export/import
-- Markdown conversation sharing
-- Dark mode
-- Web access integration
+- Local conversation history with session restore; data export/import
+- AI-powered tab title auto-generation
+- Markdown rendering with code syntax highlighting
 </platform_capabilities>
 `,
 
@@ -69,16 +71,18 @@ HuddleLLM features available to users:
 
 <platform_capabilities>
 ユーザーが利用できる HuddleLLM の機能:
-- 複数モデルの比較インターフェース
-- 複数画像アップロード対応
-- ブラウザ起動ショートカット
-- Markdown とコードのシンタックスハイライト
+- 複数モデルの並列チャット・サイドバイサイド比較
+- Chrome Side Panel および Omnibox ショートカット（「hl ...」）でクイックアクセス
+- マルチモーダル入力：画像・音声（Whisper/Gemini 文字起こし）・動画・PDF
+- Image Agent：自然言語による画像生成（複数プロバイダ対応）
+- Web 検索：各プロバイダのネイティブツール（OpenAI Responses API・Claude・Gemini）、その他はフォールバック検索
+- /btw コマンド：複数 AI の回答をまとめて別の AI に送りクロス比較・深掘り分析
+- Quick Settings パネル：セッション単位で思考レベル・画像生成パラメータを調整
+- All-In-One ペア保存・切り替え（URL パラメータで共有可能）
 - プロンプトライブラリ（カスタムおよびコミュニティ）
-- ローカル会話履歴
-- データのエクスポート/インポート
-- Markdown による会話共有
-- ダークモード
-- Web アクセス連携
+- ローカル会話履歴・セッション復元・データのエクスポート/インポート
+- AI によるタブタイトル自動生成
+- Markdown レンダリングとコードシンタックスハイライト
 </platform_capabilities>
 `,
 
@@ -108,16 +112,18 @@ HuddleLLM features available to users:
 
 <platform_capabilities>
 用户可用的 HuddleLLM 功能：
-- 多模型对比界面
-- 支持上传多张图片
-- 浏览器唤醒快捷键
-- Markdown 与代码高亮
+- 多模型并行对话与并排比较界面
+- Chrome 侧边栏及 Omnibox 快捷访问（地址栏输入「hl ...」）
+- 多模态输入：图片、音频（Whisper/Gemini 语音转文字）、视频、PDF
+- Image Agent：自然语言生成图像（支持多个图像提供商）
+- 联网搜索：各提供商原生工具（OpenAI Responses API、Claude、Gemini），其他模型使用备用搜索
+- /btw 命令：将多个 AI 回答汇总发给另一个 AI 进行跨模型对比分析
+- 快速设置面板：按会话调整思考等级和图像生成参数
+- All-In-One 对话组保存与切换（URL 参数可分享）
 - Prompt 模板库（自定义与社区）
-- 本地会话记录
-- 数据导出/导入
-- 以 Markdown 形式分享对话
-- 深色模式
-- 联网功能集成
+- 本地会话记录与会话恢复；数据导出/导入
+- AI 自动生成标签页标题
+- Markdown 渲染与代码语法高亮
 </platform_capabilities>
 `,
 
@@ -147,16 +153,18 @@ HuddleLLM features available to users:
 
 <platform_capabilities>
 使用者可用的 HuddleLLM 功能（這些都是無料提供的資源喔）：
-- 多模型比較介面（一次看超多模型超便利）
-- 支援上傳多張圖片（可愛い圖片也 OK 唷）
-- 瀏覽器喚醒快捷鍵
-- Markdown 與程式碼見やすい排版
+- 多模型並列對話與並排比較介面（一次看超多模型超便利）
+- Chrome 側邊欄及 Omnibox 快速存取（地址列輸入「hl ...」即可唷）
+- 多模態輸入：圖片、音訊（Whisper/Gemini 語音轉文字）、影片、PDF
+- Image Agent：自然語言生成圖片（支援多個圖像提供商呢）
+- 網路搜尋：各提供商原生工具（OpenAI Responses API、Claude、Gemini），其他模型使用備用搜尋
+- /btw 指令：將多個 AI 回答彙整傳給另一個 AI 進行跨模型比較分析
+- 快速設定面板：按會話調整思考等級和圖像生成參數
+- All-In-One 對話組保存與切換（URL 參數可分享）
 - Prompt 提示詞庫（自訂與社群分享都有呢）
-- 本機對話紀錄（安心保存）
-- 資料匯出/匯入（備份超簡單）
-- 以 Markdown 形式分享對話
-- 深色模式（夜晚保護眼睛）
-- 網路搜尋與連網功能
+- 本機對話紀錄與會話還原；資料匯出/匯入（備份超簡單）
+- AI 自動生成分頁標題
+- Markdown 渲染與程式碼語法高亮
 </platform_capabilities>
 `,
 }

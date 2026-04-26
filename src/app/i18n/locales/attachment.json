@@ -78,10 +78,10 @@
     "zh-TW": "直接傳給 AI API。需要 API 支援。"
   },
   "Attachment popup hint": {
-    "en": "NEW: VIDEO SUPPORT\nAttach text, audio, video, images, and PDFs.\nDrag & drop files. Also supports pasting images.",
-    "ja": "NEW: VIDEO SUPPORT\nテキスト・音声・動画・画像・PDFを添付できます。\nドラッグ＆ドロップ、画像の貼り付けにも対応。",
-    "zh-CN": "NEW: VIDEO SUPPORT\n可附加文本、音频、视频、图片和 PDF。\n支持拖放，也支持粘贴图片。",
-    "zh-TW": "NEW: VIDEO SUPPORT\n可附加文字、音訊、影片、圖片與 PDF。\n支援拖放，也支援貼上圖片。"
+    "en": "Attach text, audio, video, images, and PDFs.\nDrag & drop files. Also supports pasting images.",
+    "ja": "テキスト・音声・動画・画像・PDFを添付できます。\nドラッグ＆ドロップ、画像の貼り付けにも対応。",
+    "zh-CN": "可附加文本、音频、视频、图片和 PDF。\n支持拖放，也支持粘贴图片。",
+    "zh-TW": "可附加文字、音訊、影片、圖片與 PDF。\n支援拖放，也支援貼上圖片。"
   },
   "Edit file content...": {
     "en": "Edit file content...",

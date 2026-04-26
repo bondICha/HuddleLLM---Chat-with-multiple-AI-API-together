@@ -3,6 +3,7 @@ import OpenAILogo from './logos/OpenAILogos';
 import ClaudeLogo from './logos/ClaudeLogos';
 import PerplexityLogo from './logos/PerplexityLogos';
 import { FiCode } from 'react-icons/fi';
+import { BsGrid3X3, BsBookmarkStar } from 'react-icons/bs';
 
 // =====================================================================================
 // IMPORTANT: アイコン追加・変更時の注意
@@ -321,6 +322,12 @@ const BotIcon: React.FC<BotIconProps> = ({ iconName, size = 24, className = '' }
     // FiCodeアイコン
     if (iconName === 'FiCode') {
       return <FiCode size={size} className={className} />;
+    }
+    if (iconName === 'BsGrid3X3') {
+      return <BsGrid3X3 size={size} className={className} />;
+    }
+    if (iconName === 'BsBookmarkStar') {
+      return <BsBookmarkStar size={size} className={className} />;
     }
 
     // どのアイコンにも一致しない場合はデフォルトアイコンを表示

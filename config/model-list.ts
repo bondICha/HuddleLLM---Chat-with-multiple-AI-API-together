@@ -3,13 +3,11 @@ import { ModelInfo } from '../src/services/user-config'
 // モデルリストをプロバイダーごとに階層化
 export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
     "OpenAI": {
-        "GPT-5.4": "gpt-5.4",
-        "GPT-5.4 Pro": "gpt-5.4-pro",
-        "GPT-5.3 Codex": "gpt-5.3-codex"
-
+        "GPT-5.5": "gpt-5.5",
+        "GPT-5.5 Pro": "gpt-5.5-pro",
     },
     "Anthropic": {
-        "Claude Opus 4.6": "claude-opus-4-6",
+        "Claude Opus 4.7": "claude-opus-4-7",
         "Claude Sonnet 4.6": "claude-sonnet-4-6",
         "Claude Haiku 4.5": "claude-haiku-4-5",
     },
@@ -19,14 +17,14 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
         "Nano Banana2": "gemini-3.1-flash-image-preview",
     },
     "Grok": {
-        "Grok 4": "grok-4",
+        "Grok 4.20": "grok-4.20",
         "Grok 4.1 Fast": "grok-4-1-fast",
         "Grok 4.1 Fast NR": "grok-4-1-fast-non-reasoning",
         "Grok Code Fast": "grok-code-fast-1",
     },
     "Deepseek": {
-        "Deepseek Chat": "deepseek-chat",
-        "Deepseek Reasoner": "deepseek-reasoner",
+        "DeepSeek V4 Pro": "deepseek-v4-pro",
+        "DeepSeek V4 Flash": "deepseek-v4-flash",
     },
     "Perplexity": {
         "Sonar Pro": { value: "sonar-pro", icon: "perplexity" },
@@ -36,10 +34,10 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
         "Sonar Reasoning": { value: "sonar-reasoning", icon: "perplexity" },
     },
     "Rakuten": {
-        "RakutenAI-3.0": "rakutenai-3.0",
-        "RakutenAI-2.0-MoE": "RakutenAI-2.0-MoE",
-        "DeepSeek-R1": "DeepSeek-R1",
-        "DeepSeek-V3": "DeepSeek-V3",
+        "RakutenAI 3.0": "rakutenai-3.0",
+        "RakutenAI 7B": "rakutenai-7b",
+        "RakutenAI 2.0": "rakutenai-2.0",
+        "RakutenAI 2.0 Mini": "rakutenai-2.0-mini",
     },
     "Qwen": {
         // 商用モデル - Tongyiロゴ
@@ -64,8 +62,6 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
     
     "Custom": {
         // OpenRouter用のGeminiモデル
-        "Google Gemini 2.5 Flash": { value: "google/gemini-2.5-flash", icon: "gemini" },
-        "Google Gemini 2.5 Pro": { value: "google/gemini-2.5-pro", icon: "gemini" },
         "Google Gemini 3 Pro": { value: "google/gemini-3-pro-preview", icon: "gemini" },
         "OpenAI/GPT-OSS-120b": { value: "openai/gpt-oss-120b", icon: "openai" },
         "OpenAI/GPT-OSS-20b": { value: "openai/gpt-oss-20b", icon: "openai" },
@@ -77,13 +73,17 @@ export const MODEL_LIST: Record<string, Record<string, string | ModelInfo>> = {
         "DeepSeek/DeepSeek-V3.2": { value: "deepseek/deepseek-v3.2", icon: "deepseek" },
         "DeepSeek/DeepSeek-V3.2-Exp": { value: "deepseek/deepseek-v3.2-exp", icon: "deepseek" },
         "DeepSeek/DeepSeek-R1": { value: "deepseek/deepseek-r1-0528", icon: "deepseek" },
+        "moonshotai/Kimi-K2.6": { value: "moonshotai/kimi-k2.6", icon: "kimi" },
         "moonshotai/Kimi-K2.5": { value: "moonshotai/kimi-k2.5", icon: "kimi" },
-        "MiniMax/MiniMax-M2.5": { value: "minimax/minimax-m2.5", icon: "minimax" },
-        "Xiaomi/MiMo-V2-Flash": { value: "xiaomimimo/mimo-v2-flash", icon: "xiaomi" },
-        // Zhipu AI (zai-org) models
-        "GLM-5": { value: "zai-org/glm-5", icon: "zhipu" },
-        "GLM-4.7": { value: "zai-org/glm-4.7", icon: "zhipu" },
-        "GLM-4.7 Flash": { value: "zai-org/glm-4.7-flash", icon: "zhipu" },
-        "GLM-4.6V (Multimodal)": { value: "zai-org/glm-4.6v", icon: "zhipu" },
+        "MiniMax/MiniMax-M2.7": { value: "minimax/minimax-m2.7", icon: "minimax" },
+        "Xiaomi/MiMo-V2.5-Pro": { value: "xiaomi/mimo-v2.5-pro", icon: "xiaomi" },
+        "Xiaomi/MiMo-V2.5": { value: "xiaomi/mimo-v2.5", icon: "xiaomi" },
+        "Xiaomi/MiMo-V2-Pro": { value: "xiaomi/mimo-v2-pro", icon: "xiaomi" },
+        // Zhipu AI (z-ai) models
+        "GLM-5.1": { value: "z-ai/glm-5.1", icon: "zhipu" },
+        "GLM-5V Turbo": { value: "z-ai/glm-5v-turbo", icon: "zhipu" },
+        "GLM-5 Turbo": { value: "z-ai/glm-5-turbo", icon: "zhipu" },
+        "GLM-5": { value: "z-ai/glm-5", icon: "zhipu" },
+        "GLM-4.7 Flash": { value: "z-ai/glm-4.7-flash", icon: "zhipu" },
     },
 }
