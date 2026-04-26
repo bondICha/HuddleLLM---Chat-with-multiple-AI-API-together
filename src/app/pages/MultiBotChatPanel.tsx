@@ -1046,6 +1046,7 @@ const MultiBotChatPanel: FC = () => {
         const snapshot = await getSessionSnapshot(restoreSessionUUID)
         if (!snapshot) {
           alert(`${t('Restore Session')}: ${t('Failed to restore session.')}`)
+          // 不正なUUIDは消す（F5ループ防止）
           clearUrlParams()
           return
         }
@@ -1058,7 +1059,7 @@ const MultiBotChatPanel: FC = () => {
           pairName: snapshot.pairName,
           snapshotMessages: snapshot.conversations,
         })
-        clearUrlParams()
+        // 成功時はURLを残す（リロード/共有/ブックマークで再復元）
       } catch (error) {
         alert(`${t('Restore Session')}: ${t('Failed to restore session.')}`)
         clearUrlParams()
@@ -1087,6 +1088,7 @@ const MultiBotChatPanel: FC = () => {
         const session = sessions.find(s => s.id === restoreAllInOneSessionId)
         if (!session) {
           alert(`${t('Restore Session')}: ${t('Failed to restore session.')}`)
+          // 不正なIDは消す（F5ループ防止）
           clearUrlParams()
           return
         }
@@ -1099,7 +1101,7 @@ const MultiBotChatPanel: FC = () => {
           pairName: session.pairName,
           conversations: session.conversations,
         })
-        clearUrlParams()
+        // 成功時はURLを残す（リロード/共有/ブックマークで再復元）
       } catch (error) {
         alert(`${t('Restore Session')}: ${t('Failed to restore session.')}`)
         clearUrlParams()
