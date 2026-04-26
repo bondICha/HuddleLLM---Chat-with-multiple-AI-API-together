@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { FC, PropsWithChildren, useCallback, useEffect, useState } from 'react'
-import toast, { Toaster } from 'react-hot-toast'
+import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import Browser from 'webextension-polyfill'
 import Button from '~app/components/Button'
@@ -223,7 +223,6 @@ function SettingPage() {
           <Button color="primary" size="small" text={t('Save changes')} onClick={save} className="py-2" />
         </motion.div>
       )}
-      <Toaster position="bottom-center" />
     </PagePanel>
   )
 }
