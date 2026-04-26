@@ -6,6 +6,15 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.16.2',
+    notes: [
+      'releasenote_v2162_openai_image_generation',
+      'releasenote_v2162_pair_url_persistence',
+      'releasenote_v2162_startup_selector_improvement',
+      'releasenote_v2162_by_mimo_v25_pro',
+    ],
+  },
+  {
     version: '2.16.0',
     notes: [
       'releasenote_v2160_btw_popup',

@@ -1,4 +1,28 @@
 {
+  "releasenote_v2162_openai_image_generation": {
+    "en": "OpenAI Responses API now supports image generation. Enable the toggle in chatbot settings to let the model generate images directly in the conversation.",
+    "ja": "OpenAI Responses API で画像生成が使えるようになりました。チャットボット設定のトグルをONにすると、会話の中で直接画像を生成できます。",
+    "zh-CN": "OpenAI Responses API 现已支持图像生成。在聊天机器人设置中开启开关，即可在对话中直接生成图像。",
+    "zh-TW": "OpenAI Responses API 現已支援圖像生成。在聊天機器人設定中開啟開關，即可在對話中直接生成圖像。"
+  },
+  "releasenote_v2162_pair_url_persistence": {
+    "en": "Switching between saved pairs now updates the URL. You can bookmark your favorite pairs for quick access.",
+    "ja": "保存したペアの切り替え時にURLが更新されるようになりました。お気に入りのペアをブックマークしてすぐにアクセスできます。",
+    "zh-CN": "切换已保存的配对时，URL 现在会同步更新。您可以将常用配对加入书签，方便快速访问。",
+    "zh-TW": "切換已儲存的配對時，URL 現在會同步更新。您可以將常用配對加入書籤，方便快速存取。"
+  },
+  "releasenote_v2162_startup_selector_improvement": {
+    "en": "The startup page selector is now wider and grouped by section (All-In-One, Saved Pairs, Individual Bots). Bot icons are displayed for easier identification.",
+    "ja": "スタートページの選択肢が広くなり、セクション別（All-In-One・保存ペア・個別ボット）に整理されました。ボットのアイコンも表示されるので、選びやすくなっています。",
+    "zh-CN": "启动页面选择器变得更宽，并按分区（All-In-One、已保存配对、单个机器人）整理。还显示了机器人图标，方便识别。",
+    "zh-TW": "啟動頁面選擇器變得更寬，並按分區（All-In-One、已儲存配對、單個機器人）整理。還顯示了機器人圖示，方便識別。"
+  },
+  "releasenote_v2162_by_mimo_v25_pro": {
+    "en": "This release note was written by MiMo V2.5 Pro.",
+    "ja": "今回のリリースノートは MiMo V2.5 Pro が担当しました。",
+    "zh-CN": "本次版本说明由 MiMo V2.5 Pro 撰写。",
+    "zh-TW": "本次版本說明由 MiMo V2.5 Pro 撰寫。"
+  },
   "releasenote_v2160_btw_popup": {
     "en": "Inspired by Claude Code, HuddleLLM now supports the /btw command. It opens a dedicated popup window so you can start a separate chat thread using your All-in-One conversation context.",
     "ja": "Claude Code にインスパイアされ、/btw コマンドに対応しました。専用のポップアップウィンドウで、All-in-One の会話コンテキストをもとに別スレッドのチャットを始められます。",

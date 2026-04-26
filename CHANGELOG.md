@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.16.2] - 2026-04-26
+
+### Added
+- **Image Generation for OpenAI Responses API**: New toggle in chatbot settings to enable the `image_generation` function tool for OpenAI Responses API providers. Supports per-provider enable/disable with image parameter configuration.
+- **All-In-One Pair URL persistence**: Switching between saved pairs now updates the URL (`?pair=<id>`) and keeps it visible, enabling bookmarking and direct linking to a specific pair.
+- **Startup page selector improvements**: Wider selector with grouped sections (All-In-One, Saved Pairs, Individual Bots) and bot avatar icons for both Startup page and AI Title Generation selectors.
+
+### Fixed
+- **URL cleared after pair load**: `?pair=` URL parameter was being removed immediately after reading on page load. Now preserved so the URL remains shareable.
+- **Persistent toast notification**: Settings save toast stayed visible indefinitely due to a duplicate `<Toaster>` mount (one in `Layout`, one in `SettingPage`). Removed the redundant instance.
+
+### Changed
+- **Model preset updates**: Updated default models across OpenAI (gpt-5.5), Anthropic (claude-sonnet-4-6), Gemini (gemini-3.1-pro-preview), DeepSeek (deepseek-v4-pro), Grok (grok-4.20), DeepInfra (DeepSeek-V4-Pro). Added GLM, MiMo, and Novita AI presets.
+- **Model list updates**: Fixed OpenRouter provider prefixes (`z-ai`, `xiaomi`), updated Custom section with latest models (Kimi K2.6, MiniMax M2.7, GLM-5.1, etc.).
+- **System prompt platform_capabilities**: Updated to reflect current feature set including /btw command, Image Agent, Quick Settings panel, All-In-One pair URL sharing, PDF/video support, and voice transcription.
+
+---
+
 ## [v2.15.0] - 2026-02-28
 
 ### Added
