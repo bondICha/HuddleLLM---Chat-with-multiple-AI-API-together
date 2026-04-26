@@ -371,9 +371,10 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             const showThinkingBudget = THINKING_BUDGET_PROVIDERS.includes(effectiveProvider as any);
             const showReasoningEffort = isOpenAI || isOpenRouter || isOpenAIResponses;
 
-            // Image Function Tool settings (for OpenAI_Image, OpenRouter Image, etc.)
+            // Image Function Tool settings (for OpenAI_Image, OpenAI_Responses with image enabled, OpenRouter Image, etc.)
             const showImageFunctionSettings =
               effectiveProvider === CustomApiProvider.OpenAI_Image ||
+              (isOpenAIResponses && !!config.imageFunctionToolSettings?.enabled) ||
               (isOpenRouter && !!config.advancedConfig?.openrouterIsImageModel);
 
             const showOnlyTemperature = !showThinkingBudget && !showReasoningEffort && !isImageAgent && !showImageFunctionSettings;
@@ -1140,6 +1141,25 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                 </div>
                               </div>
                               <div className={formRowClass}>
+                                <p className={labelClass}>{t('Image Generation')}</p>
+                                <div className={inputContainerClass}>
+                                  <Switch
+                                    checked={!!config.imageFunctionToolSettings?.enabled}
+                                    onChange={(checked) => {
+                                      const u = [...customApiConfigs];
+                                      u[index].imageFunctionToolSettings = {
+                                        ...(u[index].imageFunctionToolSettings || {}),
+                                        enabled: checked,
+                                      };
+                                      updateCustomApiConfigs(u);
+                                    }}
+                                  />
+                                  <p className="text-xs opacity-70 mt-1">
+                                    {t('Allow the model to generate or edit images in chat.')}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className={formRowClass}>
                                 <p className={labelClass}>Function Call Tools (JSON)</p>
                                 <Textarea
                                   className='w-full font-mono text-xs'
@@ -1321,6 +1341,11 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                       { name: '1024x1024', value: '1024x1024' },
                                       { name: `1024x1536 ${t('portrait-suffix')}`, value: '1024x1536' },
                                       { name: `1536x1024 ${t('landscape-suffix')}`, value: '1536x1024' },
+                                      { name: `2048x2048 (2K)`, value: '2048x2048' },
+                                      { name: `1152x2048 (2K ${t('portrait-suffix')})`, value: '1152x2048' },
+                                      { name: `2048x1152 (2K ${t('landscape-suffix')})`, value: '2048x1152' },
+                                      { name: `2160x3840 (4K ${t('portrait-suffix')})`, value: '2160x3840' },
+                                      { name: `3840x2160 (4K ${t('landscape-suffix')})`, value: '3840x2160' },
                                     ]}
                                     value={(config.imageFunctionToolSettings?.params as any)?.size || 'auto'}
                                     onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), size: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}
@@ -1349,6 +1374,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                     options={[
                                       { name: t('auto'), value: 'auto' },
                                       { name: t('transparent'), value: 'transparent' },
+                                      { name: t('opaque'), value: 'opaque' },
                                     ]}
                                     value={(config.imageFunctionToolSettings?.params as any)?.background || 'auto'}
                                     onChange={(v) => { const u = [...customApiConfigs]; const params = { ...((u[index].imageFunctionToolSettings?.params as any) || {}), background: v as any }; u[index].imageFunctionToolSettings = { ...(u[index].imageFunctionToolSettings || {}), params }; updateCustomApiConfigs(u); }}

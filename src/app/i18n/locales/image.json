@@ -1,4 +1,16 @@
 {
+  "Image Generation": {
+    "en": "Image Generation",
+    "ja": "画像生成",
+    "zh-CN": "图像生成",
+    "zh-TW": "圖像生成"
+  },
+  "Allow the model to generate or edit images in chat.": {
+    "en": "Allow the model to generate or edit images in chat.",
+    "ja": "チャットで画像の生成・編集を有効にします。",
+    "zh-CN": "允许模型在对话中生成或编辑图像。",
+    "zh-TW": "允許模型在對話中產生或編輯圖片。"
+  },
   "image_only_response": {
     "en": "(Image-only response)",
     "ja": "（画像のみのレスポンス）",
@@ -148,6 +160,12 @@
     "ja": "透過",
     "zh-CN": "透明",
     "zh-TW": "透明"
+  },
+  "opaque": {
+    "en": "opaque",
+    "ja": "不透明",
+    "zh-CN": "不透明",
+    "zh-TW": "不透明"
   },
   "Output Format": {
     "en": "Output Format",

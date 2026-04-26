@@ -39,6 +39,8 @@ export interface ToolDefinition {
  * These parameters are passed directly to the image generation function tool.
  */
 export interface ImageFunctionToolSettings {
+  /** Whether image generation is enabled (for OpenAI_Responses) */
+  enabled?: boolean;
   /** Provider-specific parameters for image generation function tool */
   params?: Record<string, any>;
 }
