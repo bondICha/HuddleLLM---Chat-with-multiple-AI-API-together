@@ -6,8 +6,11 @@ import './base.scss'
 import './sidepanel.css'
 import { CHATBOTS_UPDATED_EVENT } from './consts'
 import { revalidateEnabledBots } from './hooks/use-enabled-bots'
+import { useCleanCopy } from './hooks/use-clean-copy'
 
 function SidePanelApp() {
+  useCleanCopy()
+
   useEffect(() => {
     const handleChatbotsUpdated = () => {
       // 強制再マウントの代わりにSWRキャッシュを再検証
