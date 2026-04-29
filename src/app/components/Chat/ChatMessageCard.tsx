@@ -1,6 +1,5 @@
 import { cx } from '~/utils'
 import { FC, memo, useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { CopyToClipboard } from 'react-copy-to-clipboard-ts'
 import { IoCheckmarkSharp, IoCopyOutline, IoMegaphoneOutline as IoPropaganda } from 'react-icons/io5'
 import { BsCheckAll } from "react-icons/bs";
 import { LuCircleCheckBig } from "react-icons/lu";
@@ -71,6 +70,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
   const [messageHeight, setMessageHeight] = useState(0)
   const [confirmationStage, setConfirmationStage] = useState<ConfirmationStage>('none')
   const messageRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { t } = useTranslation()
   const [openedAttachment, setOpenedAttachment] = useState<{ name: string; content: string } | null>(null)
@@ -170,6 +170,32 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
     }, RESET_TIMER_DURATION)
   }, [])
 
+  const handleCopy = useCallback(async () => {
+    if (!copyText) return
+    const rawHtml = contentRef.current?.innerHTML ?? ''
+    const div = document.createElement('div')
+    div.innerHTML = rawHtml
+    div.querySelectorAll<HTMLElement>('*').forEach((el) => {
+      el.style.removeProperty('background-color')
+      el.style.removeProperty('background')
+    })
+    const cleanHtml = div.innerHTML
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([cleanHtml], { type: 'text/html' }),
+          'text/plain': new Blob([copyText], { type: 'text/plain' }),
+        }),
+      ])
+      setCopied(true)
+    } catch {
+      try {
+        await navigator.clipboard.writeText(copyText)
+        setCopied(true)
+      } catch { /* ignore */ }
+    }
+  }, [copyText])
+
   const handlePropagandaClick = useCallback(() => {
     if (confirmationStage === 'none') {
       setConfirmationStage('confirm')
@@ -194,11 +220,13 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
 
   const ActionButton = useCallback(() => (
     <div className="flex flex-col">
-      <CopyToClipboard text={copyText!} onCopy={() => setCopied(true)}>
-        <button aria-label={copied ? "Copied" : "Copy"} className={COPY_ICON_CLASS}>
+      <button
+        aria-label={copied ? "Copied" : "Copy"}
+        className={COPY_ICON_CLASS}
+        onClick={handleCopy}
+      >
         {copied ? <IoCheckmarkSharp /> : <IoCopyOutline />}
       </button>
-      </CopyToClipboard>
       {message.author !== 'user' && onPropaganda && (
         <SimpleTooltip align="right" content={getTooltipContent()}>
           <button
@@ -217,7 +245,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
         </SimpleTooltip>
       )}
     </div>
-  ), [copied, copyText, message.author, onPropaganda, confirmationStage, getTooltipContent, handlePropagandaClick])
+  ), [copied, handleCopy, message.author, onPropaganda, confirmationStage, getTooltipContent, handlePropagandaClick])
 
   return (
     <div
@@ -286,6 +314,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
               ))}
             </div>
           )}
+          <div ref={contentRef}>
           {message.text ? (
             message.author === 'user' ? (
               <div style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{message.text}</div>
@@ -299,6 +328,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
               </div>
             )
           )}
+          </div>
           {message.author === 'user' && message.attachments && message.attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 my-2">
               {message.attachments.map((att, idx) => (

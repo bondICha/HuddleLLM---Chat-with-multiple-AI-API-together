@@ -14,12 +14,14 @@ import { pendingSearchQueryAtom } from './state'
 import { markOmniboxSearchAsUsed } from '../services/storage/open-times'
 import CompanyProfileModal from './components/Modals/CompanyProfileModal'
 import { useFontType } from './hooks/use-font-type'
+import { useCleanCopy } from './hooks/use-clean-copy'
 
 function App() {
   const setPendingSearchQuery = useSetAtom(pendingSearchQueryAtom)
-  
+
   // フォント設定を適用
   useFontType()
+  useCleanCopy()
 
   useEffect(() => {
     const loadPendingSearch = async () => {
