@@ -35,7 +35,7 @@ import { getUserConfig } from '~services/user-config';
 import toast from 'react-hot-toast';
 import './ChatMessageInput.scss';
 
-interface Attachment {
+export interface Attachment {
   id: string;
   file: File;
   type: 'image' | 'text' | 'audio' | 'video' | 'pdf';
