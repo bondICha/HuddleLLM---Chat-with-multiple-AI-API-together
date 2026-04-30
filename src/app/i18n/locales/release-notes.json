@@ -1,4 +1,10 @@
 {
+  "releasenote_v2164_sidepanel_full_input": {
+    "en": "The Side Panel has been updated to match the main chat experience.",
+    "ja": "サイドパネルをメインチャットに合わせてアップデートしました。",
+    "zh-CN": "侧边栏已更新，与主聊天界面体验保持一致。",
+    "zh-TW": "側邊欄已更新，與主聊天介面體驗保持一致。"
+  },
   "releasenote_v2162_openai_image_generation": {
     "en": "OpenAI Responses API now supports image generation. Enable the toggle in chatbot settings to let the model generate images directly in the conversation.",
     "ja": "OpenAI Responses API で画像生成が使えるようになりました。チャットボット設定のトグルをONにすると、会話の中で直接画像を生成できます。",

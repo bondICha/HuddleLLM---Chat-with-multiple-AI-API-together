@@ -6,6 +6,12 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.16.4',
+    notes: [
+      'releasenote_v2164_sidepanel_full_input',
+    ],
+  },
+  {
     version: '2.16.2',
     notes: [
       'releasenote_v2162_openai_image_generation',
