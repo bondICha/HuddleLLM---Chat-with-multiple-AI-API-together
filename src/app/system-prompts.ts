@@ -3,7 +3,7 @@
  */
 
 // System prompt version for update notifications
-export const SYSTEM_PROMPT_VERSION = '2.16.4'
+export const SYSTEM_PROMPT_VERSION = '2.16.5'
 
 export const SYSTEM_PROMPTS = {
   en: `

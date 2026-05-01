@@ -574,5 +574,17 @@
     "ja": "## Localizationの深化：文化に適応したシステムプロンプト (v2.5.1)\n\nシステムプロンプトを各言語・文化の自然なコミュニケーションスタイルに合わせて、さらにローカライズしました。更新通知と自動バックアップで、カスタマイズ内容を保護します。",
     "zh-CN": "## 深化本地化：文化适配的系统提示词 (v2.5.1)\n\n系统提示词进一步深度本地化，更贴合各语言文化的地道表达。更新通知与自动备份可保护您的自定义设置。",
     "zh-TW": "## 深化在地化：文化適配的系統提示詞 (v2.5.1)\n\n系統提示詞已進一步深度本地化，更貼近各語言文化的自然溝通風格。更新通知與自動備份可保護您的自訂設定。"
+  },
+  "releasenote_v2165_katex_mermaid": {
+    "en": "## KaTeX Math Rendering and Mermaid Diagram Support\n- KaTeX: inline and block math expressions with automatic LaTeX delimiter normalization\n- Mermaid: inline diagram rendering with Preview/Code toggle, Expand modal, and Copy button\n- System Prompt Update Modal: line-by-line diff comparison with language tabs",
+    "ja": "## KaTeX数式レンダリングとMermaid図のサポート\n- KaTeX: インラインおよびブロック数式の表示、LaTeXデリ正規化自動対応\n- Mermaid: インライン図のレンダリング（Preview/Code切替、Expandモーダル、コピーボタン）\n- システムプロンプト更新モーダル: 行ごとの差分比較と言語タブ",
+    "zh-CN": "## KaTeX 数学公式渲染和 Mermaid 图表支持\n- KaTeX: 行内和块级数学公式显示，自动规范化 LaTeX 分隔符\n- Mermaid: 内联图表渲染（预览/代码切换、展开模态框、复制按钮）\n- 系统提示词更新模态框: 逐行差异比较与语言标签",
+    "zh-TW": "## KaTeX 數學公式渲染和 Mermaid 圖表支援\n- KaTeX: 行內與區塊數學公式顯示，自動正規化 LaTeX 分隔符號\n- Mermaid: 內聯圖表渲染（預覽/程式碼切換、展開模態框、複製按鈕）\n- 系統提示詞更新模態框: 逐行差異比較與語言標籤"
+  },
+  "releasenote_v2165_by_mimo_v25_pro": {
+    "en": "This release note was written by MiMo V2.5 Pro.",
+    "ja": "今回のリリースノートは MiMo V2.5 Pro が担当しました。",
+    "zh-CN": "本次版本说明由 MiMo V2.5 Pro 撰写。",
+    "zh-TW": "本次版本說明由 MiMo V2.5 Pro 撰寫。"
   }
 }
