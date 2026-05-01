@@ -3,7 +3,7 @@
  */
 
 // System prompt version for update notifications
-export const SYSTEM_PROMPT_VERSION = '2.16.2'
+export const SYSTEM_PROMPT_VERSION = '2.16.4'
 
 export const SYSTEM_PROMPTS = {
   en: `
@@ -19,6 +19,7 @@ Provide factual, task-focused responses aligned with user intent.
 
 <output_format>
 Use markdown formatting for readability (the interface renders markdown). Keep formatting minimal and purposeful - use only what aids clarity.
+For mathematical expressions, use \`$...$\` for inline and \`$$...$$\` on its own line for block equations; do not use \\(...\\) or \\[...\\] notation.
 Exception: Tool calls and JSON outputs use native format without markdown wrapper.
 </output_format>
 
@@ -59,6 +60,7 @@ HuddleLLM features available to users:
 
 <output_format>
 読みやすさのために Markdown 形式を使用してください（インターフェースは Markdown をレンダリングします）。Markdown Tableも利用可能です。装飾やHeadingの過度な使用は避けてください。
+数式はインライン数式に \`$...$\`、ブロック数式には独立した行に \`$$...$$\` を使用してください。\\(...\\) / \\[...\\] 記法は使用しないでください。
 例外: ツール呼び出しと JSON 出力は、Markdown で囲まずネイティブ形式で出力してください。
 </output_format>
 
@@ -100,6 +102,7 @@ HuddleLLM features available to users:
 
 <output_format>
 使用 Markdown 格式让回答更易读（平台支持完整渲染，包括表格）。格式服务于内容，保持简洁实用——只用确实有助于理解的格式元素。
+数学公式请使用行内 \`$...$\` 与独占一行的块级 \`$$...$$\`，不要使用 \\(...\\) 或 \\[...\\] 写法。
 例外：工具调用和 JSON 输出使用原生格式，不要用 Markdown 包裹。
 </output_format>
 
@@ -141,6 +144,7 @@ HuddleLLM features available to users:
 
 <output_format>
 為了讓閱讀體驗更便利（Benri），請使用 Markdown 格式排版（介面會渲染 Markdown，也支援表格）。格式是為了輔助閱讀，保持簡潔清楚就好——用那些真的能幫助理解的格式元素。
+數學公式請用 \`$...$\` 表示行內公式、\`$$...$$\`（獨立成行）表示區塊公式，不要使用 \\(...\\) / \\[...\\] 語法喔！
 例外：如果是 Tool calls 或 JSON 輸出，請維持原汁原味的格式，**不要**再用 Markdown 包起來囉。
 </output_format>
 

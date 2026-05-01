@@ -14,6 +14,8 @@ import remarkMath from 'remark-math'
 import supersub from 'remark-supersub'
 import remarkDirective from 'remark-directive';
 import rehypeExternalLinks from 'rehype-external-links'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
 import Tooltip from '../Tooltip'
 import 'github-markdown-css/github-markdown-dark.css'
 import './markdown.css'
@@ -23,6 +25,7 @@ import {
   useCodeBlockContext
 } from './CodeBlockContext';
 import CodeBlock from './Content/CodeBlock'
+import MermaidDiagram from './Content/MermaidDiagram'
 
 
 function CustomCode(props: { children: ReactNode; className?: string }) {
@@ -62,20 +65,37 @@ export const handleDoubleClick: React.MouseEventHandler<HTMLElement> = (event) =
   selection.addRange(range);
 };
 
+type HastNode = {
+  type: string;
+  value?: string;
+  children?: HastNode[];
+};
+
 type TCodeProps = {
   inline?: boolean;
   className?: string;
   children: React.ReactNode;
+  node?: HastNode;
 };
 
-export const code: React.ElementType = memo(({ className, children }: TCodeProps) => {
+// hAST のテキストノードを再帰的に連結して生テキストを得る
+// rehype-highlight が code 内に span を挿入した場合でも改行を保持できる
+function hastToText(nodes?: HastNode[]): string {
+  if (!nodes) return '';
+  return nodes
+    .map((n) => (n.type === 'text' ? n.value ?? '' : hastToText(n.children)))
+    .join('');
+}
+
+export const code: React.ElementType = memo(({ className, children, node }: TCodeProps) => {
   const match = /language-(\w+)/.exec(className ?? '');
   const lang = match && match[1];
   const isMath = lang === 'math';
+  const isMermaid = lang === 'mermaid';
   const isSingleLine = typeof children === 'string' && children.split('\n').length === 1;
 
   const { getNextIndex, resetCounter } = useCodeBlockContext();
-  const blockIndex = useRef(getNextIndex(isMath || isSingleLine)).current;
+  const blockIndex = useRef(getNextIndex(isMath || isMermaid || isSingleLine)).current;
 
   useEffect(() => {
     resetCounter();
@@ -83,6 +103,12 @@ export const code: React.ElementType = memo(({ className, children }: TCodeProps
 
   if (isMath) {
     return <>{children}</>;
+  } else if (isMermaid) {
+    const rawFromHast = hastToText(node?.children);
+    const codeString = rawFromHast.length > 0
+      ? rawFromHast.replace(/\n$/, '')
+      : (typeof children === 'string' ? children : reactNodeToString(children));
+    return <MermaidDiagram code={codeString} />;
   } else if (isSingleLine) {
     return (
       <code onDoubleClick={handleDoubleClick} className={className}>
@@ -98,7 +124,16 @@ export const code: React.ElementType = memo(({ className, children }: TCodeProps
   }
 });
 
+// Convert LaTeX-style delimiters \(...\) and \[...\] to remark-math compatible $...$ and $$...$$
+function normalizeLatexDelimiters(text: string): string {
+  // \[...\] → $$...$$  (display math, must come before inline to avoid conflict)
+  return text
+    .replace(/\\\[([\s\S]*?)\\\]/g, (_, inner) => `$$${inner}$$`)
+    .replace(/\\\(([\s\S]*?)\\\)/g, (_, inner) => `$${inner}$`);
+}
+
 const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, allowHtml = false }) => {
+  const normalizedChildren = useMemo(() => normalizeLatexDelimiters(children), [children]);
 
   const remarkPlugins: Pluggable[] = useMemo(
     () => [
@@ -122,10 +157,12 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
       rehypePlugins={allowHtml
         ? [
             rehypeRaw,
+            rehypeKatex,
             [rehypeHighlight, { detect: false, ignoreMissing: true }],
             [rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }]
           ]
         : [
+            rehypeKatex,
             [rehypeHighlight, { detect: false, ignoreMissing: true }],
             [rehypeExternalLinks, { target: '_blank', rel: ['noopener', 'noreferrer'] }]
           ]
@@ -163,7 +200,7 @@ const Markdown: FC<{ children: string; allowHtml?: boolean }> = ({ children, all
         ),
       }}
     >
-      {children}
+      {normalizedChildren}
     </ReactMarkdown>
     </div>
     </CodeBlockProvider>

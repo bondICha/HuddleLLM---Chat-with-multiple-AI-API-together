@@ -485,6 +485,48 @@
     "zh-CN": "当前提示词备份",
     "zh-TW": "目前提示詞備份"
   },
+  "The default system prompt has been updated. Review the changes below and apply if you agree.": {
+    "en": "The default system prompt has been updated. Review the changes below and apply if you agree.",
+    "ja": "デフォルトのシステムプロンプトが更新されました。以下の変更内容をご確認の上、よろしければ適用してください。",
+    "zh-CN": "默认系统提示词已更新。请查看以下变更内容，确认无误后再进行更新。",
+    "zh-TW": "預設系統提示詞已更新。請確認以下變更內容，若您同意再進行套用。"
+  },
+  "If you have made your own customizations, applying will overwrite them. Please review carefully before updating.": {
+    "en": "If you have made your own customizations, applying will overwrite them. Please review carefully before updating.",
+    "ja": "ご自身でカスタマイズされている場合、適用すると上書きされて消えてしまいます。更新前に必ずご確認ください。",
+    "zh-CN": "如果您已自行修改过系统提示词，更新将会覆盖您的内容。请在更新前仔细确认。",
+    "zh-TW": "若您已自行修改過系統提示詞，套用後將會被覆蓋。更新前請務必仔細確認。"
+  },
+  "You can also apply this update later from the Settings screen.": {
+    "en": "You can also apply this update later from the Settings screen.",
+    "ja": "この更新は後から設定画面でも適用できます。",
+    "zh-CN": "您也可以稍后在设置画面中进行更新。",
+    "zh-TW": "您也可以之後在設定畫面中套用此更新。"
+  },
+  "Diff: Current vs New": {
+    "en": "Diff: Current vs New",
+    "ja": "差分：現在 vs 新しい",
+    "zh-CN": "差异：当前 vs 新版",
+    "zh-TW": "差異：目前 vs 新版"
+  },
+  "No changes from your current prompt": {
+    "en": "No changes from your current prompt",
+    "ja": "現在のプロンプトから変更なし",
+    "zh-CN": "与您当前提示词无变化",
+    "zh-TW": "與您目前提示詞無變化"
+  },
+  "Your current prompt is identical to this version.": {
+    "en": "Your current prompt is identical to this version.",
+    "ja": "現在のプロンプトはこのバージョンと同じです。",
+    "zh-CN": "您当前的提示词与此版本相同。",
+    "zh-TW": "您目前的提示詞與此版本相同。"
+  },
+  "Update to": {
+    "en": "Update to",
+    "ja": "更新：",
+    "zh-CN": "更新为",
+    "zh-TW": "更新為"
+  },
   "View previous backup prompt": {
     "en": "View previous backup prompt",
     "ja": "以前のバックアップを表示",
