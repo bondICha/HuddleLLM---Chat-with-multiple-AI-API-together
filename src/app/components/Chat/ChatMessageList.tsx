@@ -10,12 +10,12 @@ interface Props {
   messages: ChatMessageModel[]
   className?: string
   onPropaganda?: (text: string) => void
+  onRetry?: (botMessageId: string) => void
   shouldAutoScroll?: boolean
   setAutoScroll?: (shouldAutoScroll: boolean) => void
 }
 
-const ChatMessageList: FC<Props> = (props) => {
-  const { scrollRef, contentRef, isAtBottom, scrollToBottom, stopScroll } = useStickToBottom({
+const ChatMessageList: FC<Props> = (props) => {  const { scrollRef, contentRef, isAtBottom, scrollToBottom, stopScroll } = useStickToBottom({
     resize: 'smooth',
     initial: {
       mass: 0.8,
@@ -93,12 +93,19 @@ const ChatMessageList: FC<Props> = (props) => {
       <div ref={scrollRef} className="h-full overflow-auto custom-scrollbar focus:outline-none" tabIndex={0}>
         <div ref={contentRef} className={cx('flex flex-col gap-3', props.className)}>
           {props.messages.map((message, index) => {
+            const prevUserMsg = message.author !== 'user'
+              ? [...props.messages].slice(0, index).reverse().find(m => m.author === 'user')
+              : undefined
+            const retryHandler = message.error && prevUserMsg && props.onRetry
+              ? () => props.onRetry!(message.id)
+              : undefined
             return (
               <ChatMessageCard
                 key={message.id}
                 message={message}
                 className={index === 0 ? 'mt-5' : undefined}
                 onPropaganda={props.onPropaganda}
+                onRetry={retryHandler}
               />
             )
           })}

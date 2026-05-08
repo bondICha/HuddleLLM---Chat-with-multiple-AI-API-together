@@ -21,6 +21,7 @@ interface Props {
   message: ChatMessageModel
   className?: string
   onPropaganda?: (text: string) => void
+  onRetry?: () => void
 }
 
 interface SimpleTooltipProps {
@@ -65,7 +66,7 @@ const SimpleTooltip: FC<SimpleTooltipProps> = ({ content, children, align = 'cen
 
 type ConfirmationStage = 'none' | 'confirm' | 'final'
 
-const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
+const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda, onRetry }) => {
   const [copied, setCopied] = useState(false)
   const [messageHeight, setMessageHeight] = useState(0)
   const [confirmationStage, setConfirmationStage] = useState<ConfirmationStage>('none')
@@ -367,6 +368,14 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda }) => {
                     })()}
                   </pre>
                 </Expandable>
+              )}
+              {onRetry && (
+                <button
+                  className="mt-2 text-xs px-3 py-1 rounded border border-[#cc0000] dark:border-[#ff0033] text-[#cc0000] dark:text-[#ff0033] hover:bg-[#cc000015] dark:hover:bg-[#ff003315] transition-colors"
+                  onClick={onRetry}
+                >
+                  {t('Retry')}
+                </button>
               )}
             </div>
           )}

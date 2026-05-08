@@ -641,6 +641,7 @@ const GeneralChatPanel: FC<{
             resetConversation={chat.resetConversation}
             onSwitchBot={setBots ? (newIndex) => onSwitchBot(newIndex, index) : undefined}
             onPropaganda={modifyAllLastMessage}
+            onRetry={chat.retryMessage}
             shouldAutoScroll={chat.shouldAutoScroll}
             setAutoScroll={chat.setAutoScroll}
           />

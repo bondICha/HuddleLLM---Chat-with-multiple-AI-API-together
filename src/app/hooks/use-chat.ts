@@ -275,6 +275,65 @@ export function useChat(index: number, page: string = 'singleton') {
     [index, chatState.bot, setChatState, updateMessage],
   )
 
+  const retryMessage = useCallback(
+    async (botMessageId: string) => {
+      const messages = chatState.messages
+      const botMsgIdx = messages.findIndex((m) => m.id === botMessageId)
+      if (botMsgIdx < 0) return
+
+      const userMsg = [...messages].slice(0, botMsgIdx).reverse().find((m) => m.author === 'user')
+      if (!userMsg) return
+
+      updateMessage(botMessageId, (msg) => {
+        msg.text = ''
+        msg.error = undefined
+        msg.thinking = undefined
+        msg.searchResults = undefined
+        msg.referenceUrls = undefined
+      })
+
+      if (chatState.bot.setConversationHistory) {
+        const historyMessages = messages.filter((m) => m.id !== botMessageId)
+        chatState.bot.setConversationHistory({ messages: historyMessages })
+      }
+
+      const abortController = new AbortController()
+      setChatState((draft) => {
+        draft.generatingMessageId = botMessageId
+        draft.abortController = abortController
+        draft.shouldAutoScroll = true
+      })
+
+      const resp = chatState.bot.sendMessage({
+        prompt: userMsg.text,
+        signal: abortController.signal,
+      })
+
+      try {
+        for await (const answer of resp) {
+          updateMessage(botMessageId, (message) => {
+            message.text = answer.text
+            if (answer.thinking) message.thinking = answer.thinking
+            if (answer.searchResults) message.searchResults = answer.searchResults
+            if (answer.referenceUrls) message.referenceUrls = answer.referenceUrls
+          })
+        }
+      } catch (err: unknown) {
+        if (!abortController.signal.aborted) abortController.abort()
+        const error = err as ChatError
+        updateMessage(botMessageId, (msg) => {
+          msg.error = error
+        })
+      } finally {
+        setChatState((draft) => {
+          draft.abortController = undefined
+          draft.generatingMessageId = ''
+        })
+      }
+    },
+    [chatState.bot, chatState.messages, setChatState, updateMessage],
+  )
+
   const modifyLastMessage = useCallback(
     async (text: string) => {
       chatState.bot.modifyLastMessage(text)
@@ -449,6 +508,7 @@ export function useChat(index: number, page: string = 'singleton') {
       resetConversation,
       generating: !!chatState.generatingMessageId,
       stopGenerating,
+      retryMessage,
       modifyLastMessage,
       isInitialized: botInitialized,
       shouldAutoScroll: chatState.shouldAutoScroll,
@@ -464,6 +524,7 @@ export function useChat(index: number, page: string = 'singleton') {
       resetConversation,
       sendMessage,
       stopGenerating,
+      retryMessage,
       modifyLastMessage,
       botInitialized,
       setAutoScroll,
