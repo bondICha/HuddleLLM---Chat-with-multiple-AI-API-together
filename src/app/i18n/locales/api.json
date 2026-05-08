@@ -605,6 +605,18 @@
     "zh-CN": "通用",
     "zh-TW": "通用"
   },
+  "Append": {
+    "en": "Append",
+    "ja": "追記",
+    "zh-CN": "追加",
+    "zh-TW": "附加"
+  },
+  "Override": {
+    "en": "Override",
+    "ja": "上書き",
+    "zh-CN": "覆盖",
+    "zh-TW": "覆蓋"
+  },
   "No API Key configured": {
     "en": "No API Key configured",
     "ja": "API Keyが未設定です",
