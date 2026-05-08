@@ -395,6 +395,12 @@
     "zh-CN": "个别设置",
     "zh-TW": "個別設定"
   },
+  "Individual": {
+    "en": "Individual",
+    "ja": "個別",
+    "zh-CN": "个别",
+    "zh-TW": "個別"
+  },
   "Provider reference missing (id: {{id}})": {
     "en": "Provider reference missing (id: {{id}})",
     "ja": "Provider参照が見つかりません (id: {{id}})",
