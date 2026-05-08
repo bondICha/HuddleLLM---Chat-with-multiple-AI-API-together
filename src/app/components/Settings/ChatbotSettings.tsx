@@ -934,7 +934,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       {t('Advanced Settings')}
                     </button>
                     {expandedSections[index] ? (
-                      <div className="mt-3 space-y-4">
+                      <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
                         {showAnthropicAuthHeader && (
                           <div className={formRowClass}>
                             <p className={labelClass}>{t('Anthropic Auth Header')}</p>
@@ -989,7 +989,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           </div>
                         )}
                         {showApiHost && (
-                          <div className={formRowClass}>
+                          <div className={cx(formRowClass, "lg:col-span-2")}>
                             <div className="flex items-center justify-between">
                               <p className={labelClass}>{t(config.isHostFullPath ? 'API Endpoint (Full Path)' : 'API Host')}</p>
                               {config.provider === CustomApiProvider.VertexAI_Claude ? (
@@ -1100,7 +1100,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           );
                         })()}
                         {showOpenRouterMode && (
-                            <div className="space-y-4">
+                            <div className="lg:col-span-2 space-y-4">
                               <div className={formRowClass}>
                                 <p className={labelClass}>{t('Mode')}</p>
                                 <Select
@@ -1123,7 +1123,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                         )}
                         {showOpenAIResponsesOptions && (
-                            <div className="space-y-4">
+                            <div className="lg:col-span-2 space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
                                   <p className={labelClass}>{t('{{provider}} Web Search', { provider: 'OpenAI' })}</p>
@@ -1179,7 +1179,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                         )}
                         {showClaudeOptions && (
-                            <div className="space-y-4">
+                            <div className="lg:col-span-2 space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
                                   <p className={labelClass}>{t('{{provider}} Web Search', { provider: 'Claude' })}</p>
@@ -1201,7 +1201,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                         )}
                         {showGeminiApiWebOptions && (
-                            <div className="space-y-4">
+                            <div className="lg:col-span-2 space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
                                   <p className={labelClass}>{t('{{provider}} Web Search', { provider: 'Gemini' })}</p>
@@ -1224,7 +1224,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         )}
                         {/* Gemini Image Config (for Gemini native image models) */}
                         {isGeminiImageModel && (
-                          <div className="space-y-4">
+                          <div className="lg:col-span-2 space-y-4">
                             <div className={formRowClass}>
                               <p className={labelClass}>{t('Aspect Ratio')}</p>
                               <Select
@@ -1292,7 +1292,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         )}
                         {/* Image Agent Settings */}
                         {isImageAgent && (
-                          <div className="space-y-4">
+                          <div className="lg:col-span-2 space-y-4">
                               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
                                 <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('Image Provider Capabilities')}</p>
                                 <div className="flex justify-between text-sm">
@@ -1334,7 +1334,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
                         {/* Image Function Tool Settings (for OpenAI_Image, OpenRouter Image, etc.) */}
                         {showImageFunctionSettings && (
-                          <div className="space-y-4">
+                          <div className="lg:col-span-2 space-y-4">
                                 <div className={formRowClass}>
                                   <p className={labelClass}>{t('Image Size')}</p>
                                   <Select
