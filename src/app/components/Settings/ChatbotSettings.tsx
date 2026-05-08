@@ -348,7 +348,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
           <h3 className="text-md font-semibold">{t('Individual Chatbot Settings')}</h3>
           <Button size="small" text={t('Add New Model')} icon={<BiPlus />} onClick={addNewCustomModel} color="primary" />
         </div>
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))' }}>
+        <div className="flex flex-col gap-4">
           {customApiConfigs.map((config, index) => {
             // ========== Conditional Flags ==========
             const providerRef = config.providerRefId
@@ -451,7 +451,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             const toolDefinitionExpanded = !!expandedSections[index + TOOL_DEFINITION_EXPAND_OFFSET];
 
             return (
-            <div key={config.id || index} className={cx("bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(255,255,255,0.07),0_4px_6px_-2px_rgba(255,255,255,0.04)] transition-all hover:shadow-xl dark:hover:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1),0_10px_10px_-5px_rgba(255,255,255,0.04)]")}>
+            <div key={config.id || index} id={`chatbot-setting-${index}`} className={cx("bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(255,255,255,0.07),0_4px_6px_-2px_rgba(255,255,255,0.04)] transition-all hover:shadow-xl dark:hover:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1),0_10px_10px_-5px_rgba(255,255,255,0.04)]")}>
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-3 pt-3 pb-2 border-b border-white/20 dark:border-white/10">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <span className="text-xs font-semibold text-primary bg-primary/10 dark:bg-primary/30 px-2 py-1 rounded-full">#{index + 1}</span>
@@ -553,6 +553,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
               </div>
               <div className="px-4 pt-3 pb-4 space-y-6">
                 <div className="space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
                     {/* API Provider - with Image Agent option */}
                     <div className={formRowClass}>
                       <p className={labelClass}>{t('API Provider')}</p>
@@ -606,7 +607,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
                     {/* Image Agent Settings - Show when Image Agent is selected */}
                     {showImageAgentSettings && (
-                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-4">
+                      <div className="lg:col-span-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-4">
                         <div className="flex items-center gap-2 mb-2">
                           <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/>
@@ -738,6 +739,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     />
                   </div>
                   )}
+                  </div>
 
                   <div className={formRowClass}>
                     <div className="flex items-center justify-between">

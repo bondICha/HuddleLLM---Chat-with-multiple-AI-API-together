@@ -67,7 +67,7 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             <h2 className="text-lg font-bold">{t('Chatbots configuration')}</h2>
           </div>
           <div className="flex flex-col gap-3">
-            <div className="p-4 rounded-lg bg-white/20 dark:bg-black/20 border border-gray-300 dark:border-gray-700 space-y-4">
+            <div id="section-common" className="scroll-mt-3 p-4 rounded-lg bg-white/20 dark:bg-black/20 border border-gray-300 dark:border-gray-700 space-y-4">
               <h3 className="text-md font-semibold">{t('Common Settings')}</h3>
               <Blockquote>{t('These settings are used by all custom chatbots. Individual chatbot settings will override these.')}</Blockquote>
               <div className="space-y-3">
@@ -190,11 +190,15 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
               </div>
             </div>
 
-            <ApiProviderSettings userConfig={userConfig} updateConfigValue={updateConfigValue} />
+            <div id="section-providers" className="scroll-mt-3">
+              <ApiProviderSettings userConfig={userConfig} updateConfigValue={updateConfigValue} />
+            </div>
 
             <hr className="border-gray-300 dark:border-gray-700" />
 
-            <ChatbotSettings userConfig={userConfig} updateConfigValue={updateConfigValue} />
+            <div id="section-chatbots" className="scroll-mt-3">
+              <ChatbotSettings userConfig={userConfig} updateConfigValue={updateConfigValue} />
+            </div>
 
           </div>
         </div>

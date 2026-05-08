@@ -90,9 +90,9 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
         </div>
         <Blockquote>{t('Manage your API provider configurations here. These can be referenced by individual chatbots.')}</Blockquote>
 
-        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+        <div className="flex flex-col gap-3">
           {providerConfigs.map((prov, pIndex) => (
-            <div key={prov.id} className="bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-lg shadow transition-all">
+            <div key={prov.id} id={`provider-setting-${pIndex}`} className="scroll-mt-3 bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-lg shadow transition-all">
               <div className="p-3">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-8 h-8 cursor-pointer" onClick={() => setProviderIconEditIndex(pIndex)}>
