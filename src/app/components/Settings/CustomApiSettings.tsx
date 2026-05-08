@@ -144,47 +144,48 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                   </div>
                 </div>
 
-                {/* Common API Key */}
-                <div className={formRowClass}>
-                  <p className={labelClass}>{t('Common API Key')}</p>
-                  <div className="flex-1">
-                    <Input
-                      className="w-full"
-                      placeholder="AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                      value={userConfig.customApiKey}
-                      onChange={(e) => updateConfigValue({ customApiKey: e.currentTarget.value })}
-                      type="password"
-                    />
-                  </div>
-                  <Blockquote className="mt-1">{t('Your keys are stored locally')}</Blockquote>
-                </div>
-
-                {/* Common API Host */}
-                <div className={formRowClass}>
-                  <div className="flex items-center justify-between">
-                    <p className={labelClass}>
-                      {t(userConfig.isCustomApiHostFullPath ? 'API Endpoint (Full Path)' : 'Common API Host')}
-                    </p>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm">{t('Full Path')}</span>
-                      <span className="cursor-help group relative">ⓘ
-                        <div className="absolute top-full right-0 mt-2 w-72 hidden group-hover:block bg-gray-900 dark:bg-gray-800 text-white text-xs p-2 rounded shadow-lg z-50">
-                          {t('Full Path Tooltip Common')}
-                        </div>
-                      </span>
+                {/* Common API Key + Host (paired side by side on wide screens) */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+                  <div className={formRowClass}>
+                    <p className={labelClass}>{t('Common API Key')}</p>
+                    <div className="flex-1">
+                      <Input
+                        className="w-full"
+                        placeholder="AIxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={userConfig.customApiKey}
+                        onChange={(e) => updateConfigValue({ customApiKey: e.currentTarget.value })}
+                        type="password"
+                      />
                     </div>
+                    <Blockquote className="mt-1">{t('Your keys are stored locally')}</Blockquote>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <HostSearchInput
-                      className="flex-1"
-                      placeholder={userConfig.isCustomApiHostFullPath ? t('Host Placeholder Full Path Common') : "https://api.openai.com"}
-                      value={userConfig.customApiHost}
-                      onChange={(value) => updateConfigValue({ customApiHost: value })}
-                    />
-                    <Switch
-                      checked={userConfig.isCustomApiHostFullPath ?? false}
-                      onChange={(checked) => updateConfigValue({ isCustomApiHostFullPath: checked })}
-                    />
+
+                  <div className={formRowClass}>
+                    <div className="flex items-center justify-between">
+                      <p className={labelClass}>
+                        {t(userConfig.isCustomApiHostFullPath ? 'API Endpoint (Full Path)' : 'Common API Host')}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm">{t('Full Path')}</span>
+                        <span className="cursor-help group relative">ⓘ
+                          <div className="absolute top-full right-0 mt-2 w-72 hidden group-hover:block bg-gray-900 dark:bg-gray-800 text-white text-xs p-2 rounded shadow-lg z-50">
+                            {t('Full Path Tooltip Common')}
+                          </div>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <HostSearchInput
+                        className="flex-1"
+                        placeholder={userConfig.isCustomApiHostFullPath ? t('Host Placeholder Full Path Common') : "https://api.openai.com"}
+                        value={userConfig.customApiHost}
+                        onChange={(value) => updateConfigValue({ customApiHost: value })}
+                      />
+                      <Switch
+                        checked={userConfig.isCustomApiHostFullPath ?? false}
+                        onChange={(checked) => updateConfigValue({ isCustomApiHostFullPath: checked })}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

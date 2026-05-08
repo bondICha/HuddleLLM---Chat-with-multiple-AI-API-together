@@ -250,10 +250,10 @@ function SettingPage() {
               <ExportDataPanel userConfig={userConfig} updateConfigValue={updateConfigValue} />
             </div>
 
-            <div className="flex flex-col gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
               <div id="section-startup" className="scroll-mt-3">
                 <p className="font-bold mb-2 text-lg">{t('Startup page')}</p>
-                <div className="w-[320px]">
+                <div className="w-full max-w-[320px]">
                   <Select
                     showIcon={true}
                     options={[
@@ -285,7 +285,7 @@ function SettingPage() {
                     <BiInfoCircle className="w-4 h-4 opacity-60 cursor-help" />
                   </Tooltip>
                 </p>
-                <div className="w-72">
+                <div className="w-full max-w-[320px]">
                   <Select
                     showIcon={true}
                     options={[
