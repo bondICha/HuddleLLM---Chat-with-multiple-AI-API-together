@@ -15,7 +15,8 @@ interface Props {
   setAutoScroll?: (shouldAutoScroll: boolean) => void
 }
 
-const ChatMessageList: FC<Props> = (props) => {  const { scrollRef, contentRef, isAtBottom, scrollToBottom, stopScroll } = useStickToBottom({
+const ChatMessageList: FC<Props> = (props) => {
+  const { scrollRef, contentRef, isAtBottom, scrollToBottom, stopScroll } = useStickToBottom({
     resize: 'smooth',
     initial: {
       mass: 0.8,

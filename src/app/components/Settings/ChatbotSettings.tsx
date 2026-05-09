@@ -467,11 +467,26 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
             return (
             <div key={config.id || index} id={`chatbot-setting-${index}`} className={cx("bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(255,255,255,0.07),0_4px_6px_-2px_rgba(255,255,255,0.04)] transition-all hover:shadow-xl dark:hover:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1),0_10px_10px_-5px_rgba(255,255,255,0.04)]")}>
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-3 pt-3 pb-2 border-b border-white/20 dark:border-white/10">
+              <div
+                className={cx("flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-3 pt-3 pb-2 border-b border-white/20 dark:border-white/10 cursor-pointer hover:bg-white/10 dark:hover:bg-white/5 transition-colors", isCardExpanded && "bg-white/5 dark:bg-white/5")}
+                onClick={(e) => {
+                  // Don't toggle if click is on a button, input, or has data-no-toggle
+                  const target = e.target as HTMLElement;
+                  if (target.closest('button, input, [data-no-toggle]')) return;
+                  setExpandedCards(prev => ({ ...prev, [index]: !prev[index] }));
+                }}
+              >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <span className="text-xs font-semibold text-primary bg-primary/10 dark:bg-primary/30 px-2 py-1 rounded-full">#{index + 1}</span>
-                  <div className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-lg bg-white/50 dark:bg-black/40 cursor-pointer" onClick={() => setChatbotIconEditIndex(index)}>
+                  <div
+                    className="group relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-lg bg-white/50 dark:bg-black/40 cursor-pointer overflow-hidden flex-shrink-0"
+                    onClick={(e) => { e.stopPropagation(); setChatbotIconEditIndex(index); }}
+                    title={t('Change icon')}
+                  >
                     <BotIcon iconName={config.avatar} size={48} />
+                    <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                      <BiPencil size={18} />
+                    </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     {editingNameIndex === index ? (
@@ -515,36 +530,55 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-start gap-1 min-w-0">
-                        <button className="text-left min-w-0 flex-1" onClick={() => setEditingNameIndex(index)}>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1 min-w-0">
                           <p className="font-semibold truncate">{config.name}</p>
-                          <p className="text-xs opacity-60 truncate mt-0.5">{config.shortName}</p>
-                        </button>
-                        <button
-                          className="p-1 rounded hover:bg-white/20 flex-shrink-0"
-                          onClick={() => setEditingNameIndex(index)}
-                          title={t('Edit name')}
-                          type="button"
-                        >
-                          <BiPencil size={14} />
-                        </button>
+                          <button
+                            className="p-1 rounded hover:bg-white/20 flex-shrink-0"
+                            onClick={(e) => { e.stopPropagation(); setEditingNameIndex(index); }}
+                            title={t('Edit name')}
+                            type="button"
+                          >
+                            <BiPencil size={14} />
+                          </button>
+                        </div>
+                        <p className="text-xs opacity-60 truncate mt-0.5">{config.shortName}</p>
                       </div>
                     )}
                     {/* Compact summary chips (visible when collapsed) */}
                     {!isCardExpanded && (
                       <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 truncate max-w-[160px]" title={providerLabel}>
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 truncate max-w-[180px]" title={providerLabel}>
                           {providerLabel}
                         </span>
                         {!isImageAgent && config.model && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 font-mono truncate max-w-[200px]" title={config.model}>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 font-mono truncate max-w-[220px]" title={config.model}>
                             {config.model}
                           </span>
                         )}
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary whitespace-nowrap">
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary whitespace-nowrap">
                           {typeLabel}
                         </span>
-                        {!config.enabled && <span className="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full bg-gray-500 text-white">{t('Disabled')}</span>}
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 whitespace-nowrap">
+                          {config.systemPromptMode === SystemPromptMode.COMMON ? t('Common') : config.systemPromptMode === SystemPromptMode.APPEND ? t('Append') : t('Override')}
+                        </span>
+                        {!config.thinkingMode && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 whitespace-nowrap">
+                            T: {config.temperature}
+                          </span>
+                        )}
+                        {config.thinkingMode && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 whitespace-nowrap">
+                            {config.reasoningEffort && config.reasoningEffort !== 'none'
+                              ? `Reasoning: ${config.reasoningEffort}`
+                              : config.thinkingBudget !== undefined
+                                ? `Think: ${config.thinkingBudget}`
+                                : config.thinkingLevel
+                                  ? `Think: ${config.thinkingLevel}`
+                                  : t('Thinking')}
+                          </span>
+                        )}
+                        {!config.enabled && <span className="inline-flex items-center text-xs px-1.5 py-0.5 rounded-full bg-gray-500 text-white">{t('Disabled')}</span>}
                       </div>
                     )}
                     {isCardExpanded && !config.enabled && <span className="inline-flex items-center mt-2 text-[11px] px-2 py-0.5 rounded-full bg-gray-500 text-white">{t('Disabled')}</span>}
@@ -794,7 +828,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     <div className={inputContainerClass}>
                       <div className="space-y-2">
                         <div className="flex items-center gap-3 flex-wrap">
-                          <div className="inline-flex rounded-md border border-gray-300 dark:border-gray-700 overflow-hidden text-xs">
+                          <div className="inline-flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 text-sm divide-x divide-gray-300 dark:divide-gray-700">
                             {[
                               { mode: SystemPromptMode.COMMON, label: t('Common') },
                               { mode: SystemPromptMode.APPEND, label: t('Append') },
@@ -810,11 +844,12 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                     updatedConfigs[index].systemPromptMode = mode;
                                     updateCustomApiConfigs(updatedConfigs);
                                   }}
+                                  style={active ? { backgroundColor: 'var(--theme-color-muted)', boxShadow: 'inset 0 0 0 1px var(--theme-color)' } : undefined}
                                   className={cx(
-                                    'px-3 py-1 transition-colors',
+                                    'px-4 py-1.5 transition-colors font-medium',
                                     active
-                                      ? 'bg-primary text-white font-medium'
-                                      : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-secondary-text'
+                                      ? 'font-semibold text-primary-text'
+                                      : 'bg-white/30 dark:bg-black/20 text-secondary-text hover:bg-white/60 dark:hover:bg-black/40'
                                   )}
                                 >
                                   {label}
