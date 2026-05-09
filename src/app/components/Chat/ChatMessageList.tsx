@@ -10,6 +10,7 @@ interface Props {
   messages: ChatMessageModel[]
   className?: string
   onPropaganda?: (text: string) => void
+  onRetry?: (botMessageId: string) => void
   shouldAutoScroll?: boolean
   setAutoScroll?: (shouldAutoScroll: boolean) => void
 }
@@ -92,16 +93,27 @@ const ChatMessageList: FC<Props> = (props) => {
     <div className="flex-1 relative overflow-hidden">
       <div ref={scrollRef} className="h-full overflow-auto custom-scrollbar focus:outline-none" tabIndex={0}>
         <div ref={contentRef} className={cx('flex flex-col gap-3', props.className)}>
-          {props.messages.map((message, index) => {
-            return (
-              <ChatMessageCard
-                key={message.id}
-                message={message}
-                className={index === 0 ? 'mt-5' : undefined}
-                onPropaganda={props.onPropaganda}
-              />
-            )
-          })}
+          {(() => {
+            // 最後の bot メッセージのみ retry を許可 (会話途中の retry は履歴整合性が壊れるため)
+            let lastBotIdx = -1
+            for (let i = props.messages.length - 1; i >= 0; i--) {
+              if (props.messages[i].author !== 'user') { lastBotIdx = i; break }
+            }
+            return props.messages.map((message, index) => {
+              const retryHandler = index === lastBotIdx && message.error && props.onRetry
+                ? () => props.onRetry!(message.id)
+                : undefined
+              return (
+                <ChatMessageCard
+                  key={message.id}
+                  message={message}
+                  className={index === 0 ? 'mt-5' : undefined}
+                  onPropaganda={props.onPropaganda}
+                  onRetry={retryHandler}
+                />
+              )
+            })
+          })()}
         </div>
       </div>
       {!isAtBottom && <ScrollToBottomButton onClick={scrollToBottom} />}

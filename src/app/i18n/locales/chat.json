@@ -1,4 +1,10 @@
 {
+  "Retry": {
+    "en": "Retry",
+    "ja": "再試行",
+    "zh-CN": "重试",
+    "zh-TW": "重試"
+  },
   "com_ui_thoughts": {
     "en": "Thinking Process",
     "ja": "思考プロセス",

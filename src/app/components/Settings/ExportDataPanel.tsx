@@ -37,34 +37,32 @@ function ExportDataPanel({ userConfig, updateConfigValue }: Props) {
     window.history.replaceState({}, '', window.location.pathname + newHash)
   }, [location.hash, location.search])
   return (
-    <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-6 bg-slate-50 dark:bg-slate-800/50">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-8 h-8 bg-slate-600 dark:bg-slate-500 rounded-lg flex items-center justify-center">
-          <BiExport className="text-white text-lg" />
-        </div>
-        <h2 className="text-xl font-bold">{t('Import Export Panel')}</h2>
+    <div>
+      <div className="flex items-center gap-2 mb-4">
+        <BiExport className="text-lg opacity-70" />
+        <h2 className="text-lg font-semibold">{t('Import Export Panel')}</h2>
       </div>
-      
-      <div className="flex flex-col lg:flex-row gap-6">
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* All Import Export */}
-        <div className="border border-emerald-200 dark:border-emerald-700/50 rounded-lg p-5 bg-emerald-50/50 dark:bg-emerald-900/10 flex-1">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 bg-emerald-600 dark:bg-emerald-500 rounded-md flex items-center justify-center">
-              <BiExport className="text-white text-sm" />
-            </div>
-            <h3 className="font-bold text-lg">{t('All Import Export　（Including API Key）')}</h3>
+        <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white/40 dark:bg-black/30 p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40">
+              {t('All Data')}
+            </span>
+            <h3 className="font-semibold text-sm">{t('All Import Export　（Including API Key）')}</h3>
           </div>
-          <p className="mb-4 opacity-80 text-sm">
+          <p className="text-xs opacity-70 mb-3">
             {t('Data includes all your settings, api key, chat histories, and local prompts. Do not share API Key with someone elses.')}
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex gap-2">
             <Button
               size="normal"
               text={t('Import')}
               icon={<BiImport />}
               onClick={importData}
               color="flat"
-              className="w-full justify-center bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-600/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+              className="flex-1 justify-center"
             />
             <Button
               size="normal"
@@ -72,25 +70,25 @@ function ExportDataPanel({ userConfig, updateConfigValue }: Props) {
               icon={<BiExport />}
               onClick={exportData}
               color="primary"
-              className="w-full justify-center bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white"
+              className="flex-1 justify-center"
             />
           </div>
         </div>
-        
+
         {/* Template Import Export */}
-        <div className="border border-indigo-200 dark:border-indigo-700/50 rounded-lg p-5 bg-indigo-50/50 dark:bg-indigo-900/10 flex-1">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-6 h-6 bg-indigo-600 dark:bg-indigo-500 rounded-md flex items-center justify-center">
-              <BiExport className="text-white text-sm" />
-            </div>
-            <h3 className="font-bold text-lg">{t('Template Import Export')}</h3>
+        <div className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white/40 dark:bg-black/30 p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border border-indigo-500/40">
+              {t('Template')}
+            </span>
+            <h3 className="font-semibold text-sm">{t('Template Import Export')}</h3>
           </div>
-          <p className="mb-4 opacity-80 text-sm">
+          <p className="text-xs opacity-70 mb-3">
             {t('Import or export Custom API settings without affecting other data')}
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            <CustomAPITemplateImportPanel 
-              userConfig={userConfig} 
+          <div className="flex gap-2">
+            <CustomAPITemplateImportPanel
+              userConfig={userConfig}
               updateConfigValue={updateConfigValue}
               autoImportTemplate={autoImportTemplate}
               companyName={companyName}
@@ -101,7 +99,7 @@ function ExportDataPanel({ userConfig, updateConfigValue }: Props) {
               icon={<BiExport />}
               onClick={exportCustomAPITemplate}
               color="primary"
-              className="w-full justify-center bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white"
+              className="flex-1 justify-center"
             />
           </div>
         </div>

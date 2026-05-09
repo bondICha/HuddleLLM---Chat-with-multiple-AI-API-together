@@ -68,6 +68,7 @@ const SingleBotChatPanel: FC<Props> = ({ index }) => {
         generating={chat.generating}
         stopGenerating={chat.stopGenerating}
         resetConversation={chat.resetConversation}
+        onRetry={chat.retryMessage}
         shouldAutoScroll={chat.shouldAutoScroll}
         setAutoScroll={chat.setAutoScroll}
       />

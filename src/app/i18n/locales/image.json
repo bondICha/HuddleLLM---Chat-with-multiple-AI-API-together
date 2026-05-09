@@ -1,4 +1,10 @@
 {
+  "Image": {
+    "en": "Image",
+    "ja": "画像",
+    "zh-CN": "图像",
+    "zh-TW": "圖像"
+  },
   "Image Generation": {
     "en": "Image Generation",
     "ja": "画像生成",

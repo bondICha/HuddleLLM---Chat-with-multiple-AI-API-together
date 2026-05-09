@@ -31,6 +31,7 @@ interface Props {
   resetConversation: () => void
   generating: boolean
   stopGenerating: () => void
+  onRetry?: (botMessageId: string) => void
   shouldAutoScroll?: boolean
   setAutoScroll?: (shouldAutoScroll: boolean) => void
   mode?: 'full' | 'compact'
@@ -262,6 +263,7 @@ const ConversationPanel: FC<Props> = (props) => {
           messages={props.messages}
           className=""
           onPropaganda={props.onPropaganda}
+          onRetry={props.onRetry}
           shouldAutoScroll={props.shouldAutoScroll}
           setAutoScroll={props.setAutoScroll}
         />
