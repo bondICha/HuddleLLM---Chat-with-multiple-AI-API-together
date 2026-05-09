@@ -44,6 +44,7 @@ const providerIsImageMode = (providerConfig?: ProviderConfig) => {
 const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
   const { t } = useTranslation();
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
+  const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({});
   const [editingNameIndex, setEditingNameIndex] = useState<number | null>(null);
   const [editingPrompt, setEditingPrompt] = useState<{ index: number; text: string; isCommon: boolean } | null>(null);
   const [nestedTemplateOptions, setNestedTemplateOptions] = useState<NestedDropdownOption[]>([]);
@@ -345,10 +346,10 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     <>
       <div className="w-full">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-md font-semibold">{t('Individual Chatbot Settings')}</h3>
+          <h3 className="text-md font-semibold">{t('Chatbot Settings')}</h3>
           <Button size="small" text={t('Add New Model')} icon={<BiPlus />} onClick={addNewCustomModel} color="primary" />
         </div>
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(480px, 1fr))' }}>
+        <div className="flex flex-col gap-4">
           {customApiConfigs.map((config, index) => {
             // ========== Conditional Flags ==========
             const providerRef = config.providerRefId
@@ -449,14 +450,43 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             })();
 
             const toolDefinitionExpanded = !!expandedSections[index + TOOL_DEFINITION_EXPAND_OFFSET];
+            const isCardExpanded = !!expandedCards[index];
+
+            // Resolve provider display name for compact view
+            const referencedProvider = config.providerRefId
+              ? (userConfig.providerConfigs || []).find(p => p.id === config.providerRefId)
+              : undefined;
+            const providerLabel = isImageAgent
+              ? t('Image Generation (Agent)')
+              : referencedProvider
+                ? referencedProvider.name
+                : t('Individual Settings');
+            const typeLabel = isImageAgent || effectiveProvider === CustomApiProvider.OpenAI_Image
+              ? t('Image')
+              : t('Chat');
 
             return (
-            <div key={config.id || index} className={cx("bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(255,255,255,0.07),0_4px_6px_-2px_rgba(255,255,255,0.04)] transition-all hover:shadow-xl dark:hover:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1),0_10px_10px_-5px_rgba(255,255,255,0.04)]")}>
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-3 pt-3 pb-2 border-b border-white/20 dark:border-white/10">
+            <div key={config.id || index} id={`chatbot-setting-${index}`} className={cx("bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-2xl shadow-lg dark:shadow-[0_10px_15px_-3px_rgba(255,255,255,0.07),0_4px_6px_-2px_rgba(255,255,255,0.04)] transition-all hover:shadow-xl dark:hover:shadow-[0_20px_25px_-5px_rgba(255,255,255,0.1),0_10px_10px_-5px_rgba(255,255,255,0.04)]")}>
+              <div
+                className={cx("flex flex-col gap-3 md:flex-row md:items-center md:justify-between px-3 pt-3 pb-2 border-b border-white/20 dark:border-white/10 cursor-pointer hover:bg-white/10 dark:hover:bg-white/5 transition-colors", isCardExpanded && "bg-white/5 dark:bg-white/5")}
+                onClick={(e) => {
+                  // Don't toggle if click is on a button, input, or has data-no-toggle
+                  const target = e.target as HTMLElement;
+                  if (target.closest('button, input, [data-no-toggle]')) return;
+                  setExpandedCards(prev => ({ ...prev, [index]: !prev[index] }));
+                }}
+              >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <span className="text-xs font-semibold text-primary bg-primary/10 dark:bg-primary/30 px-2 py-1 rounded-full">#{index + 1}</span>
-                  <div className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-lg bg-white/50 dark:bg-black/40 cursor-pointer" onClick={() => setChatbotIconEditIndex(index)}>
+                  <div
+                    className="group relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-lg bg-white/50 dark:bg-black/40 cursor-pointer overflow-hidden flex-shrink-0"
+                    onClick={(e) => { e.stopPropagation(); setChatbotIconEditIndex(index); }}
+                    title={t('Change icon')}
+                  >
                     <BotIcon iconName={config.avatar} size={48} />
+                    <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                      <BiPencil size={18} />
+                    </div>
                   </div>
                   <div className="flex-1 min-w-0">
                     {editingNameIndex === index ? (
@@ -500,22 +530,60 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-start gap-1 min-w-0">
-                        <button className="text-left min-w-0 flex-1" onClick={() => setEditingNameIndex(index)}>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1 min-w-0">
                           <p className="font-semibold truncate">{config.name}</p>
-                          <p className="text-xs opacity-60 truncate mt-0.5">{config.shortName}</p>
-                        </button>
-                        <button
-                          className="p-1 rounded hover:bg-white/20 flex-shrink-0"
-                          onClick={() => setEditingNameIndex(index)}
-                          title={t('Edit name')}
-                          type="button"
-                        >
-                          <BiPencil size={14} />
-                        </button>
+                          <button
+                            className="p-1 rounded hover:bg-white/20 flex-shrink-0"
+                            onClick={(e) => { e.stopPropagation(); setEditingNameIndex(index); }}
+                            title={t('Edit name')}
+                            type="button"
+                          >
+                            <BiPencil size={14} />
+                          </button>
+                        </div>
+                        <p className="text-xs opacity-60 truncate mt-0.5">{config.shortName}</p>
                       </div>
                     )}
-                    {!config.enabled && <span className="inline-flex items-center mt-2 text-[11px] px-2 py-0.5 rounded-full bg-gray-500 text-white">{t('Disabled')}</span>}
+                    {/* Compact summary chips (visible when collapsed) */}
+                    {!isCardExpanded && (
+                      <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 truncate max-w-[180px]" title={providerLabel}>
+                          {providerLabel}
+                        </span>
+                        {!isImageAgent && config.model && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 font-mono truncate max-w-[220px]" title={config.model}>
+                            {config.model}
+                          </span>
+                        )}
+                        {(isImageAgent || effectiveProvider === CustomApiProvider.OpenAI_Image) && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-400/40 whitespace-nowrap">
+                            {typeLabel}
+                          </span>
+                        )}
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 whitespace-nowrap">
+                          {config.systemPromptMode === SystemPromptMode.COMMON ? t('Common') : config.systemPromptMode === SystemPromptMode.APPEND ? t('Append') : t('Override')}
+                        </span>
+                        {!config.thinkingMode && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 whitespace-nowrap">
+                            T: {config.temperature}
+                          </span>
+                        )}
+                        {config.thinkingMode && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 whitespace-nowrap">
+                            {config.reasoningEffort && config.reasoningEffort !== 'none'
+                              ? `Reasoning: ${config.reasoningEffort}`
+                              : config.thinkingBudget !== undefined
+                                ? `Think: ${config.thinkingBudget}`
+                                : config.thinkingLevel
+                                  ? `Think: ${config.thinkingLevel}`
+                                  : t('Thinking')}
+                          </span>
+                        )}
+                        {!config.enabled && <span className="inline-flex items-center text-xs px-1.5 py-0.5 rounded-full bg-gray-500 text-white">{t('Disabled')}</span>}
+                      </div>
+                    )}
+                    {isCardExpanded && !config.enabled && <span className="inline-flex items-center mt-2 text-[11px] px-2 py-0.5 rounded-full bg-gray-500 text-white">{t('Disabled')}</span>}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 items-end">
@@ -535,6 +603,14 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     <button className="p-2 rounded hover:bg-white/20 text-red-400" onClick={() => deleteCustomModel(index)} title={t('Delete')} type="button">
                       <BiTrash size={14} />
                     </button>
+                    <button
+                      className="p-2 rounded hover:bg-white/20 text-primary"
+                      onClick={() => setExpandedCards(prev => ({ ...prev, [index]: !prev[index] }))}
+                      title={isCardExpanded ? t('Collapse') : t('Edit')}
+                      type="button"
+                    >
+                      <BiChevronDown size={16} className={cx('transition-transform', isCardExpanded ? 'rotate-180' : '')} />
+                    </button>
                   </div>
                   <NestedDropdown
                     options={nestedTemplateOptions}
@@ -551,8 +627,10 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                   />
                 </div>
               </div>
+              {isCardExpanded && (
               <div className="px-4 pt-3 pb-4 space-y-6">
                 <div className="space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
                     {/* API Provider - with Image Agent option */}
                     <div className={formRowClass}>
                       <p className={labelClass}>{t('API Provider')}</p>
@@ -606,7 +684,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
                     {/* Image Agent Settings - Show when Image Agent is selected */}
                     {showImageAgentSettings && (
-                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-4">
+                      <div className="lg:col-span-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-4">
                         <div className="flex items-center gap-2 mb-2">
                           <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/>
@@ -615,24 +693,26 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('Image Generation Settings')} (Beta)</p>
                         </div>
 
-                        <ImageAgentSettings
-                          config={config}
-                          index={index}
-                          userConfig={userConfig}
-                          onUpdateConfig={(idx, updates) => {
-                            const u = [...customApiConfigs];
-                            u[idx] = { ...u[idx], ...updates };
-                            updateCustomApiConfigs(u);
-                          }}
-                          onFetchSchema={handleFetchSchema}
-                          schemaLoading={schemaLoading}
-                          modelsPerConfig={modelsPerConfig}
-                          onFetchSingleModel={handleFetchSingleModel}
-                          modelsLoading={modelsLoading}
-                          formRowClass={formRowClass}
-                          labelClass={labelClass}
-                          isProviderSupported={isProviderSupported}
-                        />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
+                          <ImageAgentSettings
+                            config={config}
+                            index={index}
+                            userConfig={userConfig}
+                            onUpdateConfig={(idx, updates) => {
+                              const u = [...customApiConfigs];
+                              u[idx] = { ...u[idx], ...updates };
+                              updateCustomApiConfigs(u);
+                            }}
+                            onFetchSchema={handleFetchSchema}
+                            schemaLoading={schemaLoading}
+                            modelsPerConfig={modelsPerConfig}
+                            onFetchSingleModel={handleFetchSingleModel}
+                            modelsLoading={modelsLoading}
+                            formRowClass={formRowClass}
+                            labelClass={labelClass}
+                            isProviderSupported={isProviderSupported}
+                          />
+                        </div>
                        {/* Tool Definition Editor - Hide for Replicate */}
                         {(() => {
                           const imageProvider = (userConfig.providerConfigs || []).find(
@@ -738,6 +818,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     />
                   </div>
                   )}
+                  </div>
 
                   <div className={formRowClass}>
                     <div className="flex items-center justify-between">
@@ -748,46 +829,64 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     </div>
                     <div className={inputContainerClass}>
                       <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <TripleStateToggle
-                            value={config.systemPromptMode || SystemPromptMode.COMMON}
-                            onChange={(v: SystemPromptMode) => {
-                              const updatedConfigs = [...customApiConfigs];
-                              updatedConfigs[index].systemPromptMode = v;
-                              updateCustomApiConfigs(updatedConfigs);
-                            }}
-                          />
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <div className="inline-flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 text-sm divide-x divide-gray-300 dark:divide-gray-700">
+                            {[
+                              { mode: SystemPromptMode.COMMON, label: t('Common') },
+                              { mode: SystemPromptMode.APPEND, label: t('Append') },
+                              { mode: SystemPromptMode.OVERRIDE, label: t('Override') },
+                            ].map(({ mode, label }) => {
+                              const active = (config.systemPromptMode || SystemPromptMode.COMMON) === mode;
+                              return (
+                                <button
+                                  key={mode}
+                                  type="button"
+                                  onClick={() => {
+                                    const updatedConfigs = [...customApiConfigs];
+                                    updatedConfigs[index].systemPromptMode = mode;
+                                    updateCustomApiConfigs(updatedConfigs);
+                                  }}
+                                  style={active ? { backgroundColor: 'var(--theme-color-muted)', boxShadow: 'inset 0 0 0 1px var(--theme-color)' } : undefined}
+                                  className={cx(
+                                    'px-4 py-1.5 transition-colors font-medium',
+                                    active
+                                      ? 'font-semibold text-primary-text'
+                                      : 'bg-white/30 dark:bg-black/20 text-secondary-text hover:bg-white/60 dark:hover:bg-black/40'
+                                  )}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
                           <div className="text-xs opacity-70">
-                            {config.systemPromptMode === SystemPromptMode.COMMON && "Uses common system prompt only"}
-                            {config.systemPromptMode === SystemPromptMode.APPEND && "Adds custom text to common prompt"}
-                            {config.systemPromptMode === SystemPromptMode.OVERRIDE && "Uses custom prompt only"}
+                            {config.systemPromptMode === SystemPromptMode.COMMON && t('Uses common system prompt only')}
+                            {config.systemPromptMode === SystemPromptMode.APPEND && t('Adds custom text to common prompt')}
+                            {config.systemPromptMode === SystemPromptMode.OVERRIDE && t('Uses custom prompt only')}
                           </div>
                         </div>
+                        {config.systemPromptMode !== SystemPromptMode.COMMON && (
                         <div>
                           <Textarea
-                            className={`w-full rounded-b-none ${config.systemPromptMode === SystemPromptMode.COMMON ? 'opacity-50 cursor-not-allowed' : ''} ${expandedSections[index + 2000] ? '' : 'max-h-[4.5rem]'}`}
+                            className={`w-full rounded-b-none ${expandedSections[index + 2000] ? '' : 'max-h-[4.5rem]'}`}
                             maxRows={expandedSections[index + 2000] ? undefined : 3}
                             value={config.systemMessage}
                             onChange={(e) => {
-                              if (config.systemPromptMode !== SystemPromptMode.COMMON) {
-                                const updatedConfigs = [...customApiConfigs];
-                                updatedConfigs[index].systemMessage = e.currentTarget.value;
-                                updateCustomApiConfigs(updatedConfigs);
-                              }
+                              const updatedConfigs = [...customApiConfigs];
+                              updatedConfigs[index].systemMessage = e.currentTarget.value;
+                              updateCustomApiConfigs(updatedConfigs);
                             }}
-                            disabled={config.systemPromptMode === SystemPromptMode.COMMON}
                             placeholder={
-                              config.systemPromptMode === SystemPromptMode.COMMON
-                                ? t('Disabled when using Common system message')
-                                : config.systemPromptMode === SystemPromptMode.APPEND
-                                  ? t('This text will be appended to the common system message')
-                                  : t('This text will override the common system message')
+                              config.systemPromptMode === SystemPromptMode.APPEND
+                                ? t('This text will be appended to the common system message')
+                                : t('This text will override the common system message')
                             }
                           />
                           <div className="h-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center justify-center rounded-b-md" onClick={() => toggleSection(index + 2000)} title={expandedSections[index + 2000] ? t('Collapse') : t('Expand')}>
                             <BiChevronDown size={16} className={`text-gray-600 dark:text-gray-300 transition-transform ${expandedSections[index + 2000] ? 'rotate-180' : ''}`} />
                           </div>
                         </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -932,7 +1031,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                       {t('Advanced Settings')}
                     </button>
                     {expandedSections[index] ? (
-                      <div className="mt-3 space-y-4">
+                      <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-4">
                         {showAnthropicAuthHeader && (
                           <div className={formRowClass}>
                             <p className={labelClass}>{t('Anthropic Auth Header')}</p>
@@ -987,7 +1086,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           </div>
                         )}
                         {showApiHost && (
-                          <div className={formRowClass}>
+                          <div className={cx(formRowClass, "lg:col-span-2")}>
                             <div className="flex items-center justify-between">
                               <p className={labelClass}>{t(config.isHostFullPath ? 'API Endpoint (Full Path)' : 'API Host')}</p>
                               {config.provider === CustomApiProvider.VertexAI_Claude ? (
@@ -1098,7 +1197,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                           );
                         })()}
                         {showOpenRouterMode && (
-                            <div className="space-y-4">
+                            <div className="lg:col-span-2 space-y-4">
                               <div className={formRowClass}>
                                 <p className={labelClass}>{t('Mode')}</p>
                                 <Select
@@ -1121,7 +1220,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                         )}
                         {showOpenAIResponsesOptions && (
-                            <div className="space-y-4">
+                            <div className="lg:col-span-2 space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
                                   <p className={labelClass}>{t('{{provider}} Web Search', { provider: 'OpenAI' })}</p>
@@ -1177,7 +1276,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                         )}
                         {showClaudeOptions && (
-                            <div className="space-y-4">
+                            <div className="lg:col-span-2 space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
                                   <p className={labelClass}>{t('{{provider}} Web Search', { provider: 'Claude' })}</p>
@@ -1199,7 +1298,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             </div>
                         )}
                         {showGeminiApiWebOptions && (
-                            <div className="space-y-4">
+                            <div className="lg:col-span-2 space-y-4">
                               <div className={formRowClass}>
                                 <div className="flex items-center gap-2">
                                   <p className={labelClass}>{t('{{provider}} Web Search', { provider: 'Gemini' })}</p>
@@ -1222,7 +1321,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         )}
                         {/* Gemini Image Config (for Gemini native image models) */}
                         {isGeminiImageModel && (
-                          <div className="space-y-4">
+                          <div className="lg:col-span-2 space-y-4">
                             <div className={formRowClass}>
                               <p className={labelClass}>{t('Aspect Ratio')}</p>
                               <Select
@@ -1290,7 +1389,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                         )}
                         {/* Image Agent Settings */}
                         {isImageAgent && (
-                          <div className="space-y-4">
+                          <div className="lg:col-span-2 space-y-4">
                               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
                                 <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('Image Provider Capabilities')}</p>
                                 <div className="flex justify-between text-sm">
@@ -1332,7 +1431,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
 
                         {/* Image Function Tool Settings (for OpenAI_Image, OpenRouter Image, etc.) */}
                         {showImageFunctionSettings && (
-                          <div className="space-y-4">
+                          <div className="lg:col-span-2 space-y-4">
                                 <div className={formRowClass}>
                                   <p className={labelClass}>{t('Image Size')}</p>
                                   <Select
@@ -1439,6 +1538,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                   </div>
                 </div>
               </div>
+              )}
             </div>
           );
           })}

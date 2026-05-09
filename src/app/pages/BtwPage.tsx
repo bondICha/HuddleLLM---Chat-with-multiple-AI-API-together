@@ -1,4 +1,4 @@
-import { FC, forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { FC, forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Browser from 'webextension-polyfill'
 import { useChat } from '~app/hooks/use-chat'
@@ -126,70 +126,84 @@ BtwChatInner.displayName = 'BtwChatInner'
 // BtwPage — full-page popup UI
 // ============================================================
 
+interface BotEntry {
+  index: number
+  name: string
+}
+
 const BtwPage: FC = () => {
   const { t } = useTranslation()
 
   const [context, setContext] = useState<BtwStorageContext | null>(null)
+  const [allBots, setAllBots] = useState<BotEntry[]>([])
   const [botNames, setBotNames] = useState<Record<number, string>>({})
-  const [selectedBotIndex, setSelectedBotIndex] = useState<number>(0)
+  // -1 = not yet loaded from storage
+  const [selectedBotIndex, setSelectedBotIndex] = useState<number>(-1)
   const [inputText, setInputText] = useState('')
 
-  const chatInnerRef = useRef<InnerHandle>(null)
-  const sentInitialRef = useRef(false)
+  // Map of botIndex -> ref handle (preserves history across model switches)
+  const chatRefs = useRef<Map<number, InnerHandle | null>>(new Map())
+  // Track which bots have already received the initial query
+  const sentInitialBots = useRef<Set<number>>(new Set())
 
-  // Load context from storage
+  // Load context, all bots, and persisted selection in one shot
   useEffect(() => {
-    Browser.storage.session.get('btwContext').then((data) => {
-      const ctx = (data as { btwContext?: BtwStorageContext }).btwContext
+    Promise.all([
+      Browser.storage.session.get('btwContext') as Promise<{ btwContext?: BtwStorageContext }>,
+      getUserConfig(),
+      Browser.storage.sync.get('btwSelectedBotIndex') as Promise<{ btwSelectedBotIndex?: number }>,
+    ]).then(([sessionData, config, syncData]) => {
+      const ctx = sessionData.btwContext
       if (ctx) {
         setContext(ctx)
-        setSelectedBotIndex(ctx.chats[0]?.index ?? 0)
         const name = ctx.sessionName
         document.title = name ? `BTW: ${name} - HuddleLLM` : 'BTW: HuddleLLM'
+      }
+
+      const bots: BotEntry[] = (config.customApiConfigs || [])
+        .map((c, idx) => ({ index: idx, name: c.name || `Bot ${idx + 1}` }))
+        .filter((_, idx) => (config.customApiConfigs![idx].enabled as boolean | undefined) !== false)
+
+      setAllBots(bots)
+
+      const names: Record<number, string> = {}
+      bots.forEach(({ index, name }) => {
+        names[index] = name
+      })
+      setBotNames(names)
+
+      // Resolve selected bot: persisted value → first bot
+      const saved = syncData.btwSelectedBotIndex
+      if (saved !== undefined && bots.some((b) => b.index === saved)) {
+        setSelectedBotIndex(saved)
+      } else if (bots.length > 0) {
+        setSelectedBotIndex(bots[0].index)
       }
     })
   }, [])
 
-  // Load bot names
+  // Send initial query to each bot the first time it's selected
   useEffect(() => {
-    if (!context) return
-    getUserConfig().then((config) => {
-      const names: Record<number, string> = {}
-      context.chats.forEach((c) => {
-        const botConfig = config.customApiConfigs?.[c.index]
-        names[c.index] = botConfig?.name || `Bot ${c.index + 1}`
-      })
-      setBotNames(names)
-    })
-  }, [context])
-
-  // Keep selectedBotIndex valid when context loads
-  const chatIndicesKey = useMemo(() => context?.chats.map((c) => c.index).join(',') ?? '', [context])
-  useEffect(() => {
-    if (!context) return
-    const indices = context.chats.map((c) => c.index)
-    if (indices.length > 0 && !indices.includes(selectedBotIndex)) {
-      setSelectedBotIndex(indices[0])
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatIndicesKey])
-
-  // Send initial query once
-  useEffect(() => {
-    if (!context?.query || sentInitialRef.current) return
-    sentInitialRef.current = true
+    if (selectedBotIndex === -1 || !context?.query) return
+    if (sentInitialBots.current.has(selectedBotIndex)) return
+    sentInitialBots.current.add(selectedBotIndex)
     const timer = setTimeout(() => {
-      chatInnerRef.current?.send(context.query)
-    }, 150)
+      chatRefs.current.get(selectedBotIndex)?.send(context.query)
+    }, 200)
     return () => clearTimeout(timer)
-  }, [context])
+  }, [selectedBotIndex, context])
+
+  const handleSelectBot = useCallback((idx: number) => {
+    setSelectedBotIndex(idx)
+    Browser.storage.sync.set({ btwSelectedBotIndex: idx })
+  }, [])
 
   const handleSend = useCallback(() => {
     const text = inputText.trim()
     if (!text) return
-    chatInnerRef.current?.send(text)
+    chatRefs.current.get(selectedBotIndex)?.send(text)
     setInputText('')
-  }, [inputText])
+  }, [inputText, selectedBotIndex])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -201,7 +215,7 @@ const BtwPage: FC = () => {
     [handleSend],
   )
 
-  if (!context) {
+  if (!context || selectedBotIndex === -1) {
     return (
       <div className="flex items-center justify-center h-screen bg-primary-background text-secondary-text text-sm">
         {t('Loading')}
@@ -214,17 +228,17 @@ const BtwPage: FC = () => {
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-2 border-b border-primary-border shrink-0">
         <span className="font-semibold text-sm text-btw">By The Way</span>
-        {context.chats.length > 1 && (
+        {allBots.length > 1 && (
           <div className="flex items-center gap-2 ml-auto shrink-0">
             <span className="text-xs text-secondary-text">{t('Btw bot selector label')}:</span>
             <select
               className="text-xs rounded-md border border-primary-border bg-primary-background text-primary-text px-2 py-1 focus:outline-none focus:border-primary-blue"
               value={selectedBotIndex}
-              onChange={(e) => setSelectedBotIndex(Number(e.target.value))}
+              onChange={(e) => handleSelectBot(Number(e.target.value))}
             >
-              {context.chats.map((c) => (
-                <option key={c.index} value={c.index}>
-                  {botNames[c.index] || `Bot ${c.index + 1}`}
+              {allBots.map(({ index, name }) => (
+                <option key={index} value={index}>
+                  {name}
                 </option>
               ))}
             </select>
@@ -232,16 +246,21 @@ const BtwPage: FC = () => {
         )}
       </div>
 
-      {/* Chat area */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <BtwChatInner
-          key={selectedBotIndex}
-          ref={chatInnerRef}
-          botIndex={selectedBotIndex}
-          chats={context.chats}
-          botNames={botNames}
-        />
-      </div>
+      {/* Chat area — all bots mounted simultaneously; only active one is visible */}
+      {allBots.map(({ index }) => (
+        <div
+          key={index}
+          className="flex-1 flex flex-col min-h-0 overflow-hidden"
+          style={{ display: index === selectedBotIndex ? 'flex' : 'none' }}
+        >
+          <BtwChatInner
+            ref={(handle: InnerHandle | null) => chatRefs.current.set(index, handle)}
+            botIndex={index}
+            chats={context.chats}
+            botNames={botNames}
+          />
+        </div>
+      ))}
 
       {/* Input area */}
       <div className="flex items-center gap-2 px-4 py-3 border-t border-primary-border shrink-0">

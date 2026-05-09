@@ -1,6 +1,7 @@
 import { useAtom } from 'jotai'
 import { FC } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from '@tanstack/react-router'
 import { releaseNotesAtom } from '~app/state'
 import { markCurrentVersionAsRead } from '~services/release-notes'
 import Button from '../Button'
@@ -10,6 +11,7 @@ import Markdown from '../Markdown'
 const ReleaseNotesModal: FC = () => {
   const { t } = useTranslation()
   const [notes, setNotes] = useAtom(releaseNotesAtom)
+  const navigate = useNavigate()
 
   const handleClose = () => {
     setNotes([])
@@ -20,6 +22,17 @@ const ReleaseNotesModal: FC = () => {
     setNotes([])
   }
 
+  const handleNotesClick = (e: React.MouseEvent) => {
+    const anchor = (e.target as HTMLElement).closest('a')
+    if (!anchor) return
+    const href = anchor.getAttribute('href')
+    if (href?.startsWith('#/')) {
+      e.preventDefault()
+      handleNeverShow()
+      navigate({ to: href.slice(1) })
+    }
+  }
+
   return (
     <ExpandableDialog
       title={t('Recent Updates')}
@@ -28,7 +41,7 @@ const ReleaseNotesModal: FC = () => {
       size="md"
     >
       {/* コンテンツ領域 */}
-      <div className="flex flex-col gap-4 px-5 py-5 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+      <div className="flex flex-col gap-4 px-5 py-5 flex-1 min-h-0 overflow-y-auto custom-scrollbar" onClick={handleNotesClick}>
         {notes.map((versionData, versionIndex) => {
           return (
             <div key={versionIndex} className="bg-secondary bg-opacity-20 border border-primary-border rounded-xl p-4">

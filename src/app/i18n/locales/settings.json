@@ -1,4 +1,28 @@
 {
+  "General": {
+    "en": "General",
+    "ja": "一般",
+    "zh-CN": "常规",
+    "zh-TW": "一般"
+  },
+  "Toggle sidebar": {
+    "en": "Toggle sidebar",
+    "ja": "サイドバーの表示切替",
+    "zh-CN": "切换侧边栏",
+    "zh-TW": "切換側邊欄"
+  },
+  "Chatbots": {
+    "en": "Chatbots",
+    "ja": "Chatbots",
+    "zh-CN": "Chatbots",
+    "zh-TW": "Chatbots"
+  },
+  "Danger Zone": {
+    "en": "Danger Zone",
+    "ja": "危険ゾーン",
+    "zh-CN": "危险区域",
+    "zh-TW": "危險區域"
+  },
   "Drawer Menu": {
     "en": "Drawer Menu",
     "ja": "引き出しメニュー: ボタンを押すと表示",
@@ -432,10 +456,10 @@
     "zh-TW": "快速設定僅暫時生效，重新載入後會重設"
   },
   "Export/Import Data": {
-    "en": "",
+    "en": "Export/Import Data",
     "ja": "データのエクスポート/インポート",
-    "zh-CN": "",
-    "zh-TW": ""
+    "zh-CN": "导出/导入数据",
+    "zh-TW": "匯出/匯入資料"
   },
   "Select Items": {
     "en": "",
