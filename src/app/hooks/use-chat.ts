@@ -43,18 +43,61 @@ export function useChat(index: number, page: string = 'singleton') {
   )
 
   const sendMessage = useCallback(
-    async (input: string, images?: File[], attachments?: { name: string; content: string }[], audioFiles?: File[], videoFiles?: File[], pdfFiles?: File[], contextPrefix?: string) => {
-      // URL処理
-      const urlPattern = /@(https?:\/\/[^\s]+)/g
-      const matches = [...input.matchAll(urlPattern)]
-
-      let cleanInput = input
+    async (
+      input: string,
+      images?: File[],
+      attachments?: { name: string; content: string }[],
+      audioFiles?: File[],
+      videoFiles?: File[],
+      pdfFiles?: File[],
+      contextPrefix?: string,
+      retryBotMessageId?: string,
+    ) => {
+      let cleanInput: string
       let fetchedContent = ''
-
       let fetchedUrls: FetchedUrlContent[] = []
+      let botMessageId: string
 
-      // URLがある場合は取得処理
-      if (matches.length > 0) {
+      if (retryBotMessageId) {
+        // ===== RETRY MODE: 元 user メッセージから入力/添付/fetchedUrls を復元 =====
+        const msgs = chatState.messages
+        const botIdx = msgs.findIndex((m) => m.id === retryBotMessageId)
+        if (botIdx < 0) return
+        const userMsg = [...msgs].slice(0, botIdx).reverse().find((m) => m.author === 'user')
+        if (!userMsg) return
+
+        input = userMsg.text
+        images = userMsg.images
+        attachments = userMsg.attachments
+        audioFiles = userMsg.audioFiles
+        videoFiles = userMsg.videoFiles
+        pdfFiles = userMsg.pdfFiles
+        cleanInput = input
+        fetchedUrls = userMsg.fetchedUrls ?? []
+        fetchedContent = fetchedUrls.map((u) => `Content from ${u.url}:\n\n${u.content}\n\n`).join('')
+        botMessageId = retryBotMessageId
+
+        updateMessage(botMessageId, (msg) => {
+          msg.text = ''
+          msg.error = undefined
+          msg.thinking = undefined
+          msg.searchResults = undefined
+          msg.referenceUrls = undefined
+        })
+
+        // bot 内部履歴を user メッセージより前に巻き戻す (bot.sendMessage が user msg を追加する)
+        const userIdx = msgs.findIndex((m) => m.id === userMsg.id)
+        chatState.bot.setConversationHistory({ messages: msgs.slice(0, userIdx) })
+      } else {
+        // ===== NORMAL MODE =====
+        cleanInput = input
+
+        // URL処理
+        const urlPattern = /@(https?:\/\/[^\s]+)/g
+        const matches = [...input.matchAll(urlPattern)]
+
+        // URLがある場合は取得処理
+        if (matches.length > 0) {
         for (const match of matches) {
           const fullMatch = match[0]
           const url = match[1]
@@ -148,7 +191,7 @@ export function useChat(index: number, page: string = 'singleton') {
       }
 
       // 添付は履歴に残さない。UI用の attachments は message に保持しつつ、保存時に除去する（既存仕様・下部で処理）
-      const botMessageId = uuid()
+      botMessageId = uuid()
       setChatState((draft) => {
         draft.messages.push(
           {
@@ -165,7 +208,8 @@ export function useChat(index: number, page: string = 'singleton') {
           { id: botMessageId, text: '', author: index }, // Use index as author
         )
       })
-      
+      } // end else (NORMAL MODE)
+
       // API へ渡す最終メッセージは、ユーザ本文 + 取得URL + 添付を末尾に付加
       // contextPrefixがある場合はAI側にのみ渡す（UIには表示しない）
       let finalMessage = contextPrefix
@@ -272,66 +316,12 @@ export function useChat(index: number, page: string = 'singleton') {
         // no-op
       })
     },
-    [index, chatState.bot, setChatState, updateMessage],
+    [index, chatState.bot, chatState.messages, setChatState, updateMessage],
   )
 
   const retryMessage = useCallback(
-    async (botMessageId: string) => {
-      const messages = chatState.messages
-      const botMsgIdx = messages.findIndex((m) => m.id === botMessageId)
-      if (botMsgIdx < 0) return
-
-      const userMsg = [...messages].slice(0, botMsgIdx).reverse().find((m) => m.author === 'user')
-      if (!userMsg) return
-
-      updateMessage(botMessageId, (msg) => {
-        msg.text = ''
-        msg.error = undefined
-        msg.thinking = undefined
-        msg.searchResults = undefined
-        msg.referenceUrls = undefined
-      })
-
-      if (chatState.bot.setConversationHistory) {
-        const historyMessages = messages.filter((m) => m.id !== botMessageId)
-        chatState.bot.setConversationHistory({ messages: historyMessages })
-      }
-
-      const abortController = new AbortController()
-      setChatState((draft) => {
-        draft.generatingMessageId = botMessageId
-        draft.abortController = abortController
-        draft.shouldAutoScroll = true
-      })
-
-      const resp = chatState.bot.sendMessage({
-        prompt: userMsg.text,
-        signal: abortController.signal,
-      })
-
-      try {
-        for await (const answer of resp) {
-          updateMessage(botMessageId, (message) => {
-            message.text = answer.text
-            if (answer.thinking) message.thinking = answer.thinking
-            if (answer.searchResults) message.searchResults = answer.searchResults
-            if (answer.referenceUrls) message.referenceUrls = answer.referenceUrls
-          })
-        }
-      } catch (err: unknown) {
-        if (!abortController.signal.aborted) abortController.abort()
-        const error = err as ChatError
-        updateMessage(botMessageId, (msg) => {
-          msg.error = error
-        })
-      } finally {
-        setChatState((draft) => {
-          draft.abortController = undefined
-          draft.generatingMessageId = ''
-        })
-      }
-    },
-    [chatState.bot, chatState.messages, setChatState, updateMessage],
+    (botMessageId: string) => sendMessage('', undefined, undefined, undefined, undefined, undefined, undefined, botMessageId),
+    [sendMessage],
   )
 
   const modifyLastMessage = useCallback(
