@@ -346,7 +346,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     <>
       <div className="w-full">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-md font-semibold">{t('Individual Chatbot Settings')}</h3>
+          <h3 className="text-md font-semibold">{t('Chatbot Settings')}</h3>
           <Button size="small" text={t('Add New Model')} icon={<BiPlus />} onClick={addNewCustomModel} color="primary" />
         </div>
         <div className="flex flex-col gap-4">
@@ -462,7 +462,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 ? referencedProvider.name
                 : t('Individual Settings');
             const typeLabel = isImageAgent || effectiveProvider === CustomApiProvider.OpenAI_Image
-              ? t('Image Generation')
+              ? t('Image')
               : t('Chat');
 
             return (
@@ -556,9 +556,11 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                             {config.model}
                           </span>
                         )}
-                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary whitespace-nowrap">
-                          {typeLabel}
-                        </span>
+                        {(isImageAgent || effectiveProvider === CustomApiProvider.OpenAI_Image) && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-400/40 whitespace-nowrap">
+                            {typeLabel}
+                          </span>
+                        )}
                         <span className="text-xs px-1.5 py-0.5 rounded bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 whitespace-nowrap">
                           {config.systemPromptMode === SystemPromptMode.COMMON ? t('Common') : config.systemPromptMode === SystemPromptMode.APPEND ? t('Append') : t('Override')}
                         </span>

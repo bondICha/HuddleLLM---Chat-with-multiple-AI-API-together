@@ -473,7 +473,7 @@ const CustomAPITemplateImportPanel: FC<Props> = ({ userConfig, updateConfigValue
         icon={<BiImport />}
         onClick={handleFileSelect}
         color="flat"
-        className="w-full justify-center bg-white dark:bg-slate-800 border border-indigo-300 dark:border-indigo-600/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+        className="flex-1 justify-center"
       />
 
       <Dialog

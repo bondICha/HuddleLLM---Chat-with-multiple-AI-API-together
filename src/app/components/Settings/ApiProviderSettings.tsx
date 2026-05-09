@@ -108,14 +108,19 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
             return (
             <div key={prov.id} id={`provider-setting-${pIndex}`} className="scroll-mt-3 bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-lg shadow transition-all">
               <div className="p-3 grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
-                {/* Icon + Name */}
-                <div className="lg:col-span-4 flex items-center gap-2 min-w-0">
+                {/* Icon + Name (+ inline badges) */}
+                <div className="lg:col-span-5 flex items-center gap-2 min-w-0">
                   <div className="w-8 h-8 cursor-pointer flex-shrink-0" onClick={() => setProviderIconEditIndex(pIndex)}>
                     <BotIcon iconName={prov.icon} size={32} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <h4 className="font-medium text-sm truncate">{prov.name}</h4>
+                      {resolveProviderMode(prov) === 'image' && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-400/40 whitespace-nowrap flex-shrink-0">
+                          {t('Image')}
+                        </span>
+                      )}
                       {prov.provider === CustomApiProvider.Replicate && resolveProviderMode(prov) === 'image' && (
                         <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded whitespace-nowrap flex-shrink-0">
                           {t('Recommended')}
@@ -127,13 +132,6 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                   <span className="text-xs font-mono opacity-40 flex-shrink-0">#{pIndex + 1}</span>
                 </div>
 
-                {/* Type chip */}
-                <div className="lg:col-span-1">
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/40 dark:bg-black/40 border border-gray-300 dark:border-gray-700 whitespace-nowrap">
-                    {resolveProviderMode(prov) === 'image' ? t('Image Generation') : t('Chat')}
-                  </span>
-                </div>
-
                 {/* Host display */}
                 <div className="lg:col-span-4 min-w-0">
                   <p className="text-xs opacity-60 mb-0.5">Host</p>
@@ -141,76 +139,10 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 </div>
 
                 {/* API Key status */}
-                <div className="lg:col-span-2 min-w-0">
+                <div className="lg:col-span-3 min-w-0">
                   <span className={cx('inline-block text-[10px] px-1.5 py-0.5 rounded-sm font-medium truncate max-w-full', apiKeyBadgeColor)} title={apiKeyText}>
                     {apiKeyText}
                   </span>
-                </div>
-
-                {/* Actions */}
-                <div className="lg:col-span-1 flex items-center gap-0.5 justify-end">
-                  <button
-                    className={`p-1 rounded ${pIndex === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/20'}`}
-                    onClick={() => {
-                      if (pIndex > 0) {
-                        const updated = [...providerConfigs];
-                        [updated[pIndex - 1], updated[pIndex]] = [updated[pIndex], updated[pIndex - 1]];
-                        updateProviderConfigs(updated);
-                      }
-                    }}
-                    disabled={pIndex === 0}
-                    title={t('Move up')}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z" /></svg>
-                  </button>
-                  <button
-                    className={`p-1 rounded ${pIndex === providerConfigs.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/20'}`}
-                    onClick={() => {
-                      if (pIndex < providerConfigs.length - 1) {
-                        const updated = [...providerConfigs];
-                        [updated[pIndex], updated[pIndex + 1]] = [updated[pIndex + 1], updated[pIndex]];
-                        updateProviderConfigs(updated);
-                      }
-                    }}
-                    disabled={pIndex === providerConfigs.length - 1}
-                    title={t('Move down')}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" /></svg>
-                  </button>
-                  <button
-                    className="p-1 rounded hover:bg-white/20"
-                    onClick={() => {
-                      const copy = { ...prov, id: genId(), name: `${prov.name} Copy` };
-                      updateProviderConfigs([
-                        ...providerConfigs.slice(0, pIndex + 1),
-                        copy,
-                        ...providerConfigs.slice(pIndex + 1),
-                      ]);
-                    }}
-                    title={t('Duplicate')}
-                  >
-                    <CopyIcon className="w-3 h-3" />
-                  </button>
-                  <button
-                    className="p-1 rounded hover:bg-white/20 text-red-400"
-                    onClick={() => {
-                      if (!window.confirm(t('Are you sure you want to delete this provider?'))) return;
-                      const updatedProviders = [...providerConfigs];
-                      updatedProviders.splice(pIndex, 1);
-                      const updatedBots = (userConfig.customApiConfigs || []).map((c) => {
-                        if (c.providerRefId === prov.id) return { ...c, providerRefId: undefined };
-                        return c;
-                      });
-                      updateConfigValue({
-                        providerConfigs: updatedProviders,
-                        customApiConfigs: updatedBots,
-                      });
-                      toast.success(t('Provider deleted. Bots referencing it have been switched to individual settings.'));
-                    }}
-                    title={t('Delete')}
-                  >
-                    <BiTrash size={12} />
-                  </button>
                 </div>
 
                 {/* Replicate hint (only when applicable) */}
@@ -220,8 +152,72 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                   </div>
                 )}
 
-                {/* Edit button on its own row to keep main row compact */}
-                <div className="lg:col-span-12 flex justify-end -mt-1">
+                {/* Bottom row: actions + Edit Provider */}
+                <div className="lg:col-span-12 flex items-center justify-between gap-2 -mt-1">
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      className={`p-1.5 rounded ${pIndex === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/20'}`}
+                      onClick={() => {
+                        if (pIndex > 0) {
+                          const updated = [...providerConfigs];
+                          [updated[pIndex - 1], updated[pIndex]] = [updated[pIndex], updated[pIndex - 1]];
+                          updateProviderConfigs(updated);
+                        }
+                      }}
+                      disabled={pIndex === 0}
+                      title={t('Move up')}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 15a.5.5 0 0 0 .5-.5V2.707l3.146 3.147a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 1 0 .708.708L7.5 2.707V14.5a.5.5 0 0 0 .5.5z" /></svg>
+                    </button>
+                    <button
+                      className={`p-1.5 rounded ${pIndex === providerConfigs.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/20'}`}
+                      onClick={() => {
+                        if (pIndex < providerConfigs.length - 1) {
+                          const updated = [...providerConfigs];
+                          [updated[pIndex], updated[pIndex + 1]] = [updated[pIndex + 1], updated[pIndex]];
+                          updateProviderConfigs(updated);
+                        }
+                      }}
+                      disabled={pIndex === providerConfigs.length - 1}
+                      title={t('Move down')}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" /></svg>
+                    </button>
+                    <button
+                      className="p-1.5 rounded hover:bg-white/20"
+                      onClick={() => {
+                        const copy = { ...prov, id: genId(), name: `${prov.name} Copy` };
+                        updateProviderConfigs([
+                          ...providerConfigs.slice(0, pIndex + 1),
+                          copy,
+                          ...providerConfigs.slice(pIndex + 1),
+                        ]);
+                      }}
+                      title={t('Duplicate')}
+                    >
+                      <CopyIcon className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      className="p-1.5 rounded hover:bg-white/20 text-red-400"
+                      onClick={() => {
+                        if (!window.confirm(t('Are you sure you want to delete this provider?'))) return;
+                        const updatedProviders = [...providerConfigs];
+                        updatedProviders.splice(pIndex, 1);
+                        const updatedBots = (userConfig.customApiConfigs || []).map((c) => {
+                          if (c.providerRefId === prov.id) return { ...c, providerRefId: undefined };
+                          return c;
+                        });
+                        updateConfigValue({
+                          providerConfigs: updatedProviders,
+                          customApiConfigs: updatedBots,
+                        });
+                        toast.success(t('Provider deleted. Bots referencing it have been switched to individual settings.'));
+                      }}
+                      title={t('Delete')}
+                    >
+                      <BiTrash size={14} />
+                    </button>
+                  </div>
                   <Button
                     size="small"
                     text={t('Edit Provider')}
