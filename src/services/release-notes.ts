@@ -10,6 +10,7 @@ export const RELEASE_NOTES = [
     notes: [
       'releasenote_v2170_settings_overhaul',
       'releasenote_v2170_retry_failed_message',
+      'releasenote_v2170_btw_all_bots',
     ],
   },
   {
