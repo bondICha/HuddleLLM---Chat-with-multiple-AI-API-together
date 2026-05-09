@@ -381,7 +381,6 @@ function getModule(key: string): ModuleName {
     key === 'Export/Import Data' ||
     key === 'Select Items' ||
     key === 'Chatbot Settings' ||
-    key === 'Chatbot API Keys' ||
     key === 'Chat History' ||
     key === 'Local Prompts' ||
     key === 'User Preferences' ||

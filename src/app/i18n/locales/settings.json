@@ -468,16 +468,10 @@
     "zh-TW": ""
   },
   "Chatbot Settings": {
-    "en": "",
+    "en": "Chatbot Settings",
     "ja": "チャットボット設定",
-    "zh-CN": "",
-    "zh-TW": ""
-  },
-  "Chatbot API Keys": {
-    "en": "",
-    "ja": "チャットボットAPIキー",
-    "zh-CN": "",
-    "zh-TW": ""
+    "zh-CN": "聊天机器人设置",
+    "zh-TW": "聊天機器人設定"
   },
   "Chat History": {
     "en": "",
