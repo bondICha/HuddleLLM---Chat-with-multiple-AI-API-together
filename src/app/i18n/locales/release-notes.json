@@ -1,4 +1,16 @@
 {
+  "releasenote_v2170_settings_overhaul": {
+    "en": "The Settings page has been greatly improved. [Open Settings to see what's new →](#/setting)",
+    "ja": "設定画面を大幅に刷新しました。[設定を開いて確認する →](#/setting)",
+    "zh-CN": "设置页面已大幅改进。[打开设置查看更新内容 →](#/setting)",
+    "zh-TW": "設定頁面已大幅改進。[開啟設定查看更新內容 →](#/setting)"
+  },
+  "releasenote_v2170_retry_failed_message": {
+    "en": "Failed bot messages now show a Retry button.",
+    "ja": "失敗したボットメッセージをRetryできるようになりました。",
+    "zh-CN": "失败的机器人消息现在可以重试。",
+    "zh-TW": "失敗的聊天機器人訊息現在可以重試。"
+  },
   "releasenote_v2164_sidepanel_full_input": {
     "en": "The Side Panel has been updated to match the main chat experience.",
     "ja": "サイドパネルをメインチャットに合わせてアップデートしました。",
