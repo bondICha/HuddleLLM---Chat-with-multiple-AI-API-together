@@ -107,9 +107,9 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                 : t('No API Key configured');
             return (
             <div key={prov.id} id={`provider-setting-${pIndex}`} className="scroll-mt-3 bg-white/30 dark:bg-black/30 border border-gray-300 dark:border-gray-700 rounded-lg shadow transition-all">
-              <div className="p-3 grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
+              <div className="p-3 grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
                 {/* Icon + Name (+ inline badges) */}
-                <div className="lg:col-span-5 flex items-center gap-2 min-w-0">
+                <div className="lg:col-span-4 flex items-center gap-2 min-w-0">
                   <div className="w-8 h-8 cursor-pointer flex-shrink-0" onClick={() => setProviderIconEditIndex(pIndex)}>
                     <BotIcon iconName={prov.icon} size={32} />
                   </div>
@@ -132,15 +132,15 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                   <span className="text-xs font-mono opacity-40 flex-shrink-0">#{pIndex + 1}</span>
                 </div>
 
-                {/* Host display */}
-                <div className="lg:col-span-4 min-w-0">
-                  <p className="text-xs opacity-60 mb-0.5">Host</p>
-                  <p className="text-xs truncate font-mono">{prov.host || <span className="opacity-50 italic">{t('Not set')}</span>}</p>
+                {/* Host display - 全文表示・折り返し可、視覚的に大きめ */}
+                <div className="lg:col-span-6 min-w-0">
+                  <p className="text-[10px] uppercase tracking-wide opacity-50 mb-0.5">Host</p>
+                  <p className="text-sm font-mono break-all leading-snug">{prov.host || <span className="opacity-50 italic">{t('Not set')}</span>}</p>
                 </div>
 
                 {/* API Key status */}
-                <div className="lg:col-span-3 min-w-0">
-                  <span className={cx('inline-block text-[10px] px-1.5 py-0.5 rounded-sm font-medium truncate max-w-full', apiKeyBadgeColor)} title={apiKeyText}>
+                <div className="lg:col-span-2 min-w-0">
+                  <span className={cx('inline-block text-[10px] px-1.5 py-0.5 rounded-sm font-medium break-all max-w-full', apiKeyBadgeColor)} title={apiKeyText}>
                     {apiKeyText}
                   </span>
                 </div>
