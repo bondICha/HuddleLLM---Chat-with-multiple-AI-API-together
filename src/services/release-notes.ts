@@ -6,6 +6,14 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.17.0',
+    notes: [
+      'releasenote_v2170_settings_overhaul',
+      'releasenote_v2170_retry_failed_message',
+      'releasenote_v2170_btw_all_bots',
+    ],
+  },
+  {
     version: '2.16.4',
     notes: [
       'releasenote_v2164_sidepanel_full_input',
