@@ -52,6 +52,7 @@ const SettingPageSideMenu: FC<SettingPageSideMenuProps> = ({ activeSection, onSe
     { kind: 'item', id: 'section-title-generation', label: t('AI Title Generation') },
     { kind: 'header', label: t('Chatbots configuration') },
     { kind: 'item', id: 'section-common', label: t('Common Settings'), indentLevel: 1 },
+    { kind: 'item', id: 'section-relationships', label: t('Provider–Chatbot Relationships'), indentLevel: 1 },
     { kind: 'item', id: 'section-providers', label: t('API Providers'), indentLevel: 1 },
     ...providerConfigs.map((prov, index) => ({
       kind: 'item' as const,

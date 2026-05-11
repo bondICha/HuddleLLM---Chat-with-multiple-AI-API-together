@@ -72,6 +72,22 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
     return schemeLookup.get(prov.provider) || prov.provider;
   };
 
+  const usageByProviderId = useMemo(() => {
+    const map = new Map<string, { index: number; name: string; avatar: string }[]>();
+    (userConfig.customApiConfigs || []).forEach((bot, idx) => {
+      if (!bot.providerRefId) return;
+      const list = map.get(bot.providerRefId) ?? [];
+      list.push({ index: idx, name: bot.name, avatar: bot.avatar });
+      map.set(bot.providerRefId, list);
+    });
+    return map;
+  }, [userConfig.customApiConfigs]);
+
+  const scrollToChatbot = (index: number) => {
+    const el = document.getElementById(`chatbot-setting-${index}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <>
       <div className="p-4 rounded-lg bg-white/20 dark:bg-black/20 border border-gray-300 dark:border-gray-700 space-y-4">
@@ -151,6 +167,42 @@ const ApiProviderSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     💡 {t('Easy setup with API integration - supports a wide range of models')}
                   </div>
                 )}
+
+                {/* Used by chatbots */}
+                {(() => {
+                  const usedBy = usageByProviderId.get(prov.id) ?? [];
+                  return (
+                    <div className="lg:col-span-12 min-w-0 pt-1 border-t border-gray-300/40 dark:border-gray-700/40">
+                      <div className="flex items-start gap-2 flex-wrap">
+                        <p className="text-[10px] uppercase tracking-wide opacity-60 mt-1 flex-shrink-0">
+                          {t('Used by')}
+                        </p>
+                        {usedBy.length === 0 ? (
+                          <span className="text-xs italic opacity-50 mt-0.5">
+                            {t('Not used by any chatbot')}
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+                            {usedBy.map((bot) => (
+                              <button
+                                key={bot.index}
+                                type="button"
+                                onClick={() => scrollToChatbot(bot.index)}
+                                title={t('Click to jump to settings')}
+                                className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors max-w-[12rem]"
+                              >
+                                <span className="w-4 h-4 flex-shrink-0">
+                                  <BotIcon iconName={bot.avatar} size={16} />
+                                </span>
+                                <span className="truncate">{bot.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Bottom row: actions + Edit Provider */}
                 <div className="lg:col-span-12 flex items-center justify-between gap-2 -mt-1">
