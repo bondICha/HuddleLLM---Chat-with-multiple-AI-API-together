@@ -1,4 +1,10 @@
 {
+  "releasenote_v2171_provider_chatbot_relationship": {
+    "en": "Provider cards now show which chatbots use them.",
+    "ja": "プロバイダーカードにどのチャットボットが使用しているか表示されるようになりました。",
+    "zh-CN": "Provider 卡片现在显示哪些聊天机器人正在使用该提供商。",
+    "zh-TW": "Provider 卡片現在顯示哪些聊天機器人正在使用該提供商。"
+  },
   "releasenote_v2170_settings_overhaul": {
     "en": "The Settings page has been greatly improved. [Open Settings to see what's new →](#/setting)",
     "ja": "設定画面を大幅に刷新しました。[設定を開いて確認する →](#/setting)",
