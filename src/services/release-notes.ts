@@ -6,6 +6,12 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.17.1',
+    notes: [
+      'releasenote_v2171_provider_chatbot_relationship',
+    ],
+  },
+  {
     version: '2.17.0',
     notes: [
       'releasenote_v2170_settings_overhaul',
