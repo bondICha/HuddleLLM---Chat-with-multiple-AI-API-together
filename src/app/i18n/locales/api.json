@@ -443,6 +443,60 @@
     "zh-CN": "API Providers",
     "zh-TW": "API Providers"
   },
+  "Provider–Chatbot Relationships": {
+    "en": "Provider–Chatbot Relationships",
+    "ja": "プロバイダー–チャットボット関係図",
+    "zh-CN": "Provider–聊天机器人关系图",
+    "zh-TW": "Provider–聊天機器人關係圖"
+  },
+  "{{p}} providers / {{b}} chatbots": {
+    "en": "{{p}} providers / {{b}} chatbots",
+    "ja": "プロバイダー {{p}} 個 / チャットボット {{b}} 個",
+    "zh-CN": "{{p}} 个 Provider / {{b}} 个聊天机器人",
+    "zh-TW": "{{p}} 個 Provider / {{b}} 個聊天機器人"
+  },
+  "Provider defines shared API infrastructure (host, authentication). Chatbot defines per-model behavior (model, parameters, system prompt). One provider can be referenced by multiple chatbots.": {
+    "en": "Provider defines shared API infrastructure (host, authentication). Chatbot defines per-model behavior (model, parameters, system prompt). One provider can be referenced by multiple chatbots.",
+    "ja": "プロバイダーは共通のAPIインフラ（ホスト、認証情報）を定義します。チャットボットはモデルごとの動作（モデル、パラメータ、システムプロンプト）を定義します。1つのプロバイダーは複数のチャットボットから参照できます。",
+    "zh-CN": "Provider 定义共享的 API 基础设施（主机、认证信息）。聊天机器人定义每个模型的行为（模型、参数、系统提示）。一个 Provider 可被多个聊天机器人引用。",
+    "zh-TW": "Provider 定義共享的 API 基礎設施（主機、認證資訊）。聊天機器人定義每個模型的行為（模型、參數、系統提示）。一個 Provider 可被多個聊天機器人引用。"
+  },
+  "Hover a row to highlight related items. Click to jump to its settings.": {
+    "en": "Hover a row to highlight related items. Click to jump to its settings.",
+    "ja": "行にカーソルを合わせると関連項目がハイライトされます。クリックで該当設定にジャンプします。",
+    "zh-CN": "将鼠标悬停在行上以高亮显示相关项。点击可跳转到对应设置。",
+    "zh-TW": "將滑鼠停留在列上以高亮相關項目。點擊可跳到對應設定。"
+  },
+  "Click to jump to settings": {
+    "en": "Click to jump to settings",
+    "ja": "クリックで設定へジャンプ",
+    "zh-CN": "点击跳转到设置",
+    "zh-TW": "點擊跳到設定"
+  },
+  "No providers configured": {
+    "en": "No providers configured",
+    "ja": "プロバイダーが未設定です",
+    "zh-CN": "尚未配置 Provider",
+    "zh-TW": "尚未設定 Provider"
+  },
+  "No chatbots configured": {
+    "en": "No chatbots configured",
+    "ja": "チャットボットが未設定です",
+    "zh-CN": "尚未配置聊天机器人",
+    "zh-TW": "尚未設定聊天機器人"
+  },
+  "Unused": {
+    "en": "Unused",
+    "ja": "未使用",
+    "zh-CN": "未使用",
+    "zh-TW": "未使用"
+  },
+  "This chatbot uses individual settings (no provider reference)": {
+    "en": "This chatbot uses individual settings (no provider reference)",
+    "ja": "このチャットボットは個別設定を使用しています（プロバイダー参照なし）",
+    "zh-CN": "此聊天机器人使用个别设置（未引用 Provider）",
+    "zh-TW": "此聊天機器人使用個別設定（未參照 Provider）"
+  },
   "Add Provider": {
     "en": "Add Provider",
     "ja": "プロバイダーを追加",

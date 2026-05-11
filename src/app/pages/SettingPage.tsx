@@ -153,6 +153,7 @@ function SettingPage() {
       'section-startup',
       'section-title-generation',
       'section-common',
+      'section-relationships',
       'section-providers',
       ...((userConfig.providerConfigs || []).map((_, i) => `provider-setting-${i}`)),
       'section-chatbots',
