@@ -491,6 +491,18 @@
     "zh-CN": "未使用",
     "zh-TW": "未使用"
   },
+  "Used by": {
+    "en": "Used by",
+    "ja": "使用中のチャットボット",
+    "zh-CN": "使用此提供商的聊天机器人",
+    "zh-TW": "使用此提供商的聊天機器人"
+  },
+  "Not used by any chatbot": {
+    "en": "Not used by any chatbot",
+    "ja": "このProviderを使用しているチャットボットはありません",
+    "zh-CN": "暂无聊天机器人使用此提供商",
+    "zh-TW": "目前無聊天機器人使用此提供商"
+  },
   "This chatbot uses individual settings (no provider reference)": {
     "en": "This chatbot uses individual settings (no provider reference)",
     "ja": "このチャットボットは個別設定を使用しています（プロバイダー参照なし）",

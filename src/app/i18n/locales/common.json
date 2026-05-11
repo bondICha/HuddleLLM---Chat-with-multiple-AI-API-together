@@ -289,9 +289,15 @@
   },
   "Hide": {
     "en": "Hide",
-    "ja": "隠す",
+    "ja": "非表示",
     "zh-CN": "隐藏",
     "zh-TW": "隱藏"
+  },
+  "Show": {
+    "en": "Show",
+    "ja": "表示",
+    "zh-CN": "显示",
+    "zh-TW": "顯示"
   },
   "Close": {
     "en": "Close",

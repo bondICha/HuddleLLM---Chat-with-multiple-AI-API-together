@@ -22,7 +22,7 @@ type HoverTarget =
 
 const RelationshipMap: FC<Props> = ({ providers, bots }) => {
   const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [hover, setHover] = useState<HoverTarget>(null);
 
   const providerIndexById = useMemo(() => {
