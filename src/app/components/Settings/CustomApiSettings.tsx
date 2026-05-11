@@ -12,6 +12,7 @@ import { getSystemPrompt, SYSTEM_PROMPTS, SYSTEM_PROMPT_VERSION } from '~app/sys
 import { getSystemPromptBackup } from '~services/system-prompt-version';
 import ApiProviderSettings from './ApiProviderSettings';
 import ChatbotSettings from './ChatbotSettings';
+import RelationshipMap from './RelationshipMap';
 import Switch from '../Switch';
 import HostSearchInput from './HostSearchInput';
 
@@ -189,6 +190,13 @@ const CustomAPISettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div id="section-relationships" className="scroll-mt-3">
+              <RelationshipMap
+                providers={userConfig.providerConfigs || []}
+                bots={userConfig.customApiConfigs || []}
+              />
             </div>
 
             <div id="section-providers" className="scroll-mt-3">
