@@ -1,7 +1,7 @@
 import { FC, useState, useEffect, useRef } from 'react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { BiPlus, BiTrash, BiHide, BiShow, BiPencil, BiChevronDown, BiExpand } from 'react-icons/bi';
+import { BiPlus, BiTrash, BiPencil, BiChevronDown, BiExpand } from 'react-icons/bi';
 import toast from 'react-hot-toast';
 import CopyIcon from '../icons/CopyIcon';
 import { cx } from '~/utils';
@@ -597,8 +597,8 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     <button className="p-2 rounded hover:bg-white/20" onClick={() => duplicateCustomModel(index)} title={t('Duplicate')} type="button">
                       <CopyIcon className="w-3.5 h-3.5" />
                     </button>
-                    <button className="p-2 rounded hover:bg-white/20" onClick={() => toggleBotEnabledState(index)} title={config.enabled ? t('Disable') : t('Enable')} type="button">
-                      {config.enabled ? <BiShow size={14} /> : <BiHide size={14} />}
+                    <button className="px-2 py-1 rounded text-xs hover:bg-white/20 whitespace-nowrap" onClick={() => toggleBotEnabledState(index)} type="button">
+                      {config.enabled ? t('Hide') : t('Show')}
                     </button>
                     <button className="p-2 rounded hover:bg-white/20 text-red-400" onClick={() => deleteCustomModel(index)} title={t('Delete')} type="button">
                       <BiTrash size={14} />
