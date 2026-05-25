@@ -1,4 +1,22 @@
 {
+  "releasenote_v2180_deep_search": {
+    "en": "Deep full-text search across all chat history. Type a keyword to scan session bodies in real time with a progress indicator.",
+    "ja": "履歴全文検索（Deep Search）を追加。キーワードを入力すると、過去の全セッション本文をリアルタイムでスキャンし、進捗バー付きで検索結果を表示します。",
+    "zh-CN": "新增全历史记录全文搜索（Deep Search）。输入关键词即可实时扫描所有会话正文，并显示进度条。",
+    "zh-TW": "新增全歷史記錄全文搜尋（Deep Search）。輸入關鍵字即可即時掃描所有會話本文，並顯示進度條。"
+  },
+  "releasenote_v2180_lazy_loading": {
+    "en": "History page now loads metadata first, making the list instant even with hundreds of sessions.",
+    "ja": "履歴一覧がメタデータ先行読み込みになり、数百件のセッションがあっても一瞬で表示されるようになりました。",
+    "zh-CN": "历史记录页面现在优先加载元数据，即使有数百条会话也能瞬间显示列表。",
+    "zh-TW": "歷史記錄頁面現在優先載入元資料，即使有數百條會話也能瞬間顯示列表。"
+  },
+  "releasenote_v2180_restore_warning": {
+    "en": "Restoring a session to a different or unconfigured bot now shows a dialog to choose how to proceed.",
+    "ja": "未設定のボットへセッションを復元する際、別のボットに割り当てるかどうかを選択できるダイアログを追加しました。",
+    "zh-CN": "恢复会话到未配置的机器人时，现在会弹出对话框让你选择如何处理。",
+    "zh-TW": "恢復工作階段到未設定的機器人時，現在會彈出對話框讓你選擇如何處理。"
+  },
   "releasenote_v2171_provider_chatbot_relationship": {
     "en": "Provider cards now show which chatbots use them.",
     "ja": "プロバイダーカードにどのチャットボットが使用しているか表示されるようになりました。",

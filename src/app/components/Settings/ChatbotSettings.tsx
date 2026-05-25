@@ -830,7 +830,7 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                     <div className={inputContainerClass}>
                       <div className="space-y-2">
                         <div className="flex items-center gap-3 flex-wrap">
-                          <div className="inline-flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 text-sm divide-x divide-gray-300 dark:divide-gray-700">
+                          <div className="flex gap-1">
                             {[
                               { mode: SystemPromptMode.COMMON, label: t('Common') },
                               { mode: SystemPromptMode.APPEND, label: t('Append') },
@@ -846,12 +846,11 @@ const ChatbotSettings: FC<Props> = ({ userConfig, updateConfigValue }) => {
                                     updatedConfigs[index].systemPromptMode = mode;
                                     updateCustomApiConfigs(updatedConfigs);
                                   }}
-                                  style={active ? { backgroundColor: 'var(--theme-color-muted)', boxShadow: 'inset 0 0 0 1px var(--theme-color)' } : undefined}
                                   className={cx(
-                                    'px-4 py-1.5 transition-colors font-medium',
+                                    'text-sm px-3 py-1 rounded-md border transition-colors',
                                     active
-                                      ? 'font-semibold text-primary-text'
-                                      : 'bg-white/30 dark:bg-black/20 text-secondary-text hover:bg-white/60 dark:hover:bg-black/40'
+                                      ? 'border-primary-blue bg-primary-blue text-white'
+                                      : 'border-primary-border hover:border-primary-blue'
                                   )}
                                 >
                                   {label}
