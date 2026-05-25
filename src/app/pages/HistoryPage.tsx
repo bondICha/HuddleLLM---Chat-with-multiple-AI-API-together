@@ -1,92 +1,28 @@
-import { FC, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from '@tanstack/react-router'
 import Browser from 'webextension-polyfill'
 import { useTranslation } from 'react-i18next'
-import { FiSearch } from 'react-icons/fi'
 import { ViewportList } from 'react-viewport-list'
 import PagePanel from '~app/components/Page'
 import SessionCard from '~app/components/History/SessionCard'
+import SearchInput from '~app/components/History/SearchInput'
+import RestoreWarningModal from '~app/components/History/RestoreWarningModal'
 import { MigrationProgress } from '~app/components/MigrationProgress'
 import {
-  loadAllInOneSessions,
+  loadSnapshotMetas,
+  loadAioMetas,
+  loadSingleMetas,
+  getSessionPreview,
   loadHistoryMessages,
-  loadSessionSnapshots,
-  isMigrationCompleted,
-  loadSessionIndexV2,
-  loadSessionsByIds,
+  setConversationMessages,
+  getSessionSnapshot,
+  loadAllInOneSessions,
 } from '~services/chat-history'
 import { getUserConfig } from '~services/user-config'
-import { cx } from '~utils'
-
-type ActiveTab = 'allInOne' | 'individual'
-
-type SessionListItem =
-  | {
-      type: 'sessionSnapshot'
-      sessionUUID: string
-      createdAt: number
-      lastUpdated: number
-      messageCount: number
-      botIndices: number[]
-      layout: string
-      pairName?: string
-      firstMessage?: string
-      botResponses?: { botName: string; response: string; botIcon?: string }[]
-      botNames?: string[]
-      botIcons?: string[]
-      // Performance optimization: pre-computed fields
-      _sessionKey: string
-      _searchString: string
-    }
-  | {
-      type: 'allInOneLegacy'
-      sessionId: string
-      createdAt: number
-      lastUpdated: number
-      messageCount: number
-      botIndices: number[]
-      layout: string
-      pairName?: string
-      firstMessage?: string
-      botResponses?: { botName: string; response: string; botIcon?: string }[]
-      botNames?: string[]
-      botIcons?: string[]
-      // Performance optimization: pre-computed fields
-      _sessionKey: string
-      _searchString: string
-    }
-  | {
-      type: 'single'
-      botIndex: number
-      conversationId: string
-      createdAt: number
-      lastUpdated: number
-      messageCount: number
-      firstMessage?: string
-      lastMessage?: string
-      botNames?: string[]
-      botIcons?: string[]
-      // Performance optimization: pre-computed fields
-      _sessionKey: string
-      _searchString: string
-    }
-
-
-const SearchInput: FC<{ value: string; onChange: (v: string) => void }> = memo((props) => {
-  const { t } = useTranslation()
-  return (
-    <div className="rounded-xl bg-secondary h-9 flex flex-row items-center px-4 grow">
-      <FiSearch size={18} className="mr-[6px] opacity-30" />
-      <input
-        className={cx('bg-transparent w-full outline-none text-sm')}
-        placeholder={t('Full-text search for chat history') as string}
-        value={props.value}
-        onChange={(e) => props.onChange(e.target.value)}
-      />
-    </div>
-  )
-})
-SearchInput.displayName = 'SearchInput'
+import { cx, uuid } from '~utils'
+import type { ActiveTab, AnyMeta, RestoreWarning, SessionListItem } from './HistoryPage/types'
+import { formatConversationAsMarkdown } from './HistoryPage/format'
+import { useDeepSearch } from './HistoryPage/useDeepSearch'
 
 const HistoryPage: FC = () => {
   const { t } = useTranslation()
@@ -94,13 +30,24 @@ const HistoryPage: FC = () => {
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('allInOne')
   const [selectedSessionKey, setSelectedSessionKey] = useState<string | null>(null)
+  const [restoreWarning, setRestoreWarning] = useState<RestoreWarning | null>(null)
+  const [copyLoading, setCopyLoading] = useState(false)
 
   const [loadingSessions, setLoadingSessions] = useState(false)
   const [sessions, setSessions] = useState<SessionListItem[]>([])
+  // sessionKey → 本文取得用メタ。deep search で使う。
+  const metaMapRef = useRef<Map<string, AnyMeta>>(new Map())
+
   const [sessionSearch, setSessionSearch] = useState('')
-  const [sessionVisibleCount, setSessionVisibleCount] = useState(100)
+  const [sessionVisibleCount, setSessionVisibleCount] = useState(10)
   const sessionCardRefs = useRef<Map<string, HTMLDivElement | null>>(new Map())
   const sessionListRef = useRef<HTMLDivElement | null>(null)
+
+  // プレビュー遅延ロード用state
+  const [previewMap, setPreviewMap] = useState<Map<string, { firstMessage?: string; botResponses?: { botName: string; response: string; botIcon?: string }[] }>>(new Map())
+
+  // セッション再読込/タブ切替で deep search キャッシュをリセットするためのキー
+  const [searchResetKey, setSearchResetKey] = useState(0)
 
   const clearHashQuery = useCallback(() => {
     const hash = window.location.hash
@@ -135,186 +82,108 @@ const HistoryPage: FC = () => {
     setLoadingSessions(true)
     try {
       const config = await getUserConfig()
+      const botCount = (config.customApiConfigs || []).length
       const botNames = (config.customApiConfigs || []).map((c, i) => c.name || `Bot ${i + 1}`)
       const botIcons = (config.customApiConfigs || []).map((c) => c.avatar || '')
+
+      const [snapMetas, aioMetas, singleMetas] = await Promise.all([
+        loadSnapshotMetas(),
+        loadAioMetas(),
+        loadSingleMetas(Math.max(botCount, 10)),
+      ])
+
+      // AIO が参照している per-bot conversation を single 側から除外（メタ完結の dedup）
+      const aioOwnedConvs = new Set<string>()
+      for (const m of aioMetas) {
+        const snaps = m.conversationSnapshots
+        if (!snaps) continue
+        for (const botIndex of Object.keys(snaps)) {
+          aioOwnedConvs.add(`${botIndex}:${snaps[Number(botIndex)]}`)
+        }
+      }
+
+      const metaMap = new Map<string, AnyMeta>()
       const all: SessionListItem[] = []
-      const excludedByBotPrefix = new Map<number, Map<string, number>>()
 
-      const upsertExclude = (botIndex: number, prefixSig: string, minLen: number) => {
-        if (!prefixSig || minLen <= 0) return
-        const botMap = excludedByBotPrefix.get(botIndex) || new Map<string, number>()
-        botMap.set(prefixSig, Math.max(botMap.get(prefixSig) || 0, minLen))
-        excludedByBotPrefix.set(botIndex, botMap)
-      }
-
-      const prefixSigOf = (messages: any[]) => {
-        if (!Array.isArray(messages) || messages.length === 0) return ''
-        const ids = messages
-          .map((m) => (m && typeof m.id === 'string' ? m.id : ''))
-          .filter(Boolean)
-          .slice(0, 3)
-        return ids.join('|')
-      }
-
-      const snapshots = await loadSessionSnapshots()
-      for (const s of snapshots) {
-        const allMessages = Object.values(s.conversations || {}).flat()
-        const firstUserMsg = allMessages.find((m: any) => m.author === 'user' && typeof m.text === 'string' && m.text.trim() !== '')
-
-        if (s.botIndices && s.conversations) {
-          for (const botIndex of s.botIndices) {
-            const msgs = (s.conversations as any)[botIndex] || []
-            upsertExclude(botIndex, prefixSigOf(msgs), Array.isArray(msgs) ? msgs.length : 0)
-          }
-        }
-
-        const botResponses: { botName: string; response: string; botIcon?: string }[] = []
-        if (s.botIndices && s.conversations) {
-          for (const botIndex of s.botIndices) {
-            const msgs = (s.conversations as any)[botIndex] || []
-            const botName = botNames[botIndex] || `Bot ${botIndex + 1}`
-            const botIcon = botIcons[botIndex]
-            const lastAssistant = Array.isArray(msgs)
-              ? msgs.findLast((m: any) => m && m.author !== 'user' && typeof m.text === 'string' && m.text.trim() !== '')
-              : undefined
-            if (lastAssistant?.text) {
-              botResponses.push({ botName, response: String(lastAssistant.text), botIcon })
-            }
-          }
-        }
-
-        const sessionKey = `snap:${s.sessionUUID}`
-        const sessionBotNames = s.botIndices?.map((idx: number) => botNames[idx] || `Bot ${idx + 1}`) || []
+      for (const m of snapMetas) {
+        const sessionKey = `snap:${m.sessionUUID}`
+        metaMap.set(sessionKey, m)
+        const sessionBotNames = m.botIndices.map((idx) => botNames[idx] || `Bot ${idx + 1}`)
+        const sessionBotIcons = m.botIndices.map((idx) => botIcons[idx] || '')
         const searchString = [
           sessionBotNames.join(' '),
-          firstUserMsg?.text ? String(firstUserMsg.text) : '',
-          s.pairName || '',
-          ...botResponses.map((r) => r.response),
+          m.searchPreview,
+          m.pairName || '',
         ].join(' ').toLowerCase()
-
         all.push({
           type: 'sessionSnapshot',
-          sessionUUID: s.sessionUUID,
-          createdAt: s.createdAt,
-          lastUpdated: s.lastUpdated,
-          messageCount: s.totalMessageCount,
-          botIndices: s.botIndices,
-          layout: s.layout,
-          pairName: s.pairName,
-          firstMessage: firstUserMsg?.text ? String(firstUserMsg.text) : undefined,
-          botResponses: botResponses.length ? botResponses : undefined,
+          sessionUUID: m.sessionUUID,
+          createdAt: m.createdAt ?? m.lastUpdated,
+          lastUpdated: m.lastUpdated,
+          messageCount: m.messageCount,
+          botIndices: m.botIndices,
+          layout: m.layout || '',
+          pairName: m.pairName,
+          firstMessage: m.searchPreview || undefined,
           botNames: sessionBotNames,
-          botIcons: s.botIndices?.map((idx: number) => botIcons[idx] || ''),
+          botIcons: sessionBotIcons,
           _sessionKey: sessionKey,
           _searchString: searchString,
         })
       }
 
-      // Legacy All-In-One sessions (pre sessionSnapshots)
-      const legacyAllInOneSessions = await loadAllInOneSessions()
-      for (const s of legacyAllInOneSessions) {
-        const allMessages = Object.values(s.conversations || {}).flatMap((convs: any[]) =>
-          Array.isArray(convs) ? convs.flatMap((c: any) => c.messages || []) : [],
-        )
-        const firstUserMsg = allMessages.find(
-          (m: any) => m.author === 'user' && typeof m.text === 'string' && m.text.trim() !== '',
-        )
-
-        const sessionKey = `aio:${s.id}`
-        const sessionBotNames = s.botIndices?.map((idx: number) => botNames[idx] || `Bot ${idx + 1}`) || []
+      for (const m of aioMetas) {
+        const sessionKey = `aio:${m.sessionId}`
+        metaMap.set(sessionKey, m)
+        const sessionBotNames = m.botIndices.map((idx) => botNames[idx] || `Bot ${idx + 1}`)
+        const sessionBotIcons = m.botIndices.map((idx) => botIcons[idx] || '')
         const searchString = [
           sessionBotNames.join(' '),
-          firstUserMsg?.text ? String(firstUserMsg.text) : '',
-          s.pairName || '',
+          m.searchPreview,
+          m.pairName || '',
         ].join(' ').toLowerCase()
-
         all.push({
           type: 'allInOneLegacy',
-          sessionId: s.id,
-          createdAt: s.createdAt,
-          lastUpdated: s.lastUpdated,
-          messageCount: s.messageCount || 0,
-          botIndices: s.botIndices,
-          layout: s.layout,
-          pairName: s.pairName,
-          firstMessage: firstUserMsg?.text ? String(firstUserMsg.text) : undefined,
+          sessionId: m.sessionId,
+          createdAt: m.createdAt,
+          lastUpdated: m.lastUpdated,
+          messageCount: m.messageCount,
+          botIndices: m.botIndices,
+          layout: m.layout,
+          pairName: m.pairName,
+          firstMessage: m.searchPreview || undefined,
           botNames: sessionBotNames,
-          botIcons: s.botIndices?.map((idx: number) => botIcons[idx] || ''),
+          botIcons: sessionBotIcons,
           _sessionKey: sessionKey,
           _searchString: searchString,
         })
-
-        if (s.botIndices && s.conversations) {
-          const botResponses: { botName: string; response: string; botIcon?: string }[] = []
-          for (const botIndex of s.botIndices) {
-            const targetConversationId = (s as any).conversationSnapshots?.[botIndex] || (s.conversations as any)[botIndex]?.[0]?.id
-            const convs = (s.conversations as any)[botIndex] || []
-            const target = targetConversationId ? convs.find((c: any) => c.id === targetConversationId) : convs[0]
-            if (target && Array.isArray(target.messages)) {
-              upsertExclude(botIndex, prefixSigOf(target.messages), target.messages.length)
-              const botName = botNames[botIndex] || `Bot ${botIndex + 1}`
-              const botIcon = botIcons[botIndex]
-              const lastAssistant = target.messages.findLast((m: any) => m && m.author !== 'user' && typeof m.text === 'string' && m.text.trim() !== '')
-              if (lastAssistant?.text) {
-                botResponses.push({ botName, response: String(lastAssistant.text), botIcon })
-              }
-            }
-          }
-
-          if (botResponses.length) {
-            const lastSession = all[all.length - 1]
-            const updatedSearchString = [
-              lastSession._searchString,
-              ...botResponses.map((r) => r.response),
-            ].join(' ').toLowerCase()
-
-            all[all.length - 1] = {
-              ...(all[all.length - 1] as any),
-              botResponses,
-              _searchString: updatedSearchString,
-            }
-          }
-        }
       }
 
-      const botCount = (config.customApiConfigs || []).length
-      for (let i = 0; i < botCount; i++) {
-        const conversations = await loadHistoryMessages(i)
-        for (const c of conversations) {
-          const pfx = prefixSigOf(c.messages)
-          const minLen = excludedByBotPrefix.get(i)?.get(pfx)
-          if (minLen && Array.isArray(c.messages) && c.messages.length >= minLen) {
-            continue
-          }
-          const firstUserMsg = c.messages.find((m: any) => m.author === 'user' && typeof m.text === 'string' && m.text.trim() !== '')
-          const lastAssistant = c.messages.findLast((m: any) => m && m.author !== 'user' && typeof m.text === 'string' && m.text.trim() !== '')
-
-          const sessionKey = `single:${i}:${c.id}`
-          const botName = botNames[i] || `Bot ${i + 1}`
-          const searchString = [
-            botName,
-            firstUserMsg?.text ? String(firstUserMsg.text) : '',
-            lastAssistant?.text ? String(lastAssistant.text) : '',
-          ].join(' ').toLowerCase()
-
-          all.push({
-            type: 'single',
-            botIndex: i,
-            conversationId: c.id,
-            createdAt: c.createdAt,
-            lastUpdated: c.createdAt,
-            messageCount: c.messages.length,
-            firstMessage: firstUserMsg?.text ? String(firstUserMsg.text) : undefined,
-            lastMessage: lastAssistant?.text ? String(lastAssistant.text) : undefined,
-            botNames: [botName],
-            botIcons: [botIcons[i] || ''],
-            _sessionKey: sessionKey,
-            _searchString: searchString,
-          })
-        }
+      for (const m of singleMetas) {
+        const dedupKey = `${m.botIndex}:${m.conversationId}`
+        if (aioOwnedConvs.has(dedupKey)) continue
+        const sessionKey = `single:${m.botIndex}:${m.conversationId}`
+        metaMap.set(sessionKey, m)
+        const botName = botNames[m.botIndex] || `Bot ${m.botIndex + 1}`
+        const botIcon = botIcons[m.botIndex] || ''
+        all.push({
+          type: 'single',
+          botIndex: m.botIndex,
+          conversationId: m.conversationId,
+          createdAt: m.createdAt,
+          lastUpdated: m.createdAt,
+          messageCount: 0,
+          botNames: [botName],
+          botIcons: [botIcon],
+          _sessionKey: sessionKey,
+          _searchString: botName.toLowerCase(),
+        })
       }
 
       all.sort((a, b) => b.lastUpdated - a.lastUpdated)
+      metaMapRef.current = metaMap
+      // Deep search キャッシュは sessions が変わるとリセットすべき
+      setSearchResetKey((k) => k + 1)
       setSessions(all)
     } finally {
       setLoadingSessions(false)
@@ -326,9 +195,14 @@ const HistoryPage: FC = () => {
   }, [loadSessionsData])
 
   useEffect(() => {
-    setSessionVisibleCount(100)
+    setSessionVisibleCount(50)
     setSelectedSessionKey(null)
   }, [activeTab, sessionSearch])
+
+  // タブ切り替え時は deep search キャッシュをクリア（古いタブの結果が残らないように）
+  useEffect(() => {
+    setSearchResetKey((k) => k + 1)
+  }, [activeTab])
 
   useEffect(() => {
     if (!selectedSessionKey) return
@@ -345,11 +219,26 @@ const HistoryPage: FC = () => {
     return activeTab === 'allInOne' ? allInOne : individual
   }, [activeTab, sessions])
 
+  // Deep search はフックに委譲（本文を遅延ロード+チャンク走査+デバウンス+キャッシュ）
+  const getMeta = useCallback((sessionKey: string) => metaMapRef.current.get(sessionKey), [])
+  const { deepMatches, searchProgress } = useDeepSearch({
+    query: sessionSearch,
+    baseItems: baseSessionsByTab,
+    getMeta,
+    resetKey: searchResetKey,
+  })
+
+  // 検索: 即時はプレビュー一致のみ、deep search の結果は届き次第合流
   const filteredSessions = useMemo(() => {
-    if (!sessionSearch.trim()) return baseSessionsByTab
-    const q = sessionSearch.toLowerCase()
-    return baseSessionsByTab.filter((s) => s._searchString.includes(q))
-  }, [baseSessionsByTab, sessionSearch])
+    const q = sessionSearch.trim().toLowerCase()
+    if (!q) return baseSessionsByTab
+    const deep = deepMatches.get(q)
+    return baseSessionsByTab.filter((s) => {
+      if (s._searchString.includes(q)) return true
+      if (deep && deep.has(s._sessionKey)) return true
+      return false
+    })
+  }, [baseSessionsByTab, sessionSearch, deepMatches])
 
   const visibleSessions = useMemo(() => {
     return filteredSessions.slice(0, sessionVisibleCount)
@@ -368,6 +257,20 @@ const HistoryPage: FC = () => {
     })
   }, [baseSessionsByTab.length, filteredSessions.length, t, visibleSessions.length])
 
+  const searchProgressText = useMemo(() => {
+    if (!searchProgress) return ''
+    return t('Deep searching... ({{scanned}}/{{total}})', searchProgress) as string
+  }, [searchProgress, t])
+
+  // プレビューロード進捗（previewMap から派生、独立 state 不要）
+  const previewProgressText = useMemo(() => {
+    const total = visibleSessions.length
+    if (total === 0) return ''
+    const loaded = visibleSessions.reduce((n, s) => (previewMap.has(s._sessionKey) ? n + 1 : n), 0)
+    if (loaded >= total) return ''
+    return t('Loading previews... ({{loaded}}/{{total}})', { loaded, total }) as string
+  }, [visibleSessions, previewMap, t])
+
   const loadMoreSessions = useCallback(
     (count: number) => {
       setSessionVisibleCount((prev) => Math.min(prev + count, filteredSessions.length))
@@ -375,12 +278,55 @@ const HistoryPage: FC = () => {
     [filteredSessions.length],
   )
 
+  // プレビュー遅延ロード: 新しいセッションが可視化されたらバックグラウンドで取得
+  useEffect(() => {
+    const itemsToPreview = visibleSessions.filter((s) => !previewMap.has(s._sessionKey))
+    if (itemsToPreview.length === 0) return
+
+    const loadPreviews = async () => {
+      const config = await getUserConfig()
+      const botNames = (config.customApiConfigs || []).map((c, i) => c.name || `Bot ${i + 1}`)
+      const botIcons = (config.customApiConfigs || []).map((c) => c.avatar || '')
+
+      for (const item of itemsToPreview) {
+        const meta = metaMapRef.current.get(item._sessionKey)
+        if (!meta) {
+          // メタが無い場合も「処理済み」マーカーを残す（進捗カウントから外す）
+          setPreviewMap((prev) => new Map(prev).set(item._sessionKey, {}))
+          continue
+        }
+
+        try {
+          const preview = await getSessionPreview(meta, botNames, botIcons)
+          setPreviewMap((prev) => new Map(prev).set(item._sessionKey, preview))
+        } catch (e) {
+          // 失敗時も「処理済み」マーカーを残す
+          setPreviewMap((prev) => new Map(prev).set(item._sessionKey, {}))
+        }
+      }
+    }
+    loadPreviews()
+  }, [visibleSessions, previewMap])
+
+  // visibleSessions に previewMap をマージしたデータを返す
+  const sessionsWithPreview = useMemo(() => {
+    return visibleSessions.map((s) => {
+      const preview = previewMap.get(s._sessionKey)
+      if (!preview) return s
+      return {
+        ...s,
+        firstMessage: preview.firstMessage ?? s.firstMessage,
+        botResponses: preview.botResponses ?? s.botResponses,
+      }
+    })
+  }, [visibleSessions, previewMap])
+
   const openAppTab = useCallback(async (hashPath: string) => {
     const url = `${Browser.runtime.getURL('app.html')}${hashPath}`
     await Browser.tabs.create({ url })
   }, [])
 
-  const restoreSession = useCallback(
+  const doRestoreSession = useCallback(
     async (item: SessionListItem) => {
       if (item.type === 'sessionSnapshot') {
         await openAppTab(`#/?restoreSessionUUID=${encodeURIComponent(item.sessionUUID)}`)
@@ -397,9 +343,134 @@ const HistoryPage: FC = () => {
     [openAppTab],
   )
 
+  const restoreSession = useCallback(
+    async (item: SessionListItem) => {
+      const config = await getUserConfig()
+      const allBots = config.customApiConfigs || []
+      const availableBots = allBots
+        .map((b, i) => ({ index: i, name: b.name || `Bot ${i + 1}` }))
+        .filter((_, i) => allBots[i]?.enabled === true)
+
+      const botIndicesToCheck =
+        item.type === 'single' ? [item.botIndex] : item.botIndices ?? []
+
+      const missingBotIndices = botIndicesToCheck.filter(
+        (bi) => !allBots[bi] || allBots[bi].enabled !== true,
+      )
+
+      if (missingBotIndices.length > 0) {
+        const missingBotNames = missingBotIndices.map(
+          (bi) => allBots[bi]?.name || `Bot ${bi + 1}`,
+        )
+        setRestoreWarning({
+          type: item.type === 'single' ? 'individual_bot_missing' : 'aio_bots_missing',
+          item,
+          missingBotIndices,
+          missingBotNames,
+          availableBots,
+        })
+        return
+      }
+
+      await doRestoreSession(item)
+    },
+    [doRestoreSession],
+  )
+
+  const handleRestoreWarningContinue = useCallback(
+    async (warning: RestoreWarning, selectedBotIndex?: number) => {
+      setRestoreWarning(null)
+
+      if (warning.type === 'individual_bot_missing' && selectedBotIndex !== undefined) {
+        // 別ボットで続行: 旧ボットの会話を読み込み、新ボットのストレージにコピーして復元
+        const item = warning.item as SessionListItem & { type: 'single'; botIndex: number; conversationId: string }
+        const conversations = await loadHistoryMessages(item.botIndex)
+        const conv = conversations.find((c) => c.id === item.conversationId)
+        if (!conv || conv.messages.length === 0) {
+          // メッセージが見つからない場合は新ボットへ素直に遷移
+          await openAppTab(`#/chat/custom/${selectedBotIndex}`)
+          return
+        }
+        const newConvId = `from-bot${item.botIndex}-${uuid()}`
+        await setConversationMessages(selectedBotIndex, newConvId, conv.messages)
+        await openAppTab(
+          `#/chat/custom/${selectedBotIndex}?restoreConversationId=${encodeURIComponent(newConvId)}`,
+        )
+        return
+      }
+
+      // AIO: 有効なボットのみで続行（URL経由でリストア、MultiBotChatPanel側でフィルタリング）
+      await doRestoreSession(warning.item)
+    },
+    [doRestoreSession, openAppTab],
+  )
+
+  const handleCopyConversation = useCallback(async (warning: RestoreWarning) => {
+    setCopyLoading(true)
+    try {
+      const config = await getUserConfig()
+      const botNames = (config.customApiConfigs || []).map((c, i) => c.name || `Bot ${i + 1}`)
+      const item = warning.item
+      const sections: string[] = []
+
+      if (item.type === 'single') {
+        const conversations = await loadHistoryMessages(item.botIndex)
+        const conv = conversations.find((c) => c.id === item.conversationId)
+        if (conv && conv.messages.length > 0) {
+          const botName = botNames[item.botIndex] || `Bot ${item.botIndex + 1}`
+          sections.push(formatConversationAsMarkdown(conv.messages, botName))
+        }
+      } else if (item.type === 'sessionSnapshot') {
+        const snapshot = await getSessionSnapshot(item.sessionUUID)
+        if (snapshot) {
+          if (item.pairName) sections.push(`# ${item.pairName}\n`)
+          for (const botIndex of item.botIndices) {
+            const msgs = snapshot.conversations[botIndex] || []
+            if (msgs.length > 0) {
+              const botName = botNames[botIndex] || `Bot ${botIndex + 1}`
+              sections.push(`## ${botName}\n\n${formatConversationAsMarkdown(msgs, botName)}`)
+            }
+          }
+        }
+      } else if (item.type === 'allInOneLegacy') {
+        const aioSessions = await loadAllInOneSessions()
+        const session = aioSessions.find((s) => s.id === item.sessionId)
+        if (session) {
+          if (item.pairName) sections.push(`# ${item.pairName}\n`)
+          for (const botIndex of item.botIndices) {
+            const allConvs = session.conversations[botIndex] || []
+            const snapId = session.conversationSnapshots?.[botIndex]
+            const targetConv = snapId
+              ? allConvs.find((c) => c.id === snapId)
+              : allConvs[0]
+            if (targetConv && targetConv.messages.length > 0) {
+              const botName = botNames[botIndex] || `Bot ${botIndex + 1}`
+              sections.push(`## ${botName}\n\n${formatConversationAsMarkdown(targetConv.messages, botName)}`)
+            }
+          }
+        }
+      }
+
+      const markdown = sections.join('\n\n---\n\n')
+      if (markdown) {
+        await navigator.clipboard.writeText(markdown)
+      }
+    } finally {
+      setCopyLoading(false)
+    }
+  }, [])
 
   return (
     <PagePanel title={t('View history') as string}>
+      {restoreWarning && (
+        <RestoreWarningModal
+          warning={restoreWarning}
+          onContinue={handleRestoreWarningContinue}
+          onCopyConversation={handleCopyConversation}
+          copyLoading={copyLoading}
+          onClose={() => setRestoreWarning(null)}
+        />
+      )}
       <MigrationProgress showOnHistoryPage onMigrationComplete={loadSessionsData} />
       <div className="px-10 pb-4 h-full flex flex-col">
         <div className="flex flex-row items-center justify-between gap-3 my-2">
@@ -431,7 +502,15 @@ const HistoryPage: FC = () => {
         <div className="flex flex-row items-center gap-3 my-2">
           <SearchInput value={sessionSearch} onChange={setSessionSearch} />
         </div>
-        <div className="text-xs text-primary-text opacity-85 mb-1 px-1 font-medium">{sessionStatsText}</div>
+        <div className="text-xs text-primary-text opacity-85 mb-1 px-1 font-medium flex flex-row items-center gap-2">
+          <span>{sessionStatsText}</span>
+          {searchProgressText && (
+            <span className="opacity-70">· {searchProgressText}</span>
+          )}
+          {previewProgressText && (
+            <span className="opacity-70">· {previewProgressText}</span>
+          )}
+        </div>
 
         {/* Scrollable session list container */}
         <div
@@ -450,7 +529,7 @@ const HistoryPage: FC = () => {
             <div className="pr-1">
               <ViewportList
                 viewportRef={sessionListRef}
-                items={visibleSessions}
+                items={sessionsWithPreview}
                 initialAlignToTop={true}
               >
                 {(s) => {
@@ -478,20 +557,19 @@ const HistoryPage: FC = () => {
           )}
         </div>
 
-        {/* Load more buttons outside scrollable area */}
         {canLoadMoreSessions && (
           <div className="flex flex-row items-center justify-center gap-2 py-2">
             <button
               className="px-3 py-1.5 rounded-xl text-sm font-medium border border-primary-border hover:bg-secondary/50 transition-colors"
-              onClick={() => loadMoreSessions(100)}
+              onClick={() => loadMoreSessions(50)}
             >
-              {t('Load 100 more')}
+              {t('Load 50 more')}
             </button>
             <button
               className="px-3 py-1.5 rounded-xl text-sm font-medium border border-primary-border hover:bg-secondary/50 transition-colors"
-              onClick={() => loadMoreSessions(500)}
+              onClick={() => loadMoreSessions(300)}
             >
-              {t('Load 500 more')}
+              {t('Load 300 more')}
             </button>
           </div>
         )}

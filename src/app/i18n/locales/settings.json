@@ -197,12 +197,6 @@
     "zh-CN": "同时和两个以上的机器人聊天",
     "zh-TW": "同時與超過2個機器人聊天"
   },
-  "Full-text search for chat history": {
-    "en": "Full-text search for chat history",
-    "ja": "チャット履歴の全文検索",
-    "zh-CN": "全文搜索聊天记录",
-    "zh-TW": "聊天記錄の全文搜索"
-  },
   "Customize theme": {
     "en": "Customize theme",
     "ja": "テーマのカスタマイズ",
@@ -460,6 +454,186 @@
     "ja": "データのエクスポート/インポート",
     "zh-CN": "导出/导入数据",
     "zh-TW": "匯出/匯入資料"
+  },
+  "Export size warning": {
+    "en": "Your history data is about {{size}} MB. Exporting large data may cause an error (currently being improved). Continue?",
+    "ja": "履歴データが約 {{size}} MB あります。データ量が大きい場合、エクスポート中にエラーが発生する可能性があります（現在改善中です）。続行しますか？",
+    "zh-CN": "历史数据约有 {{size}} MB。数据量较大时，导出过程中可能会出现错误（正在改进中）。是否继续？",
+    "zh-TW": "歷史資料約有 {{size}} MB。資料量較大時，匯出過程中可能會發生錯誤（正在改進中）。是否繼續？"
+  },
+  "Exporting...": {
+    "en": "Exporting...",
+    "ja": "エクスポート中...",
+    "zh-CN": "正在导出...",
+    "zh-TW": "正在匯出..."
+  },
+  "Importing...": {
+    "en": "Importing...",
+    "ja": "インポート中...",
+    "zh-CN": "正在导入...",
+    "zh-TW": "正在匯入..."
+  },
+  "Indexing...": {
+    "en": "Indexing...",
+    "ja": "インデックス作成中...",
+    "zh-CN": "正在建立索引...",
+    "zh-TW": "正在建立索引..."
+  },
+  "Building file...": {
+    "en": "Building file...",
+    "ja": "ファイルを生成中...",
+    "zh-CN": "正在生成文件...",
+    "zh-TW": "正在生成檔案..."
+  },
+  "export_progress_key": {
+    "en": "({{current}}/{{total}}) {{key}}",
+    "ja": "({{current}}/{{total}}) {{key}}",
+    "zh-CN": "({{current}}/{{total}}) {{key}}",
+    "zh-TW": "({{current}}/{{total}}) {{key}}"
+  },
+  "export_progress_key_skipped": {
+    "en": "({{current}}/{{total}}) {{key}} — skipped",
+    "ja": "({{current}}/{{total}}) {{key}} — スキップ",
+    "zh-CN": "({{current}}/{{total}}) {{key}} — 已跳过",
+    "zh-TW": "({{current}}/{{total}}) {{key}} — 已略過"
+  },
+  "Reading file...": {
+    "en": "Reading {{size}}MB file...",
+    "ja": "{{size}}MBのファイルを読み込み中...",
+    "zh-CN": "正在读取 {{size}}MB 文件...",
+    "zh-TW": "正在讀取 {{size}}MB 檔案..."
+  },
+  "Parsing JSON...": {
+    "en": "Parsing JSON...",
+    "ja": "JSONを解析中...",
+    "zh-CN": "正在解析 JSON...",
+    "zh-TW": "正在解析 JSON..."
+  },
+  "Failed to read import file": {
+    "en": "Failed to read import file: {{error}}\n\nFile size: {{size}}MB",
+    "ja": "インポートファイルの読み込みに失敗しました: {{error}}\n\nファイルサイズ: {{size}}MB",
+    "zh-CN": "导入文件读取失败：{{error}}\n\n文件大小：{{size}}MB",
+    "zh-TW": "匯入檔案讀取失敗：{{error}}\n\n檔案大小：{{size}}MB"
+  },
+  "Confirm import overwrite": {
+    "en": "Are you sure you want to import data? This will overwrite your current data.",
+    "ja": "データをインポートしますか？現在のデータは上書きされます。",
+    "zh-CN": "确定要导入数据吗？这将覆盖当前数据。",
+    "zh-TW": "確定要匯入資料嗎？這將覆寫目前資料。"
+  },
+  "Clearing local storage...": {
+    "en": "Clearing local storage...",
+    "ja": "ローカルストレージをクリア中...",
+    "zh-CN": "正在清空本地存储...",
+    "zh-TW": "正在清空本地儲存..."
+  },
+  "Clearing sync storage...": {
+    "en": "Clearing sync storage...",
+    "ja": "同期ストレージをクリア中...",
+    "zh-CN": "正在清空同步存储...",
+    "zh-TW": "正在清空同步儲存..."
+  },
+  "import_progress_local": {
+    "en": "local ({{current}}/{{total}}) {{key}}",
+    "ja": "local ({{current}}/{{total}}) {{key}}",
+    "zh-CN": "local ({{current}}/{{total}}) {{key}}",
+    "zh-TW": "local ({{current}}/{{total}}) {{key}}"
+  },
+  "import_progress_sync": {
+    "en": "sync ({{current}}/{{total}}) {{key}}",
+    "ja": "sync ({{current}}/{{total}}) {{key}}",
+    "zh-CN": "sync ({{current}}/{{total}}) {{key}}",
+    "zh-TW": "sync ({{current}}/{{total}}) {{key}}"
+  },
+  "Restoring localStorage...": {
+    "en": "Restoring localStorage...",
+    "ja": "localStorageを復元中...",
+    "zh-CN": "正在恢复 localStorage...",
+    "zh-TW": "正在還原 localStorage..."
+  },
+  "Requesting host permissions...": {
+    "en": "Requesting host permissions...",
+    "ja": "ホスト権限をリクエスト中...",
+    "zh-CN": "正在请求主机权限...",
+    "zh-TW": "正在請求主機權限..."
+  },
+  "Done.": {
+    "en": "Done.",
+    "ja": "完了。",
+    "zh-CN": "完成。",
+    "zh-TW": "完成。"
+  },
+  "Import completed": {
+    "en": "Import completed",
+    "ja": "インポートが完了しました",
+    "zh-CN": "导入完成",
+    "zh-TW": "匯入完成"
+  },
+  "Import completed with warnings": {
+    "en": "Import completed with warnings",
+    "ja": "警告ありでインポートが完了しました",
+    "zh-CN": "导入完成（含警告）",
+    "zh-TW": "匯入完成（含警告）"
+  },
+  "Import completed successfully.": {
+    "en": "Import completed successfully.",
+    "ja": "インポートが正常に完了しました。",
+    "zh-CN": "导入成功完成。",
+    "zh-TW": "匯入成功完成。"
+  },
+  "import_failure_summary": {
+    "en": "\n\n{{count}} item(s) failed to import:\n{{list}}",
+    "ja": "\n\n{{count}}件のインポートに失敗しました:\n{{list}}",
+    "zh-CN": "\n\n{{count}} 项导入失败：\n{{list}}",
+    "zh-TW": "\n\n{{count}} 項匯入失敗：\n{{list}}"
+  },
+  "import_failure_more": {
+    "en": "\n... and {{count}} more",
+    "ja": "\n... 他 {{count}} 件",
+    "zh-CN": "\n... 还有 {{count}} 项",
+    "zh-TW": "\n... 還有 {{count}} 項"
+  },
+  "Copy to clipboard": {
+    "en": "Copy to clipboard",
+    "ja": "クリップボードにコピー",
+    "zh-CN": "复制到剪贴板",
+    "zh-TW": "複製到剪貼簿"
+  },
+  "Reload now": {
+    "en": "Reload now",
+    "ja": "今すぐリロード",
+    "zh-CN": "立即重新加载",
+    "zh-TW": "立即重新載入"
+  },
+  "import_summary_sessions": {
+    "en": "Chat sessions: {{count}}",
+    "ja": "チャットセッション: {{count}}件",
+    "zh-CN": "聊天会话：{{count}}",
+    "zh-TW": "聊天工作階段：{{count}}"
+  },
+  "import_summary_chatbots": {
+    "en": "AI chatbots: {{count}}{{names}}",
+    "ja": "AIチャットボット: {{count}}{{names}}",
+    "zh-CN": "AI 机器人：{{count}}{{names}}",
+    "zh-TW": "AI 機器人：{{count}}{{names}}"
+  },
+  "import_summary_pairs": {
+    "en": "Saved pairs: {{count}}{{names}}",
+    "ja": "保存済みペア: {{count}}{{names}}",
+    "zh-CN": "已保存配对：{{count}}{{names}}",
+    "zh-TW": "已儲存配對：{{count}}{{names}}"
+  },
+  "import_summary_theme": {
+    "en": "Theme: {{theme}}",
+    "ja": "テーマ: {{theme}}",
+    "zh-CN": "主题：{{theme}}",
+    "zh-TW": "主題：{{theme}}"
+  },
+  "import_summary_language": {
+    "en": "Language: {{language}}",
+    "ja": "言語: {{language}}",
+    "zh-CN": "语言：{{language}}",
+    "zh-TW": "語言：{{language}}"
   },
   "Select Items": {
     "en": "",

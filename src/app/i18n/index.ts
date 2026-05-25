@@ -8,6 +8,7 @@ import attachmentModule from './locales/attachment.json'
 import chatModule from './locales/chat.json'
 import commonModule from './locales/common.json'
 import errorsModule from './locales/errors.json'
+import historyModule from './locales/history.json'
 import imageModule from './locales/image.json'
 import modalsModule from './locales/modals.json'
 import releaseNotesModule from './locales/release-notes.json'
@@ -45,6 +46,7 @@ function buildResources(...modules: I18nModule[]): Resource {
 const resources = buildResources(
   commonModule as unknown as I18nModule,
   chatModule as unknown as I18nModule,
+  historyModule as unknown as I18nModule,
   settingsModule as unknown as I18nModule,
   apiModule as unknown as I18nModule,
   imageModule as unknown as I18nModule,

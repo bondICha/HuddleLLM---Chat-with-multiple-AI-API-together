@@ -590,3 +590,295 @@ export async function isMigrationCompleted(): Promise<boolean> {
   const status = result[MIGRATION_STATUS_KEY] as MigrationState | undefined
   return status?.status === 'completed'
 }
+
+// ============================================================================
+// Lightweight metadata API for HistoryPage list rendering
+// No message bodies are loaded — keeps memory bounded for large histories.
+// Bodies are fetched lazily via getSessionFullText() (deep search) or
+// existing restore paths (click to restore).
+// ============================================================================
+
+export interface SnapshotMeta {
+  type: 'snap'
+  sessionUUID: string
+  lastUpdated: number
+  messageCount: number
+  botIndices: number[]
+  searchPreview: string
+  createdAt?: number
+  layout?: string
+  pairName?: string
+}
+
+export interface AioMeta {
+  type: 'aio'
+  sessionId: string
+  lastUpdated: number
+  messageCount: number
+  botIndices: number[]
+  searchPreview: string
+  createdAt: number
+  layout: string
+  pairName?: string
+  conversationSnapshots?: { [botIndex: number]: string }
+}
+
+export interface SingleMeta {
+  type: 'single'
+  botIndex: number
+  conversationId: string
+  createdAt: number
+}
+
+export async function loadSnapshotMetas(): Promise<SnapshotMeta[]> {
+  const migrated = await isMigrationCompleted()
+
+  if (migrated) {
+    const index = await loadSessionIndexV2()
+    return index.sessions
+      .filter((s) => s.type === 'snap')
+      .map((s) => ({
+        type: 'snap' as const,
+        sessionUUID: s.id,
+        lastUpdated: s.lastUpdated,
+        messageCount: s.messageCount,
+        botIndices: s.botIndices || [],
+        searchPreview: s.searchPreview || '',
+      }))
+      .sort((a, b) => b.lastUpdated - a.lastUpdated)
+  }
+
+  // V1 fallback: read array but extract meta only, drop bodies for memory safety
+  const { sessionSnapshots = [] } = await Browser.storage.local.get('sessionSnapshots')
+  const metas: SnapshotMeta[] = (sessionSnapshots as SessionSnapshot[]).map((s) => ({
+    type: 'snap' as const,
+    sessionUUID: s.sessionUUID,
+    lastUpdated: s.lastUpdated,
+    messageCount: s.totalMessageCount,
+    botIndices: s.botIndices || [],
+    searchPreview: extractSearchPreview(s),
+    createdAt: s.createdAt,
+    layout: s.layout,
+    pairName: s.pairName,
+  }))
+  return metas.sort((a, b) => b.lastUpdated - a.lastUpdated)
+}
+
+export async function loadAioMetas(): Promise<AioMeta[]> {
+  const migrated = await isMigrationCompleted()
+
+  if (migrated) {
+    // From index: light list, then load AIO entities (small, no messages) for the rest
+    const index = await loadSessionIndexV2()
+    const aioEntries = index.sessions.filter((s) => s.type === 'aio')
+    if (aioEntries.length === 0) return []
+
+    const keys = aioEntries.map((s) => AIO_ENTITY_KEY(s.id))
+    const result = await Browser.storage.local.get(keys)
+
+    const metas: AioMeta[] = []
+    for (const entry of aioEntries) {
+      const entity = result[AIO_ENTITY_KEY(entry.id)] as AllInOneSession | undefined
+      if (!entity) continue
+      metas.push({
+        type: 'aio',
+        sessionId: entry.id,
+        lastUpdated: entry.lastUpdated,
+        messageCount: entry.messageCount,
+        botIndices: entity.botIndices || entry.botIndices || [],
+        searchPreview: entry.searchPreview || '',
+        createdAt: entity.createdAt,
+        layout: entity.layout,
+        pairName: entity.pairName,
+        conversationSnapshots: entity.conversationSnapshots,
+      })
+    }
+    return metas.sort((a, b) => b.lastUpdated - a.lastUpdated)
+  }
+
+  // V1 fallback: array load (no body loading inside)
+  const { allInOneSessions = [] } = await Browser.storage.local.get('allInOneSessions')
+  const metas: AioMeta[] = (allInOneSessions as AllInOneSession[]).map((s) => ({
+    type: 'aio' as const,
+    sessionId: s.id,
+    lastUpdated: s.lastUpdated,
+    messageCount: 0, // V1 entity doesn't store messageCount; computed lazily if needed
+    botIndices: s.botIndices || [],
+    searchPreview: s.pairName || '',
+    createdAt: s.createdAt,
+    layout: s.layout,
+    pairName: s.pairName,
+    conversationSnapshots: s.conversationSnapshots,
+  }))
+  return metas.sort((a, b) => b.lastUpdated - a.lastUpdated)
+}
+
+export async function loadSingleMetas(maxBots?: number): Promise<SingleMeta[]> {
+  // ボット数を customApiConfigs から動的に決定（ユーザが20以上のbotを持つケースに対応）
+  let botCount = maxBots
+  if (botCount === undefined) {
+    const { customApiConfigs } = await Browser.storage.local.get('customApiConfigs')
+    botCount = Array.isArray(customApiConfigs) ? customApiConfigs.length : 20
+  }
+  const metas: SingleMeta[] = []
+  for (let botIndex = 0; botIndex < botCount; botIndex++) {
+    const conversations = await loadHistoryConversations(botIndex)
+    for (const c of conversations) {
+      metas.push({
+        type: 'single',
+        botIndex,
+        conversationId: c.id,
+        createdAt: c.createdAt,
+      })
+    }
+  }
+  return metas.sort((a, b) => b.createdAt - a.createdAt)
+}
+
+// Concatenate all message text from a session for full-text search.
+// Loads body on demand; caller is responsible for chunking to avoid OOM.
+export async function getSessionFullText(
+  meta: SnapshotMeta | AioMeta | SingleMeta,
+): Promise<string> {
+  if (meta.type === 'snap') {
+    const [snap] = await loadSessionsByIds([meta.sessionUUID])
+    if (!snap) {
+      // V1 fallback
+      const { sessionSnapshots = [] } = await Browser.storage.local.get('sessionSnapshots')
+      const found = (sessionSnapshots as SessionSnapshot[]).find((s) => s.sessionUUID === meta.sessionUUID)
+      if (!found) return ''
+      return concatSnapshotText(found)
+    }
+    return concatSnapshotText(snap)
+  }
+
+  if (meta.type === 'single') {
+    const messages = await loadConversationMessages(meta.botIndex, meta.conversationId)
+    return concatMessagesText(messages)
+  }
+
+  // aio: load per-bot conversation messages referenced by conversationSnapshots
+  const snaps = meta.conversationSnapshots || {}
+  const parts: string[] = []
+  if (meta.pairName) parts.push(meta.pairName)
+  for (const botIndex of meta.botIndices) {
+    const convId = snaps[botIndex]
+    if (!convId) continue
+    const messages = await loadConversationMessages(botIndex, convId)
+    parts.push(concatMessagesText(messages))
+  }
+  return parts.join(' ')
+}
+
+function extractSearchPreview(session: SessionSnapshot): string {
+  const all = Object.values(session.conversations || {}).flat()
+  const firstUser = all.find((m: any) => m && m.author === 'user' && typeof m.text === 'string' && m.text.trim() !== '')
+  const preview = (firstUser as any)?.text || session.pairName || ''
+  return String(preview).substring(0, 200)
+}
+
+function concatSnapshotText(s: SessionSnapshot): string {
+  const parts: string[] = []
+  if (s.pairName) parts.push(s.pairName)
+  for (const botIndex of s.botIndices || []) {
+    const msgs = (s.conversations as any)?.[botIndex] || []
+    parts.push(concatMessagesText(msgs))
+  }
+  return parts.join(' ')
+}
+
+function concatMessagesText(messages: any[]): string {
+  if (!Array.isArray(messages)) return ''
+  const parts: string[] = []
+  for (const m of messages) {
+    if (m && typeof m.text === 'string') {
+      parts.push(m.text)
+    }
+  }
+  return parts.join(' ')
+}
+
+// Session preview: first user message + last assistant message per bot
+// Used for HistoryPage lazy loading - returns preview data without full body load
+export interface SessionPreview {
+  firstMessage?: string
+  botResponses?: { botName: string; response: string; botIcon?: string }[]
+}
+
+export async function getSessionPreview(
+  meta: SnapshotMeta | AioMeta | SingleMeta,
+  botNames: string[],
+  botIcons: string[],
+): Promise<SessionPreview> {
+  if (meta.type === 'snap') {
+    const [snap] = await loadSessionsByIds([meta.sessionUUID])
+    if (!snap) return {}
+    return extractSnapshotPreview(snap, botNames, botIcons)
+  }
+
+  if (meta.type === 'single') {
+    const messages = await loadConversationMessages(meta.botIndex, meta.conversationId)
+    return extractSinglePreview(messages, botNames[meta.botIndex], botIcons[meta.botIndex])
+  }
+
+  // aio: load per-bot conversation messages referenced by conversationSnapshots
+  const snaps = meta.conversationSnapshots || {}
+  const responses: { botName: string; response: string; botIcon?: string }[] = []
+  let firstMsg: string | undefined
+
+  for (const botIndex of meta.botIndices) {
+    const convId = snaps[botIndex]
+    if (!convId) continue
+    const messages = await loadConversationMessages(botIndex, convId)
+    const preview = extractSinglePreview(messages, botNames[botIndex], botIcons[botIndex])
+    if (preview.firstMessage && !firstMsg) firstMsg = preview.firstMessage
+    if (preview.botResponses?.[0]) responses.push(preview.botResponses[0])
+  }
+
+  return { firstMessage: firstMsg, botResponses: responses }
+}
+
+function extractSnapshotPreview(
+  s: SessionSnapshot,
+  botNames: string[],
+  botIcons: string[],
+): SessionPreview {
+  const responses: { botName: string; response: string; botIcon?: string }[] = []
+
+  for (const botIndex of s.botIndices || []) {
+    const msgs = (s.conversations as any)?.[botIndex] || []
+    const firstUser = msgs.find((m: any) => m?.author === 'user' && typeof m.text === 'string' && m.text.trim())
+    const lastBot = [...msgs].reverse().find((m: any) => m?.author !== 'user' && typeof m.text === 'string' && m.text.trim())
+
+    if (firstUser) {
+      responses.push({
+        botName: botNames[botIndex] || `Bot ${botIndex + 1}`,
+        response: lastBot?.text || '',
+        botIcon: botIcons[botIndex],
+      })
+    }
+  }
+
+  const firstUser = Object.values(s.conversations || {})
+    .flat()
+    .find((m: any) => m?.author === 'user' && typeof m.text === 'string' && m.text.trim())
+
+  return {
+    firstMessage: firstUser?.text,
+    botResponses: responses,
+  }
+}
+
+function extractSinglePreview(
+  messages: ChatMessageModel[],
+  botName: string,
+  botIcon: string,
+): SessionPreview {
+  const firstUser = messages.find((m) => m.author === 'user' && m.text?.trim())
+  const lastBot = [...messages].reverse().find((m) => m.author !== 'user' && m.text?.trim())
+
+  return {
+    firstMessage: firstUser?.text,
+    botResponses: lastBot ? [{ botName, response: lastBot.text, botIcon }] : undefined,
+  }
+}
