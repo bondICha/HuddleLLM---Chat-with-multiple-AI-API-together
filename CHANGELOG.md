@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Lazy-Loaded History with Deep Full-Text Search**: The history page now loads session metadata (timestamps, message counts, preview snippets) first, keeping large histories responsive. Message bodies are fetched on demand for deep search and restore, bounding memory usage.
 - **Deep Full-Text Search across All Sessions**: Searching scans the full text of all sessions in 20-item chunks with a 200ms debounce and a live progress indicator. Metadata previews return instantly; bodies are loaded lazily only for items that don't match the preview.
-- **Restore Warning Modal**: Restoring a session that will overwrite the current conversation now shows a confirmation dialog, preventing accidental data loss.
+- **Restore Warning Modal**: Restoring a session to an unconfigured or different bot now shows a dialog to choose how to proceed (assign to another bot or continue with valid bots only).
 
 ### Changed
 - Refactored `HistoryPage` internals: types and formatting extracted into dedicated `types.ts` and `format.ts` files.
@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 新功能
 - **历史记录延迟加载与全文搜索**：历史记录页面现在优先加载会话元数据（时间戳、消息数、预览片段），仅在需要时才获取消息正文，即使保存了数百个会话也能保持响应速度。
 - **全会话全文搜索（深度搜索）**：搜索以20条为单位逐步扫描所有会话的完整文本，支持200毫秒防抖和实时进度指示。元数据预览可即时匹配；未匹配项才会延迟加载正文进行深度搜索。
-- **恢复警告模态框**：恢复将覆盖当前对话的会话时，现在会显示确认对话框，防止意外数据丢失。
+- **恢复警告模态框**：恢复会话到未配置或不同的机器人时，现在会弹出对话框让你选择如何处理（分配到其他机器人或仅使用有效机器人继续）。
 
 ### 变更
 - 重构 `HistoryPage`：将类型和格式逻辑提取到独立的 `types.ts` 和 `format.ts` 文件中。
