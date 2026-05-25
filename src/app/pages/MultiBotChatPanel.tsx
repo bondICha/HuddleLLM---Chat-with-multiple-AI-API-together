@@ -3,6 +3,7 @@ import { atomWithStorage } from 'jotai/utils'
 import { sample, uniqBy } from 'lodash-es'
 import { FC, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { perfMark } from '~utils/perf'
 import { cx, uuid } from '~/utils'
 import Browser from 'webextension-polyfill'
@@ -19,6 +20,7 @@ import AllInOneInputArea from '~app/components/Chat/AllInOneInputArea'
 import { BtwStorageContext } from '~app/pages/BtwPage'
 import { Layout } from '~app/consts'
 import { useChat } from '~app/hooks/use-chat'
+import { useSessionRestore } from '~app/hooks/use-session-restore'
 import ConversationPanel from '../components/Chat/ConversationPanel'
 import {
   allInOnePairsAtom,
@@ -56,7 +58,7 @@ function getPanelCount(layout: Layout): number {
   }
 }
 
-/**
+ /**
  * 有効な（enabled）ボットのインデックスを取得
  */
 async function resolveEnabledBotIndices(): Promise<number[]> {
@@ -1109,177 +1111,17 @@ const MultiBotChatPanel: FC = () => {
       }
     })()
   }, [setSessionToRestore, t])
-  
-  // セッションスナップショット復元の処理
-  useEffect(() => {
-    const restoreSessionSnapshot = async () => {
-      if (sessionToRestore && sessionToRestore.type === 'sessionSnapshot') {
-        try {
-          const { botIndices, layout: sessionLayout, pairName, snapshotMessages, sessionUUID } = sessionToRestore
-          
-          // 復元されたセッションのUUIDを保持
-          setCurrentSessionUUID(sessionUUID || null)
-          
-          // セッションからlayoutを復元（文字列から適切な型に変換）
-          let restoredLayout: Layout;
-          if (sessionLayout === 'single' || sessionLayout === 'twoHorizon' || sessionLayout === 'sixGrid') {
-            restoredLayout = sessionLayout;
-          } else {
-            const layoutNum = typeof sessionLayout === 'string' ? parseInt(sessionLayout) : sessionLayout;
-            if (layoutNum === 2) restoredLayout = 2;
-            else if (layoutNum === 3) restoredLayout = 3;
-            else if (layoutNum === 4) restoredLayout = 4;
-            else restoredLayout = 2; // デフォルト
-          }
-          
-          // Session復元時の設定を直接適用
-          const sessionRestoreKey = `session-${sessionUUID}`
-          const newPairConfig: AllInOnePairConfig = {
-            ...DEFAULT_PAIR_CONFIG, // まずデフォルトでリセット
-            layout: restoredLayout,
-            pairName: pairName,
-            bots: botIndices || DEFAULT_BOTS, // 新しい共通設定
-          };
 
-          // 後方互換性のため古い形式も保持
-          if (botIndices) {
-            if (restoredLayout === 'single') newPairConfig.singlePanelBots = botIndices;
-            else if (restoredLayout === 2 || restoredLayout === 'twoHorizon') newPairConfig.twoPanelBots = botIndices;
-            else if (restoredLayout === 3) newPairConfig.threePanelBots = botIndices;
-            else if (restoredLayout === 4) newPairConfig.fourPanelBots = botIndices;
-            else if (restoredLayout === 'sixGrid') newPairConfig.sixPanelBots = botIndices;
-          }
+  // Use session restore hook
+  useSessionRestore({
+    sessionToRestore,
+    activeAllInOne,
+    setAllInOnePairs,
+    setAllInOneRestoreData,
+    setCurrentSessionUUID,
+    setSessionToRestore,
+  })
 
-          // Session復元設定を適用（タブローカルのみ）
-          setAllInOnePairs({
-            [sessionRestoreKey]: newPairConfig
-          });
-          // アクティブキーを変更せず、defaultを更新
-          setAllInOnePairs(prev => ({
-            ...prev,
-            default: newPairConfig
-          }));
-          
-          // スナップショットメッセージを各ボットに直接復元
-          setTimeout(() => {
-            if (snapshotMessages && botIndices) {
-              const restoreData: { [botIndex: number]: { conversationId: string; messages: any[] } } = {}
-              
-              for (const botIndex of botIndices) {
-                const messages = snapshotMessages[botIndex]
-                if (messages && messages.length > 0) {
-                  // 新しい会話IDを生成してスナップショットメッセージを復元
-                  restoreData[botIndex] = {
-                    conversationId: `snapshot-${sessionToRestore.sessionUUID}-${botIndex}`,
-                    messages: messages
-                  }
-                }
-              }
-              
-              console.log('Setting session snapshot restore data:', restoreData)
-              setAllInOneRestoreData(restoreData)
-              
-              // 復元データクリア
-              setTimeout(() => {
-                setAllInOneRestoreData(null)
-              }, 2000)
-            }
-          }, 300)
-          
-          setSessionToRestore(null)
-        } catch (error) {
-          console.error('Failed to restore session snapshot:', error)
-          setSessionToRestore(null)
-        }
-      }
-    }
-    
-    restoreSessionSnapshot()
-  }, [sessionToRestore, activeAllInOne, currentPairConfig, setAllInOnePairs, setSessionToRestore, setAllInOneRestoreData])
-
-  // All-in-oneセッション復元の処理（旧版・後方互換性用）
-  useEffect(() => {
-    const restoreAllInOneSession = async () => {
-      if (sessionToRestore && sessionToRestore.type === 'allInOne') {
-        try {
-          const { botIndices, layout: sessionLayout, pairName, conversations } = sessionToRestore
-          
-          // All-in-oneセッションの場合は新しいUUIDを生成（後方互換性のため）
-          setCurrentSessionUUID(null)
-          
-          // セッションからlayoutを復元（文字列から適切な型に変換）
-          let restoredLayout: Layout;
-          if (sessionLayout === 'single' || sessionLayout === 'twoHorizon' || sessionLayout === 'sixGrid') {
-            restoredLayout = sessionLayout;
-          } else {
-            const layoutNum = typeof sessionLayout === 'string' ? parseInt(sessionLayout) : sessionLayout;
-            if (layoutNum === 2) restoredLayout = 2;
-            else if (layoutNum === 3) restoredLayout = 3;
-            else if (layoutNum === 4) restoredLayout = 4;
-            else restoredLayout = 2; // デフォルト
-          }
-          setAllInOnePairs(prev => {
-            const newPairConfig: AllInOnePairConfig = {
-              ...DEFAULT_PAIR_CONFIG, // まずデフォルトでリセット
-              layout: restoredLayout,
-              pairName: pairName,
-              bots: botIndices || DEFAULT_BOTS, // 新しい共通設定
-            };
-
-            // 後方互換性のため古い形式も保持
-            if (botIndices) {
-              if (restoredLayout === 'single') newPairConfig.singlePanelBots = botIndices;
-              else if (restoredLayout === 2 || restoredLayout === 'twoHorizon') newPairConfig.twoPanelBots = botIndices;
-              else if (restoredLayout === 3) newPairConfig.threePanelBots = botIndices;
-              else if (restoredLayout === 4) newPairConfig.fourPanelBots = botIndices;
-              else if (restoredLayout === 'sixGrid') newPairConfig.sixPanelBots = botIndices;
-            }
-
-            return {
-              ...prev,
-              [activeAllInOne]: newPairConfig
-            };
-          });
-          
-          setTimeout(async () => {
-            try {
-              if (conversations && botIndices) {
-                const restoreData: { [botIndex: number]: { conversationId: string; messages: any[] } } = {}
-                
-                for (const botIndex of botIndices) {
-                  const botConversations = conversations[botIndex]
-                  if (botConversations && botConversations.length > 0) {
-                    const latestConversation = botConversations[0]
-                    restoreData[botIndex] = {
-                      conversationId: latestConversation.id,
-                      messages: latestConversation.messages
-                    }
-                  }
-                }
-                
-                console.log('Setting All-in-one restore data:', restoreData)
-                setAllInOneRestoreData(restoreData)
-                
-                setTimeout(() => {
-                  setAllInOneRestoreData(null)
-                }, 2000)
-              }
-            } catch (error) {
-              console.error('Failed to restore All-in-one conversations:', error)
-            }
-          }, 300)
-          
-          setSessionToRestore(null)
-        } catch (error) {
-          console.error('Failed to restore All-in-one session:', error)
-          setSessionToRestore(null)
-        }
-      }
-    }
-    
-    restoreAllInOneSession()
-  }, [sessionToRestore, activeAllInOne, currentPairConfig, setAllInOnePairs, setSessionToRestore, setAllInOneRestoreData])
-  
   if (layout === 'sixGrid') {
     return <SixBotChatPanel currentSessionUUID={currentSessionUUID} setCurrentSessionUUID={setCurrentSessionUUID} />
   }
