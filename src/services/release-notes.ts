@@ -6,6 +6,13 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.18.1',
+    notes: [
+      'releasenote_v2181_history_copy_download',
+      'releasenote_v2181_restore_error_fix',
+    ],
+  },
+  {
     version: '2.18.0',
     notes: [
       'releasenote_v2180_deep_search',

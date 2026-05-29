@@ -17,6 +17,18 @@
     "zh-CN": "恢复会话到未配置的机器人时，现在会弹出对话框让你选择如何处理。",
     "zh-TW": "恢復工作階段到未設定的機器人時，現在會彈出對話框讓你選擇如何處理。"
   },
+  "releasenote_v2181_history_copy_download": {
+    "en": "History sessions can now be copied as Markdown or downloaded as .md/.json files.",
+    "ja": "履歴セッションをMarkdown形式でコピー、または.md/.jsonファイルとしてダウンロードできるようになりました。",
+    "zh-CN": "历史会话现在可以复制为 Markdown 或下载为 .md/.json 文件。",
+    "zh-TW": "歷史會話現在可以複製為 Markdown 或下載為 .md/.json 文件。"
+  },
+  "releasenote_v2181_restore_error_fix": {
+    "en": "Fixed a bug that caused an error when restoring sessions with image/audio attachments.",
+    "ja": "画像・音声添付を含むセッションを復元時にエラーが発生する問題を修正しました。",
+    "zh-CN": "修复了恢复带有图片/音频附件的会话时出错的问题。",
+    "zh-TW": "修復了恢復帶有圖片/音頻附件的工作階段時出錯的問題。"
+  },
   "releasenote_v2171_provider_chatbot_relationship": {
     "en": "Provider cards now show which chatbots use them.",
     "ja": "プロバイダーカードにどのチャットボットが使用しているか表示されるようになりました。",
