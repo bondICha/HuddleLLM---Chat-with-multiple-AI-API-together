@@ -78,7 +78,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda, onRetry 
  
 
   const imageUrls = useMemo(() => {
-    return message.images ? message.images.map(img => URL.createObjectURL(img)) : []
+    return message.images ? message.images.filter((img) => img instanceof Blob).map(img => URL.createObjectURL(img)) : []
   }, [message.images])
 
   useEffect(() => {
@@ -86,7 +86,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda, onRetry 
   }, [imageUrls])
 
   const audioUrls = useMemo(() => {
-    return message.audioFiles ? message.audioFiles.map(file => ({ url: URL.createObjectURL(file), name: file.name })) : []
+    return message.audioFiles ? message.audioFiles.filter((file) => file instanceof Blob).map(file => ({ url: URL.createObjectURL(file), name: (file as File).name })) : []
   }, [message.audioFiles])
 
   useEffect(() => {
@@ -94,7 +94,7 @@ const ChatMessageCard: FC<Props> = ({ message, className, onPropaganda, onRetry 
   }, [audioUrls])
 
   const videoUrls = useMemo(() => {
-    return message.videoFiles ? message.videoFiles.map(file => ({ url: URL.createObjectURL(file), name: file.name })) : []
+    return message.videoFiles ? message.videoFiles.filter((file) => file instanceof Blob).map(file => ({ url: URL.createObjectURL(file), name: (file as File).name })) : []
   }, [message.videoFiles])
 
   useEffect(() => {

@@ -130,5 +130,59 @@
     "ja": "コピー中...",
     "zh-CN": "复制中...",
     "zh-TW": "複製中..."
+  },
+  "Copy as Markdown": {
+    "en": "Copy as Markdown",
+    "ja": "Markdownでコピー",
+    "zh-CN": "复制为 Markdown",
+    "zh-TW": "複製為 Markdown"
+  },
+  "Download .md": {
+    "en": "Download .md",
+    "ja": ".md をダウンロード",
+    "zh-CN": "下载 .md",
+    "zh-TW": "下載 .md"
+  },
+  "Download .json": {
+    "en": "Download .json",
+    "ja": ".json をダウンロード",
+    "zh-CN": "下载 .json",
+    "zh-TW": "下載 .json"
+  },
+  "Loading...": {
+    "en": "Loading...",
+    "ja": "読み込み中...",
+    "zh-CN": "加载中...",
+    "zh-TW": "載入中..."
+  },
+  "No content to copy.": {
+    "en": "No content to copy.",
+    "ja": "コピーする内容がありません。",
+    "zh-CN": "没有可复制的内容。",
+    "zh-TW": "沒有可複製的內容。"
+  },
+  "Copy failed.": {
+    "en": "Copy failed.",
+    "ja": "コピーに失敗しました。",
+    "zh-CN": "复制失败。",
+    "zh-TW": "複製失敗。"
+  },
+  "No content to download.": {
+    "en": "No content to download.",
+    "ja": "ダウンロードする内容がありません。",
+    "zh-CN": "没有可下载的内容。",
+    "zh-TW": "沒有可下載的內容。"
+  },
+  "Copy": {
+    "en": "Copy",
+    "ja": "コピー",
+    "zh-CN": "复制",
+    "zh-TW": "複製"
+  },
+  "Download failed.": {
+    "en": "Download failed.",
+    "ja": "ダウンロードに失敗しました。",
+    "zh-CN": "下载失败。",
+    "zh-TW": "下載失敗。"
   }
 }

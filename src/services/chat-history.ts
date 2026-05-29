@@ -147,7 +147,7 @@ export async function saveSessionSnapshot(sessionUUID: string, botIndices: numbe
 
   for (const botIndex of botIndices) {
     const messages = currentMessages?.[botIndex] || []
-    const storableMessages = messages.map((m) => ({ ...m, images: undefined, audioFiles: undefined }))
+    const storableMessages = messages.map((m) => ({ ...m, images: undefined, audioFiles: undefined, videoFiles: undefined, pdfFiles: undefined, attachments: undefined }))
     conversations[botIndex] = storableMessages
     totalMessageCount += storableMessages.length
   }

@@ -3,6 +3,8 @@ import { useLocation } from '@tanstack/react-router'
 import Browser from 'webextension-polyfill'
 import { useTranslation } from 'react-i18next'
 import { ViewportList } from 'react-viewport-list'
+import toast from 'react-hot-toast'
+import dayjs from 'dayjs'
 import PagePanel from '~app/components/Page'
 import SessionCard from '~app/components/History/SessionCard'
 import SearchInput from '~app/components/History/SearchInput'
@@ -21,7 +23,7 @@ import {
 import { getUserConfig } from '~services/user-config'
 import { cx, uuid } from '~utils'
 import type { ActiveTab, AnyMeta, RestoreWarning, SessionListItem } from './HistoryPage/types'
-import { formatConversationAsMarkdown } from './HistoryPage/format'
+import { buildSessionMarkdown, buildSessionJSON, downloadBlob } from './HistoryPage/format'
 import { useDeepSearch } from './HistoryPage/useDeepSearch'
 
 const HistoryPage: FC = () => {
@@ -31,7 +33,7 @@ const HistoryPage: FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('allInOne')
   const [selectedSessionKey, setSelectedSessionKey] = useState<string | null>(null)
   const [restoreWarning, setRestoreWarning] = useState<RestoreWarning | null>(null)
-  const [copyLoading, setCopyLoading] = useState(false)
+  const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null)
 
   const [loadingSessions, setLoadingSessions] = useState(false)
   const [sessions, setSessions] = useState<SessionListItem[]>([])
@@ -405,60 +407,65 @@ const HistoryPage: FC = () => {
     [doRestoreSession, openAppTab],
   )
 
-  const handleCopyConversation = useCallback(async (warning: RestoreWarning) => {
-    setCopyLoading(true)
+  const handleCopySession = useCallback(async (item: SessionListItem) => {
+    setActionLoadingKey(item._sessionKey)
     try {
-      const config = await getUserConfig()
-      const botNames = (config.customApiConfigs || []).map((c, i) => c.name || `Bot ${i + 1}`)
-      const item = warning.item
-      const sections: string[] = []
-
-      if (item.type === 'single') {
-        const conversations = await loadHistoryMessages(item.botIndex)
-        const conv = conversations.find((c) => c.id === item.conversationId)
-        if (conv && conv.messages.length > 0) {
-          const botName = botNames[item.botIndex] || `Bot ${item.botIndex + 1}`
-          sections.push(formatConversationAsMarkdown(conv.messages, botName))
-        }
-      } else if (item.type === 'sessionSnapshot') {
-        const snapshot = await getSessionSnapshot(item.sessionUUID)
-        if (snapshot) {
-          if (item.pairName) sections.push(`# ${item.pairName}\n`)
-          for (const botIndex of item.botIndices) {
-            const msgs = snapshot.conversations[botIndex] || []
-            if (msgs.length > 0) {
-              const botName = botNames[botIndex] || `Bot ${botIndex + 1}`
-              sections.push(`## ${botName}\n\n${formatConversationAsMarkdown(msgs, botName)}`)
-            }
-          }
-        }
-      } else if (item.type === 'allInOneLegacy') {
-        const aioSessions = await loadAllInOneSessions()
-        const session = aioSessions.find((s) => s.id === item.sessionId)
-        if (session) {
-          if (item.pairName) sections.push(`# ${item.pairName}\n`)
-          for (const botIndex of item.botIndices) {
-            const allConvs = session.conversations[botIndex] || []
-            const snapId = session.conversationSnapshots?.[botIndex]
-            const targetConv = snapId
-              ? allConvs.find((c) => c.id === snapId)
-              : allConvs[0]
-            if (targetConv && targetConv.messages.length > 0) {
-              const botName = botNames[botIndex] || `Bot ${botIndex + 1}`
-              sections.push(`## ${botName}\n\n${formatConversationAsMarkdown(targetConv.messages, botName)}`)
-            }
-          }
-        }
+      const markdown = await buildSessionMarkdown(item)
+      if (!markdown) {
+        toast.error(t('No content to copy.'))
+        return
       }
-
-      const markdown = sections.join('\n\n---\n\n')
-      if (markdown) {
-        await navigator.clipboard.writeText(markdown)
-      }
+      await navigator.clipboard.writeText(markdown)
+      toast.success(t('Copied!'))
+    } catch {
+      toast.error(t('Copy failed.'))
     } finally {
-      setCopyLoading(false)
+      setActionLoadingKey(null)
     }
+  }, [t])
+
+  const handleCopyConversation = useCallback(async (warning: RestoreWarning) => {
+    await handleCopySession(warning.item)
+  }, [handleCopySession])
+
+  const makeFileName = useCallback((item: SessionListItem, ext: string) => {
+    const date = dayjs(item.lastUpdated).format('YYYYMMDD-HHmm')
+    const name = (item.type !== 'single' ? item.pairName : '') || item.botNames?.join('_') || 'session'
+    const safe = name.replace(/[<>:"/\\|?*\x00-\x1F]/g, '_').slice(0, 40)
+    return `${safe}_${date}.${ext}`
   }, [])
+
+  const handleDownloadMd = useCallback(async (item: SessionListItem) => {
+    setActionLoadingKey(item._sessionKey)
+    try {
+      const markdown = await buildSessionMarkdown(item)
+      if (!markdown) {
+        toast.error(t('No content to download.'))
+        return
+      }
+      downloadBlob(new Blob([markdown], { type: 'text/markdown' }), makeFileName(item, 'md'))
+    } catch {
+      toast.error(t('Download failed.'))
+    } finally {
+      setActionLoadingKey(null)
+    }
+  }, [makeFileName, t])
+
+  const handleDownloadJson = useCallback(async (item: SessionListItem) => {
+    setActionLoadingKey(item._sessionKey)
+    try {
+      const json = await buildSessionJSON(item)
+      if (!json) {
+        toast.error(t('No content to download.'))
+        return
+      }
+      downloadBlob(new Blob([json], { type: 'application/json' }), makeFileName(item, 'json'))
+    } catch {
+      toast.error(t('Download failed.'))
+    } finally {
+      setActionLoadingKey(null)
+    }
+  }, [makeFileName, t])
 
   return (
     <PagePanel title={t('View history') as string}>
@@ -467,7 +474,7 @@ const HistoryPage: FC = () => {
           warning={restoreWarning}
           onContinue={handleRestoreWarningContinue}
           onCopyConversation={handleCopyConversation}
-          copyLoading={copyLoading}
+          copyLoading={actionLoadingKey !== null}
           onClose={() => setRestoreWarning(null)}
         />
       )}
@@ -548,6 +555,10 @@ const HistoryPage: FC = () => {
                         isSelected={isSelected}
                         onToggleSelect={(key) => setSelectedSessionKey((prev) => (prev === key ? null : key))}
                         onRestore={restoreSession}
+                        onCopy={handleCopySession}
+                        onDownloadMd={handleDownloadMd}
+                        onDownloadJson={handleDownloadJson}
+                        actionLoading={actionLoadingKey === sessionKey}
                       />
                     </div>
                   )

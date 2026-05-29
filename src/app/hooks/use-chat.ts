@@ -363,6 +363,16 @@ export function useChat(index: number, page: string = 'singleton') {
     })
   }, [chatState.abortController, chatState.generatingMessageId, setChatState, updateMessage])
 
+  // 復元メッセージのサニタイズ: ストレージ経由で非Blobオブジェクトに化けたFile系フィールドを除去
+  const sanitizeRestoredMessages = (messages: ChatMessageModel[]): ChatMessageModel[] =>
+    messages.map((m) => ({
+      ...m,
+      images: m.images?.filter((img) => img instanceof Blob) as File[] | undefined,
+      audioFiles: m.audioFiles?.filter((f) => f instanceof Blob) as File[] | undefined,
+      videoFiles: m.videoFiles?.filter((f) => f instanceof Blob) as File[] | undefined,
+      pdfFiles: m.pdfFiles?.filter((f) => f instanceof Blob) as File[] | undefined,
+    }))
+
   // セッション復元の処理
   useEffect(() => {
     const restoreSession = async () => {
@@ -372,15 +382,16 @@ export function useChat(index: number, page: string = 'singleton') {
           const targetConversation = conversations.find(c => c.id === sessionToRestore.conversationId)
 
           if (targetConversation && targetConversation.messages.length > 0) {
+            const messagesToUse = sanitizeRestoredMessages(targetConversation.messages)
             setChatState((draft) => {
-              draft.messages = targetConversation.messages
+              draft.messages = messagesToUse
               draft.conversationId = targetConversation.id
             })
 
             // ボットに会話履歴を設定
             if (chatState.bot.setConversationHistory) {
               chatState.bot.setConversationHistory({
-                messages: targetConversation.messages
+                messages: messagesToUse
               })
             }
 
@@ -409,9 +420,10 @@ export function useChat(index: number, page: string = 'singleton') {
             if (restoreInfo.messages && restoreInfo.messages.length > 0) {
               const conversations = await loadHistoryMessages(index)
               const existing = conversations.find(c => c.id === restoreInfo.conversationId)
-              const messagesToUse = (existing && existing.messages.length >= restoreInfo.messages.length)
+              const rawMessages = (existing && existing.messages.length >= restoreInfo.messages.length)
                 ? existing.messages
                 : restoreInfo.messages
+              const messagesToUse = sanitizeRestoredMessages(rawMessages)
 
               setChatState((draft) => {
                 draft.messages = messagesToUse
@@ -428,15 +440,17 @@ export function useChat(index: number, page: string = 'singleton') {
             const targetConversation = conversations.find(c => c.id === restoreInfo.conversationId)
 
             if (targetConversation && targetConversation.messages.length > 0) {
+              const messagesToUse = sanitizeRestoredMessages(targetConversation.messages)
+
               setChatState((draft) => {
-                draft.messages = targetConversation.messages
+                draft.messages = messagesToUse
                 draft.conversationId = targetConversation.id
               })
 
               // ボットに会話履歴を設定
               if (chatState.bot.setConversationHistory) {
                 chatState.bot.setConversationHistory({
-                  messages: targetConversation.messages
+                  messages: messagesToUse
                 })
               }
             }

@@ -1,6 +1,8 @@
 import { FC, memo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
+import { IoCopyOutline } from 'react-icons/io5'
+import { Download } from 'lucide-react'
 import BotIcon from '~app/components/BotIcon'
 import Tooltip from '~app/components/Tooltip'
 import { cx } from '~utils'
@@ -63,11 +65,20 @@ interface SessionCardProps {
   isSelected: boolean
   onToggleSelect: (sessionKey: string) => void
   onRestore: (session: SessionListItem) => void
+  onCopy?: (session: SessionListItem) => void
+  onDownloadMd?: (session: SessionListItem) => void
+  onDownloadJson?: (session: SessionListItem) => void
+  actionLoading?: boolean
 }
 
+const actionBtnClass =
+  'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-secondary/40 border border-primary-border/80 hover:bg-secondary/70 hover:border-primary-border transition-colors disabled:opacity-50'
+
 const SessionCard: FC<SessionCardProps> = memo(
-  ({ session: s, isSelected, onToggleSelect, onRestore }) => {
+  ({ session: s, isSelected, onToggleSelect, onRestore, onCopy, onDownloadMd, onDownloadJson, actionLoading }) => {
     const { t } = useTranslation()
+
+    const stop = useCallback((e: React.MouseEvent) => e.stopPropagation(), [])
 
     const handleRestoreClick = useCallback(
       (e: React.MouseEvent) => {
@@ -75,6 +86,30 @@ const SessionCard: FC<SessionCardProps> = memo(
         onRestore(s)
       },
       [onRestore, s],
+    )
+
+    const handleCopyClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation()
+        onCopy?.(s)
+      },
+      [onCopy, s],
+    )
+
+    const handleDownloadMdClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation()
+        onDownloadMd?.(s)
+      },
+      [onDownloadMd, s],
+    )
+
+    const handleDownloadJsonClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation()
+        onDownloadJson?.(s)
+      },
+      [onDownloadJson, s],
     )
 
     const handleToggleSelect = useCallback(() => {
@@ -94,108 +129,128 @@ const SessionCard: FC<SessionCardProps> = memo(
     return (
       <div
         className={cx(
-          'border border-primary-border rounded-2xl p-5 bg-primary-background/40 hover:bg-secondary/30 transition-all cursor-pointer',
-          isSelected && 'bg-secondary/30 shadow-lg max-h-[50vh] overflow-y-auto custom-scrollbar',
+          'border-2 border-primary-border/60 rounded-2xl bg-primary-background/50 hover:bg-secondary/30 hover:border-primary-border transition-all cursor-pointer',
+          isSelected && 'bg-secondary/30 border-blue-500/40 shadow-lg max-h-[50vh] overflow-y-auto custom-scrollbar',
         )}
         onClick={handleToggleSelect}
       >
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-row items-start gap-3 flex-wrap">
-            <div className="min-w-0 flex-1">
-              {/* User Query Section - Most Prominent */}
-              {s.firstMessage && (
-                <div className="mb-2 md:mb-3">
-                  <div className="bg-blue-500/10 border-l-4 border-blue-500 rounded-r-lg px-3 py-2 md:px-4 md:py-3 overflow-x-hidden">
-                    <div
-                      className={cx(
-                        'text-sm md:text-base font-semibold text-primary-text break-words whitespace-pre-wrap leading-snug md:leading-relaxed',
-                        !isSelected && 'line-clamp-4',
-                      )}
-                    >
-                      {displayFirstMessage}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Restore Button */}
-            <div className="flex flex-row items-center justify-end gap-2 shrink-0">
-              <Tooltip content={t('Restore Session')}>
-                <button
-                  className={cx(
-                    'rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all font-medium',
-                    isSelected ? 'px-4 py-2.5 text-base shadow-md' : 'px-3 py-2 text-sm',
-                  )}
-                  onClick={handleRestoreClick}
+        {/* Header: metadata row */}
+        <div className={cx(
+          'flex flex-row items-center gap-2 flex-wrap px-5 pt-4 pb-1',
+          isSelected && 'sticky top-0 z-10 bg-primary-background/90 backdrop-blur-sm rounded-t-2xl pb-2',
+        )}>
+          <span className="text-xs text-primary-text opacity-70">
+            {dayjs(s.lastUpdated).format('YYYY-MM-DD HH:mm')}
+          </span>
+          <span className="text-xs px-2 py-0.5 rounded-md bg-green-500/20 text-green-600 dark:text-green-400 font-semibold">
+            {s.messageCount} {t('messages')}
+          </span>
+          {s.type !== 'single' && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400">
+              {t('All-In-One')}
+            </span>
+          )}
+          {/* Bot tags inline */}
+          {s.botNames && s.botNames.length > 0 && (
+            <>
+              <span className="text-xs text-primary-text opacity-40 mx-0.5">|</span>
+              {s.botNames.map((name, idx) => (
+                <span
+                  key={idx}
+                  className="text-xs px-1.5 py-0.5 rounded-md bg-secondary/50 text-primary-text opacity-80 flex items-center gap-1"
                 >
-                  {t('Restore Session')}
-                </button>
-              </Tooltip>
+                  {s.botIcons && s.botIcons[idx] && <BotIcon iconName={s.botIcons[idx]} size={14} />}
+                  {name}
+                </span>
+              ))}
+            </>
+          )}
+          {/* Action buttons - always right-aligned */}
+          <div className="ml-auto shrink-0 flex flex-row items-center gap-1.5" onClick={stop}>
+            {isSelected && (
+              <>
+                <Tooltip content={t('Copy as Markdown')}>
+                  <button className={actionBtnClass} onClick={handleCopyClick} disabled={actionLoading}>
+                    <IoCopyOutline size={14} />
+                    <span>{t('Copy')}</span>
+                  </button>
+                </Tooltip>
+                <Tooltip content={t('Download .md')}>
+                  <button className={actionBtnClass} onClick={handleDownloadMdClick} disabled={actionLoading}>
+                    <Download size={14} />
+                    <span>.md</span>
+                  </button>
+                </Tooltip>
+                <Tooltip content={t('Download .json')}>
+                  <button className={actionBtnClass} onClick={handleDownloadJsonClick} disabled={actionLoading}>
+                    <Download size={14} />
+                    <span>.json</span>
+                  </button>
+                </Tooltip>
+              </>
+            )}
+            <Tooltip content={t('Restore Session')}>
+              <button
+                className={cx(
+                  'rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all font-medium px-3 py-1.5 text-xs',
+                  isSelected && 'px-4 py-2 text-sm',
+                )}
+                onClick={handleRestoreClick}
+              >
+                {t('Restore Session')}
+              </button>
+            </Tooltip>
+          </div>
+        </div>
+
+        {/* Body: user query */}
+        {s.firstMessage && (
+          <div className="px-5 py-2">
+            <div className="bg-blue-500/10 border-l-4 border-blue-500 rounded-r-lg px-3 py-2 md:px-4 md:py-3 overflow-x-hidden">
+              <div
+                className={cx(
+                  'text-sm md:text-base font-semibold text-primary-text break-words whitespace-pre-wrap leading-snug md:leading-relaxed',
+                  !isSelected && 'line-clamp-3',
+                )}
+              >
+                {displayFirstMessage}
+              </div>
             </div>
           </div>
+        )}
 
-          <div className="min-w-0">
-            {/* Metadata */}
-            <div className="flex flex-row items-center gap-2 flex-wrap mb-2">
-              <div className="text-xs text-primary-text opacity-85">
-                {dayjs(s.lastUpdated).format('YYYY-MM-DD HH:mm')}
+        {/* AI Response Preview - collapsed */}
+        {!isSelected && (
+          <div className="px-5 pb-4">
+            {s.type === 'single' && s.lastMessage && (
+              <div className="flex items-start gap-1.5">
+                {s.botIcons && s.botIcons[0] && (
+                  <BotIcon iconName={s.botIcons[0]} size={16} className="shrink-0 mt-0.5" />
+                )}
+                <div className="text-xs text-primary-text opacity-75 line-clamp-2">{displayLastMessage}</div>
               </div>
-              <span className="text-xs px-2 py-0.5 rounded-md bg-green-500/20 text-green-600 dark:text-green-400 font-semibold">
-                {s.messageCount} {t('messages')}
-              </span>
-              {s.type !== 'single' && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400">
-                  {t('All-In-One')}
-                </span>
-              )}
-            </div>
-
-            {/* Bot Names as Tags */}
-            {s.botNames && s.botNames.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {s.botNames.map((name, idx) => (
-                  <span
-                    key={idx}
-                    className="text-xs px-2 py-0.5 rounded-md bg-secondary/60 text-primary-text opacity-90 flex items-center gap-1"
-                  >
-                    {s.botIcons && s.botIcons[idx] && <BotIcon iconName={s.botIcons[idx]} size={14} />}
-                    {name}
-                  </span>
+            )}
+            {s.type !== 'single' && displayBotResponses && displayBotResponses.length > 0 && (
+              <div className="flex flex-col gap-1">
+                {displayBotResponses.map((r, idx) => (
+                  <div key={r.botName + idx} className="flex items-start gap-1.5">
+                    {r.botIcon && <BotIcon iconName={r.botIcon} size={16} className="shrink-0 mt-0.5" />}
+                    <div className="text-xs text-primary-text opacity-75 line-clamp-1">
+                      <span className="font-semibold">{r.botName}:</span> {r.response}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
+          </div>
+        )}
 
-            {/* AI Response Preview - Always visible (collapsed state) */}
-            {!isSelected && (
-              <>
-                {s.type === 'single' && s.lastMessage && (
-                  <div className="mt-2 flex items-start gap-1.5">
-                    {s.botIcons && s.botIcons[0] && (
-                      <BotIcon iconName={s.botIcons[0]} size={16} className="shrink-0 mt-0.5" />
-                    )}
-                    <div className="text-xs text-primary-text opacity-85 line-clamp-2">{displayLastMessage}</div>
-                  </div>
-                )}
-                {s.type !== 'single' && displayBotResponses && displayBotResponses.length > 0 && (
-                  <div className="mt-2 flex flex-col gap-1.5">
-                    {displayBotResponses.map((r, idx) => (
-                      <div key={r.botName + idx} className="flex items-start gap-1.5">
-                        {r.botIcon && <BotIcon iconName={r.botIcon} size={16} className="shrink-0 mt-0.5" />}
-                        <div className="text-xs text-primary-text opacity-85 line-clamp-2">
-                          <span className="font-semibold">{r.botName}:</span> {r.response}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Bot Responses Section (expanded state only) */}
-            {isSelected && s.type === 'single' && s.lastMessage && (
-              <div className="mt-3 pt-3 border-t border-primary-border/30">
-                <div className="text-xs font-medium text-primary-text opacity-70 mb-2">{t('AI Response')}:</div>
+        {/* AI Responses - expanded */}
+        {isSelected && (
+          <div className="px-5 pb-2">
+            {s.type === 'single' && s.lastMessage && (
+              <div className="mt-1">
+                <div className="text-xs font-medium text-primary-text opacity-60 mb-2">{t('AI Response')}:</div>
                 <div className="bg-green-500/10 border-l-2 border-green-500/50 rounded-r-lg px-3 py-2">
                   <div className="flex items-start gap-2">
                     {s.botIcons && s.botIcons[0] && (
@@ -209,9 +264,9 @@ const SessionCard: FC<SessionCardProps> = memo(
               </div>
             )}
 
-            {isSelected && s.type !== 'single' && displayBotResponses && displayBotResponses.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-primary-border/30">
-                <div className="text-xs font-medium text-primary-text opacity-70 mb-2">{t('AI Responses')}:</div>
+            {s.type !== 'single' && displayBotResponses && displayBotResponses.length > 0 && (
+              <div className="mt-1">
+                <div className="text-xs font-medium text-primary-text opacity-60 mb-2">{t('AI Responses')}:</div>
                 <div className="flex flex-wrap gap-3">
                   {displayBotResponses.map((r, idx) => (
                     <div
@@ -231,17 +286,21 @@ const SessionCard: FC<SessionCardProps> = memo(
               </div>
             )}
           </div>
-        </div>
+        )}
+
       </div>
     )
   },
   (prevProps, nextProps) => {
-    // Custom comparison for optimal memoization
     return (
-      prevProps.session._sessionKey === nextProps.session._sessionKey &&
+      prevProps.session === nextProps.session &&
       prevProps.isSelected === nextProps.isSelected &&
       prevProps.onToggleSelect === nextProps.onToggleSelect &&
-      prevProps.onRestore === nextProps.onRestore
+      prevProps.onRestore === nextProps.onRestore &&
+      prevProps.onCopy === nextProps.onCopy &&
+      prevProps.onDownloadMd === nextProps.onDownloadMd &&
+      prevProps.onDownloadJson === nextProps.onDownloadJson &&
+      prevProps.actionLoading === nextProps.actionLoading
     )
   },
 )
