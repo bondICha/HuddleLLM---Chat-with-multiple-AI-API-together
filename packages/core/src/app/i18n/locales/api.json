@@ -512,8 +512,8 @@
   "Add Provider": {
     "en": "Add Provider",
     "ja": "プロバイダーを追加",
-    "zh-CN": "Add Provider",
-    "zh-TW": "Add Provider"
+    "zh-CN": "添加提供商",
+    "zh-TW": "新增提供者"
   },
   "Manage your API provider configurations here. These can be referenced by individual chatbots.": {
     "en": "Manage your API provider configurations here. These can be referenced by individual chatbots.",
