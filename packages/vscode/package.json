@@ -2,7 +2,7 @@
   "name": "huddlellm-vscode",
   "displayName": "HuddleLLM",
   "description": "Chat with multiple AI APIs together, side by side, inside VS Code",
-  "version": "0.1.0",
+  "version": "2.18.1",
   "publisher": "huddlellm",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
@@ -46,6 +46,11 @@
         "title": "Open in Main Tab",
         "category": "HuddleLLM",
         "icon": "$(link-external)"
+      },
+      {
+        "command": "huddlellm.debugState",
+        "title": "Debug: Dump Global State",
+        "category": "HuddleLLM"
       }
     ],
     "menus": {

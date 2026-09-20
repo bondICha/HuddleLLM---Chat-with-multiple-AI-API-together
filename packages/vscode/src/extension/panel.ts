@@ -8,19 +8,30 @@ export const BTW_PANEL_VIEW_TYPE = 'huddlellm.btw'
 /**
  * The main HuddleLLM app: a webview panel in the editor area running the
  * full React app (all-in-one grid, settings, history — hash routed).
+ * Multiple panels can be open at once; `active` tracks the most recently
+ * focused one so commands like Quick Ask target the panel the user last used.
  */
 export class AppPanel {
-  private static current: AppPanel | undefined
+  private static readonly panels = new Set<AppPanel>()
+  private static active: AppPanel | undefined
 
+  /** Reveals the most recently used panel, creating one if none is open. */
   static createOrShow(context: vscode.ExtensionContext, host: RouterHost, route?: string): AppPanel {
     const column = vscode.window.activeTextEditor ? vscode.ViewColumn.Beside : vscode.ViewColumn.One
-    if (AppPanel.current) {
-      AppPanel.current.panel.reveal(column)
+    const existing = AppPanel.active
+    if (existing) {
+      existing.panel.reveal(column)
       if (route) {
-        AppPanel.current.router.post({ type: 'route.navigate', route })
+        existing.router.post({ type: 'route.navigate', route })
       }
-      return AppPanel.current
+      return existing
     }
+    return AppPanel.createNew(context, host, route)
+  }
+
+  /** Always opens an additional panel, regardless of how many are open. */
+  static createNew(context: vscode.ExtensionContext, host: RouterHost, route?: string): AppPanel {
+    const column = vscode.window.activeTextEditor ? vscode.ViewColumn.Beside : vscode.ViewColumn.One
     const panel = vscode.window.createWebviewPanel(APP_PANEL_VIEW_TYPE, 'HuddleLLM', column, {
       enableScripts: true,
       retainContextWhenHidden: true,
@@ -35,12 +46,20 @@ export class AppPanel {
     panel: vscode.WebviewPanel,
     route?: string,
   ): AppPanel {
-    AppPanel.current = new AppPanel(context, host, panel, route)
-    return AppPanel.current
+    const instance = new AppPanel(context, host, panel, route)
+    AppPanel.panels.add(instance)
+    AppPanel.active = instance
+    return instance
   }
 
   static get instance(): AppPanel | undefined {
-    return AppPanel.current
+    return AppPanel.active
+  }
+
+  static broadcastAll(msg: Parameters<WebviewRouter['post']>[0]): void {
+    for (const panel of AppPanel.panels) {
+      panel.broadcast(msg)
+    }
   }
 
   readonly router: WebviewRouter
@@ -70,10 +89,16 @@ export class AppPanel {
       initialRoute,
     )
     this.panel.webview.html = getWebviewHtml(this.panel.webview, context.extensionUri)
+    this.panel.onDidChangeViewState((e) => {
+      if (e.webviewPanel.active) {
+        AppPanel.active = this
+      }
+    })
     this.panel.onDidDispose(() => {
       this.router.dispose()
-      if (AppPanel.current === this) {
-        AppPanel.current = undefined
+      AppPanel.panels.delete(this)
+      if (AppPanel.active === this) {
+        AppPanel.active = AppPanel.panels.values().next().value
       }
     })
   }

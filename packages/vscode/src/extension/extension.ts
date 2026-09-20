@@ -28,7 +28,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // keep panel and side view coherent when either writes to storage
   storage.onDidChange((ns, changes) => {
     const msg = { type: 'storage.changed' as const, ns, changes }
-    AppPanel.instance?.broadcast(msg)
+    AppPanel.broadcastAll(msg)
     sideView.broadcast(msg)
   })
 
@@ -38,10 +38,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const welcomed = context.globalState.get<boolean>('huddlellm.welcomed')
       if (!welcomed) {
         void context.globalState.update('huddlellm.welcomed', true)
-        AppPanel.createOrShow(context, host, '/welcome')
+        AppPanel.createNew(context, host, '/welcome')
         return
       }
-      AppPanel.createOrShow(context, host)
+      // Chrome版のタブと同じく、実行のたびに新しいタブを開く
+      AppPanel.createNew(context, host)
     }),
     vscode.commands.registerCommand('huddlellm.openSettings', () => {
       AppPanel.createOrShow(context, host, '/setting')
@@ -64,14 +65,27 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
     vscode.commands.registerCommand('huddlellm.openInMainTab', () => {
-      AppPanel.createOrShow(context, host)
+      AppPanel.createNew(context, host)
+    }),
+    vscode.commands.registerCommand('huddlellm.debugState', () => {
+      // Remote-SSH では globalState の実体(state.vscdb)がクライアント側にあり
+      // サーバから読めないため、ここでダンプして確認できるようにする。
+      // APIキーは KvStorage が SECRET_PLACEHOLDER に置換済みなので平文は出ない。
+      const dump: Record<string, unknown> = {}
+      for (const key of context.globalState.keys()) {
+        dump[key] = context.globalState.get(key)
+      }
+      const channel = vscode.window.createOutputChannel('HuddleLLM Debug')
+      channel.appendLine(`globalState dump (${new Date().toISOString()})`)
+      channel.appendLine(JSON.stringify(dump, null, 2))
+      channel.show()
     }),
     vscode.window.registerWebviewViewProvider(SIDE_VIEW_ID, sideView, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
     vscode.window.onDidChangeActiveColorTheme((theme) => {
       const msg = { type: 'theme.changed' as const, colorThemeKind: theme.kind }
-      AppPanel.instance?.broadcast(msg)
+      AppPanel.broadcastAll(msg)
       sideView.broadcast(msg)
     }),
   )
