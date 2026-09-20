@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.19.0] - 2026-09-20
+
+### Added
+- **VS Code Extension**: HuddleLLM is now available as a VS Code extension — chat with multiple AIs from the sidebar or editor tabs, with multi-tab support and settings/theme sync across tabs. Published on the Visual Studio Marketplace.
+
+### Fixed
+- **Gemini API key authentication**: Google AI Studio API keys are now sent in the request header based on endpoint detection, no longer requiring a custom host. Improved Vertex AI / gateway endpoint detection.
+- Improved Vertex-related wording in the settings UI across locales.
+
+### Changed
+- Repository restructured into an npm workspaces monorepo (`packages/core`, `packages/chrome`, `packages/vscode`). No user-facing behavior change.
+
+### 新功能
+- **VS Code 扩展**：HuddleLLM 现已作为 VS Code 扩展发布——可在侧边栏或编辑器标签页中与多个 AI 同时聊天，支持多标签页以及跨标签页的设置/主题同步。已上架 Visual Studio Marketplace。
+
+### 修复
+- **Gemini API 密钥认证**：Google AI Studio 的 API 密钥现在会根据端点检测通过请求头发送，无需再设置自定义主机。改进了 Vertex AI／网关端点检测。
+- 改进了设置界面中 Vertex 相关的措辞（所有语言）。
+
+### 变更
+- 仓库重构为 npm workspaces monorepo（`packages/core`、`packages/chrome`、`packages/vscode`），无用户可见的行为变化。
+
+---
+
+## [v2.18.2] - 2026-08-30
+
+### Added
+- **Settings Assistant (β)**: A floating, resizable AI chat panel on the settings page that answers questions about your config and can propose changes — add/update chatbots, set up a new provider together with the chatbot(s) that use it, or look up a provider's real available models — for you to review and apply. API keys are never sent to the AI.
+
+### 新功能
+- **设置助手（β）**：设置页面上可调整大小的浮动 AI 聊天面板，可以回答关于当前配置的问题，并提出配置变更建议——添加/更新聊天机器人、一次性设置新的提供商及使用它的聊天机器人、查询提供商实际可用的模型列表——供您审核后应用。API 密钥不会发送给 AI。
+
+---
+
 ## [v2.18.0] - 2026-05-25
 
 ### Added

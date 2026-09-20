@@ -6,6 +6,14 @@ import { getVersion } from '~utils'
 
 export const RELEASE_NOTES = [
   {
+    version: '2.19.0',
+    notes: [
+      'releasenote_v2190_gemini_auth_fix',
+      'releasenote_v2190_vscode',
+      'releasenote_v2190_kimi_credit',
+    ],
+  },
+  {
     version: '2.18.2',
     notes: [
       'releasenote_v2182_settings_assistant',

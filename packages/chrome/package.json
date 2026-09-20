@@ -1,7 +1,7 @@
 {
   "name": "huddlellm-extension",
   "private": true,
-  "version": "2.18.2",
+  "version": "2.19.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -129,6 +129,5 @@
     "uuid": "^9.0.1",
     "webextension-polyfill": "^0.10.0",
     "websocket-as-promised": "^2.0.1"
-  },
-  "packageManager": "yarn@4.9.1"
+  }
 }

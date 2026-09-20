@@ -1,4 +1,22 @@
 {
+  "releasenote_v2190_gemini_auth_fix": {
+    "en": "Fixed Gemini API key authentication: Updated Gemini SDK to follow up recent Gemini API structure updates",
+    "ja": "Gemini APIキー認証を修正。最近の Gemini API の構造変更に追随するため、Gemini SDK を更新しました。",
+    "zh-CN": "修复了 Gemini API 密钥认证：更新 Gemini SDK 以跟进近期 Gemini API 的结构变更。",
+    "zh-TW": "修復了 Gemini API 金鑰驗證：更新 Gemini SDK 以跟進近期 Gemini API 的結構變更。"
+  },
+  "releasenote_v2190_vscode": {
+    "en": "VS Code extension is now available [Download from VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=huddlellm.huddlellm-vscode)",
+    "ja": "VS Code 版を公開しました。[VS Code Marketplace からダウンロード](https://marketplace.visualstudio.com/items?itemName=huddlellm.huddlellm-vscode)",
+    "zh-CN": "VS Code 扩展现已发布。[从 VS Code Marketplace 下载](https://marketplace.visualstudio.com/items?itemName=huddlellm.huddlellm-vscode)",
+    "zh-TW": "VS Code 擴充功能現已發佈。[從 VS Code Marketplace 下載](https://marketplace.visualstudio.com/items?itemName=huddlellm.huddlellm-vscode)"
+  },
+  "releasenote_v2190_kimi_credit": {
+    "en": "This release note was written by Kimi K3.",
+    "ja": "今回のリリースノートは Kimi K3 が担当しました。",
+    "zh-CN": "本次发布说明由 Kimi K3 撰写。",
+    "zh-TW": "本次發佈說明由 Kimi K3 撰寫。"
+  },
   "releasenote_v2182_settings_assistant": {
     "en": "Settings Assistant (β): a floating AI chat panel on the settings page that answers questions about your config and can propose changes — add/update chatbots, set up a new provider together with the chatbot(s) that use it, or look up a provider's real available models — for you to review and apply. API keys are never sent to the AI.",
     "ja": "設定アシスタント（β）を追加。設定ページに常駐するAIチャットパネルで、現在の設定について質問に答えたり、設定変更（チャットボットの追加・更新、プロバイダーとそれを使うチャットボットのまとめ新規追加、実際に使えるモデル一覧の確認）を提案し、確認のうえ適用できます。API キーはAIに送信されません。",
