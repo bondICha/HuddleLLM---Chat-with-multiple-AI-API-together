@@ -96,7 +96,7 @@
     "watch:webview": "vite build --watch",
     "watch:extension": "node esbuild.mjs --watch",
     "vscode:prepublish": "npm run build:webview && npm run build:extension",
-    "package": "vsce package"
+    "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
     "@headlessui/tailwindcss": "^0.2.0",
