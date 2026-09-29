@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "vscode: build-dev",
+      "type": "shell",
+      "command": "npm run build:webview && node esbuild.mjs",
+      "options": {
+        "cwd": "${workspaceFolder}/packages/vscode"
+      },
+      "problemMatcher": ["$tsc"],
+      "group": "build"
+    }
+  ]
+}
