@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react'
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
@@ -11,6 +12,13 @@ export default defineConfig(({ mode }) => {
     // fonts and workers resolve inside the webview
     base: './',
     plugins: [tsconfigPaths(), react()],
+    resolve: {
+      alias: {
+        // Also applies to imports from dependencies, which tsconfig paths may not rewrite.
+        // The real polyfill throws before React mounts in a VS Code webview.
+        'webextension-polyfill': fileURLToPath(new URL('./src/webview/platform/browser-shim.ts', import.meta.url)),
+      },
+    },
     build: {
       outDir: 'dist/webview',
       emptyOutDir: true,
