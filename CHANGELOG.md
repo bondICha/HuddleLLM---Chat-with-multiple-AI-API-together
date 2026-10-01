@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.19.1] - 2026-10-01
+
+### Fixed
+- **VS Code extension**: Fixed a Webview startup error that left chat tabs blank.
+
+---
+
 ## [v2.19.0] - 2026-09-20
 
 ### Added
