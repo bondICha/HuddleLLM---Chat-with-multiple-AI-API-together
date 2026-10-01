@@ -1,7 +1,7 @@
 # Agent Rules Standard
 
 ## Build Verification
-- When a task is completed or changes of a certain unit are finished, please check if the build passes by running `yarn build`
+- When a task is completed or changes of a certain unit are finished, please check if the build passes by running `npm run build`
 
 ## Debugging Guidelines
 - This is Chrome Extension and typescript, to output debug message, DO NOT `console.log`. Use alert, toast or display on UI (temporaly).
@@ -16,7 +16,7 @@
 - Don't Fallback - When data doesn't meet expectations or differs from what the user intends, treat it as an error rather than providing a generic fallback
 
 ## Code Review Process
-- 请审查是否按照用户的指示或设计进行了一致性实现，并在确认代码审查中绝对不会发生构建错误后再执行`yarn build`。
+- 请审查是否按照用户的指示或设计进行了一致性实现，并在确认代码审查中绝对不会发生构建错误后再执行`npm run build`。
 
 ## Development Environment
 - Use i18n translator and update all 4 localization file without missing.
@@ -34,7 +34,7 @@
 - Styles in `src/app/base.scss` using Tailwind CSS
 
 ## Testing
-- Ask user to check what, after success run of yarn build.
+- Ask user to check what, after success run of npm run build.
 
 ## Git Commits
 - Do NOT add "Co-Authored-By" lines to commit messages
